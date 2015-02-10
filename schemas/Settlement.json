@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "Settlement",
+  "description": "A transfer of funds across ledgers",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "source": {
+      "description": "Origin funds, i.e. sending account, currency, etc.",
+      "$ref": "Funds.json"
+    },
+    "destination": {
+      "description": "Destination funds, i.e. receiving account",
+      "$ref": "Funds.json"
+    }
+  },
+  "required": ["source", "destination"]
+}

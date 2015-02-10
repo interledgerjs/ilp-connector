@@ -1,0 +1,7 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Currency",
+  "description": "An ISO currency code",
+  "type": "string",
+  "pattern": "^[a-zA-Z0-9]{3}$"
+}

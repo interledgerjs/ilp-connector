@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "Transfer",
+  "description": "A ledger-local transfer of funds",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "from": {
+      "description": "Sender identifier",
+      "$ref": "Identifier.json"
+    },
+    "to": {
+      "description": "Recipient identifier",
+      "$ref": "Identifier.json"
+    },
+    "value": {
+      "description": "Amount as decimal",
+      "$ref": "Value.json"
+    },
+    "currency": {
+      "description": "Amount as decimal",
+      "$ref": "Currency.json",
+      "default": "[host's default currency]"
+    },
+    "issuer": {
+      "description": "Currency issuer",
+      "$ref": "Identifier.json",
+      "default": "[host ledger]"
+    },
+    "ledger": {
+      "description": "Ledger where this transfer has taken place",
+      "$ref": "Identifier.json",
+      "default": "[host ledger]"
+    }
+  },
+  "required": ["from", "to", "value"]
+}

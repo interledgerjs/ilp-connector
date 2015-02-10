@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "Funds",
+  "description": "A defined quantity of an asset optionally located on a specified ledger.",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "owner": {
+      "description": "Owner of this value quantity",
+      "$ref": "Identifier.json"
+    },
+    "amount": {
+      "description": "Amount as decimal",
+      "$ref": "Amount.json"
+    },
+    "currency": {
+      "description": "Asset name/label, such as a currency code",
+      "$ref": "Currency.json",
+      "default": "[host's default currency]"
+    },
+    "issuer": {
+      "description": "Currency issuer",
+      "$ref": "Identifier.json",
+      "default": "[host ledger]"
+    },
+    "ledger": {
+      "description": "Ledger where this transfer has taken place",
+      "$ref": "Identifier.json",
+      "default": "[host ledger]"
+    }
+  },
+  "required": ["owner"]
+}

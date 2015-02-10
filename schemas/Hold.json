@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "Hold",
+  "description": "A temporary hold of funds",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "owner": {
+      "description": "The owner of the account whose funds we wish to hold",
+      "$ref": "Identifier.json"
+    },
+    "value": {
+      "description": "Amount as decimal",
+      "$ref": "Value.json"
+    },
+    "currency": {
+      "description": "Amount as decimal",
+      "$ref": "Currency.json",
+      "default": "[host's default currency]"
+    },
+    "issuer": {
+      "description": "Currency issuer",
+      "$ref": "Identifier.json",
+      "default": "[host ledger]"
+    },
+    "ledger": {
+      "description": "Ledger where this hold has been recorded",
+      "$ref": "Identifier.json",
+      "default": "[host ledger]"
+    }
+  },
+  "required": ["owner", "value"]
+}
