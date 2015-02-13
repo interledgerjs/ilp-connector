@@ -3,7 +3,7 @@
 // Node 0.10 Promise polyfill
 if (!global.Promise) global.Promise = require('bluebird');
 
-var settlements = require('./controllers/settlements');
+var transfers = require('./controllers/transfers');
 var compress = require('koa-compress');
 var logger = require('koa-logger');
 var serve = require('koa-static');
@@ -20,8 +20,8 @@ app.use(logger({ reporter: log('koa') }));
 // app.use(logger());
 app.use(errorHandler);
 
-app.use(route.get('/v1/settlements/:id', settlements.fetch));
-app.use(route.post('/v1/settlements', settlements.create));
+app.use(route.get('/v1/transfers/:id', transfers.fetch));
+app.use(route.put('/v1/transfers/:uuid', transfers.create));
 
 // Serve static files
 app.use(serve(path.join(__dirname, 'public')));

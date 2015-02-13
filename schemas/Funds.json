@@ -4,7 +4,6 @@
   "description": "A defined quantity of an asset optionally located on a specified ledger.",
   "type": "object",
   "properties": {
-    "id": { "type": "string" },
     "owner": {
       "description": "Owner of this value quantity",
       "$ref": "Identifier.json"

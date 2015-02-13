@@ -4,34 +4,18 @@
   "description": "A ledger-local transfer of funds",
   "type": "object",
   "properties": {
-    "id": { "type": "string" },
-    "from": {
+    "id": {
+      "description": "Unique ID",
+      "$ref": "Uuid.json"
+    },
+    "source": {
       "description": "Sender identifier",
-      "$ref": "Identifier.json"
+      "$ref": "Funds.json"
     },
-    "to": {
+    "destination": {
       "description": "Recipient identifier",
-      "$ref": "Identifier.json"
-    },
-    "value": {
-      "description": "Amount as decimal",
-      "$ref": "Value.json"
-    },
-    "currency": {
-      "description": "Amount as decimal",
-      "$ref": "Currency.json",
-      "default": "[host's default currency]"
-    },
-    "issuer": {
-      "description": "Currency issuer",
-      "$ref": "Identifier.json",
-      "default": "[host ledger]"
-    },
-    "ledger": {
-      "description": "Ledger where this transfer has taken place",
-      "$ref": "Identifier.json",
-      "default": "[host ledger]"
+      "$ref": "Funds.json"
     }
   },
-  "required": ["from", "to", "value"]
+  "required": ["id", "source", "destination"]
 }
