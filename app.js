@@ -20,8 +20,8 @@ app.use(logger({ reporter: log('koa') }));
 // app.use(logger());
 app.use(errorHandler);
 
-app.use(route.get('/v1/transfers/:id', transfers.fetch));
-app.use(route.put('/v1/transfers/:uuid', transfers.create));
+app.use(route.get('/transfers/:id', transfers.fetch));
+app.use(route.put('/transfers/:uuid', transfers.create));
 
 // Serve static files
 app.use(serve(path.join(__dirname, 'public')));

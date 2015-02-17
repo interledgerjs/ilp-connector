@@ -70,7 +70,7 @@ exports.create = function *create() {
     };
 
     yield request.put({
-      url: 'http://'+transfer.destination.ledger+'/v1/transfers/'+destinationTransfer.id,
+      url: 'http://'+transfer.destination.ledger+'/transfers/'+destinationTransfer.id,
       json: true,
       body: destinationTransfer
     });
@@ -82,7 +82,7 @@ exports.create = function *create() {
     };
 
     yield request.put({
-      url: 'http://'+transfer.source.ledger+'/v1/transfers/'+sourceTransfer.id,
+      url: 'http://'+transfer.source.ledger+'/transfers/'+sourceTransfer.id,
       json: true,
       body: sourceTransfer
     });
