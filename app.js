@@ -5,19 +5,18 @@ if (!global.Promise) global.Promise = require('bluebird');
 
 var transfers = require('./controllers/transfers');
 var compress = require('koa-compress');
-var logger = require('koa-logger');
 var serve = require('koa-static');
 var route = require('koa-route');
 var errorHandler = require('./middlewares/error-handler');
 var koa = require('koa');
 var path = require('path');
 var log = require('./services/log');
+var logger = require('koa-mag');
 var config = require('./services/config');
 var app = module.exports = koa();
 
 // Logger
-app.use(logger({ reporter: log('koa') }));
-// app.use(logger());
+app.use(logger());
 app.use(errorHandler);
 
 app.use(route.get('/transfers/:id', transfers.fetch));

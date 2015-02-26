@@ -17,7 +17,7 @@
     "jayschema": "^0.3.1",
     "koa": "^0.6.0",
     "koa-compress": "^1.0.6",
-    "koa-logger": "git://github.com/justmoon/koa-logger#custom_reporter",
+    "koa-mag": "^1.0.4",
     "koa-route": "^1.1.4",
     "koa-static": "^1.4.5",
     "mag": "^0.9.1",
