@@ -17,5 +17,5 @@
       "$ref": "Funds.json"
     }
   },
-  "required": ["id", "source", "destination"]
+  "required": ["source", "destination"]
 }
