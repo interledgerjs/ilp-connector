@@ -3,8 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon --exec gnode app.js",
-    "test": "mocha -r gnode"
+    "start": "nodemon app.js",
+    "test": "mocha"
+  },
+  "engines": {
+    "iojs": ">=1.5"
   },
   "dependencies": {
     "bluebird": "^2.9.4",

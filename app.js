@@ -3,6 +3,7 @@
 // Node 0.10 Promise polyfill
 if (!global.Promise) global.Promise = require('bluebird');
 
+const quote = require('./controllers/quote');
 var transfers = require('./controllers/transfers');
 var compress = require('koa-compress');
 var serve = require('koa-static');
@@ -21,6 +22,8 @@ app.use(errorHandler);
 
 app.use(route.get('/transfers/:id', transfers.fetch));
 app.use(route.put('/transfers/:uuid', transfers.create));
+
+app.use(route.get('/quote', quote.get));
 
 // Serve static files
 app.use(serve(path.join(__dirname, 'public')));

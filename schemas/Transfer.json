@@ -8,14 +8,28 @@
       "description": "Unique ID",
       "$ref": "Uuid.json"
     },
-    "source": {
-      "description": "Sender identifier",
-      "$ref": "Funds.json"
+    "source_funds": {
+      "description": "Funds that go into the transfer",
+      "oneOf": [
+        { "$ref": "SourceFunds.json" },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "SourceFunds.json" }
+        }
+      ]
     },
-    "destination": {
-      "description": "Recipient identifier",
-      "$ref": "Funds.json"
+    "destination_funds": {
+      "description": "Funds that come out of the transfer",
+      "oneOf": [
+        { "$ref": "DestinationFunds.json" },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "DestinationFunds.json" }
+        }
+      ]
     }
   },
-  "required": ["source", "destination"]
+  "required": ["source_funds", "destination_funds"]
 }

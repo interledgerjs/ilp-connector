@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "DestinationFunds",
+  "description": "A defined quantity of an asset to be delivered in a transfer.",
+  "type": "object",
+  "allOf": [
+    { "$ref": "Funds.json" }
+  ],
+  "properties": {
+    "authorization": {
+      "description": "Authorization to deliver these funds",
+      "$ref": "DestinationFundsAuthorization.json"
+    }
+  }
+}

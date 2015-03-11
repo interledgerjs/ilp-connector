@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "SourceFunds",
+  "description": "A defined quantity of an asset used to fund a transfer.",
+  "type": "object",
+  "allOf": [
+    { "$ref": "Funds.json" }
+  ],
+  "properties": {
+    "authorization": {
+      "description": "Authorization to use these source funds",
+      "$ref": "SourceFundsAuthorization.json"
+    }
+  }
+}

@@ -4,23 +4,19 @@
   "description": "A defined quantity of an asset optionally located on a specified ledger.",
   "type": "object",
   "properties": {
-    "owner": {
-      "description": "Owner of this value quantity",
+    "account": {
+      "description": "Account holding the funds",
       "$ref": "Identifier.json"
     },
     "amount": {
       "description": "Amount as decimal",
       "$ref": "Amount.json"
     },
-    "currency": {
-      "description": "Asset name/label, such as a currency code",
-      "$ref": "Currency.json",
-      "default": "[host's default currency]"
-    },
-    "issuer": {
-      "description": "Currency issuer",
-      "$ref": "Identifier.json",
-      "default": "[host ledger]"
+    "asset": {
+      "description": "Asset type, may be any string such as 'USD' or an IRI",
+      "type": "string",
+      "maxLength": "4096",
+      "default": "[account's asset type]"
     },
     "ledger": {
       "description": "Ledger where this transfer has taken place",
@@ -28,5 +24,5 @@
       "default": "[host ledger]"
     }
   },
-  "required": ["owner"]
+  "required": ["account"]
 }

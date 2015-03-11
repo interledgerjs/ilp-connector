@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "Authorization",
+  "description": "A signature authorizing an action.",
+  "type": "object",
+  "properties": {
+    "algorithm": {
+      "type": { "enum": [ "rsa-sha256", "rsa-sha512", "hmac-sha256", "hmac-sha512", "sha3-256", "sha3-512", "ed25519-sha512", "ed25519-sha3-512" ] },
+      "default": "ed25519-sha512"
+    },
+    "signature": {
+      "type": "string"
+    }
+  },
+  "required": ["algorithm"]
+}

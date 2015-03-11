@@ -1,0 +1,7 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "EventId",
+  "description": "An identifier for a subscription event.",
+  "type": "string",
+  "pattern": "^[a-z]+\\.[a-z]+$"
+}

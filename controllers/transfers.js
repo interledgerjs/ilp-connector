@@ -24,16 +24,16 @@ exports.create = function *create() {
 
   log.debug('preparing transfer ID '+transfer.id);
 
-  if (!transfer.source.ledger ||
-      !transfer.source.currency ||
-      !transfer.destination.ledger ||
-      !transfer.destination.currency) {
+  if (!transfer.source_funds.ledger ||
+      !transfer.source_funds.asset ||
+      !transfer.destination_funds.ledger ||
+      !transfer.destination_funds.asset) {
     throw new InvalidBodyError('Source and destination currency and ledger need to be fully specified.');
   }
 
   var pair = [
-    transfer.source.currency+'/'+transfer.source.ledger,
-    transfer.destination.currency+'/'+transfer.destination.ledger,
+    transfer.source_funds.asset+'/'+transfer.source_funds.ledger,
+    transfer.destination_funds.asset+'/'+transfer.destination_funds.ledger,
   ];
 
   var rate = config.rates[pair.join(':')];
@@ -42,20 +42,20 @@ exports.create = function *create() {
     throw new UnprocessableEntityError('Not offering trades on the market for '+pair.join(':'));
   }
 
-  if (transfer.source.amount) {
+  if (transfer.source_funds.amount) {
     log.debug('calculating quote for converting ' +
-        transfer.source.amount + " " + transfer.source.currency +
+        transfer.source_funds.amount + " " + transfer.source_funds.asset +
         " to " +
-        transfer.destination.currency);
+        transfer.destination_funds.asset);
 
-      transfer.destination.amount = String(transfer.source.amount / rate);
-  } else if (transfer.destination.amount) {
+      transfer.destination_funds.amount = String(transfer.source_funds.amount / rate);
+  } else if (transfer.destination_funds.amount) {
       log.debug('calculating quote for converting ' +
-        transfer.source.currency +
+        transfer.source_funds.asset +
         " to " +
-        transfer.destination.amount + " " + transfer.destination.currency);
+        transfer.destination_funds.amount + " " + transfer.destination_funds.asset);
 
-      transfer.source.amount = String(transfer.destination.amount * rate);
+      transfer.source_funds.amount = String(transfer.destination_funds.amount * rate);
   } else {
     throw new InvalidBodyError('Either source or destination amount must be quantified.');
   }
@@ -65,24 +65,24 @@ exports.create = function *create() {
   try {
     var destinationTransfer = {
       id: uuid.v4(),
-      source: R.mixin(transfer.destination, { owner: config.id }),
-      destination: transfer.destination
+      source: R.mixin(transfer.destination_funds, { account: config.id }),
+      destination: transfer.destination_funds
     };
 
     yield request.put({
-      url: 'http://'+transfer.destination.ledger+'/transfers/'+destinationTransfer.id,
+      url: 'http://'+transfer.destination_funds.ledger+'/transfers/'+destinationTransfer.id,
       json: true,
       body: destinationTransfer
     });
 
     var sourceTransfer = {
       id: uuid.v4(),
-      source: transfer.source,
-      destination: R.mixin(transfer.source, { owner: config.id })
+      source: transfer.source_funds,
+      destination: R.mixin(transfer.source_funds, { account: config.id })
     };
 
     yield request.put({
-      url: 'http://'+transfer.source.ledger+'/transfers/'+sourceTransfer.id,
+      url: 'http://'+transfer.source_funds.ledger+'/transfers/'+sourceTransfer.id,
       json: true,
       body: sourceTransfer
     });
