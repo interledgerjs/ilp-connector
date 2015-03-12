@@ -1,2 +1,3 @@
 node_modules/
 *.cluster
+/npm-debug.log
