@@ -5,6 +5,7 @@ if (!global.Promise) global.Promise = require('bluebird');
 
 const quote = require('./controllers/quote');
 var transfers = require('./controllers/transfers');
+var settlements = require('./controllers/settlements');
 var compress = require('koa-compress');
 var serve = require('koa-static');
 var route = require('koa-route');
@@ -22,6 +23,8 @@ app.use(errorHandler);
 
 app.use(route.get('/transfers/:id', transfers.fetch));
 app.use(route.put('/transfers/:uuid', transfers.create));
+
+app.use(route.put('/settlements/:uuid', settlements.create));
 
 app.use(route.get('/quote', quote.get));
 
