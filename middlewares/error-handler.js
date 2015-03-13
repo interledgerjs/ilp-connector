@@ -46,7 +46,8 @@ function *handleError(next) {
     if (handlers[err.constructor.name]) {
       handlers[err.constructor.name].call(this, err);
     } else {
-      log.error(''+err);
+      log.error(err ? err.stack : err);
+
       throw err;
     }
   }

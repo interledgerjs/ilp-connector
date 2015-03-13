@@ -26,29 +26,29 @@ exports.get = function *() {
   }
 
   let source_transfer = {
-    source_funds: {
+    source_funds: [{
       ledger: this.query.source_ledger,
       asset: this.query.source_asset
-    },
-    destination_funds: {
-      ledger: this.query.destination_ledger,
-      asset: this.query.destination_asset,
+    }],
+    destination_funds: [{
+      ledger: this.query.source_ledger,
+      asset: this.query.source_asset,
       amount: sourceAmount,
       account: config.id
-    }
+    }]
   };
 
   let destination_transfer = {
-    source_funds: {
+    source_funds: [{
       account: config.id,
       ledger: this.query.destination_ledger,
       asset: this.query.destination_asset,
       amount: destinationAmount
-    },
-    destination_funds: {
+    }],
+    destination_funds: [{
       ledger: this.query.destination_ledger,
       asset: this.query.destination_asset
-    }
+    }]
   };
 
   log.debug('' + source_transfer.destination_funds.amount + ' ' +

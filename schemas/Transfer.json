@@ -10,25 +10,15 @@
     },
     "source_funds": {
       "description": "Funds that go into the transfer",
-      "oneOf": [
-        { "$ref": "SourceFunds.json" },
-        {
-          "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "SourceFunds.json" }
-        }
-      ]
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "SourceFunds.json" }
     },
     "destination_funds": {
       "description": "Funds that come out of the transfer",
-      "oneOf": [
-        { "$ref": "DestinationFunds.json" },
-        {
-          "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "DestinationFunds.json" }
-        }
-      ]
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "DestinationFunds.json" }
     }
   },
   "required": ["source_funds", "destination_funds"]

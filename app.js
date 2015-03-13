@@ -1,21 +1,18 @@
 'use strict';
 
-// Node 0.10 Promise polyfill
-if (!global.Promise) global.Promise = require('bluebird');
-
 const quote = require('./controllers/quote');
-var transfers = require('./controllers/transfers');
-var settlements = require('./controllers/settlements');
-var compress = require('koa-compress');
-var serve = require('koa-static');
-var route = require('koa-route');
-var errorHandler = require('./middlewares/error-handler');
-var koa = require('koa');
-var path = require('path');
-var log = require('./services/log');
-var logger = require('koa-mag');
-var config = require('./services/config');
-var app = module.exports = koa();
+const transfers = require('./controllers/transfers');
+const settlements = require('./controllers/settlements');
+const compress = require('koa-compress');
+const serve = require('koa-static');
+const route = require('koa-route');
+const errorHandler = require('./middlewares/error-handler');
+const koa = require('koa');
+const path = require('path');
+const log = require('./services/log');
+const logger = require('koa-mag');
+const config = require('./services/config');
+const app = module.exports = koa();
 
 // Logger
 app.use(logger());
@@ -24,7 +21,7 @@ app.use(errorHandler);
 app.use(route.get('/transfers/:id', transfers.fetch));
 app.use(route.put('/transfers/:uuid', transfers.create));
 
-app.use(route.put('/settlements/:uuid', settlements.create));
+app.use(route.put('/settlements/:uuid', settlements.put));
 
 app.use(route.get('/quote', quote.get));
 
@@ -36,5 +33,5 @@ app.use(compress());
 
 if (!module.parent) {
   app.listen(config.server.port);
-  log('app').info('listening on port '+config.server.port);
+  log('app').info('listening on port ' + config.server.port);
 }

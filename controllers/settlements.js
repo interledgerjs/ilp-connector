@@ -2,12 +2,12 @@
 
 const _ = require('lodash');
 const request = require('co-request');
-const requestUtil = require('../services/request');
+const requestUtil = require('../utils/request');
 const log = require('../services/log')('transfers');
 
 exports.put = function *(id) {
   requestUtil.validateUriParameter('id', id, 'Uuid');
-  let settlement = yield requestUtil.body(this, 'Transfer');
+  let settlement = yield requestUtil.validateBody(this, 'Settlement');
 
   if (typeof settlement.id !== 'undefined') {
     requestUtil.assert.strictEqual(
@@ -31,7 +31,7 @@ exports.put = function *(id) {
   // transfer or the condition has to match whatever the condition of the
   // destination transfer is. (So we can just copy the condition's fulfillment.)
   let destinationCondition = {
-    message: `${settlement.destination_transfer.id};state=executed`,
+    message: settlement.destination_transfer.id + ';state=executed',
     signer: settlement.destination_transfer
   };
   if (!_.isEqual(settlement.source_transfer.condition, destinationCondition) &&
@@ -47,16 +47,34 @@ exports.put = function *(id) {
   settlement.destination_transfer.source_funds[0].authorization = {
     algorithm: 'ed25519-sha512'
   };
-  console.log('adding auth to dest transfer');
+  log.debug('adding auth to dest transfer');
   let req = yield request.put({
-    uri: 'http://' + settlement.destination_transfer.source_funds[0].ledger +
-         '/transfer/' + settlement.destination_transfer.id,
+    uri: settlement.destination_transfer.id,
     body: settlement.destination_transfer,
     json: true
   });
 
-  if (req.status >= 400) {
+  if (req.statusCode >= 400) {
     // TODO
+    log.error('remote error while authorizing destination transfer');
     throw new Error();
   }
+
+  settlement.source_transfer.execution_condition_fulfillment = {
+    // TODO
+  };
+
+  req = yield request.put({
+    uri: settlement.source_transfer.id,
+    body: settlement.source_transfer,
+    json: true
+  });
+
+  if (req.statusCode >= 400) {
+    // TODO
+    log.error('remote error while fulfilling source transfer');
+    throw new Error();
+  }
+
+  this.body = {};
 };
