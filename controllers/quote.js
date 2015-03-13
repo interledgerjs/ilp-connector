@@ -51,10 +51,10 @@ exports.get = function *() {
     }]
   };
 
-  log.debug('' + source_transfer.destination_funds.amount + ' ' +
-            source_transfer.destination_funds.asset + ' => ' +
-            destination_transfer.source_funds.amount + ' ' +
-            destination_transfer.source_funds.asset);
+  log.debug('' + source_transfer.destination_funds[0].amount + ' ' +
+            source_transfer.destination_funds[0].asset + ' => ' +
+            destination_transfer.source_funds[0].amount + ' ' +
+            destination_transfer.source_funds[0].asset);
 
   this.body = {
     source_transfer: source_transfer,

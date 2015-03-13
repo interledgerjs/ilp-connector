@@ -5,8 +5,8 @@
   "type": "object",
   "properties": {
     "id": {
-      "description": "Unique ID",
-      "$ref": "Uuid.json"
+      "description": "Resource identifier",
+      "$ref": "Iri.json"
     },
     "source_funds": {
       "description": "Funds that go into the transfer",

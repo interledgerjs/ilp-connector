@@ -6,7 +6,7 @@
   "properties": {
     "id": {
       "description": "Unique ID",
-      "$ref": "Uuid.json"
+      "$ref": "Iri.json"
     },
     "source_transfer": {
       "description": "Transfer on the source ledger",

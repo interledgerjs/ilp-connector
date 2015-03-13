@@ -4,6 +4,7 @@ const _ = require('lodash');
 const request = require('co-request');
 const requestUtil = require('../utils/request');
 const log = require('../services/log')('transfers');
+const ExternalError = require('../errors/external-error');
 
 exports.put = function *(id) {
   requestUtil.validateUriParameter('id', id, 'Uuid');
@@ -12,12 +13,12 @@ exports.put = function *(id) {
   if (typeof settlement.id !== 'undefined') {
     requestUtil.assert.strictEqual(
       settlement.id,
-      id,
+      requestUtil.getBaseUri(this) + this.originalUrl,
       'Settlement ID must match the one in the URL'
     );
-  } else {
-    settlement.id = id;
   }
+
+  settlement.id = id;
 
   log.debug(`validating settlement ID ${settlement.id}`);
 
@@ -55,15 +56,17 @@ exports.put = function *(id) {
   });
 
   if (req.statusCode >= 400) {
-    // TODO
     log.error('remote error while authorizing destination transfer');
-    throw new Error();
+    log.debug(req.body);
+    throw new ExternalError('Received an unexpected ' + req.body.id +
+      ' while processing destination transfer.');
   }
 
   settlement.source_transfer.execution_condition_fulfillment = {
     // TODO
   };
 
+  log.debug('requesting fulfillment of source transfer');
   req = yield request.put({
     uri: settlement.source_transfer.id,
     body: settlement.source_transfer,
@@ -71,10 +74,17 @@ exports.put = function *(id) {
   });
 
   if (req.statusCode >= 400) {
-    // TODO
     log.error('remote error while fulfilling source transfer');
-    throw new Error();
+    log.debug(req.body);
+    throw new ExternalError('Received an unexpected ' + req.body.id +
+      ' while processing source transfer.');
   }
 
-  this.body = {};
+  log.debug('settlement completed');
+
+
+  // Externally we want to use a full URI ID
+  settlement.id = requestUtil.getBaseUri(this) + this.originalUrl;
+
+  this.body = settlement;
 };

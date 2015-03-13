@@ -1,31 +1,33 @@
+'use strict';
+
 module.exports = handleError;
 
-var log = require('../services/log')('error-handler');
+const log = require('../services/log')('error-handler');
 
-var handlers = handleError.handlers = {
+const handlers = handleError.handlers = {
   InvalidBodyError: function (err) {
-    log.warn('Invalid Body: '+err.message);
+    log.warn('Invalid Body: ' + err.message);
     this.status = 400;
     this.body = {
-      id: "Invalid Body",
+      id: err.name,
       message: err.message,
       validationErrors: err.validationErrors
     };
   },
   InvalidUriParameterError: function (err) {
-    log.warn('Invalid URI parameter: '+err.message);
+    log.warn('Invalid URI parameter: ' + err.message);
     this.status = 400;
     this.body = {
-      id: "Invalid URI Parameter",
+      id: err.name,
       message: err.message,
       validationErrors: err.validationErrors
     };
   },
   UnprocessableEntityError: function (err) {
-    log.warn('Unprocessable: '+err.message);
+    log.warn('Unprocessable: ' + err.message);
     this.status = 422;
     this.body = {
-      id: "Unprocessable Entity",
+      id: err.name,
       message: err.message
     };
   },
@@ -33,7 +35,15 @@ var handlers = handleError.handlers = {
     log.warn('Not Found: '+err.message);
     this.status = 404;
     this.body = {
-      id: "Not Found",
+      id: err.name,
+      message: err.message
+    };
+  },
+  ExternalError: function (err) {
+    log.warn('External Error: ' + err.message);
+    this.status = 500;
+    this.body = {
+      id: err.name,
       message: err.message
     };
   }
