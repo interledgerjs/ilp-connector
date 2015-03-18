@@ -8,18 +8,18 @@
       "description": "Resource identifier",
       "$ref": "Iri.json"
     },
-    "source_funds": {
+    "debits": {
       "description": "Funds that go into the transfer",
       "type": "array",
-      "minItems": 1,
-      "items": { "$ref": "SourceFunds.json" }
+      "minItems": 0,
+      "items": { "$ref": "Debits.json" }
     },
-    "destination_funds": {
+    "credits": {
       "description": "Funds that come out of the transfer",
       "type": "array",
-      "minItems": 1,
-      "items": { "$ref": "DestinationFunds.json" }
+      "minItems": 0,
+      "items": { "$ref": "Credits.json" }
     }
   },
-  "required": ["source_funds", "destination_funds"]
+  "required": ["debits", "credits"]
 }

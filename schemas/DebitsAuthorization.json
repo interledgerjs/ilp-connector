@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema",
-  "title": "DestinationFundsAuthorization",
-  "description": "An authorization for the delivery of destination funds.",
+  "title": "DebitsAuthorization",
+  "description": "An authorization for the collection of source funds.",
   "type": "object",
   "allOf": [
     { "$ref": "Authorization.json" }
@@ -9,12 +9,12 @@
   "properties": {
     "sign_destination": {
       "description": "Whether or not the destination funds objects are retained when signing.",
-      "type": { "enum": [ "all", "single" ] },
+      "type": { "enum": [ "all", "single", "none" ] },
       "default": "all"
     },
     "sign_sources": {
       "description": "Whether or not the source funds objects are retained when signing.",
-      "type": { "enum": [ "all", "single", "none" ] },
+      "type": { "enum": [ "all", "single" ] },
       "default": "all"
     }
   }

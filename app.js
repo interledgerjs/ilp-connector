@@ -1,6 +1,6 @@
 'use strict';
 
-const quote = require('./controllers/quote');
+const quotes = require('./controllers/quotes');
 const transfers = require('./controllers/transfers');
 const settlements = require('./controllers/settlements');
 const compress = require('koa-compress');
@@ -23,7 +23,11 @@ app.use(route.put('/transfers/:uuid', transfers.create));
 
 app.use(route.put('/settlements/:uuid', settlements.put));
 
-app.use(route.get('/quote', quote.get));
+app.use(route.get('/quotes', quotes.get));
+
+app.use(route.get('/', function *(){
+  this.body = 'Hello, I am a 5 Bells trader'; 
+}));
 
 // Serve static files
 app.use(serve(path.join(__dirname, 'public')));

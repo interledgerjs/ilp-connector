@@ -39,7 +39,9 @@
     "through2": "^0.6.3"
   },
   "devDependencies": {
-    "supertest": "^0.12.1",
-    "mocha": "^1.18.2"
+    "chai": "^2.1.2",
+    "mocha": "^1.18.2",
+    "nock": "^1.2.0",
+    "supertest": "^0.12.1"
   }
 }

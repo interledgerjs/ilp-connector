@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema",
-  "title": "DestinationFunds",
+  "title": "Debits",
   "description": "A defined quantity of an asset to be delivered in a transfer.",
   "type": "object",
   "allOf": [
