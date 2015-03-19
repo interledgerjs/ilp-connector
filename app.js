@@ -23,6 +23,7 @@ app.use(route.put('/transfers/:uuid', transfers.create));
 
 app.use(route.put('/settlements/:uuid', settlements.put));
 
+app.use(route.get('/quote', quotes.get));
 app.use(route.get('/quotes', quotes.get));
 
 app.use(route.get('/', function *(){
