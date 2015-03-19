@@ -1,7 +1,7 @@
 'use strict';
 const co = require('co');
 const request = require('co-request');
-const NotFoundError = require('../errors/not-found-error');
+const NotFoundError = require('five-bells-shared/errors/not-found-error');
 
 // If the fxRatesApi is changed, make sure to change the tests
 // because another feed will likely have a different data format

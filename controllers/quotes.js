@@ -1,7 +1,7 @@
 'use strict';
 
 const config = require('../services/config');
-const log = require('../services/log')('quotes');
+const log = require('five-bells-shared/services/log')('quotes');
 const fxRates = require('../services/fxRates');
 
 function formatAmount (amount) {

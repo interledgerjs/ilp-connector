@@ -8,7 +8,7 @@ var nock = require('nock');
 nock.enableNetConnect();
 var app = require('../app');
 var fxRates = require('../services/fxRates');
-var validate = require('../services/validate');
+var validate = require('five-bells-shared/services/validate');
 
 function request() {
   return superagent(app.listen());

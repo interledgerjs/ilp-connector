@@ -2,8 +2,8 @@
 
 const _ = require('lodash');
 const request = require('co-request');
-const requestUtil = require('../utils/request');
-const log = require('../services/log')('transfers');
+const requestUtil = require('five-bells-shared/utils/request');
+const log = require('five-bells-shared/services/log')('transfers');
 const ExternalError = require('../errors/external-error');
 
 exports.put = function *(id) {
