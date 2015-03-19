@@ -22,8 +22,8 @@ app.use(route.put('/settlements/:uuid', settlements.put));
 app.use(route.get('/quote', quotes.get));
 app.use(route.get('/quotes', quotes.get));
 
-app.use(route.get('/', function *(){
-  this.body = 'Hello, I am a 5 Bells trader'; 
+app.use(route.get('/', function *() {
+  this.body = 'Hello, I am a 5 Bells trader';
 }));
 
 // Serve static files

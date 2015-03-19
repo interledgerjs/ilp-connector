@@ -12,15 +12,13 @@ function formatAmount (amount) {
 }
 
 exports.get = function *() {
-  const pair = [
-    this.query.source_asset + '/' + this.query.source_ledger,
-    this.query.destination_asset + '/' + this.query.destination_ledger
-  ];
-
-  let rate = yield fxRates.get(this.query.source_asset, this.query.destination_asset);
+  let rate = yield fxRates.get(this.query.source_asset,
+    this.query.destination_asset);
   rate = rate.toFixed(5);
-  // TODO: fix rounding and make a sensible policy for limiting the smallest units
-  log.debug('FX Rate for ' + this.query.source_asset + ' => ' + this.query.destination_asset + ':', rate);
+  // TODO: fix rounding and make a sensible
+  // policy for limiting the smallest units
+  log.debug('FX Rate for ' + this.query.source_asset +
+    ' => ' + this.query.destination_asset + ':', rate);
 
   let sourceAmount, destinationAmount;
   if (this.query.source_amount) {

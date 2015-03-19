@@ -1,5 +1,4 @@
 'use strict';
-const co = require('co');
 const request = require('co-request');
 const NotFoundError = require('five-bells-shared/errors/not-found-error');
 
@@ -13,7 +12,7 @@ exports.get = function *get(source_asset, destination_asset) {
   let result = yield request({
     uri: exports.fxRatesApi,
     json: true
-  }); 
+  });
   let body = result.body;
   let rates = body.rates;
   let baseCurrency = body.base;
@@ -26,7 +25,8 @@ exports.get = function *get(source_asset, destination_asset) {
   }
 
   // Throw an error if the currency pair is not supported
-  if (!rates.hasOwnProperty(source_asset) || !rates.hasOwnProperty(destination_asset)) {
+  if (!rates.hasOwnProperty(source_asset) ||
+    !rates.hasOwnProperty(destination_asset)) {
     throw new NotFoundError('No quote available for the given currency pair');
   }
 
