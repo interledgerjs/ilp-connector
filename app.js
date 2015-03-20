@@ -1,6 +1,6 @@
 'use strict';
 
-const quotes = require('./controllers/quotes');
+const quote = require('./controllers/quote');
 const settlements = require('./controllers/settlements');
 const compress = require('koa-compress');
 const serve = require('koa-static');
@@ -19,8 +19,7 @@ app.use(errorHandler);
 
 app.use(route.put('/settlements/:uuid', settlements.put));
 
-app.use(route.get('/quote', quotes.get));
-app.use(route.get('/quotes', quotes.get));
+app.use(route.get('/quote', quote.get));
 
 app.use(route.get('/', function *() {
   this.body = 'Hello, I am a 5 Bells trader';
