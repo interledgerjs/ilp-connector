@@ -32,7 +32,7 @@ describe('Quotes', function() {
       .reply(200, ratesResponse);
   });
 
-  describe('GET /quotes', function() {
+  describe('GET /quote', function() {
 
     // it('should return a 400 if the \
     //  source owner is not specified', function(done) {
@@ -46,16 +46,16 @@ describe('Quotes', function() {
     //  source owner is not specified', function(done) {
     // });
 
-    it('should return a valid settlement object', function(done) {
+    it('should return a valid Settlement Template object', function(done) {
       request()
-        .get('/quotes?' +
+        .get('/quote?' +
           'source_amount=100' +
           '&source_asset=EUR' +
           '&source_ledger=ledger.eu' +
           '&destination_asset=USD' +
           '&destination_ledger=ledger.us')
         .expect(function(res) {
-          let validation = validate('Settlement', res.body);
+          let validation = validate('SettlementTemplate', res.body);
           if (!validation.valid) {
             console.log('Invalid Settlement: ', validation.errors);
             throw new Error('Not a valid settlement');
@@ -66,14 +66,13 @@ describe('Quotes', function() {
 
     it('should return quotes for fixed source amounts', function(done) {
       request()
-        .get('/quotes?source_amount=100' +
+        .get('/quote?source_amount=100' +
           '&source_asset=EUR' +
           '&source_ledger=ledger.eu' +
         '&destination_asset=USD' +
         '&destination_ledger=ledger.us')
         .expect(200, {
           source_transfer: {
-            debits: [],
             credits: [{
               asset: 'EUR',
               ledger: 'ledger.eu',
@@ -87,22 +86,20 @@ describe('Quotes', function() {
               ledger: 'ledger.us',
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'mark'
-            }],
-            credits: []
+            }]
           }
         }, done);
     });
 
     it('should return quotes for fixed destination amounts', function(done) {
       request()
-        .get('/quotes?source_asset=EUR' +
+        .get('/quote?source_asset=EUR' +
           '&source_ledger=ledger.eu' +
           '&destination_amount=100' +
         '&destination_asset=USD' +
         '&destination_ledger=ledger.us')
         .expect(200, {
           source_transfer: {
-            debits: [],
             credits: [{
               asset: 'EUR',
               ledger: 'ledger.eu',
@@ -116,8 +113,7 @@ describe('Quotes', function() {
               ledger: 'ledger.us',
               amount: '100.00',
               account: 'mark'
-            }],
-            credits: []
+            }]
           }
         }, done);
     });
@@ -125,14 +121,13 @@ describe('Quotes', function() {
     it('should return a settlement object with the source \
       and destination amounts filled in as debits and credits', function(done) {
       request()
-        .get('/quotes?source_amount=100' +
+        .get('/quote?source_amount=100' +
           '&source_asset=EUR' +
           '&source_ledger=ledger.eu' +
         '&destination_asset=USD' +
         '&destination_ledger=ledger.us')
         .expect(200, {
           source_transfer: {
-            debits: [],
             credits: [{
               asset: 'EUR',
               ledger: 'ledger.eu',
@@ -146,8 +141,7 @@ describe('Quotes', function() {
               ledger: 'ledger.us',
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'mark'
-            }],
-            credits: []
+            }]
           }
         }, done);
     });
@@ -155,14 +149,13 @@ describe('Quotes', function() {
     it('should apply the spread correctly for settlements where the source \
       asset is the counter currency in the fx rates', function(done) {
       request()
-        .get('/quotes?source_amount=100' +
+        .get('/quote?source_amount=100' +
           '&source_asset=USD' +
           '&source_ledger=ledger.us' +
         '&destination_asset=EUR' +
         '&destination_ledger=ledger.eu')
         .expect(200, {
           source_transfer: {
-            debits: [],
             credits: [{
               asset: 'USD',
               ledger: 'ledger.us',
@@ -176,8 +169,7 @@ describe('Quotes', function() {
               ledger: 'ledger.eu',
               amount: '94.22', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
               account: 'mark'
-            }],
-            credits: []
+            }]
           }
         }, done);
     });
@@ -185,14 +177,13 @@ describe('Quotes', function() {
     it('should determine the correct rate and spread when neither the source \
       nor destination asset is the base currency in the rates', function(done) {
       request()
-        .get('/quotes?source_amount=100' +
+        .get('/quote?source_amount=100' +
           '&source_asset=USD' +
           '&source_ledger=ledger.us' +
         '&destination_asset=CAD' +
         '&destination_ledger=ledger.ca')
         .expect(200, {
           source_transfer: {
-            debits: [],
             credits: [{
               asset: 'USD',
               ledger: 'ledger.us',
@@ -206,8 +197,7 @@ describe('Quotes', function() {
               ledger: 'ledger.ca',
               amount: '127.98', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
               account: 'mark'
-            }],
-            credits: []
+            }]
           }
         }, done);
     });
@@ -216,14 +206,13 @@ describe('Quotes', function() {
       nor destination asset is the base currency in the rates and the rate \
       must be flipped', function(done) {
       request()
-        .get('/quotes?source_amount=100' +
+        .get('/quote?source_amount=100' +
           '&source_asset=CAD' +
           '&source_ledger=ledger.ca' +
         '&destination_asset=USD' +
         '&destination_ledger=ledger.us')
         .expect(200, {
           source_transfer: {
-            debits: [],
             credits: [{
               asset: 'CAD',
               ledger: 'ledger.ca',
@@ -237,8 +226,7 @@ describe('Quotes', function() {
               ledger: 'ledger.us',
               account: 'mark',
               amount: '77.82' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
-            }],
-            credits: []
+            }]
           }
         }, done);
     });

@@ -35,7 +35,6 @@ exports.get = function *() {
   }
 
   let source_transfer = {
-    debits: [],
     credits: [{
       ledger: this.query.source_ledger,
       asset: this.query.source_asset,
@@ -50,8 +49,7 @@ exports.get = function *() {
       ledger: this.query.destination_ledger,
       asset: this.query.destination_asset,
       amount: destinationAmount
-    }],
-    credits: []
+    }]
   };
 
   log.debug('' + source_transfer.credits[0].amount + ' ' +
