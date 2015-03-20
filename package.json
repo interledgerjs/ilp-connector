@@ -10,15 +10,12 @@
     "iojs": ">=1.5"
   },
   "dependencies": {
-    "bluebird": "^2.9.4",
     "co": "^4.1.0",
     "co-body": "^0.0.1",
     "co-request": "^0.2.0",
     "co-views": "^0.2.0",
+    "five-bells-shared": "git+https://569d9e97620f8ac44643f69afdea08af8ff72a5b@github.com/ripple/five-bells-shared#v1.0.1",
     "fowl": "git://github.com/justmoon/fowl",
-    "gnode": "^0.1.1",
-    "is-my-json-valid": "^2.3.0",
-    "jayschema": "^0.3.1",
     "koa": "^0.6.0",
     "koa-compress": "^1.0.6",
     "koa-mag": "^1.0.4",
@@ -26,20 +23,17 @@
     "koa-static": "^1.4.5",
     "lodash": "^3.5.0",
     "mag": "^0.9.1",
-    "mag-colored-output": "^1.0.0",
-    "mag-format-message": "^0.1.1",
-    "mag-hub": "^0.1.1",
     "mz": "^1.2.1",
     "node-uuid": "^1.4.2",
     "nodemon": "^1.3.5",
-    "ramda": "^0.9.1",
     "request-promise": "^0.3.3",
-    "skeemas": "^1.1.1",
     "swig": "^1.3.2",
     "through2": "^0.6.3"
   },
   "devDependencies": {
-    "supertest": "^0.12.1",
-    "mocha": "^1.18.2"
+    "chai": "^2.1.2",
+    "mocha": "^1.18.2",
+    "nock": "^1.2.0",
+    "supertest": "^0.12.1"
   }
 }

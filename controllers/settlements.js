@@ -2,8 +2,8 @@
 
 const _ = require('lodash');
 const request = require('co-request');
-const requestUtil = require('../utils/request');
-const log = require('../services/log')('transfers');
+const requestUtil = require('five-bells-shared/utils/request');
+const log = require('five-bells-shared/services/log')('transfers');
 const ExternalError = require('../errors/external-error');
 
 exports.put = function *(id) {
@@ -45,7 +45,7 @@ exports.put = function *(id) {
   }
 
   // Add authorization to the destination transfer
-  settlement.destination_transfer.source_funds[0].authorization = {
+  settlement.destination_transfer.debits[0].authorization = {
     algorithm: 'ed25519-sha512'
   };
   log.debug('adding auth to dest transfer');
