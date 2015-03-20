@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
+const crypto = require('crypto');
 const request = require('co-request');
 const requestUtil = require('five-bells-shared/utils/request');
 const log = require('five-bells-shared/services/log')('transfers');
@@ -31,9 +32,13 @@ exports.put = function *(id) {
   // So either it has to depend on something we control, namely the destination
   // transfer or the condition has to match whatever the condition of the
   // destination transfer is. (So we can just copy the condition's fulfillment.)
+  let destinationConditionMessage = JSON.stringify({
+    id: settlement.destination_transfer.id,
+    signer: this.request.header.host
+  });
   let destinationCondition = {
-    message: settlement.destination_transfer.id + ';state=executed',
-    signer: settlement.destination_transfer
+    messageHash: crypto.createHash('sha512').update(destinationConditionMessage)
+      .digest('base64')
   };
   if (!_.isEqual(settlement.source_transfer.condition, destinationCondition) &&
       !_.isEqual(settlement.source_transfer.condition,
