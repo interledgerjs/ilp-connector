@@ -6,7 +6,9 @@ module.exports = function ExternalError(message) {
   this.message = message;
 };
 
-module.exports.prototype.handler = function (ctx, log) {
+require('util').inherits(module.exports, Error);
+
+module.exports.prototype.handler = function *(ctx, log) {
   log.warn('External Error: ' + this.message);
   ctx.status = 502;
   ctx.body = {
@@ -15,5 +17,3 @@ module.exports.prototype.handler = function (ctx, log) {
     owner: this.accountIdentifier
   };
 };
-
-require('util').inherits(module.exports, Error);
