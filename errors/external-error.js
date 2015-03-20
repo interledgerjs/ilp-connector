@@ -6,4 +6,14 @@ module.exports = function ExternalError(message) {
   this.message = message;
 };
 
+module.exports.prototype.handler = function (ctx, log) {
+  log.warn('External Error: ' + this.message);
+  ctx.status = 502;
+  ctx.body = {
+    id: this.name,
+    message: this.message,
+    owner: this.accountIdentifier
+  };
+};
+
 require('util').inherits(module.exports, Error);
