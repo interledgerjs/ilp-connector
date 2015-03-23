@@ -12,6 +12,8 @@ function formatAmount (amount) {
 }
 
 exports.get = function *() {
+  // TODO: make sure the currency pair is one we trade
+  
   let rate = yield fxRates.get(this.query.source_asset,
     this.query.destination_asset);
   rate = rate.toFixed(5);

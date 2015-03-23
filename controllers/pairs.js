@@ -3,7 +3,7 @@
 const config = require('../services/config');
 
 exports.getCollection = function *getCollection() {
-  let pairs = Object.keys(config.rates).map(function (pair) {
+  let pairs = config.tradingPairs.map(function (pair) {
     console.log(pair);
     let currencies = pair.split(';').map(function (s) {
       return s.split('/');
