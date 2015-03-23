@@ -1,5 +1,6 @@
 'use strict';
 
+const pairs = require('./controllers/pairs');
 const quote = require('./controllers/quote');
 const settlements = require('./controllers/settlements');
 const compress = require('koa-compress');
@@ -17,6 +18,8 @@ const app = module.exports = koa();
 app.use(logger());
 app.use(errorHandler);
 
+app.use(route.get('/pairs', pairs.getCollection));
+
 app.use(route.put('/settlements/:uuid', settlements.put));
 
 app.use(route.get('/quote', quote.get));
@@ -33,5 +36,10 @@ app.use(compress());
 
 if (!module.parent) {
   app.listen(config.server.port);
-  log('app').info('listening on port ' + config.server.port);
+  log('app').info('trader listening on ' + config.server.bind_ip + ':' +
+    config.server.port);
+  log('app').info('public at ' + config.server.base_uri);
+  for (let pair of Object.keys(config.rates)) {
+    log('app').info('pair', pair);
+  }
 }
