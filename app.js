@@ -3,6 +3,7 @@
 const pairs = require('./controllers/pairs');
 const quote = require('./controllers/quote');
 const settlements = require('./controllers/settlements');
+const notifications = require('./controllers/notifications');
 const compress = require('koa-compress');
 const serve = require('koa-static');
 const route = require('koa-route');
@@ -23,6 +24,8 @@ app.use(route.get('/pairs', pairs.getCollection));
 app.use(route.put('/settlements/:uuid', settlements.put));
 
 app.use(route.get('/quote', quote.get));
+
+app.use(route.post('/notifications', notifications.post));
 
 app.use(route.get('/', function *() {
   this.body = 'Hello, I am a 5 Bells trader';
