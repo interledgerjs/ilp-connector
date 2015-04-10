@@ -20,7 +20,8 @@ exports.post = function *postNotification() {
     correspondingSourceTransaction.execution_condition_fulfillment =
       body.resource.execution_condition_fulfillment;
 
-    let sourceTransactionReq = yield request.put({
+    let sourceTransactionReq = yield request({
+      method: 'put',
       url: correspondingSourceTransaction.id,
       json: true,
       body: correspondingSourceTransaction

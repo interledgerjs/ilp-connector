@@ -1,7 +1,7 @@
 'use strict';
 
 const config = require('../services/config');
-const log = require('five-bells-shared/services/log')('quotes');
+const log = require('five-bells-shared/services/log')('quote');
 const fxRates = require('../services/fxRates');
 
 function formatAmount (amount) {
@@ -13,7 +13,7 @@ function formatAmount (amount) {
 
 exports.get = function *() {
   // TODO: make sure the currency pair is one we trade
-  
+
   let rate = yield fxRates.get(this.query.source_asset,
     this.query.destination_asset);
   rate = rate.toFixed(5);

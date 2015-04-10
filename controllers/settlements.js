@@ -5,7 +5,7 @@ const uuid = require('uuid4');
 const crypto = require('crypto');
 const request = require('co-request');
 const requestUtil = require('five-bells-shared/utils/request');
-const log = require('five-bells-shared/services/log')('transfers');
+const log = require('five-bells-shared/services/log')('settlements');
 const config = require('../services/config');
 const subscriptionRecords = require('../services/subscriptionRecords');
 const ExternalError = require('../errors/external-error');
@@ -63,7 +63,8 @@ exports.put = function *(id) {
     algorithm: 'ed25519-sha512'
   };
   log.debug('adding auth to dest transfer');
-  let destinationTransferReq = yield request.put({
+  let destinationTransferReq = yield request({
+    method: 'put',
     uri: settlement.destination_transfer.id,
     body: settlement.destination_transfer,
     json: true
@@ -97,7 +98,8 @@ exports.put = function *(id) {
 
     log.debug('submitting subscription:', subscription, ' to ', subscriptionId);
 
-    let subscriptionReq = yield request.put({
+    let subscriptionReq = yield request({
+      method: 'put',
       url: subscriptionId,
       json: true,
       body: subscription
@@ -126,7 +128,8 @@ exports.put = function *(id) {
   };
 
   log.debug('requesting fulfillment of source transfer');
-  let sourceTransferReq = yield request.put({
+  let sourceTransferReq = yield request({
+    method: 'put',
     uri: settlement.source_transfer.id,
     body: settlement.source_transfer,
     json: true
