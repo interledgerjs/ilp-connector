@@ -1,5 +1,6 @@
 'use strict';
 
+const co = require('co');
 const pairs = require('./controllers/pairs');
 const quote = require('./controllers/quote');
 const settlements = require('./controllers/settlements');
@@ -13,6 +14,7 @@ const path = require('path');
 const log = require('five-bells-shared/services/log');
 const logger = require('koa-mag');
 const config = require('./services/config');
+const subscriber = require('./services/subscriber');
 const app = module.exports = koa();
 
 // Logger
@@ -38,11 +40,15 @@ app.use(serve(path.join(__dirname, 'public')));
 app.use(compress());
 
 if (!module.parent) {
-  app.listen(config.server.port);
-  log('app').info('trader listening on ' + config.server.bind_ip + ':' +
-    config.server.port);
-  log('app').info('public at ' + config.server.base_uri);
-  for (let pair of config.tradingPairs) {
-    log('app').info('pair', pair);
-  }
+  co(function *() {
+    yield subscriber.subscribePairs(config.tradingPairs);
+
+    app.listen(config.server.port);
+    log('app').info('trader listening on ' + config.server.bind_ip + ':' +
+      config.server.port);
+    log('app').info('public at ' + config.server.base_uri);
+    for (let pair of config.tradingPairs) {
+      log('app').info('pair', pair);
+    }
+  });
 }
