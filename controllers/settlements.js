@@ -80,41 +80,13 @@ exports.put = function *(id) {
 
   // Update destination_transfer state from the ledger's response
   settlement.destination_transfer.state = destinationTransferReq.body.state;
+
   // TODO Is the state being completed what we
   // want to check to know whether to subscribe?
   if (destinationTransferReq.body.state !== 'completed') {
-    let subscription = {
-      owner: config.id,
-      event: 'transfer.create', // TODO make this transfer-specific
-      target: 'http://' +
-        config.server.public_host + ':' +
-        config.server.public_port + '/notifications'
-    };
-
-    // TODO Get the ledger url in a better way
-    let subscriptionId = 'http://' +
-      settlement.destination_transfer.credits[0].ledger +
-      '/subscriptions/' + uuid();
-
-    log.debug('submitting subscription:', subscription, ' to ', subscriptionId);
-
-    let subscriptionReq = yield request({
-      method: 'put',
-      url: subscriptionId,
-      json: true,
-      body: subscription
-    });
-    if (subscriptionReq.statusCode >= 400) {
-      log.error('remote error while creating subscription');
-      log.debug(subscriptionReq.body);
-          throw new ExternalError('Received an unexpected ' +
-      subscriptionReq.body.id +
-      ' while submitting subscription ' + subscriptionId);
-    }
-
     // Store this subscription so when we get the notification
     // we know what source transfer to go and unlock
-    subscriptionRecords.put(subscriptionId,
+    subscriptionRecords.put(settlement.destination_transfer.id,
       settlement.source_transfer);
   }
 
