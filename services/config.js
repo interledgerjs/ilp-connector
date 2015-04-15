@@ -24,3 +24,7 @@ config.server.base_uri = url.format({
   hostname: config.server.public_host,
   port: isCustomPort ? config.server.public_port : undefined
 });
+
+if (process.env.NODE_ENV === 'unit') {
+  config.server.base_uri = 'http://localhost';
+}
