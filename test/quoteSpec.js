@@ -2,34 +2,24 @@
 /*eslint-disable no-multi-str*/
 /*eslint max-nested-callbacks: [4]*/
 'use strict';
-const superagent = require('supertest');
 const nock = require('nock');
-nock.enableNetConnect();
 const app = require('../app');
-const fxRates = require('../services/fxRates');
+const ratesResponse = require('./data/fxRates.json');
 const validate = require('five-bells-shared/services/validate');
+const appHelper = require('./helpers/app');
+const logHelper = require('five-bells-shared/testHelpers/log');
 
-function request() {
-  return superagent(app.listen());
-}
-
-const ratesResponse = {
-  'base': 'EUR',
-  'date': '2015-03-18',
-  'rates': {
-    'AUD': 1.3901,
-    'CAD': 1.3583,
-    'CNY': 6.5982,
-    'USD': 1.0592
-  }
-};
 
 describe('Quotes', function() {
 
   beforeEach(function() {
-    nock(fxRates.fxRatesApi)
-      .get('')
-      .reply(200, ratesResponse);
+    logHelper();
+
+    appHelper.create(this, app);
+
+    nock('http://api.fixer.io/latest')
+    .get('')
+    .reply(200, ratesResponse);
   });
 
   describe('GET /quote', function() {
@@ -47,7 +37,7 @@ describe('Quotes', function() {
     // });
 
     it('should return a valid Settlement Template object', function(done) {
-      request()
+      this.request()
         .get('/quote?' +
           'source_amount=100' +
           '&source_asset=EUR' +
@@ -65,7 +55,7 @@ describe('Quotes', function() {
     });
 
     it('should return quotes for fixed source amounts', function(done) {
-      request()
+      this.request()
         .get('/quote?source_amount=100' +
           '&source_asset=EUR' +
           '&source_ledger=ledger.eu' +
@@ -92,7 +82,7 @@ describe('Quotes', function() {
     });
 
     it('should return quotes for fixed destination amounts', function(done) {
-      request()
+      this.request()
         .get('/quote?source_asset=EUR' +
           '&source_ledger=ledger.eu' +
           '&destination_amount=100' +
@@ -118,9 +108,10 @@ describe('Quotes', function() {
         }, done);
     });
 
-    it('should return a settlement object with the source \
-      and destination amounts filled in as debits and credits', function(done) {
-      request()
+    it('should return a settlement object with the source' +
+      'and destination amounts filled in as debits and credits',
+      function(done) {
+      this.request()
         .get('/quote?source_amount=100' +
           '&source_asset=EUR' +
           '&source_ledger=ledger.eu' +
@@ -146,9 +137,9 @@ describe('Quotes', function() {
         }, done);
     });
 
-    it('should apply the spread correctly for settlements where the source \
-      asset is the counter currency in the fx rates', function(done) {
-      request()
+    it('should apply the spread correctly for settlements where the source' +
+      'asset is the counter currency in the fx rates', function(done) {
+      this.request()
         .get('/quote?source_amount=100' +
           '&source_asset=USD' +
           '&source_ledger=ledger.us' +
@@ -174,9 +165,10 @@ describe('Quotes', function() {
         }, done);
     });
 
-    it('should determine the correct rate and spread when neither the source \
-      nor destination asset is the base currency in the rates', function(done) {
-      request()
+    it('should determine the correct rate and spread when neither the source' +
+      'nor destination asset is the base currency in the rates',
+      function(done) {
+      this.request()
         .get('/quote?source_amount=100' +
           '&source_asset=USD' +
           '&source_ledger=ledger.us' +
@@ -202,10 +194,10 @@ describe('Quotes', function() {
         }, done);
     });
 
-    it('should determine the correct rate and spread when neither the source \
-      nor destination asset is the base currency in the rates and the rate \
-      must be flipped', function(done) {
-      request()
+    it('should determine the correct rate and spread when neither the source' +
+      'nor destination asset is the base currency in the rates and the rate' +
+    'must be flipped', function(done) {
+      this.request()
         .get('/quote?source_amount=100' +
           '&source_asset=CAD' +
           '&source_ledger=ledger.ca' +

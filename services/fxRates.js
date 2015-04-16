@@ -1,6 +1,6 @@
 'use strict';
 const request = require('co-request');
-const NotFoundError = require('five-bells-shared/errors/not-found-error');
+const AssetsNotTradedError = require('../errors/assets-not-traded-error');
 
 // If the fxRatesApi is changed, make sure to change the tests
 // because another feed will likely have a different data format
@@ -27,7 +27,8 @@ exports.get = function *get(source_asset, destination_asset) {
   // Throw an error if the currency pair is not supported
   if (!rates.hasOwnProperty(source_asset) ||
     !rates.hasOwnProperty(destination_asset)) {
-    throw new NotFoundError('No quote available for the given currency pair');
+    throw new AssetsNotTradedError('This trader does not support the ' +
+      'given asset pair');
   }
 
   // If neither asset is the base currency, calculate the rate

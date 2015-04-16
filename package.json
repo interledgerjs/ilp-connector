@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "nodemon app.js",
-    "test": "mocha"
+    "test": "NODE_ENV=unit node node_modules/.bin/istanbul test -- _mocha -r co-mocha"
   },
   "engines": {
     "iojs": ">=1.5"
@@ -33,6 +33,9 @@
   },
   "devDependencies": {
     "chai": "^2.1.2",
+    "co-mocha": "^1.1.0",
+    "co-supertest": "0.0.8",
+    "istanbul": "^0.3.13",
     "mocha": "^1.18.2",
     "nock": "^1.2.0",
     "supertest": "^0.12.1"
