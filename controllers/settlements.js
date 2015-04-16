@@ -12,8 +12,10 @@ const ExternalError = require('../errors/external-error');
 const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error');
 const UnacceptableRateError = require('../errors/unacceptable-rate-error');
-const UnrelatedSettlementError =
-  require('../errors/unrelated-settlement-error');
+const NoRelatedSourceCreditError =
+  require('../errors/no-related-source-credit-error');
+const NoRelatedDestinationDebitError =
+  require('../errors/no-related-destination-debit-error');
 const InvalidBodyError = require('five-bells-shared/errors/invalid-body-error');
 
 function hashJSON (json) {
@@ -104,9 +106,14 @@ function *validateRate (settlement) {
   let destinationDebitTotal =
     _.sum(settlement.destination_transfer.debits, amountFinder);
 
-  if (destinationDebitTotal === 0 || sourceCreditTotal === 0) {
-    throw new UnrelatedSettlementError('This trader must appear in both the ' +
-      'source credits and destination debits to execute the settlement');
+  if (sourceCreditTotal === 0) {
+    throw new NoRelatedSourceCreditError('Trader\'s account must be ' +
+      'credited in source transfer to provide settlement');
+  }
+
+  if (destinationDebitTotal === 0) {
+    throw new NoRelatedDestinationDebitError('Trader\'s account must be ' +
+      'debited in destination transfer to provide settlement');
   }
 
   let rate = (destinationDebitTotal - destinationCreditTotal) /
@@ -157,12 +164,14 @@ function *submitDestinationTransfer (settlement) {
     settlement.destination_transfer.execution_condition_fulfillment =
       destinationTransferReq.body.execution_condition_fulfillment;
   } else {
+    // Store this subscription so when we get the notification
+    // we know what source transfer to go and unlock
     subscriptionRecords.put(settlement.destination_transfer.id,
       settlement.source_transfer);
   }
 }
 
-function *addConditionFulfillmentToSourceTransfer (settlement) {
+function addConditionFulfillmentToSourceTransfer (settlement) {
 
   // Check if the source transfer's execution_condition is
   // the completion of the destination transfer
@@ -190,7 +199,7 @@ function *addConditionFulfillmentToSourceTransfer (settlement) {
 // and submit it to the source ledger
 function *executeSourceTransfer (settlement) {
 
-  yield addConditionFulfillmentToSourceTransfer(settlement);
+  addConditionFulfillmentToSourceTransfer(settlement);
 
   log.debug('requesting fulfillment of source transfer');
   let sourceTransferReq = yield request({

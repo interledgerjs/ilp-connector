@@ -67,7 +67,7 @@ describe('Settlements', function () {
     });
 
     it('should return a 422 if the settlement does not include the ' +
-      'trader in both the source credits and destination debits', function *() {
+      'trader in the source transfer credits', function *() {
 
       const settlement = this.formatId(this.basicSettlement, '/settlements/');
       settlement.source_transfer.credits[0].account = 'mary';
@@ -77,10 +77,27 @@ describe('Settlements', function () {
         .send(settlement)
         .expect(422)
         .expect(function(res) {
-          expect(res.body.id).to.equal('UnrelatedSettlementError');
-          expect(res.body.message).to.equal('This trader must appear in both ' +
-            'the source credits and destination debits to execute the ' +
-            'settlement');
+          expect(res.body.id).to.equal('NoRelatedSourceCreditError');
+          expect(res.body.message).to.equal('Trader\'s account must be ' +
+            'credited in source transfer to provide settlement');
+        })
+        .end();
+    });
+
+    it('should return a 422 if the settlement does not include the ' +
+      'trader in the destination transfer debits', function *() {
+
+      const settlement = this.formatId(this.basicSettlement, '/settlements/');
+      settlement.destination_transfer.debits[0].account = 'mary';
+
+      yield this.request()
+        .put('/settlements/' + this.basicSettlement.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('NoRelatedDestinationDebitError');
+          expect(res.body.message).to.equal('Trader\'s account must be ' +
+            'debited in destination transfer to provide settlement');
         })
         .end();
     });
