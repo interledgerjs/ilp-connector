@@ -10,6 +10,7 @@
     "iojs": ">=1.5"
   },
   "dependencies": {
+    "canonical-json": "0.0.4",
     "co": "^4.1.0",
     "co-body": "^0.0.1",
     "co-request": "^0.2.0",

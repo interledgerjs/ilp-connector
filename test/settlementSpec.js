@@ -184,7 +184,7 @@ describe('Settlements', function () {
         .put('/settlements/' + this.basicSettlement.id)
         .send(settlement)
         .expect(function(res) {
-          expect(res.body.id).to.equal(res.body.id.toLowerCase());
+          expect(res.body.id).to.equal(settlement.id.toLowerCase());
         })
         .end();
     });

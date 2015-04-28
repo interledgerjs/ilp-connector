@@ -3,6 +3,7 @@
 const _ = require('lodash');
 const crypto = require('crypto');
 const request = require('co-request');
+const stringifyJson = require('canonical-json');
 const requestUtil = require('five-bells-shared/utils/request');
 const log = require('five-bells-shared/services/log')('settlements');
 const config = require('../services/config');
@@ -19,39 +20,83 @@ const NoRelatedDestinationDebitError =
 const InvalidBodyError = require('five-bells-shared/errors/invalid-body-error');
 
 function hashJSON (json) {
-  let str = JSON.stringify(json);
+  let str = stringifyJson(json);
   let hash = crypto.createHash('sha512').update(str).digest('base64');
   return hash;
 }
 
-function generateConditionFromDestinationTransfer (settlement) {
-  let destinationConditionMessage = {
-    id: settlement.destination_transfer.id,
-    state: 'completed'
-  };
-  let destinationCondition = {
-    signer: settlement.destination_transfer.debits[0].ledger,
-    messageHash: hashJSON(destinationConditionMessage)
-  };
-  return destinationCondition;
+function *sourceConditionIsDestinationTransfer(settlement) {
+  let ec = settlement.source_transfer.execution_condition;
+
+  // Check the message if it's there
+  if (ec.message && (ec.message.id !== settlement.destination_transfer.id ||
+                     ec.message.state !== 'completed')) {
+    return false;
+  }
+
+  // Check the message_hash
+  let message = ec.message;
+  if (!message) {
+    message = {
+      id: settlement.destination_transfer.id,
+      state: 'completed'
+    };
+  }
+  if (ec.message_hash !== hashJSON(message)) {
+    return false;
+  }
+
+  // Check the signer
+  if (ec.signer !== settlement.destination_transfer.ledger) {
+    return false;
+  }
+
+  // Check the public_key
+  // TODO: use a cache of ledgers' public keys
+  // TODO: what do we do if the transfer hasn't been submitted
+  // to the destination ledger yet?
+  let destinationTransferStateReq = yield request({
+    method: 'get',
+    uri: settlement.destination_transfer.id + '/state',
+    json: true
+  });
+
+  // TODO: add retry logic
+  if (destinationTransferStateReq.statusCode >= 400) {
+    log.error('remote error while checking destination transfer state');
+    throw new ExternalError('Received an unexpected ' +
+      destinationTransferStateReq.body.id +
+      ' while checking destination transfer state ' + settlement.destination_transfer.id);
+  }
+
+  if (ec.algorithm !== destinationTransferStateReq.body.algorithm ||
+      ec.public_key !== destinationTransferStateReq.body.public_key) {
+    return false;
+  }
+
 }
 
-function validateExecutionConditions (ctx, settlement) {
+function *validateExecutionConditions (settlement) {
   // We need to have confidence that the source transfer will actually happen.
   // So either it has to depend on something we control, namely the destination
   // transfer or the condition has to match whatever the condition of the
   // destination transfer is. (So we can just copy the condition's fulfillment.)
-  let destinationCondition =
-    generateConditionFromDestinationTransfer(settlement);
+
+  // Note that implementing this correctly is VERY IMPORTANT for the trader
+  // to make sure they get paid back and avoid getting screwed
 
   if (!_.isEqual(settlement.source_transfer.execution_condition,
-                 destinationCondition) &&
-      !_.isEqual(settlement.source_transfer.execution_condition,
                  settlement.destination_transfer.execution_condition)) {
 
-    throw new UnacceptableConditionsError('Source and destination transfer ' +
-      'execution conditions must match or the source transfer\'s condition ' +
-      'must be the completion of the destination transfer');
+    // If the conditions don't match then the source_transfer condition must
+    // be the completion of the destination transfer
+    let valid = yield sourceConditionIsDestinationTransfer(settlement);
+
+    if (!valid) {
+      throw new UnacceptableConditionsError('Source and destination transfer ' +
+        'execution conditions must match or the source transfer\'s condition ' +
+        'must be the completion of the destination transfer');
+    }
   }
 }
 
@@ -171,27 +216,37 @@ function *submitDestinationTransfer (settlement) {
   }
 }
 
-function addConditionFulfillmentToSourceTransfer (settlement) {
+function *addConditionFulfillmentToSourceTransfer (settlement) {
 
   // Check if the source transfer's execution_condition is
   // the completion of the destination transfer
-  let destinationCondition =
-    generateConditionFromDestinationTransfer(settlement);
 
-  if (_.isEqual(destinationCondition,
-      settlement.source_transfer.execution_condition)) {
-    // TODO: get the signed receipt from the ledger
-    settlement.source_transfer.execution_condition_fulfillment = {
-      signer: settlement.source_transfer.execution_condition.signer,
-      messageHash: hashJSON({
-        id: settlement.destination_transfer.id,
-        state: settlement.destination_transfer.state
-      })
-    };
-  } else {
-    // It must be the same as the destination_transfer
+  if (_.isEqual(settlement.source_transfer.execution_condition,
+                settlement.destination_transfer.execution_condition)) {
+
     settlement.source_transfer.execution_condition_fulfillment =
       settlement.destination_transfer.execution_condition_fulfillment;
+
+  } else {
+
+    let destinationTransferStateReq = yield request({
+      method: 'get',
+      uri: settlement.destination_transfer.id + '/state',
+      json: true
+    });
+
+    // TODO: add retry logic
+    if (destinationTransferStateReq.statusCode >= 400) {
+      log.error('remote error while checking destination transfer state');
+      throw new ExternalError('Received an unexpected ' +
+        destinationTransferStateReq.body.id +
+        ' while checking destination transfer state ' + settlement.destination_transfer.id);
+    }
+
+    // TODO: validate that this actually comes back in the right format
+    // TODO: what do we do if the state isn't completed?
+    settlement.source_transfer.execution_condition_fulfillment =
+      destinationTransferStateReq.body;
   }
 }
 
@@ -199,7 +254,7 @@ function addConditionFulfillmentToSourceTransfer (settlement) {
 // and submit it to the source ledger
 function *executeSourceTransfer (settlement) {
 
-  addConditionFulfillmentToSourceTransfer(settlement);
+  yield addConditionFulfillmentToSourceTransfer(settlement);
 
   log.debug('requesting fulfillment of source transfer');
   let sourceTransferReq = yield request({
@@ -243,9 +298,9 @@ exports.put = function *(id) {
   // TODO: Check ledger signature on destination payment
 
   log.debug('validating settlement ID: ' + settlement.id);
-  validateExecutionConditions(this, settlement);
   validateAssets(settlement);
   yield validateRate(settlement);
+  yield validateExecutionConditions(settlement);
 
   addAuthorizationToDestinationTransfer(settlement);
   yield submitDestinationTransfer(settlement);
