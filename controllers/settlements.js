@@ -26,7 +26,7 @@ function hashJSON (json) {
   return hash;
 }
 
-function *sourceConditionIsDestinationTransfer(settlement) {
+function sourceConditionIsDestinationTransfer(settlement) {
   let ec = settlement.source_transfer.execution_condition;
 
   // Check the message if it's there
@@ -52,35 +52,13 @@ function *sourceConditionIsDestinationTransfer(settlement) {
     return false;
   }
 
-  // Check the public_key and algorithm
-  // TODO: use a cache of ledgers' public keys
-  // TODO: what do we do if the transfer hasn't been submitted
-  // to the destination ledger yet?
-  let destinationTransferStateReq = yield request({
-    method: 'get',
-    uri: settlement.destination_transfer.id + '/state',
-    json: true
-  });
-
-  // TODO: add retry logic
-  // TODO: what if the response is malformed or missing fields?
-  if (destinationTransferStateReq.statusCode >= 400) {
-    log.error('remote error while checking destination transfer state');
-    throw new ExternalError('Received an unexpected ' +
-      destinationTransferStateReq.body.id +
-      ' while checking destination transfer state ' +
-      settlement.destination_transfer.id);
-  }
-
-  if (ec.algorithm !== destinationTransferStateReq.body.algorithm ||
-      ec.public_key !== destinationTransferStateReq.body.public_key) {
-    return false;
-  }
+  // TODO: once we have the ledger public keys cached locally
+  // validate that the public_key is the one we expect
 
   return true;
 }
 
-function *validateExecutionConditions (settlement) {
+function validateExecutionConditions (settlement) {
 
   // log.debug('validating execution conditions');
   // We need to have confidence that the source transfer will actually happen.
@@ -96,9 +74,44 @@ function *validateExecutionConditions (settlement) {
 
     // If the conditions don't match then the source_transfer condition must
     // be the completion of the destination transfer
-    let valid = yield sourceConditionIsDestinationTransfer(settlement);
+    let valid = sourceConditionIsDestinationTransfer(settlement);
 
     if (!valid) {
+      throw new UnacceptableConditionsError('Source and destination transfer ' +
+        'execution conditions must match or the source transfer\'s condition ' +
+        'must be the completion of the destination transfer');
+    }
+  }
+}
+
+function *validateExecutionConditionPublicKey (settlement) {
+  // TODO: use a cache of ledgers' public keys and move this functionality
+  // into the synchronous validateExecutionConditions function
+  if (!_.isEqual(settlement.source_transfer.execution_condition,
+                 settlement.destination_transfer.execution_condition)) {
+    // Check the public_key and algorithm
+    // TODO: what do we do if the transfer hasn't been submitted
+    // to the destination ledger yet?
+    let destinationTransferStateReq = yield request({
+      method: 'get',
+      uri: settlement.destination_transfer.id + '/state',
+      json: true
+    });
+
+    // TODO: add retry logic
+    // TODO: what if the response is malformed or missing fields?
+    if (destinationTransferStateReq.statusCode >= 400) {
+      log.error('remote error while checking destination transfer state');
+      throw new ExternalError('Received an unexpected ' +
+        destinationTransferStateReq.body.id +
+        ' while checking destination transfer state ' +
+        settlement.destination_transfer.id);
+    }
+
+    if (settlement.source_transfer.execution_condition.algorithm !==
+          destinationTransferStateReq.body.algorithm ||
+        settlement.source_transfer.execution_condition.public_key !==
+          destinationTransferStateReq.body.public_key) {
       throw new UnacceptableConditionsError('Source and destination transfer ' +
         'execution conditions must match or the source transfer\'s condition ' +
         'must be the completion of the destination transfer');
@@ -321,7 +334,8 @@ exports.put = function *(id) {
   validateSourceTransferIsPrepared(settlement);
   validateAssets(settlement);
   yield validateRate(settlement);
-  yield validateExecutionConditions(settlement);
+  validateExecutionConditions(settlement);
+  yield validateExecutionConditionPublicKey(settlement);
 
   addAuthorizationToDestinationTransfer(settlement);
   yield submitDestinationTransfer(settlement);
