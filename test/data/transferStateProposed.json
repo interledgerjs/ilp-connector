@@ -1,0 +1,11 @@
+{
+  "message": {
+    "id": "http://ledger.eu/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+    "state": "proposed"
+  },
+  "message_hash": "IAvzuwfFvq4UFs2h9wlYETKQWXMhCE4h9a1IDKIqsNFPs01u7M2fB+vrXBwjg+lhPMncIrah+zj5Osh6ZCJF4Q==",
+  "algorithm": "ed25519-sha512",
+  "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=",
+  "signer": "http://ledger.eu",
+  "signature": "Gp4eP1SL2WEQhrgQchzbHr0iar1m/MRFzeTM9KqAlins4K4+L+MpDpsZnDVQYpjJAK5fVd04u49jPx7sKouBCQ=="
+}

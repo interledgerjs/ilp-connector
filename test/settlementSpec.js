@@ -12,6 +12,9 @@ const appHelper = require('./helpers/app');
 const logHelper = require('five-bells-shared/testHelpers/log');
 const ratesResponse = require('./data/fxRates.json');
 
+// ledger.eu public key: Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=
+// ledger.eu secret: u3HFmtkEHDCNJQwKGT4UfGf0TBqiqDu/2IY7R99Znvsu9/di2ccswRH5UdPRpp4QkX7tZBy+niIpkB28xW2jtw==
+
 describe('Settlements', function () {
 
   describe('PUT /settlements/:id', function () {
@@ -21,6 +24,11 @@ describe('Settlements', function () {
       appHelper.create(this, app);
 
       this.basicSettlement = _.cloneDeep(require('./data/settlement1.json'));
+      this.settlementWithEqualConditions = _.cloneDeep(require('./data/settlement2.json'));
+      this.transferProposedReceipt = _.cloneDeep(require('./data/transferStateProposed.json'));
+      this.transferCompletedReceipt = _.cloneDeep(require('./data/transferStateCompleted.json'));
+
+      nock.cleanAll();
 
       nock('http://api.fixer.io/latest')
         .get('')
@@ -42,16 +50,20 @@ describe('Settlements', function () {
         .end();
     });
 
-    it('should return a 422 if the source and destination transfer ' +
-      'conditions are set but do not match', function *() {
+    it('should return a 422 if the two transfer conditions do not ' +
+      'match and the source transfer one is not the completion ' +
+      'of the destination transfer', function *() {
 
       const settlement = this.formatId(this.basicSettlement, '/settlements/');
-      settlement.source_transfer.execution_condition = {
-        condition1: true
-      };
-      settlement.destination_transfer.execution_condition = {
-        condition2: false
-      };
+
+      settlement.source_transfer.execution_condition =
+        _.assign({}, settlement.source_transfer.execution_condition, {
+          public_key: 'Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg='
+        });
+
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
 
       yield this.request()
         .put('/settlements/' + this.basicSettlement.id)
@@ -162,6 +174,26 @@ describe('Settlements', function () {
         .end();
     });
 
+    it('should return a 422 if the source_transfer is not in the prepared or completed state',
+      function *() {
+
+      const settlement = this.formatId(this.basicSettlement, '/settlements/');
+      settlement.source_transfer.state = 'proposed';
+
+      yield this.request()
+        .put('/settlements/' + this.basicSettlement.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('FundsNotHeldError');
+          expect(res.body.message).to.equal('Source transfer ' +
+            'must be in the prepared state for the trader ' +
+            'to authorize the destination transfer');
+        })
+        .end();
+
+    });
+
     it('should accept upper case UUIDs but convert them to lower case',
       function *() {
 
@@ -180,11 +212,20 @@ describe('Settlements', function () {
           state: 'completed'
         }));
 
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferCompletedReceipt);
+
       yield this.request()
         .put('/settlements/' + this.basicSettlement.id)
         .send(settlement)
+        .expect(201)
         .expect(function(res) {
-          expect(res.body.id).to.equal(res.body.id.toLowerCase());
+          expect(res.body.id).to.equal(settlement.id.toLowerCase());
         })
         .end();
     });
@@ -204,6 +245,14 @@ describe('Settlements', function () {
           state: 'completed'
         }));
 
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferCompletedReceipt);
+
       yield this.request()
         .put('/settlements/' + this.basicSettlement.id)
         .send(settlement)
@@ -221,6 +270,7 @@ describe('Settlements', function () {
 
       const settlement = this.formatId(this.basicSettlement, '/settlements/');
 
+      // we're testing to make sure this nock gets called
       const destinationTransferNock = nock(settlement.destination_transfer.id)
         .put('', _.merge(_.cloneDeep(settlement.destination_transfer), {
           debits: [{
@@ -238,6 +288,10 @@ describe('Settlements', function () {
           state: 'completed'
         }));
 
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
       nock(settlement.source_transfer.id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfer, {
@@ -247,7 +301,7 @@ describe('Settlements', function () {
       yield this.request()
         .put('/settlements/' + this.basicSettlement.id)
         .send(settlement)
-        .expect(201)
+        // .expect(201)
         .end();
 
       destinationTransferNock.done(); // Throw error if this wasn't called
@@ -270,6 +324,14 @@ describe('Settlements', function () {
           state: 'completed'
         }));
 
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferCompletedReceipt);
+
       yield this.request()
         .put('/settlements/' + this.basicSettlement.id)
         .send(settlement)
@@ -277,11 +339,7 @@ describe('Settlements', function () {
           state: 'completed',
           source_transfer: {
             state: 'completed',
-            execution_condition_fulfillment: {
-              signer: 'ledger.eu',
-              messageHash: 'i2AsumK9qfwHO2iLlc3+kHNzBD6lRA8aucxzYMyOc6LG5/' +
-                '9Yc5JHRmYCboIwypTFQsCeDlmHZMPPsQ4R5gX7yw=='
-            }
+            execution_condition_fulfillment: this.transferCompletedReceipt
           },
           destination_transfer: {
             state: 'completed',
@@ -298,36 +356,27 @@ describe('Settlements', function () {
     it('should complete a settlement where the source transfer ' +
       'condition is equal to the destination transfer condition', function *() {
 
-      const conditionMessage = {
-        id: 'http://otherledger.com/transfers/' +
-          'e80b0afb-f3dc-49d7-885c-fc802ddf4cc1',
-        state: 'completed'
-      };
-      const condition = {
-        signer: 'http://otherledger.com',
-        messageHash: crypto.createHash('sha512')
-          .update(JSON.stringify(conditionMessage))
-          .digest('base64')
+      // secret: zU/Q8UzeDi4gHeKAFus1sXDNJ+F7id2AdMR8NXhe1slnYVZLVcvPzA2lFFdxef3y0LrIiuCV8jzs6yYDclN8yA==
+      const fulfillment = {
+        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPCOzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       };
 
-      const settlement = this.formatId(this.basicSettlement, '/settlements/');
-      settlement.source_transfer.execution_condition = condition;
-      settlement.destination_transfer.execution_condition = condition;
+      const settlement = this.formatId(this.settlementWithEqualConditions, '/settlements/');
 
       nock(settlement.destination_transfer.id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfer, {
           state: 'completed',
-          execution_condition_fulfillment: condition
+          execution_condition_fulfillment: fulfillment
         }));
 
       nock(settlement.source_transfer.id)
         .put('', _.merge(_.cloneDeep(settlement.source_transfer), {
-          execution_condition_fulfillment: condition
+          execution_condition_fulfillment: fulfillment
         }))
         .reply(201, _.merge(_.cloneDeep(settlement.source_transfer), {
           state: 'completed',
-          execution_condition_fulfillment: condition
+          execution_condition_fulfillment: fulfillment
         }));
 
       yield this.request()
@@ -337,7 +386,7 @@ describe('Settlements', function () {
           state: 'completed',
           source_transfer: {
             state: 'completed',
-            execution_condition_fulfillment: condition
+            execution_condition_fulfillment: fulfillment
           },
           destination_transfer: {
             state: 'completed',
@@ -346,7 +395,7 @@ describe('Settlements', function () {
                 algorithm: 'ed25519-sha512'
               }
             }],
-            execution_condition_fulfillment: condition
+            execution_condition_fulfillment: fulfillment
           }
         }))
         .end();
@@ -376,6 +425,14 @@ describe('Settlements', function () {
           state: 'completed'
         }));
 
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferCompletedReceipt);
+
       yield this.request()
         .put('/settlements/' + this.basicSettlement.id)
         .send(settlement)
@@ -383,11 +440,7 @@ describe('Settlements', function () {
           state: 'completed',
           source_transfer: {
             state: 'completed',
-            execution_condition_fulfillment: {
-              signer: 'ledger.eu',
-              messageHash: 'i2AsumK9qfwHO2iLlc3+kHNzBD6lRA8aucxzYMyOc6LG5/' +
-                '9Yc5JHRmYCboIwypTFQsCeDlmHZMPPsQ4R5gX7yw=='
-            }
+            execution_condition_fulfillment: this.transferCompletedReceipt
           },
           destination_transfer: {
             state: 'completed',
@@ -428,6 +481,14 @@ describe('Settlements', function () {
           state: 'completed'
         }));
 
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferCompletedReceipt);
+
       yield this.request()
         .put('/settlements/' + this.basicSettlement.id)
         .send(settlement)
@@ -435,11 +496,7 @@ describe('Settlements', function () {
           state: 'completed',
           source_transfer: {
             state: 'completed',
-            execution_condition_fulfillment: {
-              signer: 'ledger.eu',
-              messageHash: 'i2AsumK9qfwHO2iLlc3+kHNzBD6lRA8aucxzYMyOc6LG5/' +
-                '9Yc5JHRmYCboIwypTFQsCeDlmHZMPPsQ4R5gX7yw=='
-            }
+            execution_condition_fulfillment: this.transferCompletedReceipt
           },
           destination_transfer: {
             state: 'completed',
@@ -477,6 +534,14 @@ describe('Settlements', function () {
           state: 'completed'
         }));
 
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfer.id)
+        .get('/state')
+        .reply(200, this.transferCompletedReceipt);
+
       yield this.request()
         .put('/settlements/' + this.basicSettlement.id)
         .send(settlement)
@@ -484,11 +549,7 @@ describe('Settlements', function () {
           state: 'completed',
           source_transfer: {
             state: 'completed',
-            execution_condition_fulfillment: {
-              signer: 'ledger.eu',
-              messageHash: 'i2AsumK9qfwHO2iLlc3+kHNzBD6lRA8aucxzYMyOc6LG5/' +
-                '9Yc5JHRmYCboIwypTFQsCeDlmHZMPPsQ4R5gX7yw=='
-            }
+            execution_condition_fulfillment: this.transferCompletedReceipt
           },
           destination_transfer: {
             state: 'completed',
