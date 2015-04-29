@@ -17,6 +17,7 @@ const NoRelatedSourceCreditError =
   require('../errors/no-related-source-credit-error');
 const NoRelatedDestinationDebitError =
   require('../errors/no-related-destination-debit-error');
+const FundsNotHeldError = require('../errors/funds-not-held-error');
 const InvalidBodyError = require('five-bells-shared/errors/invalid-body-error');
 
 function hashJSON (json) {
@@ -47,11 +48,11 @@ function *sourceConditionIsDestinationTransfer(settlement) {
   }
 
   // Check the signer
-  if (ec.signer !== settlement.destination_transfer.ledger) {
+  if (ec.signer && ec.signer !== settlement.destination_transfer.ledger) {
     return false;
   }
 
-  // Check the public_key
+  // Check the public_key and algorithm
   // TODO: use a cache of ledgers' public keys
   // TODO: what do we do if the transfer hasn't been submitted
   // to the destination ledger yet?
@@ -62,11 +63,13 @@ function *sourceConditionIsDestinationTransfer(settlement) {
   });
 
   // TODO: add retry logic
+  // TODO: what if the response is malformed or missing fields?
   if (destinationTransferStateReq.statusCode >= 400) {
     log.error('remote error while checking destination transfer state');
     throw new ExternalError('Received an unexpected ' +
       destinationTransferStateReq.body.id +
-      ' while checking destination transfer state ' + settlement.destination_transfer.id);
+      ' while checking destination transfer state ' +
+      settlement.destination_transfer.id);
   }
 
   if (ec.algorithm !== destinationTransferStateReq.body.algorithm ||
@@ -74,9 +77,12 @@ function *sourceConditionIsDestinationTransfer(settlement) {
     return false;
   }
 
+  return true;
 }
 
 function *validateExecutionConditions (settlement) {
+
+  // log.debug('validating execution conditions');
   // We need to have confidence that the source transfer will actually happen.
   // So either it has to depend on something we control, namely the destination
   // transfer or the condition has to match whatever the condition of the
@@ -100,7 +106,17 @@ function *validateExecutionConditions (settlement) {
   }
 }
 
+function validateSourceTransferIsPrepared (settlement) {
+  // log.debug('validating source transfer is prepared');
+  if (settlement.source_transfer.state !== 'prepared' &&
+      settlement.source_transfer.state !== 'completed') {
+    throw new FundsNotHeldError('Source transfer must be in the prepared ' +
+      'state for the trader to authorize the destination transfer');
+  }
+}
+
 function validateAssets (settlement) {
+  // log.debug('validating assets');
   function getAsset (creditOrDebit) {
     return creditOrDebit.asset;
   }
@@ -134,6 +150,8 @@ function validateAssets (settlement) {
 }
 
 function *validateRate (settlement) {
+
+  // log.debug('validating rate');
 
   function amountFinder (creditOrDebit) {
     // TODO: change this check when the account ids become IRIs
@@ -186,6 +204,8 @@ function addAuthorizationToDestinationTransfer (settlement) {
 }
 
 function *submitDestinationTransfer (settlement) {
+
+  log.debug('submitting destination transfer');
 
   let destinationTransferReq = yield request({
     method: 'put',
@@ -298,6 +318,7 @@ exports.put = function *(id) {
   // TODO: Check ledger signature on destination payment
 
   log.debug('validating settlement ID: ' + settlement.id);
+  validateSourceTransferIsPrepared(settlement);
   validateAssets(settlement);
   yield validateRate(settlement);
   yield validateExecutionConditions(settlement);
