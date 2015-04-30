@@ -17,6 +17,9 @@ config.server.public_port = process.env.PUBLIC_PORT || config.server.port;
 // USD/ledger.us;EUR/ledger.eu,EUR/ledger.eu;USD/ledger.us
 config.tradingPairs = (process.env.TRADING_PAIRS || '').split(',');
 
+config.features = {};
+config.features.debugAutoFund = !!process.env.TRADER_DEBUG_AUTOFUND;
+
 const isCustomPort = config.server.secure ?
   +config.server.public_port !== 443 : +config.server.public_port !== 80;
 config.server.base_uri = url.format({
