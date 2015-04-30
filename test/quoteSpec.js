@@ -165,7 +165,7 @@ describe('Quotes', function() {
         }, done);
     });
 
-    it('should determine the correct rate and spread when neither the source' +
+    it('should determine the correct rate and spread when neither the source ' +
       'nor destination asset is the base currency in the rates',
       function(done) {
       this.request()
@@ -194,7 +194,7 @@ describe('Quotes', function() {
         }, done);
     });
 
-    it('should determine the correct rate and spread when neither the source' +
+    it('should determine the correct rate and spread when neither the source ' +
       'nor destination asset is the base currency in the rates and the rate' +
     'must be flipped', function(done) {
       this.request()

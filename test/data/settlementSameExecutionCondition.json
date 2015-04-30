@@ -1,0 +1,55 @@
+{
+  "id": "c9377529-d7df-4aa1-ae37-ad5148612003",
+  "source_transfers":[{
+    "id": "http://ledger.us/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+    "debits":[{
+      "ledger":"ledger.us",
+      "asset":"USD",
+      "amount":"1.07",
+      "account":"alice"
+    }],
+    "credits":[{
+      "ledger":"ledger.us",
+      "asset":"USD",
+      "amount":"1.07",
+      "account":"mark"
+    }],
+    "execution_condition": {
+      "message": {
+        "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
+        "state": "completed"
+      },
+      "message_hash": "VHQe9cGbzPuvZ/iIzbAtWgUNkoamglrmYphWQyZBK1uYWKHFQBYUfHPMhylT2lnsoWzOZVTC4TRpom+3Mdqnsg==",
+      "signer": "http://otherledger.example",
+      "algorithm": "ed25519-sha512",
+      "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+    },
+    "state": "prepared"
+  }],
+  "destination_transfers":[{
+    "id": "http://ledger.eu/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+    "debits":[{
+      "ledger":"ledger.eu",
+      "asset":"EUR",
+      "amount":"1.00",
+      "account":"mark"
+    }],
+    "credits":[{
+      "ledger":"ledger.eu",
+      "asset":"EUR",
+      "amount":"1.00",
+      "account":"bob"
+    }],
+    "execution_condition": {
+      "message": {
+        "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
+        "state": "completed"
+      },
+      "message_hash": "VHQe9cGbzPuvZ/iIzbAtWgUNkoamglrmYphWQyZBK1uYWKHFQBYUfHPMhylT2lnsoWzOZVTC4TRpom+3Mdqnsg==",
+      "signer": "http://otherledger.example",
+      "algorithm": "ed25519-sha512",
+      "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+    },
+    "state": "proposed"
+  }]
+}
