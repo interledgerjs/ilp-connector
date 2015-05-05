@@ -22,8 +22,6 @@ const ManyToManyNotSupportedError =
   require('../errors/many-to-many-not-supported-error');
 const InvalidBodyError = require('five-bells-shared/errors/invalid-body-error');
 
-const currencyRegex = /[\/]+([a-zA-Z0-9]{3})/i
-
 function hashJSON (json) {
   let str = stringifyJson(json);
   let hash = crypto.createHash('sha512').update(str).digest('base64');
@@ -161,11 +159,6 @@ function validateSourceTransfersArePrepared (settlement) {
   _.forEach(settlement.source_transfers, validateSouceTransferIsPrepared);
 }
 
-function getAsset (ledger) {
-  // TODO: this is a super janky way of parsing the currency, change it
-  return currencyRegex.exec(ledger)[1].toUpperCase();
-}
-
 function *validateRate (settlement) {
 
   // TODO: thoroughly check this logic
@@ -183,12 +176,11 @@ function *validateRate (settlement) {
     // One to many
 
     // Get rates
-    let sourceAsset = getAsset(settlement.source_transfers[0].ledger);
+    let sourceLedger = settlement.source_transfers[0].ledger;
     let rates = {};
     for (let transfer of settlement.destination_transfers) {
-      let destinationAsset = getAsset(transfer.ledger);
-      rates[destinationAsset] =
-        yield fxRates.get(sourceAsset, destinationAsset);
+      rates[transfer.ledger] =
+        yield fxRates.get(sourceLedger, transfer.ledger);
     }
 
     // Sum the credits to the trader's account in the source transfer
@@ -218,7 +210,7 @@ function *validateRate (settlement) {
             'provide settlement');
         }
 
-        let offeredRate = rates[getAsset(transfer.ledger)];
+        let offeredRate = rates[transfer.ledger];
         let sourceAssetEquivalent = destinationDebitNet / offeredRate;
         return sourceAssetEquivalent;
     }));
@@ -233,12 +225,11 @@ function *validateRate (settlement) {
     // Many to one
 
     // Get rates
-    let destinationAsset = getAsset(settlement.destination_transfers[0].ledger);
+    let destinationLedger = settlement.destination_transfers[0].ledger;
     let rates = {};
     for (let transfer of settlement.source_transfers) {
-      let sourceAsset = getAsset(transfer.ledger);
-      rates[sourceAsset] =
-        yield fxRates.get(sourceAsset, destinationAsset);
+      rates[transfer.ledger] =
+        yield fxRates.get(transfer.ledger, destinationLedger);
     }
 
     // Sum the debits from the trader's account in the destination transfer
@@ -267,7 +258,7 @@ function *validateRate (settlement) {
             'must be credited in all source transfers to provide settlement');
         }
 
-        let offeredRate = rates[getAsset(transfer.ledger)];
+        let offeredRate = rates[transfer.ledger];
         let destinationAssetEquivalent = sourceCreditNet * offeredRate;
         return destinationAssetEquivalent;
     }));

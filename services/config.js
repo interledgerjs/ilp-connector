@@ -14,8 +14,8 @@ config.server.public_host = process.env.HOSTNAME || require('os').hostname();
 config.server.public_port = process.env.PUBLIC_PORT || config.server.port;
 
 // Currency pairs traded should be specified as
-// USD/ledger.us;EUR/ledger.eu,EUR/ledger.eu;USD/ledger.us
-config.tradingPairs = (process.env.TRADING_PAIRS || '').split(',');
+// [["USD@usd-ledger.example/USD","EUR@eur-ledger.example"],...]
+config.tradingPairs = JSON.parse(process.env.TRADING_PAIRS || '[]');
 
 config.features = {};
 config.features.debugAutoFund = !!process.env.TRADER_DEBUG_AUTOFUND;

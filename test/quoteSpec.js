@@ -3,13 +3,14 @@
 /*eslint max-nested-callbacks: [4]*/
 'use strict';
 const nock = require('nock');
+const config = require('../services/config');
+config.tradingPairs = require('./data/tradingPairs');
 const app = require('../app');
 const ratesResponse = require('./data/fxRates.json');
 const validate = require('five-bells-shared/services/validate');
 const appHelper = require('./helpers/app');
 const logHelper = require('five-bells-shared/testHelpers/log');
 const expect = require('chai').expect;
-
 
 describe('Quotes', function() {
 
