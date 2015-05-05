@@ -1,11 +1,11 @@
 {
   "message": {
-    "id": "http://ledger.eu/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+    "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
     "state": "completed"
   },
-  "message_hash": "i2AsumK9qfwHO2iLlc3+kHNzBD6lRA8aucxzYMyOc6LG5/9Yc5JHRmYCboIwypTFQsCeDlmHZMPPsQ4R5gX7yw==",
+  "message_hash": "RANrDEJ9CkGpW4xvYpgPhm78L37GXKYQ4hF6ABF+CwFq2OqvK7Qfmk7Ie4nTrqQhVP4lQ5P9kQbOUGav468KiA==",
   "algorithm": "ed25519-sha512",
   "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=",
-  "signer": "http://ledger.eu",
-  "signature": "DiHLzKH9zz1AGdDprQHeXSA014cYTLKHGlKT3OaX4K+xePXuBZL1qkHRqvIsD4u4TN609OdY5jo27yu8jA4kAw=="
+  "signer": "http://eur-ledger.example",
+  "signature": "fRZYQQ+CRKoDJvQEnJ3s3TVBh8iA3Be97IAAt/EiEJaWexH+LvRiYpc770+7DoY6nGzdw98oNUajRP/KusPZDQ=="
 }

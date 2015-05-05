@@ -22,6 +22,8 @@ const ManyToManyNotSupportedError =
   require('../errors/many-to-many-not-supported-error');
 const InvalidBodyError = require('five-bells-shared/errors/invalid-body-error');
 
+const currencyRegex = /[\/]+([a-zA-Z0-9]{3})/i
+
 function hashJSON (json) {
   let str = stringifyJson(json);
   let hash = crypto.createHash('sha512').update(str).digest('base64');
@@ -159,31 +161,9 @@ function validateSourceTransfersArePrepared (settlement) {
   _.forEach(settlement.source_transfers, validateSouceTransferIsPrepared);
 }
 
-function validateAssetsInTransfer (transfer) {
-  function getAsset (creditOrDebit) {
-    return creditOrDebit.asset;
-  }
-
-  // Make sure all the source transfer assets are the same
-  let debitAssets =
-    Object.keys(_.groupBy(transfer.debits, getAsset));
-  let creditAssets =
-    Object.keys(_.groupBy(transfer.credits, getAsset));
-  if (debitAssets.length !== 1 ||
-    creditAssets.length !== 1 ||
-    debitAssets[0] !== creditAssets[0]) {
-    throw new InvalidBodyError('Transfer cannot include multiple ' +
-      'asset types');
-  }
-
-  // When we validate the rate it'll throw an error
-  // if we don't actually trade this asset pair
-}
-
-function validateAssets (settlement) {
-  log.debug('validating assets');
-  _.forEach(settlement.source_transfers, validateAssetsInTransfer);
-  _.forEach(settlement.destination_transfers, validateAssetsInTransfer);
+function getAsset (ledger) {
+  // TODO: this is a super janky way of parsing the currency, change it
+  return currencyRegex.exec(ledger)[1].toUpperCase();
 }
 
 function *validateRate (settlement) {
@@ -203,10 +183,10 @@ function *validateRate (settlement) {
     // One to many
 
     // Get rates
-    let sourceAsset = settlement.source_transfers[0].credits[0].asset;
+    let sourceAsset = getAsset(settlement.source_transfers[0].ledger);
     let rates = {};
     for (let transfer of settlement.destination_transfers) {
-      let destinationAsset = transfer.debits[0].asset;
+      let destinationAsset = getAsset(transfer.ledger);
       rates[destinationAsset] =
         yield fxRates.get(sourceAsset, destinationAsset);
     }
@@ -238,7 +218,7 @@ function *validateRate (settlement) {
             'provide settlement');
         }
 
-        let offeredRate = rates[transfer.debits[0].asset];
+        let offeredRate = rates[getAsset(transfer.ledger)];
         let sourceAssetEquivalent = destinationDebitNet / offeredRate;
         return sourceAssetEquivalent;
     }));
@@ -253,10 +233,10 @@ function *validateRate (settlement) {
     // Many to one
 
     // Get rates
-    let destinationAsset = settlement.destination_transfers[0].credits[0].asset;
+    let destinationAsset = getAsset(settlement.destination_transfers[0].ledger);
     let rates = {};
     for (let transfer of settlement.source_transfers) {
-      let sourceAsset = transfer.credits[0].asset;
+      let sourceAsset = getAsset(transfer.ledger);
       rates[sourceAsset] =
         yield fxRates.get(sourceAsset, destinationAsset);
     }
@@ -287,7 +267,7 @@ function *validateRate (settlement) {
             'must be credited in all source transfers to provide settlement');
         }
 
-        let offeredRate = rates[transfer.credits[0].asset];
+        let offeredRate = rates[getAsset(transfer.ledger)];
         let destinationAssetEquivalent = sourceCreditNet * offeredRate;
         return destinationAssetEquivalent;
     }));
@@ -470,7 +450,6 @@ exports.put = function *(id) {
   validateOneToManyOrManyToOne(settlement);
 
   validateSourceTransfersArePrepared(settlement);
-  validateAssets(settlement);
   yield validateRate(settlement);
   validateExecutionConditions(settlement);
   yield validateExecutionConditionPublicKey(settlement);
