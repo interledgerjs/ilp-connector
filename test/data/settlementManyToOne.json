@@ -1,16 +1,13 @@
 {
   "id": "c9377529-d7df-4aa1-ae37-ad5148612003",
   "source_transfers":[{
-    "id": "http://ledger.us/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+    "id": "http://usd-ledger.example/USD/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+    "ledger":"http://usd-ledger.example/USD",
     "debits":[{
-      "ledger":"ledger.us",
-      "asset":"USD",
       "amount":"5.32",
       "account":"alice"
     }],
     "credits":[{
-      "ledger":"ledger.us",
-      "asset":"USD",
       "amount":"5.32",
       "account":"mark"
     }],
@@ -26,16 +23,13 @@
     },
     "state": "prepared"
   }, {
-    "id": "http://ledger.ca/transfers/e042b737-8f20-40f0-87aa-e5b186512064",
+    "id": "http://cad-ledger.example/CAD/transfers/e042b737-8f20-40f0-87aa-e5b186512064",
+    "ledger":"http://cad-ledger.example/CAD",
     "debits":[{
-      "ledger":"ledger.ca",
-      "asset":"CAD",
       "amount":"6.80",
       "account":"alice"
     }],
     "credits":[{
-      "ledger":"ledger.ca",
-      "asset":"CAD",
       "amount":"6.80",
       "account":"mark"
     }],
@@ -52,16 +46,13 @@
     "state": "prepared"
   }],
   "destination_transfers":[{
-    "id": "http://ledger.eu/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+    "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+    "ledger":"http://eur-ledger.example/EUR",
     "debits":[{
-      "ledger":"ledger.eu",
-      "asset":"EUR",
       "amount":"10.00",
       "account":"mark"
     }],
     "credits":[{
-      "ledger":"ledger.eu",
-      "asset":"EUR",
       "amount":"10.00",
       "account":"bob"
     }],

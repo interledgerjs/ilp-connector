@@ -8,6 +8,7 @@ const ratesResponse = require('./data/fxRates.json');
 const validate = require('five-bells-shared/services/validate');
 const appHelper = require('./helpers/app');
 const logHelper = require('five-bells-shared/testHelpers/log');
+const expect = require('chai').expect;
 
 
 describe('Quotes', function() {
@@ -24,203 +25,191 @@ describe('Quotes', function() {
 
   describe('GET /quote', function() {
 
-    // it('should return a 400 if the \
-    //  source owner is not specified', function(done) {
-    // });
-    // it('should return a 400 if the
-    //  source owner is not specified', function(done) {
-    // });
-    // it('should return a 400 if the source owner is invalid', function(done) {
-    // });
-    // it('should return a 400 if the \
-    //  source owner is not specified', function(done) {
-    // });
+    it('should return a 400 if no amount is specified', function *() {
+      yield this.request()
+        .get('/quote?' +
+          'source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(400)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('NoAmountSpecifiedError');
+          expect(res.body.message).to.equal('Must specify either source or ' +
+            'destination amount to get quote');
+        })
+        .end();
+    });
 
-    it('should return a valid Settlement Template object', function(done) {
-      this.request()
+    it('should return a valid Settlement Template object', function *() {
+      yield this.request()
         .get('/quote?' +
           'source_amount=100' +
-          '&source_asset=EUR' +
-          '&source_ledger=ledger.eu' +
-          '&destination_asset=USD' +
-          '&destination_ledger=ledger.us')
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
         .expect(function(res) {
           let validation = validate('SettlementTemplate', res.body);
           if (!validation.valid) {
-            console.log('Invalid Settlement: ', validation.errors);
+            console.log('Invalid Settlement: ', JSON.stringify(validation.errors, null, 2));
             throw new Error('Not a valid settlement');
           }
         })
-        .end(done);
+        .end();
     });
 
-    it('should return quotes for fixed source amounts', function(done) {
-      this.request()
+    it('should return quotes for fixed source amounts', function *() {
+      yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_asset=EUR' +
-          '&source_ledger=ledger.eu' +
-        '&destination_asset=USD' +
-        '&destination_ledger=ledger.us')
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfer: {
+          source_transfers: [{
+            ledger: 'http://eur-ledger.example/EUR',
             credits: [{
-              asset: 'EUR',
-              ledger: 'ledger.eu',
               account: 'mark',
               amount: '100.00'
             }]
-          },
-          destination_transfer: {
+          }],
+          destination_transfers: [{
+            ledger: 'http://usd-ledger.example/USD',
             debits: [{
-              asset: 'USD',
-              ledger: 'ledger.us',
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'mark'
             }]
-          }
-        }, done);
+          }]
+        })
+        .end();
     });
 
-    it('should return quotes for fixed destination amounts', function(done) {
-      this.request()
-        .get('/quote?source_asset=EUR' +
-          '&source_ledger=ledger.eu' +
+    it('should return quotes for fixed destination amounts', function *() {
+      yield this.request()
+        .get('/quote?' +
+          'source_ledger=http://eur-ledger.example/EUR' +
           '&destination_amount=100' +
-        '&destination_asset=USD' +
-        '&destination_ledger=ledger.us')
+          '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfer: {
+          source_transfers: [{
+            ledger: 'http://eur-ledger.example/EUR',
             credits: [{
-              asset: 'EUR',
-              ledger: 'ledger.eu',
               account: 'mark',
               amount: '94.60' // 1/ (EUR/USD Rate of 1.0592 + .2% spread)
             }]
-          },
-          destination_transfer: {
+          }],
+          destination_transfers: [{
+            ledger: 'http://usd-ledger.example/USD',
             debits: [{
-              asset: 'USD',
-              ledger: 'ledger.us',
               amount: '100.00',
               account: 'mark'
             }]
-          }
-        }, done);
+          }]
+        })
+        .end();
+
     });
 
     it('should return a settlement object with the source' +
       'and destination amounts filled in as debits and credits',
-      function(done) {
-      this.request()
+      function *() {
+      yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_asset=EUR' +
-          '&source_ledger=ledger.eu' +
-        '&destination_asset=USD' +
-        '&destination_ledger=ledger.us')
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfer: {
+          source_transfers: [{
+            ledger: 'http://eur-ledger.example/EUR',
             credits: [{
-              asset: 'EUR',
-              ledger: 'ledger.eu',
               account: 'mark',
               amount: '100.00'
             }]
-          },
-          destination_transfer: {
+          }],
+          destination_transfers: [{
+            ledger: 'http://usd-ledger.example/USD',
             debits: [{
-              asset: 'USD',
-              ledger: 'ledger.us',
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'mark'
             }]
-          }
-        }, done);
+          }]
+        })
+        .end();
+
     });
 
     it('should apply the spread correctly for settlements where the source' +
-      'asset is the counter currency in the fx rates', function(done) {
-      this.request()
+      'asset is the counter currency in the fx rates', function *() {
+      yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_asset=USD' +
-          '&source_ledger=ledger.us' +
-        '&destination_asset=EUR' +
-        '&destination_ledger=ledger.eu')
+          '&source_ledger=http://usd-ledger.example/USD' +
+          '&destination_ledger=http://eur-ledger.example/EUR')
         .expect(200, {
-          source_transfer: {
+          source_transfers: [{
+            ledger: 'http://usd-ledger.example/USD',
             credits: [{
-              asset: 'USD',
-              ledger: 'ledger.us',
               account: 'mark',
               amount: '100.00'
             }]
-          },
-          destination_transfer: {
+          }],
+          destination_transfers: [{
+            ledger: 'http://eur-ledger.example/EUR',
             debits: [{
-              asset: 'EUR',
-              ledger: 'ledger.eu',
               amount: '94.22', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
               account: 'mark'
             }]
-          }
-        }, done);
+          }]
+        })
+        .end();
+
     });
 
     it('should determine the correct rate and spread when neither the source ' +
       'nor destination asset is the base currency in the rates',
-      function(done) {
-      this.request()
+      function *() {
+      yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_asset=USD' +
-          '&source_ledger=ledger.us' +
-        '&destination_asset=CAD' +
-        '&destination_ledger=ledger.ca')
+          '&source_ledger=http://usd-ledger.example/USD' +
+          '&destination_ledger=http://cad-ledger.example/CAD')
         .expect(200, {
-          source_transfer: {
+          source_transfers: [{
+            ledger: 'http://usd-ledger.example/USD',
             credits: [{
-              asset: 'USD',
-              ledger: 'ledger.us',
               account: 'mark',
               amount: '100.00'
             }]
-          },
-          destination_transfer: {
+          }],
+          destination_transfers: [{
+            ledger: 'http://cad-ledger.example/CAD',
             debits: [{
-              asset: 'CAD',
-              ledger: 'ledger.ca',
               amount: '127.98', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
               account: 'mark'
             }]
-          }
-        }, done);
+          }]
+        })
+        .end();
+
     });
 
     it('should determine the correct rate and spread when neither the source ' +
       'nor destination asset is the base currency in the rates and the rate' +
-    'must be flipped', function(done) {
-      this.request()
+      'must be flipped', function *() {
+      yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_asset=CAD' +
-          '&source_ledger=ledger.ca' +
-        '&destination_asset=USD' +
-        '&destination_ledger=ledger.us')
+          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfer: {
+          source_transfers: [{
+            ledger: 'http://cad-ledger.example/CAD',
             credits: [{
-              asset: 'CAD',
-              ledger: 'ledger.ca',
               amount: '100.00',
               account: 'mark'
             }]
-          },
-          destination_transfer: {
+          }],
+          destination_transfers: [{
+            ledger: 'http://usd-ledger.example/USD',
             debits: [{
-              asset: 'USD',
-              ledger: 'ledger.us',
               account: 'mark',
               amount: '77.82' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
             }]
-          }
-        }, done);
+          }]
+        })
+        .end();
+
     });
   });
 

@@ -239,10 +239,9 @@ describe('Settlements', function () {
 
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
-      settlement.source_transfers[0].credits[0].asset = 'XYZ';
-      settlement.source_transfers[0].debits[0].asset = 'XYZ';
-      settlement.destination_transfers[0].credits[0].asset = 'XYZ';
-      settlement.destination_transfers[0].debits[0].asset = 'XYZ';
+      settlement.source_transfers[0].ledger = 'http://abc-ledger.example/ABC';
+      settlement.destination_transfers[0].ledger =
+        'http://xyz-ledger.example/XYZ';
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
@@ -500,8 +499,6 @@ describe('Settlements', function () {
       settlement.source_transfers[0].credits.unshift({
         account: 'mary',
         amount: '20',
-        asset: 'USD',
-        ledger: 'ledger.us'
       });
 
       nock(settlement.destination_transfers[0].id)
@@ -557,8 +554,6 @@ describe('Settlements', function () {
       settlement.destination_transfers[0].debits.push({
         account: 'mark',
         amount: '0.40',
-        asset: 'EUR',
-        ledger: 'ledger.us'
       });
 
       nock(settlement.destination_transfers[0].id)
@@ -614,9 +609,7 @@ describe('Settlements', function () {
       settlement.destination_transfers[0].credits[0].amount = '0.60';
       settlement.destination_transfers[0].credits.push({
         account: 'timothy',
-        amount: '0.40',
-        asset: 'EUR',
-        ledger: 'ledger.us'
+        amount: '0.40'
       });
 
       nock(settlement.destination_transfers[0].id)
@@ -667,15 +660,11 @@ describe('Settlements', function () {
         '/settlements/');
       settlement.destination_transfers[0].debits.unshift({
         amount: '10',
-        account: 'other',
-        asset: 'EUR',
-        ledger: 'ledger.eu'
+        account: 'other'
       });
       settlement.destination_transfers[0].credits.unshift({
         amount: '10',
-        account: 'jane',
-        asset: 'EUR',
-        ledger: 'ledger.eu'
+        account: 'jane'
       });
 
       nock(settlement.destination_transfers[0].id)
