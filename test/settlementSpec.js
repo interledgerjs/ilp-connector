@@ -7,6 +7,8 @@ const crypto = require('crypto');
 const expect = require('chai').expect;
 const nock = require('nock');
 nock.enableNetConnect(['localhost']);
+const config = require('../services/config');
+config.tradingPairs = require('./data/tradingPairs');
 const app = require('../app');
 const appHelper = require('./helpers/app');
 const logHelper = require('five-bells-shared/testHelpers/log');

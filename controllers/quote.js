@@ -5,8 +5,6 @@ const log = require('five-bells-shared/services/log')('quote');
 const fxRates = require('../services/fxRates');
 const NoAmountSpecifiedError = require('../errors/no-amount-specified-error');
 
-const currencyRegex = /[\/]+([a-zA-Z0-9]{3})/i
-
 function formatAmount (amount) {
   if (typeof amount === 'string') {
     amount = parseFloat(amount);
@@ -15,21 +13,14 @@ function formatAmount (amount) {
 }
 
 exports.get = function *() {
-  // TODO: make sure the currency pair is one we trade
 
-  // TODO: pull rates based on currency + ledger, not just currency
-  // TODO: this is a super janky way of parsing the currency, change it
-  let sourceAsset =
-    currencyRegex.exec(this.query.source_ledger)[1].toUpperCase();
-  let destinationAsset =
-    currencyRegex.exec(this.query.destination_ledger)[1].toUpperCase();
-
-  let rate = yield fxRates.get(sourceAsset, destinationAsset);
+  let rate = yield fxRates.get(this.query.source_ledger,
+    this.query.destination_ledger);
   rate = rate.toFixed(5);
   // TODO: fix rounding and make a sensible
   // policy for limiting the smallest units
-  log.debug('FX Rate for ' + sourceAsset +
-    ' => ' + destinationAsset + ':', rate);
+  log.debug('FX Rate for ' + this.query.source_ledger +
+    ' => ' + this.query.destination_ledger + ':', rate);
 
   let sourceAmount, destinationAmount;
   if (this.query.source_amount) {
@@ -63,9 +54,9 @@ exports.get = function *() {
   };
 
   log.debug('' + sourceAmount + ' ' +
-            sourceAsset + ' => ' +
+            this.query.source_ledger + ' => ' +
             destinationAmount + ' ' +
-            destinationAsset);
+            this.query.destination_ledger);
 
   this.body = settlementTemplate;
 };
