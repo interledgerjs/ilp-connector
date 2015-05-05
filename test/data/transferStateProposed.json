@@ -3,7 +3,6 @@
     "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
     "state": "proposed"
   },
-  "message_hash": "CirLMetU/2sT0AofqxwGWug07wzvnu/PVyM3IsKJoTl7q8U4ZmLKcivSqlIm2pagmwwB9jeuiOdvlcOWi2d53w==",
   "algorithm": "ed25519-sha512",
   "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=",
   "signer": "http://eur-ledger.example",
