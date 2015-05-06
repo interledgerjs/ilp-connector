@@ -428,7 +428,9 @@ describe('Settlements', function () {
           state: 'executed',
           source_transfers: [{
             state: 'executed',
-            execution_condition_fulfillment: this.transferExecutedReceipt
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
             state: 'executed',
@@ -530,7 +532,9 @@ describe('Settlements', function () {
           state: 'executed',
           source_transfers: [{
             state: 'executed',
-            execution_condition_fulfillment: this.transferExecutedReceipt
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
             state: 'executed',
@@ -585,7 +589,9 @@ describe('Settlements', function () {
           state: 'executed',
           source_transfers: [{
             state: 'executed',
-            execution_condition_fulfillment: this.transferExecutedReceipt
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
             state: 'executed',
@@ -641,7 +647,9 @@ describe('Settlements', function () {
           state: 'executed',
           source_transfers: [{
             state: 'executed',
-            execution_condition_fulfillment: this.transferExecutedReceipt
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
             state: 'executed',
@@ -696,7 +704,9 @@ describe('Settlements', function () {
           state: 'executed',
           source_transfers: [{
             state: 'executed',
-            execution_condition_fulfillment: this.transferExecutedReceipt
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
             state: 'executed',
