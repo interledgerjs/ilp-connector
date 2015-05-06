@@ -322,11 +322,14 @@ function *submitDestinationTransfers (settlement) {
     destinationTransfer.state = destinationTransferReq.body.state;
 
     if (destinationTransferReq.body.state === 'executed') {
+      log.debug('executed destination transfer');
       destinationTransfer.execution_condition_fulfillment =
         destinationTransferReq.body.execution_condition_fulfillment;
     } else {
       // Store this subscription so when we get the notification
       // we know what source transfer to go and unlock
+      log.debug('destination transfer not yet executed, ' +
+        'added subscription record');
       subscriptionRecords.put(destinationTransfer.id,
         settlement.source_transfers);
     }

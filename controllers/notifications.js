@@ -1,51 +1,59 @@
 'use strict';
 
+const _ = require('lodash');
 const parse = require('co-body');
 const request = require('co-request');
+const requestUtil = require('five-bells-shared/utils/request');
 const log = require('five-bells-shared/services/log')('notifications');
 const subscriptionRecords = require('../services/subscriptionRecords');
+const executeSourceTransfers = require('../lib/executeSourceTransfers');
+const UnrelatedNotificationError = require('../errors/unrelated-notification-error');
 
 exports.post = function *postNotification() {
-  const body = yield parse(this);
-  if (body.event === 'transfer.update') {
-    let transferId = body.resource.id;
-    let correspondingSourceTransaction = subscriptionRecords.get(transferId);
-    if (body.resource.state === 'completed' && correspondingSourceTransaction) {
+  let notification = yield requestUtil.validateBody(this, 'Notification');
 
-      log.debug('got notification about completed destination_transfer');
+  if (notification.event === 'transfer.update') {
+    let destinationTransfer = notification.resource;
+    let sourceTransfers = subscriptionRecords.get(destinationTransfer.id);
 
-      // Take execution_condition_fulfillment from the source transaction
-      // that has been executed and send it to the source ledger
-      // to unlock the money that's been held for us
-      correspondingSourceTransaction.execution_condition_fulfillment =
-        body.resource.execution_condition_fulfillment;
+    if (!sourceTransfers || sourceTransfers.length === 0) {
+      // TODO: should we delete the subscription?
+      throw new UnrelatedNotificationError('Notification does not match a ' +
+        'settlment we have a record of or the corresponding source transfers ' +
+        'may already have been executed');
+    }
 
-      let sourceTransactionReq = yield request({
-        method: 'put',
-        url: correspondingSourceTransaction.id,
-        json: true,
-        body: correspondingSourceTransaction
+    if (notification.resource.state === 'executed') {
+
+      // TODO: make sure the transfer is signed by the ledger
+
+      log.debug('got notification about executed destination transfer');
+
+      // This modifies the source_transfers states
+      yield executeSourceTransfers(sourceTransfers, [destinationTransfer]);
+
+      let allTransfersExecuted = _.every(sourceTransfers, function(transfer) {
+        return transfer.state === 'executed';
       });
-
-      if (sourceTransactionReq.statusCode >= 400) {
-        // TODO handle this so we actually get our money back
-        log.error('error unlocking funds from source_transfer',
-          sourceTransactionReq.body);
-      } else {
-        log.debug('unlocked source_transfer funds');
+      if (!allTransfersExecuted) {
+        log.error('not all source transfers have been executed, ' +
+          'meaning we have not been fully repaid');
       }
 
+      // Remove subscription
       let removeSubscriptionReq = yield request({
         method: 'DELETE',
-        uri: subscriptionId
+        uri: notification.id
       });
       if (removeSubscriptionReq.statusCode >= 400) {
         log.error('error removing subscription', removeSubscriptionReq.body);
       } else {
-        log.debug('removed subscription', subscriptionId);
+        log.debug('removed subscription', notification.id);
       }
 
-      subscriptionRecords.remove(subscriptionId);
+      subscriptionRecords.remove(notification.id);
+    } else {
+      log.debug('got notification about unknown or incomplete transfer');
     }
   }
 
