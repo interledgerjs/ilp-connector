@@ -1,10 +1,10 @@
 {
   "message": {
     "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
-    "state": "completed"
+    "state": "prepared"
   },
   "algorithm": "ed25519-sha512",
   "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=",
   "signer": "http://eur-ledger.example",
-  "signature": "fRZYQQ+CRKoDJvQEnJ3s3TVBh8iA3Be97IAAt/EiEJaWexH+LvRiYpc770+7DoY6nGzdw98oNUajRP/KusPZDQ=="
+  "signature": "a+VekZJz/fV0VtnWj5beGdb/lyESY4tjTfS//Y2YBDLswgksC3VHCrJ67HM+97cC1nwjGfzrZFh02GSJcFrrBg=="
 }

@@ -14,7 +14,7 @@
     "execution_condition": {
       "message": {
         "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
-        "state": "completed"
+        "state": "executed"
       },
       "signer": "http://otherledger.example",
       "algorithm": "ed25519-sha512",
@@ -35,7 +35,7 @@
     "execution_condition": {
       "message": {
         "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
-        "state": "completed"
+        "state": "executed"
       },
       "signer": "http://otherledger.example",
       "algorithm": "ed25519-sha512",
@@ -57,7 +57,7 @@
     "execution_condition": {
       "message": {
         "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
-        "state": "completed"
+        "state": "executed"
       },
       "signer": "http://otherledger.example",
       "algorithm": "ed25519-sha512",
@@ -78,7 +78,7 @@
     "execution_condition": {
       "message": {
         "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
-        "state": "completed"
+        "state": "executed"
       },
       "signer": "http://otherledger.example",
       "algorithm": "ed25519-sha512",

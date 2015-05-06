@@ -37,8 +37,8 @@ describe('Settlements', function () {
         _.cloneDeep(require('./data/settlementManyToMany.json'));
       this.transferProposedReceipt =
         _.cloneDeep(require('./data/transferStateProposed.json'));
-      this.transferCompletedReceipt =
-        _.cloneDeep(require('./data/transferStateCompleted.json'));
+      this.transferExecutedReceipt =
+        _.cloneDeep(require('./data/transferStateExecuted.json'));
 
       nock.cleanAll();
 
@@ -86,7 +86,7 @@ describe('Settlements', function () {
     });
 
     it('should return a 422 if the two transfer conditions do not ' +
-      'match and the source transfer one is not the completion ' +
+      'match and the source transfer one is not the execution ' +
       'of the destination transfer', function *() {
 
       const settlement = this.formatId(this.settlementOneToOne,
@@ -109,7 +109,7 @@ describe('Settlements', function () {
           expect(res.body.id).to.equal('UnacceptableConditionsError');
           expect(res.body.message).to.equal('Source and destination transfer ' +
             'execution conditions must match or the source transfer\'s ' +
-            'condition must be the completion of the destination transfer');
+            'condition must be the execution of the destination transfer');
         })
         .end();
     });
@@ -258,7 +258,7 @@ describe('Settlements', function () {
     });
 
     it('should return a 422 if the source_transfer is not in the prepared ' +
-      'or completed state', function *() {
+      'or executed state', function *() {
 
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
@@ -288,13 +288,13 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.destination_transfers[0].id)
@@ -303,7 +303,7 @@ describe('Settlements', function () {
 
       nock(settlement.destination_transfers[0].id)
         .get('/state')
-        .reply(200, this.transferCompletedReceipt);
+        .reply(200, this.transferExecutedReceipt);
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
@@ -322,13 +322,13 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.destination_transfers[0].id)
@@ -337,7 +337,7 @@ describe('Settlements', function () {
 
       nock(settlement.destination_transfers[0].id)
         .get('/state')
-        .reply(200, this.transferCompletedReceipt);
+        .reply(200, this.transferExecutedReceipt);
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
@@ -373,7 +373,7 @@ describe('Settlements', function () {
               algorithm: 'ed25519-sha512'
             }
           }],
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.destination_transfers[0].id)
@@ -383,7 +383,7 @@ describe('Settlements', function () {
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       yield this.request()
@@ -395,7 +395,7 @@ describe('Settlements', function () {
       destinationTransferNock.done(); // Throw error if this wasn't called
     });
 
-    it('should complete a settlement where the source transfer ' +
+    it('should execute a settlement where the source transfer ' +
       'condition is the destination transfer', function *() {
 
       const settlement = this.formatId(this.settlementOneToOne,
@@ -404,13 +404,13 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.destination_transfers[0].id)
@@ -419,19 +419,21 @@ describe('Settlements', function () {
 
       nock(settlement.destination_transfers[0].id)
         .get('/state')
-        .reply(200, this.transferCompletedReceipt);
+        .reply(200, this.transferExecutedReceipt);
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(201, _.merge(_.cloneDeep(settlement), {
-          state: 'completed',
+          state: 'executed',
           source_transfers: [{
-            state: 'completed',
-            execution_condition_fulfillment: this.transferCompletedReceipt
+            state: 'executed',
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
-            state: 'completed',
+            state: 'executed',
             debits: [{
               authorization: {
                 algorithm: 'ed25519-sha512'
@@ -442,7 +444,7 @@ describe('Settlements', function () {
         .end();
     });
 
-    it('should complete a settlement where the source transfer ' +
+    it('should execute a settlement where the source transfer ' +
       'condition is equal to the destination transfer condition', function *() {
 
       // secret: zU/Q8UzeDi4gHeKAFus1sXDNJ+F7id2AdMR8NXhe1slnYVZLVcvPzA2lFFdxef3y0LrIiuCV8jzs6yYDclN8yA==
@@ -457,7 +459,7 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed',
+          state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
@@ -466,7 +468,7 @@ describe('Settlements', function () {
           execution_condition_fulfillment: fulfillment
         }))
         .reply(201, _.merge(_.cloneDeep(settlement.source_transfers[0]), {
-          state: 'completed',
+          state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
@@ -474,13 +476,13 @@ describe('Settlements', function () {
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(201, _.merge(_.cloneDeep(settlement), {
-          state: 'completed',
+          state: 'executed',
           source_transfers: [{
-            state: 'completed',
+            state: 'executed',
             execution_condition_fulfillment: fulfillment
           }],
           destination_transfers: [{
-            state: 'completed',
+            state: 'executed',
             debits: [{
               authorization: {
                 algorithm: 'ed25519-sha512'
@@ -506,13 +508,13 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.destination_transfers[0].id)
@@ -521,19 +523,21 @@ describe('Settlements', function () {
 
       nock(settlement.destination_transfers[0].id)
         .get('/state')
-        .reply(200, this.transferCompletedReceipt);
+        .reply(200, this.transferExecutedReceipt);
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(201, _.merge(_.cloneDeep(settlement), {
-          state: 'completed',
+          state: 'executed',
           source_transfers: [{
-            state: 'completed',
-            execution_condition_fulfillment: this.transferCompletedReceipt
+            state: 'executed',
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
-            state: 'completed',
+            state: 'executed',
             debits: [{
               authorization: {
                 algorithm: 'ed25519-sha512'
@@ -561,13 +565,13 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.destination_transfers[0].id)
@@ -576,19 +580,21 @@ describe('Settlements', function () {
 
       nock(settlement.destination_transfers[0].id)
         .get('/state')
-        .reply(200, this.transferCompletedReceipt);
+        .reply(200, this.transferExecutedReceipt);
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(201, _.merge(_.cloneDeep(settlement), {
-          state: 'completed',
+          state: 'executed',
           source_transfers: [{
-            state: 'completed',
-            execution_condition_fulfillment: this.transferCompletedReceipt
+            state: 'executed',
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
-            state: 'completed',
+            state: 'executed',
             debits: [{
               authorization: {
                 algorithm: 'ed25519-sha512'
@@ -617,13 +623,13 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.destination_transfers[0].id)
@@ -632,19 +638,21 @@ describe('Settlements', function () {
 
       nock(settlement.destination_transfers[0].id)
         .get('/state')
-        .reply(200, this.transferCompletedReceipt);
+        .reply(200, this.transferExecutedReceipt);
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(201, _.merge(_.cloneDeep(settlement), {
-          state: 'completed',
+          state: 'executed',
           source_transfers: [{
-            state: 'completed',
-            execution_condition_fulfillment: this.transferCompletedReceipt
+            state: 'executed',
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
-            state: 'completed',
+            state: 'executed',
             debits: [{
               authorization: {
                 algorithm: 'ed25519-sha512'
@@ -672,13 +680,13 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed'
+          state: 'executed'
         }));
 
       nock(settlement.destination_transfers[0].id)
@@ -687,19 +695,21 @@ describe('Settlements', function () {
 
       nock(settlement.destination_transfers[0].id)
         .get('/state')
-        .reply(200, this.transferCompletedReceipt);
+        .reply(200, this.transferExecutedReceipt);
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(201, _.merge(_.cloneDeep(settlement), {
-          state: 'completed',
+          state: 'executed',
           source_transfers: [{
-            state: 'completed',
-            execution_condition_fulfillment: this.transferCompletedReceipt
+            state: 'executed',
+            execution_condition_fulfillment: {
+              signature: this.transferExecutedReceipt.signature
+            }
           }],
           destination_transfers: [{
-            state: 'completed',
+            state: 'executed',
             debits: [{}, // Don't add anything to the first one
             {
               authorization: {
@@ -725,21 +735,21 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed',
+          state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
       nock(settlement.destination_transfers[1].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[1], {
-          state: 'completed',
+          state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed',
+          state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
@@ -747,13 +757,13 @@ describe('Settlements', function () {
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(201, _.merge(_.cloneDeep(settlement), {
-          state: 'completed',
+          state: 'executed',
           source_transfers: [{
-            state: 'completed',
+            state: 'executed',
             execution_condition_fulfillment: fulfillment
           }],
           destination_transfers: [{
-            state: 'completed',
+            state: 'executed',
             debits: [{
               authorization: {
                 algorithm: 'ed25519-sha512'
@@ -761,7 +771,7 @@ describe('Settlements', function () {
             }],
             execution_condition_fulfillment: fulfillment
           }, {
-            state: 'completed',
+            state: 'executed',
             debits: [{
               authorization: {
                 algorithm: 'ed25519-sha512'
@@ -787,21 +797,21 @@ describe('Settlements', function () {
       nock(settlement.destination_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
-          state: 'completed',
+          state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
       nock(settlement.source_transfers[0].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed',
+          state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
       nock(settlement.source_transfers[1].id)
         .put('')
         .reply(201, _.assign({}, settlement.source_transfers[0], {
-          state: 'completed',
+          state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
@@ -809,16 +819,16 @@ describe('Settlements', function () {
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(201, _.merge(_.cloneDeep(settlement), {
-          state: 'completed',
+          state: 'executed',
           source_transfers: [{
-            state: 'completed',
+            state: 'executed',
             execution_condition_fulfillment: fulfillment
           }, {
-            state: 'completed',
+            state: 'executed',
             execution_condition_fulfillment: fulfillment
           }],
           destination_transfers: [{
-            state: 'completed',
+            state: 'executed',
             debits: [{
               authorization: {
                 algorithm: 'ed25519-sha512'
