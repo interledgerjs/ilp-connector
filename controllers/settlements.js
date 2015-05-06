@@ -34,19 +34,21 @@ function sourceConditionIsDestinationTransfer(source, destination) {
   // Check the message if it's there
   if (source.execution_condition.message &&
         (source.execution_condition.message.id !== destination.id ||
-         source.execution_condition.message.state !== 'completed')) {
+         source.execution_condition.message.state !== 'executed')) {
     return false;
   }
 
-  // Check the message_hash
-  let message = source.execution_condition.message;
-  if (!message) {
-    message = {
-      id: destination.id,
-      state: 'completed'
-    };
+  // Check the message or message_hash
+  let expectedMessage = {
+    id: destination.id,
+    state: 'executed'
+  };
+  if (source.execution_condition.message &&
+      !_.isEqual(source.execution_condition.message, expectedMessage)) {
+    return false;
   }
-  if (source.execution_condition.message_hash !== hashJSON(message)) {
+  if (source.execution_condition.message_hash &&
+      source.execution_condition.message_hash !== hashJSON(message)) {
     return false;
   }
 
@@ -100,7 +102,7 @@ function validateExecutionConditions (settlement) {
     throw new UnacceptableConditionsError('Each of the source transfers\' ' +
       'execution conditions must either match all of the destination ' +
       'transfers\' conditions or if there is only one destination transfer ' +
-      'the source transfers\' conditions can be the completion of the ' +
+      'the source transfers\' conditions can be the execution of the ' +
       'destination transfer');
   }
 }
@@ -140,7 +142,7 @@ function *validateExecutionConditionPublicKey (settlement) {
             destinationTransferStateReq.body.public_key) {
         throw new UnacceptableConditionsError('Source and destination ' +
           'transfer execution conditions must match or the source ' +
-          'transfer\'s condition must be the completion of the ' +
+          'transfer\'s condition must be the execution of the ' +
           'destination transfer');
       }
     }
@@ -149,7 +151,7 @@ function *validateExecutionConditionPublicKey (settlement) {
 
 function validateSouceTransferIsPrepared(transfer) {
   if (transfer.state !== 'prepared' &&
-      transfer.state !== 'completed') {
+      transfer.state !== 'executed') {
     throw new FundsNotHeldError('Source transfer must be in the prepared ' +
       'state for the trader to authorize the destination transfer');
   }
@@ -319,7 +321,7 @@ function *submitDestinationTransfers (settlement) {
     // Update destination_transfer state from the ledger's response
     destinationTransfer.state = destinationTransferReq.body.state;
 
-    if (destinationTransferReq.body.state === 'completed') {
+    if (destinationTransferReq.body.state === 'executed') {
       destinationTransfer.execution_condition_fulfillment =
         destinationTransferReq.body.execution_condition_fulfillment;
     } else {
@@ -365,14 +367,14 @@ exports.put = function *(id) {
   yield submitDestinationTransfers(settlement);
 
   if (_.some(settlement.destination_transfers, function(transfer) {
-        return transfer.state === 'completed';
+        return transfer.state === 'executed';
       })) {
     yield executeSourceTransfers(settlement.source_transfers,
       settlement.destination_transfers);
 
-    // TODO: is the settlement complete when the destination transfer
-    // is complete or only once we've gotten paid back?
-    settlement.state = 'completed';
+    // TODO: is the settlement execute when the destination transfer
+    // is execute or only once we've gotten paid back?
+    settlement.state = 'executed';
   }
 
   // Externally we want to use a full URI ID
