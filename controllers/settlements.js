@@ -6,6 +6,7 @@ const request = require('co-request');
 const stringifyJson = require('canonical-json');
 const requestUtil = require('five-bells-shared/utils/request');
 const log = require('five-bells-shared/services/log')('settlements');
+const executeSourceTransfers = require('../lib/executeSourceTransfers');
 const config = require('../services/config');
 const fxRates = require('../services/fxRates');
 const subscriptionRecords = require('../services/subscriptionRecords');
@@ -330,91 +331,6 @@ function *submitDestinationTransfers (settlement) {
   }
 }
 
-function *addConditionFulfillmentToSourceTransfers (settlement) {
-
-  for (let sourceTransfer of settlement.source_transfers) {
-
-    // Check if the source transfer's execution_condition is
-    // the completion of the destination transfer
-    let conditionsAreEqual =
-      sourceConditionSameAsAllDestinationConditions(
-        sourceTransfer, settlement.destination_transfers);
-
-    if (conditionsAreEqual) {
-
-      let transferWithConditionFulfillment = _.find(
-        settlement.destination_transfers, function(transfer) {
-          return transfer.execution_condition_fulfillment;
-        });
-
-      if (transferWithConditionFulfillment) {
-        sourceTransfer.execution_condition_fulfillment =
-          transferWithConditionFulfillment.execution_condition_fulfillment;
-      }
-      // else {
-        // TODO: what do we do if none of the destination transfers
-        // have the condition fulfillment attached?
-      // }
-
-    } else {
-
-      // we know there is only one destination transfer
-
-      let destinationTransferStateReq = yield request({
-        method: 'get',
-        uri: settlement.destination_transfers[0].id + '/state',
-        json: true
-      });
-
-      // TODO: add retry logic
-      if (destinationTransferStateReq.statusCode >= 400) {
-        log.error('remote error while checking destination transfer state');
-        throw new ExternalError('Received an unexpected ' +
-          destinationTransferStateReq.body.id +
-          ' while checking destination transfer state ' +
-          settlement.destination_transfers[0].id);
-      }
-
-      // TODO: validate that this actually comes back in the right format
-      // TODO: what do we do if the state isn't completed?
-      sourceTransfer.execution_condition_fulfillment =
-        destinationTransferStateReq.body;
-    }
-  }
-}
-
-// Add the execution_condition_fulfillment to the source transfer
-// and submit it to the source ledger
-function *executeSourceTransfers (settlement) {
-
-  yield addConditionFulfillmentToSourceTransfers(settlement);
-
-  for (let sourceTransfer of settlement.source_transfers) {
-
-    log.debug('requesting fulfillment of source transfer');
-    let sourceTransferReq = yield request({
-      method: 'put',
-      uri: sourceTransfer.id,
-      body: sourceTransfer,
-      json: true
-    });
-
-    // Update source_transfer state from the ledger's response
-    sourceTransfer.state = sourceTransferReq.body.state;
-
-    if (sourceTransferReq.statusCode >= 400) {
-      log.error('remote error while fulfilling source transfer');
-      log.debug(JSON.stringify(sourceTransferReq.body));
-      throw new ExternalError('Received an unexpected ' +
-        sourceTransferReq.body.id +
-        ' while processing source transfer ' + sourceTransfer.id);
-    }
-
-  }
-
-  log.debug('settlement completed');
-}
-
 exports.put = function *(id) {
   // TODO: check that this UUID hasn't been used before
   requestUtil.validateUriParameter('id', id, 'Uuid');
@@ -451,7 +367,8 @@ exports.put = function *(id) {
   if (_.some(settlement.destination_transfers, function(transfer) {
         return transfer.state === 'completed';
       })) {
-    yield executeSourceTransfers(settlement);
+    yield executeSourceTransfers(settlement.source_transfers,
+      settlement.destination_transfers);
 
     // TODO: is the settlement complete when the destination transfer
     // is complete or only once we've gotten paid back?
