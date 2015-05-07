@@ -21,40 +21,30 @@ const NoRelatedDestinationDebitError =
 const FundsNotHeldError = require('../errors/funds-not-held-error');
 const ManyToManyNotSupportedError =
   require('../errors/many-to-many-not-supported-error');
-const InvalidBodyError = require('five-bells-shared/errors/invalid-body-error');
-
-function hashJSON (json) {
-  let str = stringifyJson(json);
-  let hash = crypto.createHash('sha512').update(str).digest('base64');
-  return hash;
-}
+const hashJSON = require('five-bells-shared/utils/hashJson');
 
 function sourceConditionIsDestinationTransfer(source, destination) {
-
-  // Check the message if it's there
-  if (source.execution_condition.message &&
-        (source.execution_condition.message.id !== destination.id ||
-         source.execution_condition.message.state !== 'executed')) {
-    return false;
-  }
-
   // Check the message or message_hash
   let expectedMessage = {
     id: destination.id,
     state: 'executed'
   };
+
   if (source.execution_condition.message &&
       !_.isEqual(source.execution_condition.message, expectedMessage)) {
+    log.info('invalid condition, unexpected message');
     return false;
   }
   if (source.execution_condition.message_hash &&
-      source.execution_condition.message_hash !== hashJSON(message)) {
+      source.execution_condition.message_hash !== hashJSON(expectedMessage)) {
+    log.info('invalid condition, unexpected message hash');
     return false;
   }
 
   // Check the signer
   if (source.execution_condition.signer &&
       source.execution_condition.signer !== destination.ledger) {
+    log.info('invalid condition, unexpected signer');
     return false;
   }
 
@@ -137,13 +127,14 @@ function *validateExecutionConditionPublicKey (settlement) {
       }
 
       if (sourceTransfer.execution_condition.algorithm !==
-            destinationTransferStateReq.body.algorithm ||
-          sourceTransfer.execution_condition.public_key !==
+            destinationTransferStateReq.body.algorithm) {
+        throw new UnacceptableConditionsError('Source transfer execution ' +
+          'condition algorithm must match the destination ledger\'s.');
+      }
+      if (sourceTransfer.execution_condition.public_key !==
             destinationTransferStateReq.body.public_key) {
-        throw new UnacceptableConditionsError('Source and destination ' +
-          'transfer execution conditions must match or the source ' +
-          'transfer\'s condition must be the execution of the ' +
-          'destination transfer');
+        throw new UnacceptableConditionsError('Source transfer execution ' +
+          'condition public key must match the destination ledger\'s.');
       }
     }
   }
