@@ -39,6 +39,8 @@ exports.get = function *get(source_ledger, destination_ledger) {
   let body = result.body;
   let rates = body.rates;
   let baseCurrency = body.base;
+  // The base currency trades 1:1 to itself
+  rates[baseCurrency] = 1;
 
   let currencies = Object.keys(rates);
   currencies.push(baseCurrency);
@@ -53,15 +55,6 @@ exports.get = function *get(source_ledger, destination_ledger) {
       'given asset pair');
   }
 
-  // If one of the chosen assets if the base, the rate is already included
-  if (currencyPair[0] === baseCurrency) {
-    return rates[currencyPair[1]] * (1 - exports.spread);
-  } else if (currencyPair[1] === baseCurrency) {
-    return 1 / (rates[currencyPair[0]] * (1 + exports.spread));
-  }
-
-  // If neither asset is the base currency, calculate the rate
-  let virtualRate = rates[currencyPair[1]] / rates[currencyPair[0]];
-  return virtualRate * (1 - exports.spread);
-
+  // Get ratio between currencies and apply spread
+  return rates[currencyPair[1]] / rates[currencyPair[0]] * (1 - exports.spread);
 };
