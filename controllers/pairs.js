@@ -4,8 +4,8 @@ const config = require('../services/config');
 
 exports.getCollection = function *getCollection() {
   let pairs = config.tradingPairs.map(function (pair) {
-    let currencies = pair.split(';').map(function (s) {
-      return s.split('/');
+    let currencies = pair.map(function (s) {
+      return s.split('@');
     });
     return {
       source_asset: currencies[0][0],

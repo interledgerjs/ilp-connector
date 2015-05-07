@@ -14,7 +14,7 @@ config.server.public_host = process.env.HOSTNAME || require('os').hostname();
 config.server.public_port = process.env.PUBLIC_PORT || config.server.port;
 
 // Currency pairs traded should be specified as
-// [["USD@usd-ledger.example/USD","EUR@eur-ledger.example"],...]
+// [["USD@http://usd-ledger.example/USD","EUR@http://eur-ledger.example"],...]
 config.tradingPairs = JSON.parse(process.env.TRADING_PAIRS || '[]');
 
 config.features = {};
