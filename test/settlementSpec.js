@@ -86,8 +86,8 @@ describe('Settlements', function () {
     });
 
     it('should return a 422 if the two transfer conditions do not ' +
-      'match and the source transfer one is not the execution ' +
-      'of the destination transfer', function *() {
+      'match and the source transfer one does not have the public key of the ' +
+      'destination ledger', function *() {
 
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
@@ -107,12 +107,15 @@ describe('Settlements', function () {
         .expect(422)
         .expect(function(res) {
           expect(res.body.id).to.equal('UnacceptableConditionsError');
-          expect(res.body.message).to.equal('Source and destination transfer ' +
-            'execution conditions must match or the source transfer\'s ' +
-            'condition must be the execution of the destination transfer');
+          expect(res.body.message).to.equal('Source transfer execution ' +
+            'condition public key must match the destination ledger\'s.');
         })
         .end();
     });
+
+    it.skip('should return a 422 if the two transfer conditions do not ' +
+      'match and the source transfer one does not have the same algorithm the' +
+      'destination ledger uses');
 
     it('should return a 422 if the settlement does not include the ' +
       'trader in the source transfer credits', function *() {
