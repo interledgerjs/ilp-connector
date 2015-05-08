@@ -20,6 +20,13 @@ config.tradingPairs = JSON.parse(process.env.TRADING_PAIRS || '[]');
 config.features = {};
 config.features.debugAutoFund = !!process.env.TRADER_DEBUG_AUTOFUND;
 
+// If the fxRatesApi is changed, make sure to change the tests
+// because another feed will likely have a different data format
+config.fx = {};
+config.fx.ratesApi = process.env.TRADER_FX_API || 'http://api.fixer.io/latest';
+config.fx.ratesCacheTtl = process.env.TRADER_FX_CACHE_TTL || 24 * 3600000;
+config.fx.spread = process.env.TRADER_FX_SPREAD || 0.002;
+
 const isCustomPort = config.server.secure ?
   +config.server.public_port !== 443 : +config.server.public_port !== 80;
 config.server.base_uri = url.format({
