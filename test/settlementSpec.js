@@ -18,11 +18,11 @@ const ratesResponse = require('./data/fxRates.json');
 // ledger.eu secret: u3HFmtkEHDCNJQwKGT4UfGf0TBqiqDu/2IY7R99Znvsu9/di2ccswRH5UdPRpp4QkX7tZBy+niIpkB28xW2jtw==
 
 describe('Settlements', function () {
+  logHelper();
 
   describe('PUT /settlements/:id', function () {
 
     beforeEach(function() {
-      logHelper();
       appHelper.create(this, app);
 
       this.settlementOneToOne =
@@ -562,7 +562,7 @@ describe('Settlements', function () {
       settlement.destination_transfers[0].debits[0].amount = '0.60';
       settlement.destination_transfers[0].debits.push({
         account: 'mark',
-        amount: '0.40',
+        amount: '0.40'
       });
 
       nock(settlement.destination_transfers[0].id)

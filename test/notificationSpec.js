@@ -13,12 +13,11 @@ const logHelper = require('five-bells-shared/testHelpers/log');
 const expect = require('chai').expect;
 
 describe('Notifications', function() {
+  logHelper();
 
   describe('POST /notifications', function() {
 
     beforeEach(function() {
-      logHelper();
-
       appHelper.create(this, app);
 
       this.settlementOneToOne =
