@@ -13,12 +13,11 @@ const logHelper = require('five-bells-shared/testHelpers/log');
 const expect = require('chai').expect;
 
 describe('Notifications', function() {
+  logHelper();
 
   describe('POST /notifications', function() {
 
     beforeEach(function() {
-      logHelper();
-
       appHelper.create(this, app);
 
       this.settlementOneToOne =
@@ -113,7 +112,7 @@ describe('Notifications', function() {
         .expect(function(res){
           expect(res.body.id).to.equal('UnrelatedNotificationError');
           expect(res.body.message).to.equal('Notification does not match a ' +
-            'settlment we have a record of or the corresponding source ' +
+            'settlement we have a record of or the corresponding source ' +
             'transfers may already have been executed');
         })
         .end();
@@ -161,7 +160,7 @@ describe('Notifications', function() {
     it('should submit the source transfer corresponding to the ' +
       'destination transfer it is notified about if its execution ' +
       'condition is the destination transfer', function *() {
-      
+
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
 
@@ -255,7 +254,7 @@ describe('Notifications', function() {
     it('should submit multiple source transfers if there are multiple ' +
       'that correspond to a single destination transfer it is notified about',
       function *() {
-      
+
       const settlement = this.formatId(this.settlementManyToOne,
         '/settlements/');
 
@@ -309,7 +308,7 @@ describe('Notifications', function() {
       'conditions even if one has the same condition as the destination ' +
       'transfer and another\'s condition is the destination transfer itself',
       function *() {
-      
+
       const settlement = this.formatId(this.settlementManyToOne,
         '/settlements/');
       settlement.source_transfers[0].execution_condition =
@@ -370,7 +369,7 @@ describe('Notifications', function() {
 
     it('should delete the subscription once it has submitted the source ' +
       'transfers', function *() {
-      
+
       const settlement = this.formatId(this.settlementSameExecutionCondition,
         '/settlements/');
 

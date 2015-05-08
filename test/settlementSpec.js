@@ -18,11 +18,11 @@ const ratesResponse = require('./data/fxRates.json');
 // ledger.eu secret: u3HFmtkEHDCNJQwKGT4UfGf0TBqiqDu/2IY7R99Znvsu9/di2ccswRH5UdPRpp4QkX7tZBy+niIpkB28xW2jtw==
 
 describe('Settlements', function () {
+  logHelper();
 
   describe('PUT /settlements/:id', function () {
 
     beforeEach(function() {
-      logHelper();
       appHelper.create(this, app);
 
       this.settlementOneToOne =
@@ -217,28 +217,6 @@ describe('Settlements', function () {
         .end();
     });
 
-    it('should return a 422 if source transfer debits cancel out the credits ' +
-      'in an attempt to cheat the trader', function *() {
-
-      const settlement = this.formatId(this.settlementOneToOne,
-        '/settlements/');
-      settlement.source_transfers[0].debits.push(
-        settlement.source_transfers[0].credits[0]);
-      settlement.source_transfers[0].credits.push(
-        settlement.source_transfers[0].debits[0]);
-
-      yield this.request()
-        .put('/settlements/' + this.settlementOneToOne.id)
-        .send(settlement)
-        .expect(422)
-        .expect(function(res) {
-          expect(res.body.id).to.equal('NoRelatedSourceCreditError');
-          expect(res.body.message).to.equal('Trader\'s account must be ' +
-            'credited in all source transfers to provide settlement');
-        })
-        .end();
-    });
-
     it('should return a 422 if the settlement includes assets this trader ' +
       'does not offer rates between', function *() {
 
@@ -321,6 +299,74 @@ describe('Settlements', function () {
     it('should return a 201 for a new settlement', function *() {
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferExecutedReceipt);
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(201)
+        .end();
+    });
+
+    it('should return a 201 for a new settlement even if the trader is also ' +
+      'the payee of the destination transfer', function *() {
+      const settlement = this.formatId(this.settlementOneToOne,
+        '/settlements/');
+      settlement.destination_transfers[0].credits =
+        settlement.destination_transfers[0].debits;
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferExecutedReceipt);
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(201)
+        .end();
+    });
+
+    it('should return a 201 for a new settlement even if the trader is also ' +
+      'the payer of the source transfer', function *() {
+      const settlement = this.formatId(this.settlementOneToOne,
+        '/settlements/');
+      settlement.source_transfers[0].debits =
+        settlement.source_transfers[0].credits;
 
       nock(settlement.destination_transfers[0].id)
         .put('')
@@ -562,7 +608,7 @@ describe('Settlements', function () {
       settlement.destination_transfers[0].debits[0].amount = '0.60';
       settlement.destination_transfers[0].debits.push({
         account: 'mark',
-        amount: '0.40',
+        amount: '0.40'
       });
 
       nock(settlement.destination_transfers[0].id)

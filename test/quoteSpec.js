@@ -12,11 +12,11 @@ const appHelper = require('./helpers/app');
 const logHelper = require('five-bells-shared/testHelpers/log');
 const expect = require('chai').expect;
 
+
 describe('Quotes', function() {
+  logHelper();
 
   beforeEach(function() {
-    logHelper();
-
     appHelper.create(this, app);
 
     nock('http://api.fixer.io/latest')

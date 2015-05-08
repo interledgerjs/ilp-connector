@@ -4,11 +4,6 @@ const request = require('co-request');
 const config = require('./config');
 const AssetsNotTradedError = require('../errors/assets-not-traded-error');
 
-// If the fxRatesApi is changed, make sure to change the tests
-// because another feed will likely have a different data format
-exports.fxRatesApi = 'http://api.fixer.io/latest';
-exports.spread = 0.002;
-
 // function tradesPair(base_asset, base_ledger, cross_asset, cross_ledger) {
 //   let pair = [
 //     base_asset + '@' + base_ledger,
@@ -29,14 +24,24 @@ function lookupCurrencies(source_ledger, destination_ledger) {
   return null;
 }
 
+let latestRates;
+let latestRatesDate;
+function *getRates() {
+  // If there are no rates, or they have expired, update them
+  if (!latestRates ||
+      (latestRatesDate + config.fx.ratesCacheTtl) < Number(new Date())) {
+    let result = yield request({
+      uri: config.fx.ratesApi,
+      json: true
+    });
+    latestRates = result.body;
+  }
+  return latestRates;
+}
+
 // TODO: actually limit the rates returned to the ledgers we have assets on
 exports.get = function *get(source_ledger, destination_ledger) {
-
-  let result = yield request({
-    uri: exports.fxRatesApi,
-    json: true
-  });
-  let body = result.body;
+  let body = yield getRates();
   let rates = body.rates;
   let baseCurrency = body.base;
   // The base currency trades 1:1 to itself
@@ -56,5 +61,6 @@ exports.get = function *get(source_ledger, destination_ledger) {
   }
 
   // Get ratio between currencies and apply spread
-  return rates[currencyPair[1]] / rates[currencyPair[0]] * (1 - exports.spread);
+  return rates[currencyPair[1]] / rates[currencyPair[0]] *
+    (1 - config.fx.spread);
 };

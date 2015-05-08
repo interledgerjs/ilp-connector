@@ -19,8 +19,8 @@ exports.post = function *postNotification() {
     if (!sourceTransfers || sourceTransfers.length === 0) {
       // TODO: should we delete the subscription?
       throw new UnrelatedNotificationError('Notification does not match a ' +
-        'settlment we have a record of or the corresponding source transfers ' +
-        'may already have been executed');
+        'settlement we have a record of or the corresponding source ' +
+        'transfers may already have been executed');
     }
 
     if (notification.resource.state === 'executed') {
@@ -39,19 +39,6 @@ exports.post = function *postNotification() {
         log.error('not all source transfers have been executed, ' +
           'meaning we have not been fully repaid');
       }
-
-      // Remove subscription
-      let removeSubscriptionReq = yield request({
-        method: 'DELETE',
-        uri: notification.id
-      });
-      if (removeSubscriptionReq.statusCode >= 400) {
-        log.error('error removing subscription', removeSubscriptionReq.body);
-      } else {
-        log.debug('removed subscription', notification.id);
-      }
-
-      subscriptionRecords.remove(notification.id);
     } else {
       log.debug('got notification about unknown or incomplete transfer');
     }
