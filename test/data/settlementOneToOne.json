@@ -19,6 +19,7 @@
       "algorithm": "ed25519-sha512",
       "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
+   "expires_at": "2015-06-16T00:00:02.000Z",
     "state": "prepared"
   }],
   "destination_transfers":[{
