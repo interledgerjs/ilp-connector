@@ -11,6 +11,9 @@ const ratesResponse = require('./data/fxRates.json');
 const appHelper = require('./helpers/app');
 const logHelper = require('five-bells-shared/testHelpers/log');
 const expect = require('chai').expect;
+const sinon = require('sinon');
+
+const START_DATE = 1434412800000; // June 16, 2015 00:00:00 GMT
 
 describe('Notifications', function() {
   logHelper();
@@ -19,6 +22,8 @@ describe('Notifications', function() {
 
     beforeEach(function() {
       appHelper.create(this, app);
+
+      this.clock = sinon.useFakeTimers(START_DATE);
 
       this.settlementOneToOne =
         _.cloneDeep(require('./data/settlementOneToOne.json'));
@@ -40,9 +45,14 @@ describe('Notifications', function() {
         _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'));
 
       nock('http://api.fixer.io/latest')
-      .get('')
-      .times(3)
-      .reply(200, ratesResponse);
+        .get('')
+        .times(3)
+        .reply(200, ratesResponse);
+    });
+
+    afterEach(function() {
+      nock.cleanAll();
+      this.clock.restore();
     });
 
     it('should return a 400 if the notification does not have an id field',
@@ -109,7 +119,7 @@ describe('Notifications', function() {
         .post('/notifications')
         .send(this.notificationWithConditionFulfillment)
         .expect(422)
-        .expect(function(res){
+        .expect(function(res) {
           expect(res.body.id).to.equal('UnrelatedNotificationError');
           expect(res.body.message).to.equal('Notification does not match a ' +
             'settlement we have a record of or the corresponding source ' +
@@ -153,7 +163,6 @@ describe('Notifications', function() {
       yield this.request()
         .post('/notifications')
         .send(this.notificationWithConditionFulfillment)
-        .expect(200)
         .end();
     });
 

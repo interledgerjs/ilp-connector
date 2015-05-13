@@ -20,6 +20,7 @@
       "algorithm": "ed25519-sha512",
       "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
     },
+    "expires_at": "2015-06-16T00:00:11.000Z",
     "state": "prepared"
   }, {
     "id": "http://cad-ledger.example/CAD/transfers/e042b737-8f20-40f0-87aa-e5b186512064",
@@ -41,6 +42,7 @@
       "algorithm": "ed25519-sha512",
       "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
     },
+    "expires_at": "2015-06-16T00:00:11.000Z",
     "state": "prepared"
   }],
   "destination_transfers":[{
@@ -63,6 +65,7 @@
       "algorithm": "ed25519-sha512",
       "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
     },
+    "expires_at": "2015-06-16T00:00:10.000Z",
     "state": "proposed"
   }, {
     "id": "http://cny-ledger.example/CNY/transfers/08cde216-e338-4be0-a373-143838349dc2",
@@ -84,6 +87,7 @@
       "algorithm": "ed25519-sha512",
       "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
     },
+    "expires_at": "2015-06-16T00:00:10.000Z",
     "state": "proposed"
   }]
 }

@@ -27,6 +27,11 @@ config.fx.ratesApi = process.env.TRADER_FX_API || 'http://api.fixer.io/latest';
 config.fx.ratesCacheTtl = process.env.TRADER_FX_CACHE_TTL || 24 * 3600000;
 config.fx.spread = process.env.TRADER_FX_SPREAD || 0.002;
 
+config.expiry = {};
+config.expiry.minMessageWindow =
+  process.env.MIN_MESSAGE_WINDOW || 1000; // milliseconds
+config.expiry.maxHoldTime = process.env.MAX_HOLD_TIME || 10000; // milliseconds
+
 const isCustomPort = config.server.secure ?
   +config.server.public_port !== 443 : +config.server.public_port !== 80;
 config.server.base_uri = url.format({

@@ -3,9 +3,10 @@
 /*eslint max-nested-callbacks: [4]*/
 'use strict';
 const _ = require('lodash');
-const crypto = require('crypto');
 const expect = require('chai').expect;
+const sinon = require('sinon');
 const nock = require('nock');
+const moment = require('moment');
 nock.enableNetConnect(['localhost']);
 const config = require('../services/config');
 config.tradingPairs = require('./data/tradingPairs');
@@ -14,39 +15,46 @@ const appHelper = require('./helpers/app');
 const logHelper = require('five-bells-shared/testHelpers/log');
 const ratesResponse = require('./data/fxRates.json');
 
+const START_DATE = 1434412800000; // June 16, 2015 00:00:00 GMT
+
 // ledger.eu public key: Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=
 // ledger.eu secret: u3HFmtkEHDCNJQwKGT4UfGf0TBqiqDu/2IY7R99Znvsu9/di2ccswRH5UdPRpp4QkX7tZBy+niIpkB28xW2jtw==
 
 describe('Settlements', function () {
   logHelper();
 
+  beforeEach(function() {
+    appHelper.create(this, app);
+
+    this.clock = sinon.useFakeTimers(START_DATE);
+
+    this.settlementOneToOne =
+      _.cloneDeep(require('./data/settlementOneToOne.json'));
+    this.settlementSameExecutionCondition =
+      _.cloneDeep(require('./data/settlementSameExecutionCondition.json'));
+    this.settlementOneToMany =
+      _.cloneDeep(require('./data/settlementOneToMany.json'));
+    this.settlementManyToOne =
+      _.cloneDeep(require('./data/settlementManyToOne.json'));
+    this.settlementManyToMany =
+      _.cloneDeep(require('./data/settlementManyToMany.json'));
+    this.transferProposedReceipt =
+      _.cloneDeep(require('./data/transferStateProposed.json'));
+    this.transferExecutedReceipt =
+      _.cloneDeep(require('./data/transferStateExecuted.json'));
+
+    nock('http://api.fixer.io/latest')
+      .get('')
+      .times(3)
+      .reply(200, ratesResponse);
+  });
+
+  afterEach(function() {
+    nock.cleanAll();
+    this.clock.restore();
+  });
+
   describe('PUT /settlements/:id', function () {
-
-    beforeEach(function() {
-      appHelper.create(this, app);
-
-      this.settlementOneToOne =
-        _.cloneDeep(require('./data/settlementOneToOne.json'));
-      this.settlementSameExecutionCondition =
-        _.cloneDeep(require('./data/settlementSameExecutionCondition.json'));
-      this.settlementOneToMany =
-        _.cloneDeep(require('./data/settlementOneToMany.json'));
-      this.settlementManyToOne =
-        _.cloneDeep(require('./data/settlementManyToOne.json'));
-      this.settlementManyToMany =
-        _.cloneDeep(require('./data/settlementManyToMany.json'));
-      this.transferProposedReceipt =
-        _.cloneDeep(require('./data/transferStateProposed.json'));
-      this.transferExecutedReceipt =
-        _.cloneDeep(require('./data/transferStateExecuted.json'));
-
-      nock.cleanAll();
-
-      nock('http://api.fixer.io/latest')
-        .get('')
-        .times(3)
-        .reply(200, ratesResponse);
-    });
 
     it('should return a 400 if the id is not a valid uuid', function *() {
       const settlement = this.formatId(this.settlementOneToOne,
@@ -257,6 +265,149 @@ describe('Settlements', function () {
         })
         .end();
 
+    });
+
+    it('should return a 422 if any of the source transfers is expired',
+      function *() {
+      const settlement = this.formatId(this.settlementManyToOne,
+        '/settlements/');
+      settlement.source_transfers[1].expires_at =
+        moment(START_DATE - 1).toISOString();
+
+      yield this.request()
+        .put('/settlements/' + this.settlementManyToOne.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('Transfer has already expired');
+        })
+        .end();
+    });
+
+    it('should return a 422 if any of the destination transfers is expired',
+      function *() {
+      const settlement = this.formatId(this.settlementOneToMany,
+        '/settlements/');
+      settlement.destination_transfers[1].expires_at =
+        moment(START_DATE - 1).toISOString();
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToMany.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('Transfer has already expired');
+        })
+        .end();
+    });
+
+    it('should return a 422 if a destination transfer has an ' +
+      'execution_condition but no expiry', function *() {
+      const settlement = this.formatId(this.settlementOneToMany,
+        '/settlements/');
+      delete settlement.destination_transfers[1].expires_at;
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToMany.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('Destination transfers ' +
+            'with execution conditions must have an expires_at field ' +
+            'for trader to agree to authorize them');
+        })
+        .end();
+    });
+
+    it('should return a 422 if any of the destination transfers expires too ' +
+      'far in the future (causing the trader to hold money for too long)',
+      function *() {
+      const settlement = this.formatId(this.settlementOneToMany,
+        '/settlements/');
+      settlement.destination_transfers[1].expires_at =
+        moment(START_DATE + 10001).toISOString();
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToMany.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('Destination transfer expiry is ' +
+            'too far in the future. The trader\'s money would need to be ' +
+            'held for too long');
+        })
+        .end();
+    });
+
+    it('should return a 422 if the source transfer expires too soon after ' +
+      'the destination transfer (we may not be able to execute the source ' +
+      'transfer in time)',
+      function *() {
+      const settlement = this.formatId(this.settlementOneToMany,
+        '/settlements/');
+      settlement.source_transfers[0].expires_at =
+        settlement.destination_transfers[1].expires_at;
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToMany.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('The window between the latest ' +
+            'destination transfer expiry and the earliest source transfer ' +
+            'expiry is insufficient to ensure that we can execute the ' +
+            'source transfers');
+        })
+        .end();
+    });
+
+    it('should return a 422 if the source transfer\'s execution condition is ' +
+      'the execution of the destination transfer but the destination ' +
+      'transfer expires too soon',
+      function *() {
+      const settlement = this.formatId(this.settlementOneToOne,
+        '/settlements/');
+      settlement.destination_transfers[0].expires_at =
+        moment(START_DATE + 999).toISOString();
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('There is insufficient time for ' +
+          'the trader to execute the destination transfer before it expires');
+        })
+        .end();
+    });
+
+    it('should return a 422 if the source transfer\'s execution condition is ' +
+      'the execution of the destination transfer but the source transfer ' +
+      'expires too soon (we may not be able to execute the source ' +
+      'transfer in time)',
+      function *() {
+      const settlement = this.formatId(this.settlementOneToOne,
+        '/settlements/');
+      settlement.source_transfers[0].expires_at =
+        moment(START_DATE + 1999).toISOString();
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('There is insufficient time for ' +
+          'the trader to execute the destination transfer before the source ' +
+          'transfer(s) expire(s)');
+        })
+        .end();
     });
 
     it('should accept upper case UUIDs but convert them to lower case',
@@ -551,7 +702,7 @@ describe('Settlements', function () {
       settlement.source_transfers[0].debits[0].amount = '21.07';
       settlement.source_transfers[0].credits.unshift({
         account: 'mary',
-        amount: '20',
+        amount: '20'
       });
 
       nock(settlement.destination_transfers[0].id)
@@ -886,6 +1037,42 @@ describe('Settlements', function () {
             execution_condition_fulfillment: fulfillment
           }]
         }))
+        .end();
+    });
+
+    it('should execute a settlement where the source transfer\'s expires_at ' +
+      'date has passed if the transfer was executed before it expired',
+      function *() {
+      const settlement = this.formatId(this.settlementOneToOne,
+        '/settlements/');
+      settlement.source_transfers[0].expires_at =
+        moment(START_DATE - 1).toISOString();
+      settlement.source_transfers[0].state = 'executed';
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(200, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferExecutedReceipt);
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(201)
         .end();
     });
 

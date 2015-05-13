@@ -40,6 +40,44 @@ describe('Quotes', function() {
         .end();
     });
 
+    it('should return a 422 if the destination_expiry_duration is too long',
+      function *() {
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=100' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD' +
+          '&destination_expiry_duration=10001')
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('Destination expiry ' +
+            'duration is too long');
+        })
+        .end();
+    });
+
+    it('should return a 422 if the difference between the ' +
+      'source_expiry_duration and destination_expiry_duration ' +
+      'is less than the minMessageWindow',
+      function *() {
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=100' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD' +
+          '&destination_expiry_duration=10000' +
+          '&source_expiry_duration=10999')
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError');
+          expect(res.body.message).to.equal('The difference between the ' +
+            'destination expiry duration and the source expiry duration is ' +
+            'insufficient to ensure that we can execute the source transfers');
+        })
+        .end();
+    });
+
     it('should return a valid Settlement Template object', function *() {
       yield this.request()
         .get('/quote?' +
@@ -49,8 +87,7 @@ describe('Quotes', function() {
         .expect(function(res) {
           let validation = validate('SettlementTemplate', res.body);
           if (!validation.valid) {
-            console.log('Invalid Settlement: ', JSON.stringify(validation.errors, null, 2));
-            throw new Error('Not a valid settlement');
+            throw new Error('Not a valid settlement template');
           }
         })
         .end();
@@ -67,14 +104,16 @@ describe('Quotes', function() {
             credits: [{
               account: 'mark',
               amount: '100.00'
-            }]
+            }],
+            expiry_duration: '11000'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'mark'
-            }]
+            }],
+            expiry_duration: '10000'
           }]
         })
         .end();
@@ -92,14 +131,16 @@ describe('Quotes', function() {
             credits: [{
               account: 'mark',
               amount: '94.61' // 1/ (EUR/USD Rate of 1.0592 + .2% spread)
-            }]
+            }],
+            expiry_duration: '11000'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               amount: '100.00',
               account: 'mark'
-            }]
+            }],
+            expiry_duration: '10000'
           }]
         })
         .end();
@@ -119,14 +160,16 @@ describe('Quotes', function() {
             credits: [{
               account: 'mark',
               amount: '100.00'
-            }]
+            }],
+            expiry_duration: '11000'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'mark'
-            }]
+            }],
+            expiry_duration: '10000'
           }]
         })
         .end();
@@ -145,14 +188,16 @@ describe('Quotes', function() {
             credits: [{
               account: 'mark',
               amount: '100.00'
-            }]
+            }],
+            expiry_duration: '11000'
           }],
           destination_transfers: [{
             ledger: 'http://eur-ledger.example/EUR',
             debits: [{
               amount: '94.22', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
               account: 'mark'
-            }]
+            }],
+            expiry_duration: '10000'
           }]
         })
         .end();
@@ -172,14 +217,16 @@ describe('Quotes', function() {
             credits: [{
               account: 'mark',
               amount: '100.00'
-            }]
+            }],
+            expiry_duration: '11000'
           }],
           destination_transfers: [{
             ledger: 'http://cad-ledger.example/CAD',
             debits: [{
               amount: '127.98', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
               account: 'mark'
-            }]
+            }],
+            expiry_duration: '10000'
           }]
         })
         .end();
@@ -199,18 +246,88 @@ describe('Quotes', function() {
             credits: [{
               amount: '100.00',
               account: 'mark'
-            }]
+            }],
+            expiry_duration: '11000'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               account: 'mark',
               amount: '77.82' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
-            }]
+            }],
+            expiry_duration: '10000'
           }]
         })
         .end();
 
+    });
+
+    it('should fill in default values if no expiry_durations are specified',
+      function *() {
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(200)
+        .expect(function(res) {
+          expect(res.body.source_transfers[0].expiry_duration)
+            .to.equal('11000');
+          expect(res.body.destination_transfers[0].expiry_duration)
+            .to.equal('10000');
+        })
+        .end();
+    });
+
+    it('should return the specified expiry_durations if they are acceptable',
+      function *() {
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&destination_ledger=http://usd-ledger.example/USD' +
+          '&source_expiry_duration=6000' +
+          '&destination_expiry_duration=5000')
+        .expect(200)
+        .expect(function(res) {
+          expect(res.body.source_transfers[0].expiry_duration)
+            .to.equal('6000');
+          expect(res.body.destination_transfers[0].expiry_duration)
+            .to.equal('5000');
+        })
+        .end();
+    });
+
+    it('should set the source_expiry_duration if only the ' +
+      'destination_expiry_duration is specified', function *() {
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&destination_ledger=http://usd-ledger.example/USD' +
+          '&destination_expiry_duration=5000')
+        .expect(200)
+        .expect(function(res) {
+          expect(res.body.source_transfers[0].expiry_duration)
+            .to.equal('6000');
+          expect(res.body.destination_transfers[0].expiry_duration)
+            .to.equal('5000');
+        })
+        .end();
+    });
+
+    it('should set the destination_expiry_duration if only the ' +
+      'source_expiry_duration is specified', function *() {
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&destination_ledger=http://usd-ledger.example/USD' +
+          '&source_expiry_duration=6000')
+        .expect(200)
+        .expect(function(res) {
+          expect(res.body.source_transfers[0].expiry_duration)
+            .to.equal('6000');
+          expect(res.body.destination_transfers[0].expiry_duration)
+            .to.equal('5000');
+        })
+        .end();
     });
   });
 

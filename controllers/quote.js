@@ -4,6 +4,7 @@ const config = require('../services/config');
 const log = require('five-bells-shared/services/log')('quote');
 const fxRates = require('../services/fxRates');
 const NoAmountSpecifiedError = require('../errors/no-amount-specified-error');
+const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error');
 const formatAmount = require('../utils/formatAmount');
 const formatAmountCeil = require('../utils/formatAmountCeil');
 
@@ -31,20 +32,55 @@ exports.get = function *() {
       'or destination amount to get quote');
   }
 
+  let destinationExpiryDuration =
+    parseFloat(this.query.destination_expiry_duration);
+  let sourceExpiryDuration =
+    parseFloat(this.query.source_expiry_duration);
+
+  // Check destination_expiry_duration
+  if (destinationExpiryDuration) {
+    if (destinationExpiryDuration > config.expiry.maxHoldTime) {
+      throw new UnacceptableExpiryError('Destination expiry duration ' +
+        'is too long');
+    }
+  } else if (sourceExpiryDuration) {
+    destinationExpiryDuration = sourceExpiryDuration
+      - config.expiry.minMessageWindow;
+  } else {
+    destinationExpiryDuration = config.expiry.maxHoldTime;
+  }
+
+  // Check difference between destination_expiry_duration
+  // and source_expiry_duration
+  if (sourceExpiryDuration) {
+    if (sourceExpiryDuration - destinationExpiryDuration
+        < config.expiry.minMessageWindow) {
+      throw new UnacceptableExpiryError('The difference between the ' +
+        'destination expiry duration and the source expiry duration ' +
+        'is insufficient to ensure that we can execute the ' +
+        'source transfers');
+    }
+  } else {
+    sourceExpiryDuration = destinationExpiryDuration +
+      config.expiry.minMessageWindow;
+  }
+
   let settlementTemplate = {
     source_transfers: [{
       ledger: this.query.source_ledger,
       credits: [{
         account: config.id,
         amount: sourceAmount
-      }]
+      }],
+      expiry_duration: String(sourceExpiryDuration)
     }],
     destination_transfers: [{
       ledger: this.query.destination_ledger,
       debits: [{
         account: config.id,
         amount: destinationAmount
-      }]
+      }],
+      expiry_duration: String(destinationExpiryDuration)
     }]
   };
 

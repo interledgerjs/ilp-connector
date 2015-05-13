@@ -1,13 +1,12 @@
 'use strict';
 
 const _ = require('lodash');
-const parse = require('co-body');
-const request = require('co-request');
 const requestUtil = require('five-bells-shared/utils/request');
 const log = require('five-bells-shared/services/log')('notifications');
 const subscriptionRecords = require('../services/subscriptionRecords');
 const executeSourceTransfers = require('../lib/executeSourceTransfers');
-const UnrelatedNotificationError = require('../errors/unrelated-notification-error');
+const UnrelatedNotificationError =
+  require('../errors/unrelated-notification-error');
 
 exports.post = function *postNotification() {
   let notification = yield requestUtil.validateBody(this, 'Notification');
