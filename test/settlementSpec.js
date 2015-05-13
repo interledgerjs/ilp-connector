@@ -702,7 +702,7 @@ describe('Settlements', function () {
       settlement.source_transfers[0].debits[0].amount = '21.07';
       settlement.source_transfers[0].credits.unshift({
         account: 'mary',
-        amount: '20',
+        amount: '20'
       });
 
       nock(settlement.destination_transfers[0].id)
@@ -1037,6 +1037,42 @@ describe('Settlements', function () {
             execution_condition_fulfillment: fulfillment
           }]
         }))
+        .end();
+    });
+
+    it('should execute a settlement where the source transfer\'s expires_at ' +
+      'date has passed if the transfer was executed before it expired',
+      function *() {
+      const settlement = this.formatId(this.settlementOneToOne,
+        '/settlements/');
+      settlement.source_transfers[0].expires_at =
+        moment(START_DATE - 1).toISOString();
+      settlement.source_transfers[0].state = 'executed';
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(200, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt);
+
+      nock(settlement.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferExecutedReceipt);
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(201)
         .end();
     });
 

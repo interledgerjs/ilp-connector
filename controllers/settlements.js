@@ -167,7 +167,8 @@ function validateExpiry (settlement) {
   // Verify none of the transfers has already expired
   function validateNotExpired (transfer) {
     if (transfer.expires_at &&
-      moment(transfer.expires_at, moment.ISO_8601).isBefore(moment())) {
+        transfer.state !== 'executed' &&
+        moment(transfer.expires_at, moment.ISO_8601).isBefore(moment())) {
 
       throw new UnacceptableExpiryError('Transfer has already expired');
     }
@@ -207,7 +208,7 @@ function validateExpiry (settlement) {
     // of our account) to execute all of the source transfers
     let earliestSourceTransferExpiry =
       _.min(_.map(settlement.source_transfers, function(transfer) {
-      return (transfer.expires_at ?
+      return (transfer.expires_at && transfer.state !== 'executed' ?
           moment(transfer.expires_at, moment.ISO_8601).valueOf() :
           Math.max());
       }));
@@ -247,6 +248,7 @@ function validateExpiry (settlement) {
     // they expire
     _.forEach(settlement.source_transfers, function(transfer) {
       if (transfer.expires_at &&
+          transfer.state !== 'executed' &&
           moment(transfer.expires_at, moment.ISO_8601).diff(moment())
             < minExecutionWindow + config.expiry.minMessageWindow) {
         throw new UnacceptableExpiryError('There is insufficient time for ' +
