@@ -192,7 +192,7 @@ function validateExpiry (settlement) {
           'to agree to authorize them');
       }
       if (moment(transfer.expires_at, moment.ISO_8601).diff(moment())
-          > config.expiry.maxHoldTime) {
+          > config.expiry.maxHoldTime * 1000) {
         throw new UnacceptableExpiryError('Destination transfer expiry is ' +
           'too far in the future. The trader\'s money would need to be ' +
           'held for too long');
@@ -218,7 +218,7 @@ function validateExpiry (settlement) {
         return moment(transfer.expires_at, moment.ISO_8601).valueOf();
       }));
     if (earliestSourceTransferExpiry - latestDestinationTransferExpiry
-        < config.expiry.minMessageWindow) {
+        < config.expiry.minMessageWindow * 1000) {
 
       throw new UnacceptableExpiryError('The window between the latest ' +
         'destination transfer expiry and the earliest source transfer expiry ' +
@@ -233,7 +233,7 @@ function validateExpiry (settlement) {
 
     // Check that we have enough time to execute the destination transfer
     // TODO use a better value for the minExecutionWindow
-    let minExecutionWindow = config.expiry.minMessageWindow;
+    let minExecutionWindow = config.expiry.minMessageWindow * 1000;
     _.forEach(settlement.destination_transfers, function(transfer) {
       if (transfer.expires_at &&
           moment(transfer.expires_at, moment.ISO_8601).diff(moment())
@@ -250,7 +250,7 @@ function validateExpiry (settlement) {
       if (transfer.expires_at &&
           transfer.state !== 'executed' &&
           moment(transfer.expires_at, moment.ISO_8601).diff(moment())
-            < minExecutionWindow + config.expiry.minMessageWindow) {
+            < minExecutionWindow + config.expiry.minMessageWindow * 1000) {
         throw new UnacceptableExpiryError('There is insufficient time for ' +
           'the trader to execute the destination transfer before the source ' +
           'transfer(s) expire(s)');

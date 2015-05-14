@@ -15,7 +15,7 @@
     "co-body": "^0.0.1",
     "co-request": "^0.2.0",
     "co-views": "^0.2.0",
-    "five-bells-shared": "https://569d9e97620f8ac44643f69afdea08af8ff72a5b@github.com/ripple/five-bells-shared/tarball/v2.6.0",
+    "five-bells-shared": "https://569d9e97620f8ac44643f69afdea08af8ff72a5b@github.com/ripple/five-bells-shared/tarball/v2.6.2",
     "koa": "^0.6.0",
     "koa-compress": "^1.0.6",
     "koa-mag": "^1.0.4",

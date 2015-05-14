@@ -29,8 +29,8 @@ config.fx.spread = process.env.TRADER_FX_SPREAD || 0.002;
 
 config.expiry = {};
 config.expiry.minMessageWindow =
-  process.env.MIN_MESSAGE_WINDOW || 1000; // milliseconds
-config.expiry.maxHoldTime = process.env.MAX_HOLD_TIME || 10000; // milliseconds
+  process.env.MIN_MESSAGE_WINDOW || 1; // seconds
+config.expiry.maxHoldTime = process.env.MAX_HOLD_TIME || 10; // seconds
 
 const isCustomPort = config.server.secure ?
   +config.server.public_port !== 443 : +config.server.public_port !== 80;
