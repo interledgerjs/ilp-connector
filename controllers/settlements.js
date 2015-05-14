@@ -431,6 +431,200 @@ function *submitDestinationTransfers (settlement) {
   }
 }
 
+/* eslint-disable */
+/**
+ * @api {put} /settlements/:id
+ *
+ * @apiName CreateSettlement
+ * @apiGroup Settlements
+ *
+ * @apiParam {UUID} id Settlement UUID
+ * @apiParam {Transfer[]} source_transfers Array of source transfers that credit the trader
+ * @apiParam {Transfer[]} destination_transfers Array of destination transfers that debit the trader
+ *
+ * @apiExample {shell} One-to-one Settlement:
+ *    curl -x PUT -H "Content-Type: application/json" -d
+ *      '{
+ *        "id": "c9377529-d7df-4aa1-ae37-ad5148612003",
+ *        "source_transfers":[{
+ *          "id": "http://usd-ledger.example/USD/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+ *          "ledger":"http://usd-ledger.example/USD",
+ *          "debits":[{
+ *            "amount":"1.07",
+ *            "account":"alice"
+ *          }],
+ *          "credits":[{
+ *            "amount":"1.07",
+ *            "account":"mark"
+ *          }],
+ *          "execution_condition": {
+ *            "message": {
+ *              "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
+ *              "state": "executed"
+ *            },
+ *            "signer": "http://otherledger.example",
+ *            "algorithm": "ed25519-sha512",
+ *            "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+ *          },
+ *          "expires_at": "2015-06-16T00:00:11.000Z",
+ *          "state": "prepared"
+ *        }],
+ *        "destination_transfers":[{
+ *          "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+ *          "ledger":"http://eur-ledger.example/EUR",
+ *          "debits":[{
+ *            "amount":"1.00",
+ *            "account":"mark"
+ *          }],
+ *          "credits":[{
+ *            "amount":"1.00",
+ *            "account":"bob"
+ *          }],
+ *          "execution_condition": {
+ *            "message": {
+ *              "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
+ *              "state": "executed"
+ *            },
+ *            "signer": "http://otherledger.example",
+ *            "algorithm": "ed25519-sha512",
+ *            "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+ *          },
+ *          "expires_at": "2015-06-16T00:00:10.000Z",
+ *          "state": "proposed"
+ *        }]
+ *      }'
+ *    https://trader.example/settlements/c9377529-d7df-4aa1-ae37-ad5148612003
+ *
+ * @apiSuccessExample {json} 201 New Settlement Response:
+ *    HTTP/1.1 201 CREATED
+ *      {
+ *        "id": "c9377529-d7df-4aa1-ae37-ad5148612003",
+ *        "source_transfers":[{
+ *          "id": "http://usd-ledger.example/USD/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+ *          "ledger":"http://usd-ledger.example/USD",
+ *          "debits":[{
+ *            "amount":"1.07",
+ *            "account":"alice"
+ *          }],
+ *          "credits":[{
+ *            "amount":"1.07",
+ *            "account":"mark"
+ *          }],
+ *          "execution_condition": {
+ *            "message": {
+ *              "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
+ *              "state": "executed"
+ *            },
+ *            "signer": "http://otherledger.example",
+ *            "algorithm": "ed25519-sha512",
+ *            "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+ *          },
+ *          "execution_condition_fulfillment": {
+ *            "signature": "ZF6EYl0NgaHg5gVCwvUBMrbh6UL+ytPFhAAxV/j5kYpWsBZtaeo/KPSJRKMhfcTrESVlPwT98iMxpWWrJRdrDw=="
+ *          },
+ *          "expires_at": "2015-06-16T00:00:11.000Z",
+ *          "state": "executed"
+ *        }],
+ *        "destination_transfers":[{
+ *          "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+ *          "ledger":"http://eur-ledger.example/EUR",
+ *          "debits":[{
+ *            "amount":"1.00",
+ *            "account":"mark"
+ *          }],
+ *          "credits":[{
+ *            "amount":"1.00",
+ *            "account":"bob"
+ *          }],
+ *          "execution_condition": {
+ *            "message": {
+ *              "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
+ *              "state": "executed"
+ *            },
+ *            "signer": "http://otherledger.example",
+ *            "algorithm": "ed25519-sha512",
+ *            "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+ *          },
+ *          "execution_condition_fulfillment": {
+ *            "signature": "ZF6EYl0NgaHg5gVCwvUBMrbh6UL+ytPFhAAxV/j5kYpWsBZtaeo/KPSJRKMhfcTrESVlPwT98iMxpWWrJRdrDw=="
+ *          },
+ *          "expires_at": "2015-06-16T00:00:10.000Z",
+ *          "state": "executed"
+ *        }]
+ *      }
+ *
+ * @apiErrorExample {json} 400 Invalid Settlement
+ *     HTTP/1.1 400 Bad Request
+ *     {
+ *       "id": "InvalidBodyError",
+ *       "message": "JSON request body is not a valid Settlement",
+ *       "validationErrors": [
+ *         {
+ *           "message": "Missing required property \"debits\"",
+ *           "context": "#/source_transfers/0",
+ *           "value": {
+ *             "id": "http://usd-ledger.example/USD/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+ *             "ledger": "http://usd-ledger.example/USD",
+ *             "credits": [
+ *               {
+ *                 "amount": "1.07",
+ *                 "account": "mark"
+ *               }
+ *             ],
+ *             "execution_condition": {
+ *               "message": {
+ *                 "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+ *                 "state": "executed"
+ *               },
+ *               "algorithm": "ed25519-sha512",
+ *               "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+ *             },
+ *             "expires_at": "2015-06-16T00:00:02.000Z",
+ *             "state": "prepared"
+ *           },
+ *           "criteria": "debits"
+ *         },
+ *         {
+ *           "message": "Failed \"items\" criteria",
+ *           "context": "#/source_transfers/0",
+ *           "value": [
+ *             {
+ *               "id": "http://usd-ledger.example/USD/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+ *               "ledger": "http://usd-ledger.example/USD",
+ *               "credits": [
+ *                 {
+ *                   "amount": "1.07",
+ *                   "account": "mark"
+ *                 }
+ *               ],
+ *               "execution_condition": {
+ *                 "message": {
+ *                   "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+ *                   "state": "executed"
+ *                 },
+ *                 "algorithm": "ed25519-sha512",
+ *                 "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+ *               },
+ *               "expires_at": "2015-06-16T00:00:02.000Z",
+ *               "state": "prepared"
+ *             }
+ *           ],
+ *           "criteria": {
+ *             "$ref": "Transfer.json"
+ *           }
+ *         }
+ *       ]
+ *     }
+ *
+ * @apiErrorExample {json} 422 Unacceptable Rate
+ *     HTTP/1.1 422 Unprocessable Entity
+ *     {
+ *       "id": "UnacceptableRateError",
+ *       "message": "Settlement rate does not match the rate currently offered"
+ *     }
+ */
+ /* eslint-enable */
+
 exports.put = function *(id) {
   // TODO: check that this UUID hasn't been used before
   requestUtil.validateUriParameter('id', id, 'Uuid');
