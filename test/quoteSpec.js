@@ -47,7 +47,7 @@ describe('Quotes', function() {
           'source_amount=100' +
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD' +
-          '&destination_expiry_duration=10001')
+          '&destination_expiry_duration=10.001')
         .expect(422)
         .expect(function(res) {
           expect(res.body.id).to.equal('UnacceptableExpiryError');
@@ -66,8 +66,8 @@ describe('Quotes', function() {
           'source_amount=100' +
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD' +
-          '&destination_expiry_duration=10000' +
-          '&source_expiry_duration=10999')
+          '&destination_expiry_duration=10' +
+          '&source_expiry_duration=10.999')
         .expect(422)
         .expect(function(res) {
           expect(res.body.id).to.equal('UnacceptableExpiryError');
@@ -105,7 +105,7 @@ describe('Quotes', function() {
               account: 'mark',
               amount: '100.00'
             }],
-            expiry_duration: '11000'
+            expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
@@ -113,7 +113,7 @@ describe('Quotes', function() {
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'mark'
             }],
-            expiry_duration: '10000'
+            expiry_duration: '10'
           }]
         })
         .end();
@@ -132,7 +132,7 @@ describe('Quotes', function() {
               account: 'mark',
               amount: '94.61' // 1/ (EUR/USD Rate of 1.0592 + .2% spread)
             }],
-            expiry_duration: '11000'
+            expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
@@ -140,7 +140,7 @@ describe('Quotes', function() {
               amount: '100.00',
               account: 'mark'
             }],
-            expiry_duration: '10000'
+            expiry_duration: '10'
           }]
         })
         .end();
@@ -161,7 +161,7 @@ describe('Quotes', function() {
               account: 'mark',
               amount: '100.00'
             }],
-            expiry_duration: '11000'
+            expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
@@ -169,7 +169,7 @@ describe('Quotes', function() {
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'mark'
             }],
-            expiry_duration: '10000'
+            expiry_duration: '10'
           }]
         })
         .end();
@@ -189,7 +189,7 @@ describe('Quotes', function() {
               account: 'mark',
               amount: '100.00'
             }],
-            expiry_duration: '11000'
+            expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://eur-ledger.example/EUR',
@@ -197,7 +197,7 @@ describe('Quotes', function() {
               amount: '94.22', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
               account: 'mark'
             }],
-            expiry_duration: '10000'
+            expiry_duration: '10'
           }]
         })
         .end();
@@ -218,7 +218,7 @@ describe('Quotes', function() {
               account: 'mark',
               amount: '100.00'
             }],
-            expiry_duration: '11000'
+            expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://cad-ledger.example/CAD',
@@ -226,7 +226,7 @@ describe('Quotes', function() {
               amount: '127.98', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
               account: 'mark'
             }],
-            expiry_duration: '10000'
+            expiry_duration: '10'
           }]
         })
         .end();
@@ -247,7 +247,7 @@ describe('Quotes', function() {
               amount: '100.00',
               account: 'mark'
             }],
-            expiry_duration: '11000'
+            expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
@@ -255,7 +255,7 @@ describe('Quotes', function() {
               account: 'mark',
               amount: '77.82' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
             }],
-            expiry_duration: '10000'
+            expiry_duration: '10'
           }]
         })
         .end();
@@ -271,9 +271,9 @@ describe('Quotes', function() {
         .expect(200)
         .expect(function(res) {
           expect(res.body.source_transfers[0].expiry_duration)
-            .to.equal('11000');
+            .to.equal('11');
           expect(res.body.destination_transfers[0].expiry_duration)
-            .to.equal('10000');
+            .to.equal('10');
         })
         .end();
     });
@@ -284,14 +284,14 @@ describe('Quotes', function() {
         .get('/quote?source_amount=100' +
           '&source_ledger=http://cad-ledger.example/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD' +
-          '&source_expiry_duration=6000' +
-          '&destination_expiry_duration=5000')
+          '&source_expiry_duration=6' +
+          '&destination_expiry_duration=5')
         .expect(200)
         .expect(function(res) {
           expect(res.body.source_transfers[0].expiry_duration)
-            .to.equal('6000');
+            .to.equal('6');
           expect(res.body.destination_transfers[0].expiry_duration)
-            .to.equal('5000');
+            .to.equal('5');
         })
         .end();
     });
@@ -302,13 +302,13 @@ describe('Quotes', function() {
         .get('/quote?source_amount=100' +
           '&source_ledger=http://cad-ledger.example/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD' +
-          '&destination_expiry_duration=5000')
+          '&destination_expiry_duration=5')
         .expect(200)
         .expect(function(res) {
           expect(res.body.source_transfers[0].expiry_duration)
-            .to.equal('6000');
+            .to.equal('6');
           expect(res.body.destination_transfers[0].expiry_duration)
-            .to.equal('5000');
+            .to.equal('5');
         })
         .end();
     });
@@ -319,13 +319,13 @@ describe('Quotes', function() {
         .get('/quote?source_amount=100' +
           '&source_ledger=http://cad-ledger.example/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD' +
-          '&source_expiry_duration=6000')
+          '&source_expiry_duration=6')
         .expect(200)
         .expect(function(res) {
           expect(res.body.source_transfers[0].expiry_duration)
-            .to.equal('6000');
+            .to.equal('6');
           expect(res.body.destination_transfers[0].expiry_duration)
-            .to.equal('5000');
+            .to.equal('5');
         })
         .end();
     });
