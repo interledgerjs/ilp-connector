@@ -3,3 +3,11 @@ machine:
     - curl https://raw.githubusercontent.com/creationix/nvm/v0.23.3/install.sh | bash
   node:
     version: iojs-1.6.3
+dependencies:
+  pre:
+deployment:
+  production:
+    branch: master
+    commands:
+      - mv npmrc-env .npmrc
+      - if [ -z "$(npm info $(npm ls --depth=-1 2>/dev/null | head -1 | cut -f 1 -d " ") 2>/dev/null)" ] ; then npm publish ; fi
