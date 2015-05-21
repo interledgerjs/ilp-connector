@@ -9,7 +9,7 @@ config.tradingPairs = require('./data/tradingPairs');
 const app = require('../app');
 const ratesResponse = require('./data/fxRates.json');
 const appHelper = require('./helpers/app');
-const logHelper = require('five-bells-shared/testHelpers/log');
+const logHelper = require('@ripple/five-bells-shared/testHelpers/log');
 const expect = require('chai').expect;
 const sinon = require('sinon');
 

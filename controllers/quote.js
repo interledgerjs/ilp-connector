@@ -1,7 +1,7 @@
 'use strict';
 
 const config = require('../services/config');
-const log = require('five-bells-shared/services/log')('quote');
+const log = require('@ripple/five-bells-shared/services/log')('quote');
 const fxRates = require('../services/fxRates');
 const NoAmountSpecifiedError = require('../errors/no-amount-specified-error');
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error');

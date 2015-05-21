@@ -7,9 +7,9 @@ const config = require('../services/config');
 config.tradingPairs = require('./data/tradingPairs');
 const app = require('../app');
 const ratesResponse = require('./data/fxRates.json');
-const validate = require('five-bells-shared/services/validate');
+const validate = require('@ripple/five-bells-shared/services/validate');
 const appHelper = require('./helpers/app');
-const logHelper = require('five-bells-shared/testHelpers/log');
+const logHelper = require('@ripple/five-bells-shared/testHelpers/log');
 const expect = require('chai').expect;
 
 

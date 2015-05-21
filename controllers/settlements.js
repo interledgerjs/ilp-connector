@@ -3,8 +3,8 @@
 const _ = require('lodash');
 const moment = require('moment');
 const request = require('co-request');
-const requestUtil = require('five-bells-shared/utils/request');
-const log = require('five-bells-shared/services/log')('settlements');
+const requestUtil = require('@ripple/five-bells-shared/utils/request');
+const log = require('@ripple/five-bells-shared/services/log')('settlements');
 const executeSourceTransfers = require('../lib/executeSourceTransfers');
 const config = require('../services/config');
 const fxRates = require('../services/fxRates');
@@ -21,7 +21,7 @@ const NoRelatedDestinationDebitError =
 const FundsNotHeldError = require('../errors/funds-not-held-error');
 const ManyToManyNotSupportedError =
   require('../errors/many-to-many-not-supported-error');
-const hashJSON = require('five-bells-shared/utils/hashJson');
+const hashJSON = require('@ripple/five-bells-shared/utils/hashJson');
 
 function sourceConditionIsDestinationTransfer(source, destination) {
   // Check the message or message_hash

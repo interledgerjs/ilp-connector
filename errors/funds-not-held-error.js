@@ -1,7 +1,7 @@
 'use strict';
 
 const UnprocessableEntityError =
-  require('five-bells-shared/errors/unprocessable-entity-error');
+  require('@ripple/five-bells-shared/errors/unprocessable-entity-error');
 
 module.exports = function FundsNotHeldError(message) {
   Error.captureStackTrace(this, this.constructor);
