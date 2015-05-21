@@ -103,6 +103,10 @@ function validateExecutionConditions (settlement) {
   }
 }
 
+function validateRejectionCredits (settlement) {
+
+}
+
 function *validateExecutionConditionPublicKey (settlement) {
   // TODO: use a cache of ledgers' public keys and move this functionality
   // into the synchronous validateExecutionConditions function
@@ -284,7 +288,6 @@ function *validateRate (settlement) {
     }
 
     // Sum the credits to the trader's account in the source transfer
-    // less the debits (which should be 0)
     let sourceCreditTotal =
       _.sum(settlement.source_transfers[0].credits, amountFinder);
 
@@ -331,12 +334,10 @@ function *validateRate (settlement) {
     }
 
     // Sum the debits from the trader's account in the destination transfer
-    // less the credits (which should be 0)
-    let destinationDebitNet =
-      _.sum(settlement.destination_transfers[0].debits, amountFinder) -
-      _.sum(settlement.destination_transfers[0].credits, amountFinder);
+    let destinationDebitTotal =
+      _.sum(settlement.destination_transfers[0].debits, amountFinder);
 
-    if (destinationDebitNet <= 0) {
+    if (destinationDebitTotal <= 0) {
       throw new NoRelatedDestinationDebitError('Trader\'s account ' +
         'must be debited in all destination transfers to provide settlement');
     }
@@ -344,24 +345,23 @@ function *validateRate (settlement) {
     // For each of the source transfers figure out the net credits
     // to the trader's account, then use the trader's rate to compute
     // how much of the destination asset that represents
-    // Then, total that amount and compare it to the destinationDebitNet
+    // Then, total that amount and compare it to the destinationDebitTotal
 
     let sourceCreditsEquivalentInDestinationAsset = _.sum(
       _.map(settlement.source_transfers, function(transfer) {
-        let sourceCreditNet = _.sum(transfer.credits, amountFinder) -
-          _.sum(transfer.debits, amountFinder); // should be 0
+        let sourceCreditTotal = _.sum(transfer.credits, amountFinder);
 
-        if (sourceCreditNet <= 0) {
+        if (sourceCreditTotal <= 0) {
           throw new NoRelatedSourceCreditError('Trader\'s account ' +
             'must be credited in all source transfers to provide settlement');
         }
 
         let offeredRate = rates[transfer.ledger];
-        let destinationAssetEquivalent = sourceCreditNet * offeredRate;
+        let destinationAssetEquivalent = sourceCreditTotal * offeredRate;
         return destinationAssetEquivalent;
     }));
 
-    if (sourceCreditsEquivalentInDestinationAsset < destinationDebitNet) {
+    if (sourceCreditsEquivalentInDestinationAsset < destinationDebitTotal) {
       log.error('client requested unacceptable rate');
       throw new UnacceptableRateError('Settlement rate does not match ' +
         'the rate currently offered');

@@ -1076,6 +1076,266 @@ describe('Settlements', function () {
         .end();
     });
 
+    it('should execute a one-to-many settlement where it is credited in ' +
+       'both the source and destination transfers', function *() {
+
+      const settlement = this.formatId(this.settlementOneToMany,
+        '/settlements/');
+
+      settlement.destination_transfers[1].credits[0].account = 'mark';
+
+      const fulfillment = {
+        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
+          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
+      };
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.destination_transfers[1].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[1], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(201, _.merge(_.cloneDeep(settlement), {
+          state: 'executed',
+          source_transfers: [{
+            state: 'executed',
+            execution_condition_fulfillment: fulfillment
+          }],
+          destination_transfers: [{
+            state: 'executed',
+            debits: [{
+              authorization: {
+                algorithm: 'ed25519-sha512'
+              }
+            }],
+            execution_condition_fulfillment: fulfillment
+          }, {
+            state: 'executed',
+            debits: [{
+              authorization: {
+                algorithm: 'ed25519-sha512'
+              }
+            }],
+            execution_condition_fulfillment: fulfillment
+          }]
+        }))
+        .end();
+    });
+
+    it('should execute a one-to-many settlement where it is debited in ' +
+       'both the source and destination transfers', function *() {
+
+      const settlement = this.formatId(this.settlementOneToMany,
+        '/settlements/');
+
+      settlement.source_transfers[0].debits[0] = {
+        account: 'mark',
+        amount: '10',
+        authorization: {
+          algorithm: 'ed25519-sha512'
+        }
+      };
+
+      const fulfillment = {
+        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
+          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
+      };
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.destination_transfers[1].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[1], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(201, _.merge(_.cloneDeep(settlement), {
+          state: 'executed',
+          source_transfers: [{
+            state: 'executed',
+            execution_condition_fulfillment: fulfillment
+          }],
+          destination_transfers: [{
+            state: 'executed',
+            debits: [{
+              authorization: {
+                algorithm: 'ed25519-sha512'
+              }
+            }],
+            execution_condition_fulfillment: fulfillment
+          }, {
+            state: 'executed',
+            debits: [{
+              authorization: {
+                algorithm: 'ed25519-sha512'
+              }
+            }],
+            execution_condition_fulfillment: fulfillment
+          }]
+        }))
+        .end();
+
+    });
+
+    it('should execute a many-to-one settlement where it is credited in ' +
+       'both the source and destination transfers', function *() {
+
+      const settlement = this.formatId(this.settlementManyToOne,
+        '/settlements/');
+
+      settlement.destination_transfers[0].credits[0].account = 'mark';
+
+      const fulfillment = {
+        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
+          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
+      };
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.source_transfers[1].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(201, _.merge(_.cloneDeep(settlement), {
+          state: 'executed',
+          source_transfers: [{
+            state: 'executed',
+            execution_condition_fulfillment: fulfillment
+          }, {
+            state: 'executed',
+            execution_condition_fulfillment: fulfillment
+          }],
+          destination_transfers: [{
+            state: 'executed',
+            debits: [{
+              authorization: {
+                algorithm: 'ed25519-sha512'
+              }
+            }],
+            execution_condition_fulfillment: fulfillment
+          }]
+        }))
+        .end();
+
+    });
+
+    it('should execute a many-to-one settlement where it is debited in ' +
+       'both the source and destination transfers', function *() {
+
+      const settlement = this.formatId(this.settlementManyToOne,
+        '/settlements/');
+
+      settlement.source_transfers[0].debits[0] = {
+        account: 'mark',
+        amount: '10',
+        authorization: {
+          algorithm: 'ed25519-sha512'
+        }
+      };
+
+      const fulfillment = {
+        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
+          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
+      };
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.source_transfers[1].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(201, _.merge(_.cloneDeep(settlement), {
+          state: 'executed',
+          source_transfers: [{
+            state: 'executed',
+            execution_condition_fulfillment: fulfillment
+          }, {
+            state: 'executed',
+            execution_condition_fulfillment: fulfillment
+          }],
+          destination_transfers: [{
+            state: 'executed',
+            debits: [{
+              authorization: {
+                algorithm: 'ed25519-sha512'
+              }
+            }],
+            execution_condition_fulfillment: fulfillment
+          }]
+        }))
+        .end();
+
+    });
   });
 
 });
