@@ -1,5 +1,5 @@
 {
-  "name": "five-bells-trader",
+  "name": "@ripple/five-bells-trader",
   "version": "0.0.0",
   "scripts": {
     "start": "nodemon app.js",
