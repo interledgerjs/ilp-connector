@@ -1,7 +1,6 @@
 {
   "name": "five-bells-trader",
   "version": "0.0.0",
-  "private": true,
   "scripts": {
     "start": "nodemon app.js",
     "test": "NODE_ENV=unit node node_modules/.bin/istanbul test -- _mocha -r co-mocha"
