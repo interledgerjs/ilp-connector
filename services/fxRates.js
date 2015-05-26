@@ -61,6 +61,13 @@ exports.get = function *get(source_ledger, destination_ledger) {
   }
 
   // Get ratio between currencies and apply spread
-  return rates[currencyPair[1]] / rates[currencyPair[0]] *
-    (1 - config.fx.spread);
+  return rates[currencyPair[1]] / rates[currencyPair[0]];
+};
+
+exports.applySpreadFixedSource = function(amount) {
+  return amount * (1 - config.fx.spread);
+};
+
+exports.applySpreadFixedDestination = function(amount) {
+  return amount * (1 + config.fx.spread);
 };

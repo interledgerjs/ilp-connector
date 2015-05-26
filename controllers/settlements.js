@@ -283,8 +283,12 @@ function *validateRate (settlement) {
     let sourceLedger = settlement.source_transfers[0].ledger;
     let rates = {};
     for (let transfer of settlement.destination_transfers) {
-      rates[transfer.ledger] =
+
+      let rateWithoutSpread =
         yield fxRates.get(sourceLedger, transfer.ledger);
+
+      rates[transfer.ledger] =
+        fxRates.applySpreadFixedSource(rateWithoutSpread);
     }
 
     // Sum the credits to the trader's account in the source transfer
