@@ -31,6 +31,8 @@ config.expiry = {};
 config.expiry.minMessageWindow =
   process.env.MIN_MESSAGE_WINDOW || 1; // seconds
 config.expiry.maxHoldTime = process.env.MAX_HOLD_TIME || 10; // seconds
+config.expiry.rejectionCreditPercentage =
+  process.env.REJECTION_CREDIT_PERCENTAGE || 0.01;
 
 const isCustomPort = config.server.secure ?
   +config.server.public_port !== 443 : +config.server.public_port !== 80;

@@ -14,6 +14,8 @@ const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error');
 const UnacceptableRateError = require('../errors/unacceptable-rate-error');
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error');
+const UnacceptableRejectionCreditsError =
+  require('../errors/unacceptable-rejection-credits-error');
 const NoRelatedSourceCreditError =
   require('../errors/no-related-source-credit-error');
 const NoRelatedDestinationDebitError =
@@ -266,6 +268,18 @@ function amountFinder (creditOrDebit) {
     0);
 }
 
+/**
+ * Function to sum the credits or debits from the given array of
+ * transfers and convert the amount into a single asset for
+ * easier comparisons.
+ *
+ * @param {Array of Transfers} opts.transfers Either the source or destination transfers
+ * @param {String} opts.transferSide Either 'source' or 'destination'
+ * @param {String} opts.creditsOrDebits Indicates whether we want to sum the relevant credits or debits in the given transfers
+ * @param {Boolean} opts.noErrors If true, don't throw errors for NoRelatedSourceCredit or DestinationDebit
+ * @param {String} opts.convertToLedger The ledger representing the asset we will convert all of the amounts into (for easier comparisons)
+ * @yield {Float} The total amount converted into the asset represented by opts.convertToLedger
+ */
 function *calculateAmountEquivalent(opts) {
 
   // convertedAmountTotal is going to be the total of either the credits
@@ -340,12 +354,78 @@ function *validateRate (settlement) {
       convertToLedger: convertToLedger
     });
 
-  // console.log(fxRates.applySpreadFixedSource(sourceCreditEquivalent), destinationDebitEquivalent)
-
-  if (fxRates.applySpreadFixedSource(sourceCreditEquivalent)
+  if (fxRates.subtractSpread(sourceCreditEquivalent)
       < destinationDebitEquivalent) {
     throw new UnacceptableRateError('Settlement rate does not match ' +
       'the rate currently offered');
+  }
+}
+
+function *validateRejectionCredits (settlement) {
+  // Determine which ledger's asset we will convert all
+  // of the others to
+  let convertToLedger;
+  if (settlement.source_transfers.length === 1) {
+    convertToLedger = settlement.source_transfers[0].ledger;
+  } else {
+    convertToLedger = settlement.destination_transfers[0].ledger;
+  }
+
+  // This is how much we'll actually get paid in the case of a failure
+  // If there are no rejection_credits this will be 0
+  const sourceRejectionCreditEquivalent =
+    yield calculateAmountEquivalent({
+      transfers: settlement.source_transfers,
+      transferSide: 'source',
+      creditsOrDebits: 'rejection_credits',
+      convertToLedger: convertToLedger,
+      noErrors: true
+    });
+
+  // Calculate cost of held funds
+  const destinationDebitEquivalent =
+    yield calculateAmountEquivalent({
+      transfers: settlement.destination_transfers,
+      transferSide: 'destination',
+      creditsOrDebits: 'debits',
+      convertToLedger: convertToLedger,
+      noErrors: true
+    });
+  const costOfHeldFunds = config.expiry.rejectionCreditPercentage / 100 *
+      destinationDebitEquivalent;
+
+  // Calculate how much we'll lose in each of the destination transfers
+  // that have rejection credits set
+  const destinationTransfersWithRejectionCredits =
+    _.filter(settlement.destination_transfers, function(transfer) {
+      return transfer.rejection_credits;
+    });
+  const destinationRejectionCredits =
+    yield calculateAmountEquivalent({
+      transfers: destinationTransfersWithRejectionCredits,
+      transferSide: 'destination',
+      creditsOrDebits: 'rejection_credits',
+      convertToLedger: convertToLedger,
+      noErrors: true
+    });
+  const destinationDebitsInTransfersWithRejectionCredits =
+    yield calculateAmountEquivalent({
+      transfers: destinationTransfersWithRejectionCredits,
+      transferSide: 'destination',
+      creditsOrDebits: 'debits',
+      convertToLedger: convertToLedger,
+      noErrors: true
+    });
+
+  const totalCost =
+    costOfHeldFunds +
+    (destinationDebitsInTransfersWithRejectionCredits -
+    destinationRejectionCredits);
+
+  if (sourceRejectionCreditEquivalent < totalCost) {
+    throw new UnacceptableRejectionCreditsError('Source rejection credits ' +
+      'are insufficient to cover the cost of holding funds for the ' +
+      'destination transfers and the destination transfer rejection credits');
   }
 }
 
@@ -633,6 +713,7 @@ exports.put = function *(id) {
   validateSourceTransfersArePrepared(settlement);
   validateExpiry(settlement);
   yield validateRate(settlement);
+  yield validateRejectionCredits(settlement);
   validateExecutionConditions(settlement);
   yield validateExecutionConditionPublicKey(settlement);
 

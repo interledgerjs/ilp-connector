@@ -410,6 +410,69 @@ describe('Settlements', function () {
         .end();
     });
 
+    it('should return a 422 if the source transfer does not ' +
+      'have rejection_credits', function *() {
+      const settlement = this.formatId(this.settlementOneToOne,
+        '/settlements/');
+      delete settlement.source_transfers[0].rejection_credits;
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableRejectionCreditsError');
+          expect(res.body.message).to.equal('Source rejection credits ' +
+            'are insufficient to cover the cost of holding funds for the ' +
+            'destination transfers and the destination transfer rejection ' +
+            'credits');
+        })
+        .end();
+    });
+
+    it('should return a 422 if the source transfer rejection_credits ' +
+      'do not cover the cost of holding funds', function *() {
+      const settlement = this.formatId(this.settlementOneToOne,
+        '/settlements/');
+      settlement.source_transfers[0].rejection_credits[0].amount = '.000104';
+
+      yield this.request()
+        .put('/settlements/' + this.settlementOneToOne.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableRejectionCreditsError');
+          expect(res.body.message).to.equal('Source rejection credits ' +
+            'are insufficient to cover the cost of holding funds for the ' +
+            'destination transfers and the destination transfer rejection ' +
+            'credits');
+        })
+        .end();
+    });
+
+    it('should return a 422 if the source transfer rejection_credits ' +
+      'cover the cost of holding funds but there are rejection_credits ' +
+      'on the destination side that take more money from our account',
+        function *() {
+
+      const settlement = this.formatId(this.settlementSameExecutionCondition,
+        '/settlements/');
+      settlement.destination_transfers[0].rejection_credits[1].amount = '.9998';
+
+      yield this.request()
+        .put('/settlements/' + this.settlementSameExecutionCondition.id)
+        .send(settlement)
+        .expect(422)
+        .expect(function(res) {
+          expect(res.body.id).to.equal('UnacceptableRejectionCreditsError');
+          expect(res.body.message).to.equal('Source rejection credits ' +
+            'are insufficient to cover the cost of holding funds for the ' +
+            'destination transfers and the destination transfer rejection ' +
+            'credits');
+        })
+        .end();
+    });
+
     it('should accept upper case UUIDs but convert them to lower case',
       function *() {
 

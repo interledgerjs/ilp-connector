@@ -64,10 +64,10 @@ exports.get = function *get(source_ledger, destination_ledger) {
   return rates[currencyPair[1]] / rates[currencyPair[0]];
 };
 
-exports.applySpreadFixedSource = function(amount) {
+exports.subtractSpread = function(amount) {
   return amount * (1 - config.fx.spread);
 };
 
-exports.applySpreadFixedDestination = function(amount) {
+exports.addSpread = function(amount) {
   return amount * (1 + config.fx.spread);
 };
