@@ -98,10 +98,12 @@ exports.get = function *() {
   let sourceAmount, destinationAmount;
   if (this.query.source_amount) {
     log.debug('creating quote with fixed source amount');
+    rate = fxRates.subtractSpread(rate);
     sourceAmount = formatAmountCeil(this.query.source_amount);
     destinationAmount = formatAmount(this.query.source_amount * rate);
   } else if (this.query.destination_amount) {
     log.debug('creating quote with fixed destination amount');
+    rate = fxRates.addSpread(rate);
     sourceAmount = formatAmountCeil(this.query.destination_amount / rate);
     destinationAmount = formatAmount(this.query.destination_amount);
   } else {

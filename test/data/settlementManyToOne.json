@@ -11,6 +11,13 @@
       "amount":"5.32",
       "account":"mark"
     }],
+    "rejection_credits": [{
+      "amount": ".000532",
+      "account": "mark"
+    }, {
+      "amount": "5.319468",
+      "account": "alice"
+    }],
     "execution_condition": {
       "message": {
         "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
@@ -32,6 +39,13 @@
     "credits":[{
       "amount":"6.80",
       "account":"mark"
+    }],
+    "rejection_credits": [{
+      "amount": ".00085",
+      "account": "mark"
+    }, {
+      "amount": "6.79915",
+      "account": "alice"
     }],
     "execution_condition": {
       "message": {
@@ -55,6 +69,13 @@
     "credits":[{
       "amount":"10.00",
       "account":"bob"
+    }],
+    "rejection_credits": [{
+      "amount": "9.9999",
+      "account": "mark"
+    }, {
+      "amount": ".0001",
+      "account": "bob"
     }],
     "execution_condition": {
       "message": {

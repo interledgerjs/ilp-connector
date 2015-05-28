@@ -11,6 +11,13 @@
       "amount":"1.07",
       "account":"mark"
     }],
+    "rejection_credits": [{
+      "amount": ".00010592",
+      "account": "mark"
+    }, {
+      "amount": "1.06989408",
+      "account": "alice"
+    }],
     "execution_condition": {
       "message": {
         "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",

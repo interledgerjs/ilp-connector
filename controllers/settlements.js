@@ -14,6 +14,8 @@ const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error');
 const UnacceptableRateError = require('../errors/unacceptable-rate-error');
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error');
+const UnacceptableRejectionCreditsError =
+  require('../errors/unacceptable-rejection-credits-error');
 const NoRelatedSourceCreditError =
   require('../errors/no-related-source-credit-error');
 const NoRelatedDestinationDebitError =
@@ -259,113 +261,171 @@ function validateExpiry (settlement) {
   }
 }
 
-function *validateRate (settlement) {
+function amountFinder (creditOrDebit) {
+  // TODO: change this check when the account ids become IRIs
+  return (creditOrDebit.account === config.id ?
+    parseFloat(creditOrDebit.amount) :
+    0);
+}
 
-  // TODO: thoroughly check this logic
+/**
+ * Function to sum the credits or debits from the given array of
+ * transfers and convert the amount into a single asset for
+ * easier comparisons.
+ *
+ * @param {Array of Transfers} opts.transfers Either the source or destination transfers
+ * @param {String} opts.transferSide Either 'source' or 'destination'
+ * @param {String} opts.creditsOrDebits Indicates whether we want to sum the relevant credits or debits in the given transfers
+ * @param {Boolean} opts.noErrors If true, don't throw errors for NoRelatedSourceCredit or DestinationDebit
+ * @param {String} opts.convertToLedger The ledger representing the asset we will convert all of the amounts into (for easier comparisons)
+ * @yield {Float} The total amount converted into the asset represented by opts.convertToLedger
+ */
+function *calculateAmountEquivalent(opts) {
+
+  // convertedAmountTotal is going to be the total of either the credits
+  // if the transfers are source_transfers or debits if the transfers
+  // are destination_transfers (the amount that is either entering
+  // or leaving our account)
+  // Then, we are going to use the fxRates to convert the amount
+  // into the asset represented by convertToLedger
+  let convertedAmountTotal = 0;
+  for (let transfer of opts.transfers) {
+
+    // Total the number of credits or debits to the traders account
+    let relevantAmountTotal =
+      _.sum(transfer[opts.creditsOrDebits], amountFinder);
+
+    // Throw an error if we're not included in the transfer
+    if (relevantAmountTotal <= 0 && !opts.noErrors) {
+      if (opts.transferSide === 'source') {
+        throw new NoRelatedSourceCreditError('Trader\'s account ' +
+          'must be credited in all source transfers to ' +
+          'provide settlement');
+      } else if (opts.transferSide === 'destination') {
+        throw new NoRelatedDestinationDebitError('Trader\'s account ' +
+          'must be debited in all destination transfers to ' +
+          'provide settlement');
+      }
+    }
+
+    // Calculate how much the relevantAmountTotal is worth in
+    // the asset represented by convertToLedger
+    let rate;
+    if (transfer.ledger === opts.convertToLedger) {
+      convertedAmountTotal += relevantAmountTotal;
+    } else if (opts.transferSide === 'source') {
+      rate = yield fxRates.get(transfer.ledger, opts.convertToLedger);
+      convertedAmountTotal += relevantAmountTotal * rate;
+    } else if (opts.transferSide === 'destination') {
+      rate = yield fxRates.get(opts.convertToLedger, transfer.ledger);
+      convertedAmountTotal += relevantAmountTotal / rate;
+    }
+  }
+  return convertedAmountTotal;
+}
+
+function *validateRate (settlement) {
 
   log.debug('validating rate');
 
-  function amountFinder (creditOrDebit) {
-    // TODO: change this check when the account ids become IRIs
-    return (creditOrDebit.account === config.id ?
-      parseFloat(creditOrDebit.amount) :
-      0);
+  // Determine which ledger's asset we will convert all
+  // of the others to
+  let convertToLedger;
+  if (settlement.source_transfers.length === 1) {
+    convertToLedger = settlement.source_transfers[0].ledger;
+  } else {
+    convertToLedger = settlement.destination_transfers[0].ledger;
   }
 
+  // Convert the source credits and destination debits to a
+  // common asset so we can more easily compare them
+  const sourceCreditEquivalent =
+    yield calculateAmountEquivalent({
+      transfers: settlement.source_transfers,
+      transferSide: 'source',
+      creditsOrDebits: 'credits',
+      convertToLedger: convertToLedger
+    });
+  const destinationDebitEquivalent =
+    yield calculateAmountEquivalent({
+      transfers: settlement.destination_transfers,
+      transferSide: 'destination',
+      creditsOrDebits: 'debits',
+      convertToLedger: convertToLedger
+    });
+
+  if (fxRates.subtractSpread(sourceCreditEquivalent)
+      < destinationDebitEquivalent) {
+    throw new UnacceptableRateError('Settlement rate does not match ' +
+      'the rate currently offered');
+  }
+}
+
+function *validateRejectionCredits (settlement) {
+  // Determine which ledger's asset we will convert all
+  // of the others to
+  let convertToLedger;
   if (settlement.source_transfers.length === 1) {
-    // One to many
-
-    // Get rates
-    let sourceLedger = settlement.source_transfers[0].ledger;
-    let rates = {};
-    for (let transfer of settlement.destination_transfers) {
-      rates[transfer.ledger] =
-        yield fxRates.get(sourceLedger, transfer.ledger);
-    }
-
-    // Sum the credits to the trader's account in the source transfer
-    // less the debits (which should be 0)
-    let sourceCreditTotal =
-      _.sum(settlement.source_transfers[0].credits, amountFinder);
-
-    if (sourceCreditTotal <= 0) {
-      throw new NoRelatedSourceCreditError('Trader\'s account ' +
-        'must be credited in all source transfers to provide settlement');
-    }
-
-    // For each of the destination transfers figure out the net debits
-    // from the trader's account, then use the trader's rate to compute
-    // how much of the source transfer asset that represents
-    // Then, total that amount and compare it to the sourceCreditNet
-
-    let destinationDebitsEquivalentInSourceAsset = _.sum(
-      _.map(settlement.destination_transfers, function(transfer) {
-        let destinationDebitTotal = _.sum(transfer.debits, amountFinder);
-
-        if (destinationDebitTotal <= 0) {
-          throw new NoRelatedDestinationDebitError('Trader\'s account ' +
-            'must be debited in all destination transfers to ' +
-            'provide settlement');
-        }
-
-        let offeredRate = rates[transfer.ledger];
-        let sourceAssetEquivalent = destinationDebitTotal / offeredRate;
-        return sourceAssetEquivalent;
-    }));
-
-    if (destinationDebitsEquivalentInSourceAsset > sourceCreditTotal) {
-      log.error('client requested unacceptable rate');
-      throw new UnacceptableRateError('Settlement rate does not match ' +
-        'the rate currently offered');
-    }
-
+    convertToLedger = settlement.source_transfers[0].ledger;
   } else {
-    // Many to one
+    convertToLedger = settlement.destination_transfers[0].ledger;
+  }
 
-    // Get rates
-    let destinationLedger = settlement.destination_transfers[0].ledger;
-    let rates = {};
-    for (let transfer of settlement.source_transfers) {
-      rates[transfer.ledger] =
-        yield fxRates.get(transfer.ledger, destinationLedger);
-    }
+  // This is how much we'll actually get paid in the case of a failure
+  // If there are no rejection_credits this will be 0
+  const sourceRejectionCreditEquivalent =
+    yield calculateAmountEquivalent({
+      transfers: settlement.source_transfers,
+      transferSide: 'source',
+      creditsOrDebits: 'rejection_credits',
+      convertToLedger: convertToLedger,
+      noErrors: true
+    });
 
-    // Sum the debits from the trader's account in the destination transfer
-    // less the credits (which should be 0)
-    let destinationDebitNet =
-      _.sum(settlement.destination_transfers[0].debits, amountFinder) -
-      _.sum(settlement.destination_transfers[0].credits, amountFinder);
+  // Calculate cost of held funds
+  const destinationDebitEquivalent =
+    yield calculateAmountEquivalent({
+      transfers: settlement.destination_transfers,
+      transferSide: 'destination',
+      creditsOrDebits: 'debits',
+      convertToLedger: convertToLedger,
+      noErrors: true
+    });
+  const costOfHeldFunds = config.expiry.rejectionCreditPercentage / 100 *
+      destinationDebitEquivalent;
 
-    if (destinationDebitNet <= 0) {
-      throw new NoRelatedDestinationDebitError('Trader\'s account ' +
-        'must be debited in all destination transfers to provide settlement');
-    }
+  // Calculate how much we'll lose in each of the destination transfers
+  // that have rejection credits set
+  const destinationTransfersWithRejectionCredits =
+    _.filter(settlement.destination_transfers, function(transfer) {
+      return transfer.rejection_credits;
+    });
+  const destinationRejectionCredits =
+    yield calculateAmountEquivalent({
+      transfers: destinationTransfersWithRejectionCredits,
+      transferSide: 'destination',
+      creditsOrDebits: 'rejection_credits',
+      convertToLedger: convertToLedger,
+      noErrors: true
+    });
+  const destinationDebitsInTransfersWithRejectionCredits =
+    yield calculateAmountEquivalent({
+      transfers: destinationTransfersWithRejectionCredits,
+      transferSide: 'destination',
+      creditsOrDebits: 'debits',
+      convertToLedger: convertToLedger,
+      noErrors: true
+    });
 
-    // For each of the source transfers figure out the net credits
-    // to the trader's account, then use the trader's rate to compute
-    // how much of the destination asset that represents
-    // Then, total that amount and compare it to the destinationDebitNet
+  const totalCost =
+    costOfHeldFunds +
+    (destinationDebitsInTransfersWithRejectionCredits -
+    destinationRejectionCredits);
 
-    let sourceCreditsEquivalentInDestinationAsset = _.sum(
-      _.map(settlement.source_transfers, function(transfer) {
-        let sourceCreditNet = _.sum(transfer.credits, amountFinder) -
-          _.sum(transfer.debits, amountFinder); // should be 0
-
-        if (sourceCreditNet <= 0) {
-          throw new NoRelatedSourceCreditError('Trader\'s account ' +
-            'must be credited in all source transfers to provide settlement');
-        }
-
-        let offeredRate = rates[transfer.ledger];
-        let destinationAssetEquivalent = sourceCreditNet * offeredRate;
-        return destinationAssetEquivalent;
-    }));
-
-    if (sourceCreditsEquivalentInDestinationAsset < destinationDebitNet) {
-      log.error('client requested unacceptable rate');
-      throw new UnacceptableRateError('Settlement rate does not match ' +
-        'the rate currently offered');
-    }
+  if (sourceRejectionCreditEquivalent < totalCost) {
+    throw new UnacceptableRejectionCreditsError('Source rejection credits ' +
+      'are insufficient to cover the cost of holding funds for the ' +
+      'destination transfers and the destination transfer rejection credits');
   }
 }
 
@@ -653,6 +713,7 @@ exports.put = function *(id) {
   validateSourceTransfersArePrepared(settlement);
   validateExpiry(settlement);
   yield validateRate(settlement);
+  yield validateRejectionCredits(settlement);
   validateExecutionConditions(settlement);
   yield validateExecutionConditionPublicKey(settlement);
 

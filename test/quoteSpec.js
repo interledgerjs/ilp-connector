@@ -130,7 +130,7 @@ describe('Quotes', function() {
             ledger: 'http://eur-ledger.example/EUR',
             credits: [{
               account: 'mark',
-              amount: '94.61' // 1/ (EUR/USD Rate of 1.0592 + .2% spread)
+              amount: '94.23' // (1/ EUR/USD Rate of 1.0592) + .2% spread
             }],
             expiry_duration: '11'
           }],
