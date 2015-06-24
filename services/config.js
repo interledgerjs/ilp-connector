@@ -7,7 +7,7 @@ const config = exports;
 exports.id = process.env.TRADER_ID || 'mark';
 
 config.server = {};
-config.server.secure = false;
+config.server.secure = !!process.env.PUBLIC_HTTPS;
 config.server.bind_ip = process.env.BIND_IP || '0.0.0.0';
 config.server.port = process.env.PORT || 4000;
 config.server.public_host = process.env.HOSTNAME || require('os').hostname();
