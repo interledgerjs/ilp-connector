@@ -1,6 +1,11 @@
 {
   "name": "@ripple/five-bells-trader",
   "version": "0.0.0",
+  "description": "Five Bells trader reference implementation",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:ripple/five-bells-trader.git"
+  },
   "scripts": {
     "start": "nodemon app.js",
     "test": "NODE_ENV=unit node node_modules/.bin/istanbul test -- _mocha -r co-mocha",
