@@ -17,6 +17,15 @@ config.server.public_port = process.env.PUBLIC_PORT || config.server.port;
 // [["USD@http://usd-ledger.example/USD","EUR@http://eur-ledger.example"],...]
 config.tradingPairs = JSON.parse(process.env.TRADING_PAIRS || '[]');
 
+// Credentials should be specified as a map of the form
+// {
+//    "<ledger_uri>": {
+//      "username": "...",
+//      "password": "..."
+//    }
+// }
+config.ledgerCredentials = JSON.parse(process.env.TRADER_CREDENTIALS || '{}');
+
 config.features = {};
 config.features.debugAutoFund = !!process.env.TRADER_DEBUG_AUTOFUND;
 
@@ -44,4 +53,14 @@ config.server.base_uri = url.format({
 
 if (process.env.NODE_ENV === 'unit') {
   config.server.base_uri = 'http://localhost';
+  config.ledgerCredentials = {
+    "http://eur-ledger.example/EUR": {
+      username: 'mark',
+      password: 'mark'
+    },
+    "http://cny-ledger.example/CNY": {
+      username: 'mark',
+      password: 'mark'
+    }
+  }
 }

@@ -20,7 +20,7 @@
     "co-body": "^0.0.1",
     "co-request": "^0.2.0",
     "co-views": "^0.2.0",
-    "@ripple/five-bells-shared": "2.6.3",
+    "@ripple/five-bells-shared": "3.0.0",
     "koa": "^0.6.0",
     "koa-compress": "^1.0.6",
     "koa-mag": "^1.0.4",
