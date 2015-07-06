@@ -14,8 +14,8 @@ const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error');
 const UnacceptableRateError = require('../errors/unacceptable-rate-error');
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error');
-const UnacceptableRejectionCreditsError =
-  require('../errors/unacceptable-rejection-credits-error');
+const InsufficientFeeError =
+  require('../errors/insufficient-fee-error');
 const NoRelatedSourceCreditError =
   require('../errors/no-related-source-credit-error');
 const NoRelatedDestinationDebitError =
@@ -289,6 +289,11 @@ function *calculateAmountEquivalent(opts) {
   // Then, we are going to use the fxRates to convert the amount
   // into the asset represented by convertToLedger
   let convertedAmountTotal = 0;
+
+  if (!opts.transfers || opts.transfers.length === 0) {
+    return convertedAmountTotal;
+  }
+
   for (let transfer of opts.transfers) {
 
     // Total the number of credits or debits to the traders account
@@ -361,7 +366,7 @@ function *validateRate (settlement) {
   }
 }
 
-function *validateRejectionCredits (settlement) {
+function *validateFee (settlement) {
   // Determine which ledger's asset we will convert all
   // of the others to
   let convertToLedger;
@@ -371,16 +376,20 @@ function *validateRejectionCredits (settlement) {
     convertToLedger = settlement.destination_transfers[0].ledger;
   }
 
-  // This is how much we'll actually get paid in the case of a failure
-  // If there are no rejection_credits this will be 0
-  const sourceRejectionCreditEquivalent =
+  // TODO: make sure the source_fee_transfers have been executed
+  const sourceFeesEquivalent =
     yield calculateAmountEquivalent({
-      transfers: settlement.source_transfers,
+      transfers: settlement.source_fee_transfers,
       transferSide: 'source',
-      creditsOrDebits: 'rejection_credits',
+      creditsOrDebits: 'credits',
       convertToLedger: convertToLedger,
       noErrors: true
     });
+
+  if (sourceFeesEquivalent === 0) {
+    throw new InsufficientFeeError('Source fee transfer ' +
+      'must be paid to account for cost of holding funds');
+  }
 
   // Calculate cost of held funds
   const destinationDebitEquivalent =
@@ -391,41 +400,25 @@ function *validateRejectionCredits (settlement) {
       convertToLedger: convertToLedger,
       noErrors: true
     });
-  const costOfHeldFunds = config.expiry.rejectionCreditPercentage / 100 *
+  const costOfHeldFunds = config.expiry.feePercentage / 100 *
       destinationDebitEquivalent;
 
-  // Calculate how much we'll lose in each of the destination transfers
-  // that have rejection credits set
-  const destinationTransfersWithRejectionCredits =
-    _.filter(settlement.destination_transfers, function(transfer) {
-      return transfer.rejection_credits;
-    });
-  const destinationRejectionCredits =
+  // Calculate how much we're supposed to pay out in fees
+  const destinationFeesEquivalent =
     yield calculateAmountEquivalent({
-      transfers: destinationTransfersWithRejectionCredits,
-      transferSide: 'destination',
-      creditsOrDebits: 'rejection_credits',
-      convertToLedger: convertToLedger,
-      noErrors: true
-    });
-  const destinationDebitsInTransfersWithRejectionCredits =
-    yield calculateAmountEquivalent({
-      transfers: destinationTransfersWithRejectionCredits,
+      transfers: settlement.destination_fee_transfers,
       transferSide: 'destination',
       creditsOrDebits: 'debits',
       convertToLedger: convertToLedger,
       noErrors: true
     });
 
-  const totalCost =
-    costOfHeldFunds +
-    (destinationDebitsInTransfersWithRejectionCredits -
-    destinationRejectionCredits);
+  const totalCost = costOfHeldFunds + destinationFeesEquivalent;
 
-  if (sourceRejectionCreditEquivalent < totalCost) {
-    throw new UnacceptableRejectionCreditsError('Source rejection credits ' +
-      'are insufficient to cover the cost of holding funds for the ' +
-      'destination transfers and the destination transfer rejection credits');
+  if (sourceFeesEquivalent < totalCost) {
+    throw new InsufficientFeeError('Source fees are ' +
+      'insufficient to cover the cost of holding funds ' +
+      'and paying the fees for the destination transfers');
   }
 }
 
@@ -439,61 +432,60 @@ function validateOneToManyOrManyToOne (settlement) {
 }
 
 // Note this modifies the original object
-function addAuthorizationToDestinationTransfers (settlement) {
+function addAuthorizationToTransfers (transfers) {
   // TODO: make sure we're not authorizing anything extra
   // that shouldn't be taking money out of our account
-  log.debug('adding auth to dest transfers');
-  _.forEach(settlement.destination_transfers, function(destinationTransfer) {
-    _.forEach(destinationTransfer.debits, function(debit) {
+  for (let transfer of transfers) {
+    for (let debit of transfer.debits) {
+
+      // TODO change this when the trader's account
+      // isn't the same on all ledgers
       if (debit.account === config.id) {
         debit.authorized = true;
       }
-    });
-  });
+    }
+  }
+
+  // TODO authorize credits
 }
 
-function *submitDestinationTransfers (settlement) {
-
-  log.debug('submitting destination transfers');
-
-  for (let destinationTransfer of settlement.destination_transfers) {
-
+function *submitTransfers (transfers, correspondingSourceTransfers) {
+  for (let transfer of transfers) {
     // TODO: check before this point that we actually have
     // credentials for the ledgers we're asked to settle between
-    let credentials = config.ledgerCredentials[destinationTransfer.ledger];
-    let destinationTransferReq = yield request({
+    let credentials = config.ledgerCredentials[transfer.ledger];
+    let transferReq = yield request({
       method: 'put',
       auth: {
         user: credentials.username,
         pass: credentials.password
       },
-      uri: destinationTransfer.id,
-      body: destinationTransfer,
+      uri: transfer.id,
+      body: transfer,
       json: true
     });
 
-    if (destinationTransferReq.statusCode >= 400) {
+    if (transferReq.statusCode >= 400) {
       log.error('remote error while authorizing destination transfer');
-      log.debug(destinationTransferReq.body);
+      log.debug(transferReq.body);
       throw new ExternalError('Received an unexpected ' +
-        destinationTransferReq.body.id +
+        transferReq.body.id +
         ' while processing destination transfer.');
     }
 
     // Update destination_transfer state from the ledger's response
-    destinationTransfer.state = destinationTransferReq.body.state;
+    transfer.state = transferReq.body.state;
 
-    if (destinationTransferReq.body.state === 'executed') {
-      log.debug('executed destination transfer');
-      destinationTransfer.execution_condition_fulfillment =
-        destinationTransferReq.body.execution_condition_fulfillment;
-    } else {
+    if (transferReq.body.state === 'executed') {
+      transfer.execution_condition_fulfillment =
+        transferReq.body.execution_condition_fulfillment;
+    } else if (correspondingSourceTransfers) {
       // Store this subscription so when we get the notification
       // we know what source transfer to go and unlock
       log.debug('destination transfer not yet executed, ' +
         'added subscription record');
-      subscriptionRecords.put(destinationTransfer.id,
-        settlement.source_transfers);
+      subscriptionRecords.put(transfer.id,
+        correspondingSourceTransfers);
     }
   }
 }
@@ -720,12 +712,20 @@ exports.put = function *(id) {
   validateSourceTransfersArePrepared(settlement);
   validateExpiry(settlement);
   yield validateRate(settlement);
-  yield validateRejectionCredits(settlement);
+  yield validateFee(settlement);
   validateExecutionConditions(settlement);
   yield validateExecutionConditionPublicKey(settlement);
 
-  addAuthorizationToDestinationTransfers(settlement);
-  yield submitDestinationTransfers(settlement);
+  if (settlement.destination_fee_transfers) {
+    log.debug('submitting destination fee transfers');
+    addAuthorizationToTransfers(settlement.destination_fee_transfers);
+    yield submitTransfers(settlement.destination_fee_transfers);
+  }
+
+  log.debug('submitting destination transfers');
+  addAuthorizationToTransfers(settlement.destination_transfers);
+  yield submitTransfers(settlement.destination_transfers,
+    settlement.source_transfers);
 
   if (_.some(settlement.destination_transfers, function(transfer) {
         return transfer.state === 'executed';

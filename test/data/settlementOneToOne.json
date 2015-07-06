@@ -11,13 +11,6 @@
       "amount":"1.07",
       "account":"mark"
     }],
-    "rejection_credits": [{
-      "amount": ".00010592",
-      "account": "mark"
-    }, {
-      "amount": "1.06989408",
-      "account": "alice"
-    }],
     "execution_condition": {
       "message": {
         "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
@@ -28,6 +21,19 @@
     },
    "expires_at": "2015-06-16T00:00:02.000Z",
     "state": "prepared"
+  }],
+  "source_fee_transfers": [{
+    "id": "http://usd-ledger.example/USD/transfers/4e1362c5-f4ef-466d-81ad-85d42c38a5e3",
+    "ledger":"http://usd-ledger.example/USD",
+    "debits": [{
+      "amount": ".00010592",
+      "account": "alice"
+    }],
+    "credits": [{
+      "amount": ".00010592",
+      "account": "mark"
+    }],
+    "state": "executed"
   }],
   "destination_transfers":[{
     "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
