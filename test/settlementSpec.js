@@ -480,8 +480,15 @@ describe('Settlements', function () {
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -514,8 +521,15 @@ describe('Settlements', function () {
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -548,8 +562,15 @@ describe('Settlements', function () {
       settlement.destination_transfers[0].credits =
         settlement.destination_transfers[0].debits;
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -582,8 +603,15 @@ describe('Settlements', function () {
       settlement.source_transfers[0].debits =
         settlement.source_transfers[0].credits;
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -625,16 +653,12 @@ describe('Settlements', function () {
         nock(settlement.destination_transfers[0].id)
         .put('', _.merge(_.cloneDeep(settlement.destination_transfers[0]), {
           debits: [{
-            authorization: {
-              algorithm: 'ed25519-sha512'
-            }
+            authorized: true
           }]
         }))
         .reply(201, _.merge(_.cloneDeep(settlement.destination_transfers[0]), {
           debits: [{
-            authorization: {
-              algorithm: 'ed25519-sha512'
-            }
+            authorized: true
           }],
           state: 'executed'
         }));
@@ -664,8 +688,15 @@ describe('Settlements', function () {
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -698,9 +729,7 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }]
           }]
         }))
@@ -719,8 +748,15 @@ describe('Settlements', function () {
       const settlement = this.formatId(this.settlementSameExecutionCondition,
         '/settlements/');
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
@@ -747,9 +783,7 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }]
@@ -768,8 +802,15 @@ describe('Settlements', function () {
         amount: '20'
       });
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -802,9 +843,7 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }]
           }]
         }))
@@ -825,8 +864,15 @@ describe('Settlements', function () {
         amount: '0.40'
       });
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -859,13 +905,9 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }, {
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }]
           }]
         }))
@@ -883,8 +925,15 @@ describe('Settlements', function () {
         amount: '0.40'
       });
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -917,9 +966,7 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }]
           }]
         }))
@@ -940,8 +987,15 @@ describe('Settlements', function () {
         account: 'jane'
       });
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -975,13 +1029,14 @@ describe('Settlements', function () {
             state: 'executed',
             debits: [{}, // Don't add anything to the first one
             {
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }]
           }]
         }))
         .end();
+
+      submittedAuthorization.done();
+
     });
 
     it('should execute a settlement with one source transfer and multiple ' +
@@ -995,15 +1050,29 @@ describe('Settlements', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       };
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials0 =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization0 =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials0.username,
+          pass: traderCredentials0.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
         }));
 
-      nock(settlement.destination_transfers[1].id)
+      const traderCredentials1 =
+        config.ledgerCredentials[settlement.destination_transfers[1].ledger];
+      const submittedAuthorization1 =
+        nock(settlement.destination_transfers[1].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials1.username,
+          pass: traderCredentials1.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[1], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
@@ -1028,22 +1097,21 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }, {
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }]
         }))
         .end();
+
+      submittedAuthorization0.done();
+      submittedAuthorization1.done();
     });
 
     it('should execute a settlement with multiple source transfers and one ' +
@@ -1057,8 +1125,15 @@ describe('Settlements', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       };
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
@@ -1093,9 +1168,7 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }]
@@ -1112,8 +1185,15 @@ describe('Settlements', function () {
         moment(START_DATE - 1).toISOString();
       settlement.source_transfers[0].state = 'executed';
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed'
         }));
@@ -1152,8 +1232,15 @@ describe('Settlements', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       };
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
@@ -1185,17 +1272,13 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }, {
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }]
@@ -1212,9 +1295,7 @@ describe('Settlements', function () {
       settlement.source_transfers[0].debits[0] = {
         account: 'mark',
         amount: '10',
-        authorization: {
-          algorithm: 'ed25519-sha512'
-        }
+        authorized: true
       };
 
       const fulfillment = {
@@ -1222,8 +1303,15 @@ describe('Settlements', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       };
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
@@ -1255,17 +1343,13 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }, {
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }]
@@ -1287,8 +1371,15 @@ describe('Settlements', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       };
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
@@ -1323,9 +1414,7 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }]
@@ -1343,9 +1432,7 @@ describe('Settlements', function () {
       settlement.source_transfers[0].debits[0] = {
         account: 'mark',
         amount: '10',
-        authorization: {
-          algorithm: 'ed25519-sha512'
-        }
+        authorized: true
       };
 
       const fulfillment = {
@@ -1353,8 +1440,15 @@ describe('Settlements', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       };
 
-      nock(settlement.destination_transfers[0].id)
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedAuthorization =
+        nock(settlement.destination_transfers[0].id)
         .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
         .reply(201, _.assign({}, settlement.destination_transfers[0], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
@@ -1389,9 +1483,7 @@ describe('Settlements', function () {
           destination_transfers: [{
             state: 'executed',
             debits: [{
-              authorization: {
-                algorithm: 'ed25519-sha512'
-              }
+              authorized: true
             }],
             execution_condition_fulfillment: fulfillment
           }]

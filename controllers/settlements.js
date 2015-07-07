@@ -440,14 +440,13 @@ function validateOneToManyOrManyToOne (settlement) {
 
 // Note this modifies the original object
 function addAuthorizationToDestinationTransfers (settlement) {
-  // TODO: actually sign it
+  // TODO: make sure we're not authorizing anything extra
+  // that shouldn't be taking money out of our account
   log.debug('adding auth to dest transfers');
   _.forEach(settlement.destination_transfers, function(destinationTransfer) {
     _.forEach(destinationTransfer.debits, function(debit) {
       if (debit.account === config.id) {
-        debit.authorization = {
-          algorithm: 'ed25519-sha512'
-        };
+        debit.authorized = true;
       }
     });
   });
@@ -458,8 +457,16 @@ function *submitDestinationTransfers (settlement) {
   log.debug('submitting destination transfers');
 
   for (let destinationTransfer of settlement.destination_transfers) {
+
+    // TODO: check before this point that we actually have
+    // credentials for the ledgers we're asked to settle between
+    let credentials = config.ledgerCredentials[destinationTransfer.ledger];
     let destinationTransferReq = yield request({
       method: 'put',
+      auth: {
+        user: credentials.username,
+        pass: credentials.password
+      },
       uri: destinationTransfer.id,
       body: destinationTransfer,
       json: true
