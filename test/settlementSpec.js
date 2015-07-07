@@ -38,6 +38,8 @@ describe('Settlements', function () {
       _.cloneDeep(require('./data/settlementManyToOne.json'));
     this.settlementManyToMany =
       _.cloneDeep(require('./data/settlementManyToMany.json'));
+    this.settlementWithDestinationFeeTransfers =
+      _.cloneDeep(require('./data/settlementWithDestinationFeeTransfers.json'));
     this.transferProposedReceipt =
       _.cloneDeep(require('./data/transferStateProposed.json'));
     this.transferExecutedReceipt =
@@ -411,21 +413,19 @@ describe('Settlements', function () {
     });
 
     it('should return a 422 if the source transfer does not ' +
-      'have rejection_credits', function *() {
+      'have source_fee_transfers', function *() {
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
-      delete settlement.source_transfers[0].rejection_credits;
+      delete settlement.source_fee_transfers;
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(422)
         .expect(function(res) {
-          expect(res.body.id).to.equal('UnacceptableRejectionCreditsError');
-          expect(res.body.message).to.equal('Source rejection credits ' +
-            'are insufficient to cover the cost of holding funds for the ' +
-            'destination transfers and the destination transfer rejection ' +
-            'credits');
+          expect(res.body.id).to.equal('InsufficientFeeError');
+          expect(res.body.message).to.equal('Source fee transfer ' +
+            'must be paid to account for cost of holding funds');
         })
         .end();
     });
@@ -434,18 +434,17 @@ describe('Settlements', function () {
       'do not cover the cost of holding funds', function *() {
       const settlement = this.formatId(this.settlementOneToOne,
         '/settlements/');
-      settlement.source_transfers[0].rejection_credits[0].amount = '.000104';
+      settlement.source_fee_transfers[0].credits[0].amount = '.000104';
 
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
         .expect(422)
         .expect(function(res) {
-          expect(res.body.id).to.equal('UnacceptableRejectionCreditsError');
-          expect(res.body.message).to.equal('Source rejection credits ' +
-            'are insufficient to cover the cost of holding funds for the ' +
-            'destination transfers and the destination transfer rejection ' +
-            'credits');
+          expect(res.body.id).to.equal('InsufficientFeeError');
+          expect(res.body.message).to.equal('Source fees are insufficient ' +
+            'to cover the cost of holding funds and paying the fees for ' +
+            'the destination transfers');
         })
         .end();
     });
@@ -455,20 +454,19 @@ describe('Settlements', function () {
       'on the destination side that take more money from our account',
         function *() {
 
-      const settlement = this.formatId(this.settlementSameExecutionCondition,
+      const settlement = this.formatId(this.settlementWithDestinationFeeTransfers,
         '/settlements/');
-      settlement.destination_transfers[0].rejection_credits[1].amount = '.9998';
+      settlement.destination_fee_transfers[0].debits[0].amount = '.9998';
 
       yield this.request()
         .put('/settlements/' + this.settlementSameExecutionCondition.id)
         .send(settlement)
         .expect(422)
         .expect(function(res) {
-          expect(res.body.id).to.equal('UnacceptableRejectionCreditsError');
-          expect(res.body.message).to.equal('Source rejection credits ' +
-            'are insufficient to cover the cost of holding funds for the ' +
-            'destination transfers and the destination transfer rejection ' +
-            'credits');
+          expect(res.body.id).to.equal('InsufficientFeeError');
+          expect(res.body.message).to.equal('Source fees are insufficient ' +
+            'to cover the cost of holding funds and paying the fees for ' +
+            'the destination transfers');
         })
         .end();
     });
@@ -665,6 +663,7 @@ describe('Settlements', function () {
 
       nock(settlement.destination_transfers[0].id)
         .get('/state')
+        .times(2)
         .reply(200, this.transferProposedReceipt);
 
       nock(settlement.source_transfers[0].id)
@@ -676,7 +675,7 @@ describe('Settlements', function () {
       yield this.request()
         .put('/settlements/' + this.settlementOneToOne.id)
         .send(settlement)
-        // .expect(201)
+        .expect(201)
         .end();
 
       destinationTransferNock.done(); // Throw error if this wasn't called
@@ -1491,6 +1490,59 @@ describe('Settlements', function () {
         .end();
 
     });
+
+    it('should execute the destination_fee_transfers immediately ' +
+      'if present and all the other checks pass', function *() {
+
+      const settlement = this.formatId(this.settlementWithDestinationFeeTransfers,
+        '/settlements/');
+
+      const fulfillment = {
+        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
+          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
+      };
+
+      const traderCredentials =
+        config.ledgerCredentials[settlement.destination_transfers[0].ledger];
+      const submittedFeeTransfer =
+        nock(settlement.destination_fee_transfers[0].id)
+        .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
+        .reply(201, _.assign({}, settlement.destination_fee_transfers[0], {
+          state: 'executed'
+        }));
+
+      nock(settlement.destination_transfers[0].id)
+        .put('')
+        .basicAuth({
+          user: traderCredentials.username,
+          pass: traderCredentials.password
+        })
+        .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+      nock(settlement.source_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, settlement.source_transfers[0], {
+          state: 'executed',
+          execution_condition_fulfillment: fulfillment
+        }));
+
+       yield this.request()
+        .put('/settlements/' + this.settlementWithDestinationFeeTransfers.id)
+        .send(settlement)
+        .expect(201)
+        .end();
+
+      submittedFeeTransfer.done();
+
+    });
+
   });
 
 });

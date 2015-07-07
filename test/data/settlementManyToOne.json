@@ -11,13 +11,6 @@
       "amount":"5.32",
       "account":"mark"
     }],
-    "rejection_credits": [{
-      "amount": ".000532",
-      "account": "mark"
-    }, {
-      "amount": "5.319468",
-      "account": "alice"
-    }],
     "execution_condition": {
       "message": {
         "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
@@ -40,13 +33,6 @@
       "amount":"6.80",
       "account":"mark"
     }],
-    "rejection_credits": [{
-      "amount": ".00085",
-      "account": "mark"
-    }, {
-      "amount": "6.79915",
-      "account": "alice"
-    }],
     "execution_condition": {
       "message": {
         "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
@@ -59,6 +45,31 @@
     "expires_at": "2015-06-16T00:00:11.000Z",
     "state": "prepared"
   }],
+  "source_fee_transfers": [{
+    "id": "http://usd-ledger.example/USD/transfers/05519e9f-3036-48e4-a2ec-be26170bad92",
+    "ledger": "http://usd-ledger.example/USD",
+    "debits": [{
+      "amount": ".000532",
+      "account": "alice"
+    }],
+    "credits": [{
+      "amount": ".000532",
+      "account": "mark"
+    }],
+    "state": "executed"
+  }, {
+    "id": "http://cad-ledger.example/CAD/transfers/05b58f3c-6cb6-4392-8d95-ef8e50bc9cea",
+    "ledger": "http://cad-ledger.example/CAD",
+    "debits": [{
+      "amount": ".00085",
+      "account": "alice"
+    }],
+    "credits": [{
+      "amount": ".00085",
+      "account": "mark"
+    }],
+    "state": "executed"
+  }],
   "destination_transfers":[{
     "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
     "ledger":"http://eur-ledger.example/EUR",
@@ -69,13 +80,6 @@
     "credits":[{
       "amount":"10.00",
       "account":"bob"
-    }],
-    "rejection_credits": [{
-      "amount": "9.9999",
-      "account": "mark"
-    }, {
-      "amount": ".0001",
-      "account": "bob"
     }],
     "execution_condition": {
       "message": {
