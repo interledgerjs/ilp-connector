@@ -1,76 +1,75 @@
-'use strict';
+'use strict'
 
-const _ = require('lodash');
-const moment = require('moment');
-const request = require('co-request');
-const requestUtil = require('@ripple/five-bells-shared/utils/request');
-const log = require('@ripple/five-bells-shared/services/log')('settlements');
-const executeSourceTransfers = require('../lib/executeSourceTransfers');
-const config = require('../services/config');
-const fxRates = require('../services/fxRates');
-const subscriptionRecords = require('../services/subscriptionRecords');
-const ExternalError = require('../errors/external-error');
+const _ = require('lodash')
+const moment = require('moment')
+const request = require('co-request')
+const requestUtil = require('@ripple/five-bells-shared/utils/request')
+const log = require('@ripple/five-bells-shared/services/log')('settlements')
+const executeSourceTransfers = require('../lib/executeSourceTransfers')
+const config = require('../services/config')
+const fxRates = require('../services/fxRates')
+const subscriptionRecords = require('../services/subscriptionRecords')
+const ExternalError = require('../errors/external-error')
 const UnacceptableConditionsError =
-  require('../errors/unacceptable-conditions-error');
-const UnacceptableRateError = require('../errors/unacceptable-rate-error');
-const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error');
+  require('../errors/unacceptable-conditions-error')
+const UnacceptableRateError = require('../errors/unacceptable-rate-error')
+const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const InsufficientFeeError =
-  require('../errors/insufficient-fee-error');
+  require('../errors/insufficient-fee-error')
 const NoRelatedSourceCreditError =
-  require('../errors/no-related-source-credit-error');
+  require('../errors/no-related-source-credit-error')
 const NoRelatedDestinationDebitError =
-  require('../errors/no-related-destination-debit-error');
-const FundsNotHeldError = require('../errors/funds-not-held-error');
+  require('../errors/no-related-destination-debit-error')
+const FundsNotHeldError = require('../errors/funds-not-held-error')
 const ManyToManyNotSupportedError =
-  require('../errors/many-to-many-not-supported-error');
-const hashJSON = require('@ripple/five-bells-shared/utils/hashJson');
+  require('../errors/many-to-many-not-supported-error')
+const hashJSON = require('@ripple/five-bells-shared/utils/hashJson')
 
-function sourceConditionIsDestinationTransfer(source, destination) {
+function sourceConditionIsDestinationTransfer (source, destination) {
   // Check the message or message_hash
   let expectedMessage = {
     id: destination.id,
     state: 'executed'
-  };
+  }
 
   if (source.execution_condition.message &&
-      !_.isEqual(source.execution_condition.message, expectedMessage)) {
+    !_.isEqual(source.execution_condition.message, expectedMessage)) {
     log.debug('condition does not match the execution of the destination ' +
-      'transfer, unexpected message');
-    return false;
+      'transfer, unexpected message')
+    return false
   }
   if (source.execution_condition.message_hash &&
-      source.execution_condition.message_hash !== hashJSON(expectedMessage)) {
+    source.execution_condition.message_hash !== hashJSON(expectedMessage)) {
     log.debug('condition does not match the execution of the destination ' +
-      'transfer, unexpected message hash');
-    return false;
+      'transfer, unexpected message hash')
+    return false
   }
 
   // Check the signer
   if (source.execution_condition.signer &&
-      source.execution_condition.signer !== destination.ledger) {
+    source.execution_condition.signer !== destination.ledger) {
     log.debug('condition does not match the execution of the destination ' +
-      'transfer, unexpected signer');
-    return false;
+      'transfer, unexpected signer')
+    return false
   }
 
   // TODO: once we have the ledger public keys cached locally
   // validate that the public_key is the one we expect
 
-  return true;
+  return true
 }
 
-function sourceConditionSameAsAllDestinationConditions(
+function sourceConditionSameAsAllDestinationConditions (
   sourceTransfer, destination_transfers) {
   return _.every(destination_transfers,
-    function(destinationTransfer) {
+    function (destinationTransfer) {
       return _.isEqual(sourceTransfer.execution_condition,
-        destinationTransfer.execution_condition);
-    });
+        destinationTransfer.execution_condition)
+    })
 }
 
 function validateExecutionConditions (settlement) {
-
-  log.debug('validating execution conditions');
+  log.debug('validating execution conditions')
   // We need to have confidence that the source transfers will actually happen.
   // So each one has to depend on something we control, namely the destination
   // transfer or the condition of all of the destination transfers.
@@ -82,37 +81,36 @@ function validateExecutionConditions (settlement) {
   // If this logic changes, make sure to change the logic in
   // validateExpiry as well
 
-  let valid = _.every(settlement.source_transfers, function(sourceTransfer) {
-
+  let valid = _.every(settlement.source_transfers, function (sourceTransfer) {
     let conditionIsDestTransfer =
-      settlement.destination_transfers.length === 1 &&
+    settlement.destination_transfers.length === 1 &&
       sourceConditionIsDestinationTransfer(sourceTransfer,
-        settlement.destination_transfers[0]);
+        settlement.destination_transfers[0])
 
     let conditionsAreEqual =
-      sourceConditionSameAsAllDestinationConditions(
-        sourceTransfer, settlement.destination_transfers);
+    sourceConditionSameAsAllDestinationConditions(
+      sourceTransfer, settlement.destination_transfers)
 
-    return conditionIsDestTransfer || conditionsAreEqual;
-  });
+    return conditionIsDestTransfer || conditionsAreEqual
+  })
 
   if (!valid) {
-    throw new UnacceptableConditionsError('Each of the source transfers\' ' +
+    throw new UnacceptableConditionsError("Each of the source transfers' " +
       'execution conditions must either match all of the destination ' +
-      'transfers\' conditions or if there is only one destination transfer ' +
-      'the source transfers\' conditions can be the execution of the ' +
-      'destination transfer');
+      "transfers' conditions or if there is only one destination transfer " +
+      "the source transfers' conditions can be the execution of the " +
+      'destination transfer')
   }
 }
 
-function *validateExecutionConditionPublicKey (settlement) {
+function * validateExecutionConditionPublicKey (settlement) {
   // TODO: use a cache of ledgers' public keys and move this functionality
   // into the synchronous validateExecutionConditions function
   for (let sourceTransfer of settlement.source_transfers) {
 
     let conditionsAreEqual =
-      sourceConditionSameAsAllDestinationConditions(
-        sourceTransfer, settlement.destination_transfers);
+    sourceConditionSameAsAllDestinationConditions(
+      sourceTransfer, settlement.destination_transfers)
 
     if (!conditionsAreEqual) {
       // Check the public_key and algorithm
@@ -122,43 +120,43 @@ function *validateExecutionConditionPublicKey (settlement) {
         method: 'get',
         uri: settlement.destination_transfers[0].id + '/state',
         json: true
-      });
+      })
 
       // TODO: add retry logic
       // TODO: what if the response is malformed or missing fields?
       if (destinationTransferStateReq.statusCode >= 400) {
-        log.error('remote error while checking destination transfer state');
+        log.error('remote error while checking destination transfer state')
         throw new ExternalError('Received an unexpected ' +
           destinationTransferStateReq.body.id +
           ' while checking destination transfer state ' +
-          settlement.destination_transfers[0].id);
+          settlement.destination_transfers[0].id)
       }
 
       if (sourceTransfer.execution_condition.algorithm !==
-            destinationTransferStateReq.body.algorithm) {
+        destinationTransferStateReq.body.algorithm) {
         throw new UnacceptableConditionsError('Source transfer execution ' +
-          'condition algorithm must match the destination ledger\'s.');
+          "condition algorithm must match the destination ledger's.")
       }
       if (sourceTransfer.execution_condition.public_key !==
-            destinationTransferStateReq.body.public_key) {
+        destinationTransferStateReq.body.public_key) {
         throw new UnacceptableConditionsError('Source transfer execution ' +
-          'condition public key must match the destination ledger\'s.');
+          "condition public key must match the destination ledger's.")
       }
     }
   }
 }
 
-function validateSouceTransferIsPrepared(transfer) {
+function validateSouceTransferIsPrepared (transfer) {
   if (transfer.state !== 'prepared' &&
-      transfer.state !== 'executed') {
+    transfer.state !== 'executed') {
     throw new FundsNotHeldError('Source transfer must be in the prepared ' +
-      'state for the trader to authorize the destination transfer');
+      'state for the trader to authorize the destination transfer')
   }
 }
 
 function validateSourceTransfersArePrepared (settlement) {
-  log.debug('validating source transfer is prepared');
-  _.forEach(settlement.source_transfers, validateSouceTransferIsPrepared);
+  log.debug('validating source transfer is prepared')
+  _.forEach(settlement.source_transfers, validateSouceTransferIsPrepared)
 }
 
 function validateExpiry (settlement) {
@@ -169,37 +167,36 @@ function validateExpiry (settlement) {
   // Verify none of the transfers has already expired
   function validateNotExpired (transfer) {
     if (transfer.expires_at &&
-        transfer.state !== 'executed' &&
-        moment(transfer.expires_at, moment.ISO_8601).isBefore(moment())) {
-
-      throw new UnacceptableExpiryError('Transfer has already expired');
+      transfer.state !== 'executed' &&
+      moment(transfer.expires_at, moment.ISO_8601).isBefore(moment())) {
+      throw new UnacceptableExpiryError('Transfer has already expired')
     }
   }
-  _.forEach(settlement.source_transfers, validateNotExpired);
-  _.forEach(settlement.destination_transfers, validateNotExpired);
+  _.forEach(settlement.source_transfers, validateNotExpired)
+  _.forEach(settlement.destination_transfers, validateNotExpired)
 
   // Check the transfers against the minMessageWindow and maxHoldTime
   let destinationHasExecutionCondition =
-    _.some(settlement.destination_transfers, function(transfer) {
-      return transfer.hasOwnProperty('execution_condition');
-  });
+  _.some(settlement.destination_transfers, function (transfer) {
+    return transfer.hasOwnProperty('execution_condition')
+  })
   if (destinationHasExecutionCondition) {
     // If the destination transfer(s) have execution condition(s)
     // we need to make sure we're not being asked
     // to hold money for too long
-    _.forEach(settlement.destination_transfers, function(transfer) {
+    _.forEach(settlement.destination_transfers, function (transfer) {
       if (!transfer.expires_at) {
         throw new UnacceptableExpiryError('Destination transfers with ' +
           'execution conditions must have an expires_at field for trader ' +
-          'to agree to authorize them');
+          'to agree to authorize them')
       }
-      if (moment(transfer.expires_at, moment.ISO_8601).diff(moment())
-          > config.expiry.maxHoldTime * 1000) {
+      if (moment(transfer.expires_at, moment.ISO_8601).diff(moment()) >
+        config.expiry.maxHoldTime * 1000) {
         throw new UnacceptableExpiryError('Destination transfer expiry is ' +
-          'too far in the future. The trader\'s money would need to be ' +
-          'held for too long');
+          "too far in the future. The trader's money would need to be " +
+          'held for too long')
       }
-    });
+    })
 
     // We also need to check if we have enough time between the expiry
     // of the destination transfer with the latest expiry and the expiry of
@@ -209,22 +206,21 @@ function validateExpiry (settlement) {
     // moment one of the destination transfers could happen (taking money out
     // of our account) to execute all of the source transfers
     let earliestSourceTransferExpiry =
-      _.min(_.map(settlement.source_transfers, function(transfer) {
+    _.min(_.map(settlement.source_transfers, function (transfer) {
       return (transfer.expires_at && transfer.state !== 'executed' ?
-          moment(transfer.expires_at, moment.ISO_8601).valueOf() :
-          Math.max());
-      }));
+        moment(transfer.expires_at, moment.ISO_8601).valueOf() :
+        Math.max())
+    }))
 
     let latestDestinationTransferExpiry =
-      _.max(_.map(settlement.destination_transfers, function(transfer) {
-        return moment(transfer.expires_at, moment.ISO_8601).valueOf();
-      }));
-    if (earliestSourceTransferExpiry - latestDestinationTransferExpiry
-        < config.expiry.minMessageWindow * 1000) {
-
+    _.max(_.map(settlement.destination_transfers, function (transfer) {
+      return moment(transfer.expires_at, moment.ISO_8601).valueOf()
+    }))
+    if (earliestSourceTransferExpiry - latestDestinationTransferExpiry <
+      config.expiry.minMessageWindow * 1000) {
       throw new UnacceptableExpiryError('The window between the latest ' +
         'destination transfer expiry and the earliest source transfer expiry ' +
-        'is insufficient to ensure that we can execute the source transfers');
+        'is insufficient to ensure that we can execute the source transfers')
     }
 
   } else {
@@ -235,29 +231,29 @@ function validateExpiry (settlement) {
 
     // Check that we have enough time to execute the destination transfer
     // TODO use a better value for the minExecutionWindow
-    let minExecutionWindow = config.expiry.minMessageWindow * 1000;
-    _.forEach(settlement.destination_transfers, function(transfer) {
+    let minExecutionWindow = config.expiry.minMessageWindow * 1000
+    _.forEach(settlement.destination_transfers, function (transfer) {
       if (transfer.expires_at &&
-          moment(transfer.expires_at, moment.ISO_8601).diff(moment())
-            < minExecutionWindow) {
+        moment(transfer.expires_at, moment.ISO_8601).diff(moment()) <
+        minExecutionWindow) {
         throw new UnacceptableExpiryError('There is insufficient time for ' +
-          'the trader to execute the destination transfer before it expires');
+          'the trader to execute the destination transfer before it expires')
       }
-    });
+    })
 
     // Check that we can execute the destination transfer and
     // have enough time to execute the source transfers before
     // they expire
-    _.forEach(settlement.source_transfers, function(transfer) {
+    _.forEach(settlement.source_transfers, function (transfer) {
       if (transfer.expires_at &&
-          transfer.state !== 'executed' &&
-          moment(transfer.expires_at, moment.ISO_8601).diff(moment())
-            < minExecutionWindow + config.expiry.minMessageWindow * 1000) {
+        transfer.state !== 'executed' &&
+        moment(transfer.expires_at, moment.ISO_8601).diff(moment()) <
+        minExecutionWindow + config.expiry.minMessageWindow * 1000) {
         throw new UnacceptableExpiryError('There is insufficient time for ' +
           'the trader to execute the destination transfer before the source ' +
-          'transfer(s) expire(s)');
+          'transfer(s) expire(s)')
       }
-    });
+    })
   }
 }
 
@@ -265,7 +261,7 @@ function amountFinder (creditOrDebit) {
   // TODO: change this check when the account ids become IRIs
   return (creditOrDebit.account === config.id ?
     parseFloat(creditOrDebit.amount) :
-    0);
+    0)
 }
 
 /**
@@ -280,154 +276,152 @@ function amountFinder (creditOrDebit) {
  * @param {String} opts.convertToLedger The ledger representing the asset we will convert all of the amounts into (for easier comparisons)
  * @yield {Float} The total amount converted into the asset represented by opts.convertToLedger
  */
-function *calculateAmountEquivalent(opts) {
-
+function * calculateAmountEquivalent (opts) {
   // convertedAmountTotal is going to be the total of either the credits
   // if the transfers are source_transfers or debits if the transfers
   // are destination_transfers (the amount that is either entering
   // or leaving our account)
   // Then, we are going to use the fxRates to convert the amount
   // into the asset represented by convertToLedger
-  let convertedAmountTotal = 0;
+  let convertedAmountTotal = 0
 
   if (!opts.transfers || opts.transfers.length === 0) {
-    return convertedAmountTotal;
+    return convertedAmountTotal
   }
 
   for (let transfer of opts.transfers) {
 
-    // Total the number of credits or debits to the traders account
+  // Total the number of credits or debits to the traders account
     let relevantAmountTotal =
-      _.sum(transfer[opts.creditsOrDebits], amountFinder);
+    _.sum(transfer[opts.creditsOrDebits], amountFinder)
 
     // Throw an error if we're not included in the transfer
     if (relevantAmountTotal <= 0 && !opts.noErrors) {
       if (opts.transferSide === 'source') {
-        throw new NoRelatedSourceCreditError('Trader\'s account ' +
+        throw new NoRelatedSourceCreditError("Trader's account " +
           'must be credited in all source transfers to ' +
-          'provide settlement');
+          'provide settlement')
       } else if (opts.transferSide === 'destination') {
-        throw new NoRelatedDestinationDebitError('Trader\'s account ' +
+        throw new NoRelatedDestinationDebitError("Trader's account " +
           'must be debited in all destination transfers to ' +
-          'provide settlement');
+          'provide settlement')
       }
     }
 
     // Calculate how much the relevantAmountTotal is worth in
     // the asset represented by convertToLedger
-    let rate;
+    let rate
     if (transfer.ledger === opts.convertToLedger) {
-      convertedAmountTotal += relevantAmountTotal;
+      convertedAmountTotal += relevantAmountTotal
     } else if (opts.transferSide === 'source') {
-      rate = yield fxRates.get(transfer.ledger, opts.convertToLedger);
-      convertedAmountTotal += relevantAmountTotal * rate;
+      rate = yield fxRates.get(transfer.ledger, opts.convertToLedger)
+      convertedAmountTotal += relevantAmountTotal * rate
     } else if (opts.transferSide === 'destination') {
-      rate = yield fxRates.get(opts.convertToLedger, transfer.ledger);
-      convertedAmountTotal += relevantAmountTotal / rate;
+      rate = yield fxRates.get(opts.convertToLedger, transfer.ledger)
+      convertedAmountTotal += relevantAmountTotal / rate
     }
   }
-  return convertedAmountTotal;
+  return convertedAmountTotal
 }
 
-function *validateRate (settlement) {
-
-  log.debug('validating rate');
+function * validateRate (settlement) {
+  log.debug('validating rate')
 
   // Determine which ledger's asset we will convert all
   // of the others to
-  let convertToLedger;
+  let convertToLedger
   if (settlement.source_transfers.length === 1) {
-    convertToLedger = settlement.source_transfers[0].ledger;
+    convertToLedger = settlement.source_transfers[0].ledger
   } else {
-    convertToLedger = settlement.destination_transfers[0].ledger;
+    convertToLedger = settlement.destination_transfers[0].ledger
   }
 
   // Convert the source credits and destination debits to a
   // common asset so we can more easily compare them
   const sourceCreditEquivalent =
-    yield calculateAmountEquivalent({
-      transfers: settlement.source_transfers,
-      transferSide: 'source',
-      creditsOrDebits: 'credits',
-      convertToLedger: convertToLedger
-    });
+  yield calculateAmountEquivalent({
+    transfers: settlement.source_transfers,
+    transferSide: 'source',
+    creditsOrDebits: 'credits',
+    convertToLedger: convertToLedger
+  })
   const destinationDebitEquivalent =
-    yield calculateAmountEquivalent({
-      transfers: settlement.destination_transfers,
-      transferSide: 'destination',
-      creditsOrDebits: 'debits',
-      convertToLedger: convertToLedger
-    });
+  yield calculateAmountEquivalent({
+    transfers: settlement.destination_transfers,
+    transferSide: 'destination',
+    creditsOrDebits: 'debits',
+    convertToLedger: convertToLedger
+  })
 
-  if (fxRates.subtractSpread(sourceCreditEquivalent)
-      < destinationDebitEquivalent) {
+  if (fxRates.subtractSpread(sourceCreditEquivalent) <
+    destinationDebitEquivalent) {
     throw new UnacceptableRateError('Settlement rate does not match ' +
-      'the rate currently offered');
+      'the rate currently offered')
   }
 }
 
-function *validateFee (settlement) {
+function * validateFee (settlement) {
   // Determine which ledger's asset we will convert all
   // of the others to
-  let convertToLedger;
+  let convertToLedger
   if (settlement.source_transfers.length === 1) {
-    convertToLedger = settlement.source_transfers[0].ledger;
+    convertToLedger = settlement.source_transfers[0].ledger
   } else {
-    convertToLedger = settlement.destination_transfers[0].ledger;
+    convertToLedger = settlement.destination_transfers[0].ledger
   }
 
   // TODO: make sure the source_fee_transfers have been executed
   const sourceFeesEquivalent =
-    yield calculateAmountEquivalent({
-      transfers: settlement.source_fee_transfers,
-      transferSide: 'source',
-      creditsOrDebits: 'credits',
-      convertToLedger: convertToLedger,
-      noErrors: true
-    });
+  yield calculateAmountEquivalent({
+    transfers: settlement.source_fee_transfers,
+    transferSide: 'source',
+    creditsOrDebits: 'credits',
+    convertToLedger: convertToLedger,
+    noErrors: true
+  })
 
   if (sourceFeesEquivalent === 0) {
     throw new InsufficientFeeError('Source fee transfer ' +
-      'must be paid to account for cost of holding funds');
+      'must be paid to account for cost of holding funds')
   }
 
   // Calculate cost of held funds
   const destinationDebitEquivalent =
-    yield calculateAmountEquivalent({
-      transfers: settlement.destination_transfers,
-      transferSide: 'destination',
-      creditsOrDebits: 'debits',
-      convertToLedger: convertToLedger,
-      noErrors: true
-    });
+  yield calculateAmountEquivalent({
+    transfers: settlement.destination_transfers,
+    transferSide: 'destination',
+    creditsOrDebits: 'debits',
+    convertToLedger: convertToLedger,
+    noErrors: true
+  })
   const costOfHeldFunds = config.expiry.feePercentage / 100 *
-      destinationDebitEquivalent;
+    destinationDebitEquivalent
 
   // Calculate how much we're supposed to pay out in fees
   const destinationFeesEquivalent =
-    yield calculateAmountEquivalent({
-      transfers: settlement.destination_fee_transfers,
-      transferSide: 'destination',
-      creditsOrDebits: 'debits',
-      convertToLedger: convertToLedger,
-      noErrors: true
-    });
+  yield calculateAmountEquivalent({
+    transfers: settlement.destination_fee_transfers,
+    transferSide: 'destination',
+    creditsOrDebits: 'debits',
+    convertToLedger: convertToLedger,
+    noErrors: true
+  })
 
-  const totalCost = costOfHeldFunds + destinationFeesEquivalent;
+  const totalCost = costOfHeldFunds + destinationFeesEquivalent
 
   if (sourceFeesEquivalent < totalCost) {
     throw new InsufficientFeeError('Source fees are ' +
       'insufficient to cover the cost of holding funds ' +
-      'and paying the fees for the destination transfers');
+      'and paying the fees for the destination transfers')
   }
 }
 
 function validateOneToManyOrManyToOne (settlement) {
   if (settlement.source_transfers.length > 1 &&
-      settlement.destination_transfers.length > 1) {
+    settlement.destination_transfers.length > 1) {
     throw new ManyToManyNotSupportedError('This trader does not support ' +
       'settlements that include multiple source transfers and multiple ' +
-      'destination transfers');
+      'destination transfers')
   }
 }
 
@@ -441,19 +435,19 @@ function addAuthorizationToTransfers (transfers) {
       // TODO change this when the trader's account
       // isn't the same on all ledgers
       if (debit.account === config.id) {
-        debit.authorized = true;
+        debit.authorized = true
       }
     }
   }
 
-  // TODO authorize credits
+// TODO authorize credits
 }
 
-function *submitTransfers (transfers, correspondingSourceTransfers) {
+function * submitTransfers (transfers, correspondingSourceTransfers) {
   for (let transfer of transfers) {
     // TODO: check before this point that we actually have
     // credentials for the ledgers we're asked to settle between
-    let credentials = config.ledgerCredentials[transfer.ledger];
+    let credentials = config.ledgerCredentials[transfer.ledger]
     let transferReq = yield request({
       method: 'put',
       auth: {
@@ -463,29 +457,29 @@ function *submitTransfers (transfers, correspondingSourceTransfers) {
       uri: transfer.id,
       body: transfer,
       json: true
-    });
+    })
 
     if (transferReq.statusCode >= 400) {
-      log.error('remote error while authorizing destination transfer');
-      log.debug(transferReq.body);
+      log.error('remote error while authorizing destination transfer')
+      log.debug(transferReq.body)
       throw new ExternalError('Received an unexpected ' +
         transferReq.body.id +
-        ' while processing destination transfer.');
+        ' while processing destination transfer.')
     }
 
     // Update destination_transfer state from the ledger's response
-    transfer.state = transferReq.body.state;
+    transfer.state = transferReq.body.state
 
     if (transferReq.body.state === 'executed') {
       transfer.execution_condition_fulfillment =
-        transferReq.body.execution_condition_fulfillment;
+        transferReq.body.execution_condition_fulfillment
     } else if (correspondingSourceTransfers) {
       // Store this subscription so when we get the notification
       // we know what source transfer to go and unlock
       log.debug('destination transfer not yet executed, ' +
-        'added subscription record');
+        'added subscription record')
       subscriptionRecords.put(transfer.id,
-        correspondingSourceTransfers);
+        correspondingSourceTransfers)
     }
   }
 }
@@ -682,65 +676,65 @@ function *submitTransfers (transfers, correspondingSourceTransfers) {
  *       "message": "Settlement rate does not match the rate currently offered"
  *     }
  */
- /* eslint-enable */
+/* eslint-enable */
 
 exports.put = function *(id) {
   // TODO: check that this UUID hasn't been used before
-  requestUtil.validateUriParameter('id', id, 'Uuid');
-  let settlement = yield requestUtil.validateBody(this, 'Settlement');
+  requestUtil.validateUriParameter('id', id, 'Uuid')
+  let settlement = yield requestUtil.validateBody(this, 'Settlement')
 
   if (typeof settlement.id !== 'undefined') {
     requestUtil.assert.strictEqual(
       settlement.id,
       config.server.base_uri + this.originalUrl,
       'Settlement ID must match the one in the URL'
-    );
+    )
   }
 
-  settlement.id = id.toLowerCase();
+  settlement.id = id.toLowerCase()
 
   // TODO: Check expiry settings
   // TODO: Check ledger signature on source payment
   // TODO: Check ledger signature on destination payment
 
-  log.debug('validating settlement ID: ' + settlement.id);
+  log.debug('validating settlement ID: ' + settlement.id)
 
   // Note that some traders may facilitate many to many
   // settlements but this one will throw an error
-  validateOneToManyOrManyToOne(settlement);
+  validateOneToManyOrManyToOne(settlement)
 
-  validateSourceTransfersArePrepared(settlement);
-  validateExpiry(settlement);
-  yield validateRate(settlement);
-  yield validateFee(settlement);
-  validateExecutionConditions(settlement);
-  yield validateExecutionConditionPublicKey(settlement);
+  validateSourceTransfersArePrepared(settlement)
+  validateExpiry(settlement)
+  yield validateRate(settlement)
+  yield validateFee(settlement)
+  validateExecutionConditions(settlement)
+  yield validateExecutionConditionPublicKey(settlement)
 
   if (settlement.destination_fee_transfers) {
-    log.debug('submitting destination fee transfers');
-    addAuthorizationToTransfers(settlement.destination_fee_transfers);
-    yield submitTransfers(settlement.destination_fee_transfers);
+    log.debug('submitting destination fee transfers')
+    addAuthorizationToTransfers(settlement.destination_fee_transfers)
+    yield submitTransfers(settlement.destination_fee_transfers)
   }
 
-  log.debug('submitting destination transfers');
-  addAuthorizationToTransfers(settlement.destination_transfers);
+  log.debug('submitting destination transfers')
+  addAuthorizationToTransfers(settlement.destination_transfers)
   yield submitTransfers(settlement.destination_transfers,
-    settlement.source_transfers);
+    settlement.source_transfers)
 
-  if (_.some(settlement.destination_transfers, function(transfer) {
-        return transfer.state === 'executed';
-      })) {
+  if (_.some(settlement.destination_transfers, function (transfer) {
+      return transfer.state === 'executed'
+    })) {
     yield executeSourceTransfers(settlement.source_transfers,
-      settlement.destination_transfers);
+      settlement.destination_transfers)
 
     // TODO: is the settlement execute when the destination transfer
     // is execute or only once we've gotten paid back?
-    settlement.state = 'executed';
+    settlement.state = 'executed'
   }
 
   // Externally we want to use a full URI ID
-  settlement.id = config.server.base_uri + '/settlements/' + settlement.id;
+  settlement.id = config.server.base_uri + '/settlements/' + settlement.id
 
-  this.status = 201;
-  this.body = settlement;
-};
+  this.status = 201
+  this.body = settlement
+}

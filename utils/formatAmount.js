@@ -1,10 +1,10 @@
-'use strict';
+'use strict'
 
-function formatAmount(amount) {
+function formatAmount (amount) {
   if (typeof amount === 'string') {
-    amount = parseFloat(amount);
+    amount = parseFloat(amount)
   }
-  return amount.toFixed(2);
+  return amount.toFixed(2)
 }
 
-module.exports = formatAmount;
+module.exports = formatAmount
