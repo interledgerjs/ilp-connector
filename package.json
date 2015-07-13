@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "nodemon app.js",
+    "lint": "eslint .",
     "test": "NODE_ENV=unit node node_modules/.bin/istanbul test -- _mocha -r co-mocha",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
   },
@@ -43,6 +44,8 @@
     "co-mocha": "^1.1.0",
     "co-supertest": "0.0.8",
     "coveralls": "^2.11.2",
+    "eslint": "^0.24.1",
+    "eslint-config-standard": "^3.4.1",
     "istanbul-harmony": "0.3.16",
     "mocha": "^1.18.2",
     "nock": "^1.2.0",

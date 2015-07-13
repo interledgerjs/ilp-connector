@@ -1,15 +1,15 @@
-'use strict';
+'use strict'
 
-const records = {};
+const records = {}
 
-exports.put = function(destinationTransferId, sourceTransfer) {
-  records[destinationTransferId] = sourceTransfer;
-};
+exports.put = function (destinationTransferId, sourceTransfer) {
+  records[destinationTransferId] = sourceTransfer
+}
 
-exports.get = function(destinationTransferId) {
-  return records[destinationTransferId];
-};
+exports.get = function (destinationTransferId) {
+  return records[destinationTransferId]
+}
 
-exports.remove = function(destinationTransferId) {
-  delete records[destinationTransferId];
-};
+exports.remove = function (destinationTransferId) {
+  delete records[destinationTransferId]
+}

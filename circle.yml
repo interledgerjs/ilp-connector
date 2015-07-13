@@ -5,6 +5,7 @@ machine:
     version: iojs-2.0.1
 test:
   override:
+    - npm run lint
     - XUNIT_FILE=${CIRCLE_TEST_REPORTS}/mocha.xml npm test --coverage -- -R spec-xunit-file
 deployment:
   production:
