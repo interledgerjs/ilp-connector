@@ -12,6 +12,7 @@ const errorHandler = require('@ripple/five-bells-shared/middlewares/error-handle
 const koa = require('koa')
 const path = require('path')
 const log = require('./services/log')
+const backend = require('./services/backend')
 const logger = require('koa-mag')
 const config = require('./services/config')
 const subscriber = require('./services/subscriber')
@@ -49,8 +50,11 @@ if (!module.parent) {
     log('app').info('pair', pair)
   }
 
-  // Start a coroutine that subscribes to all the ledgers in the background
+  // Start a coroutine that connects to the backend and
+  // subscribes to all the ledgers in the background
   co(function * () {
+    yield backend.connect()
+
     yield subscriber.subscribePairs(config.tradingPairs)
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)

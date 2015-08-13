@@ -8,6 +8,7 @@ const app = require('../app')
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('../services/log')
+const backend = require('../services/backend')
 const logHelper = require('@ripple/five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const sinon = require('sinon')
@@ -18,8 +19,9 @@ describe('Notifications', function () {
   logHelper(logger)
 
   describe('POST /notifications', function () {
-    beforeEach(function () {
+    beforeEach(function * () {
       appHelper.create(this, app)
+      yield backend.connect(ratesResponse)
 
       this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -41,11 +43,6 @@ describe('Notifications', function () {
         _.cloneDeep(require('./data/notificationNoConditionFulfillment.json'))
       this.notificationWithConditionFulfillment =
         _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'))
-
-      nock('http://api.fixer.io/latest')
-        .get('')
-        .times(3)
-        .reply(200, ratesResponse)
     })
 
     afterEach(function () {

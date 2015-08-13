@@ -16,6 +16,8 @@
     "iojs": ">=1.5"
   },
   "dependencies": {
+    "@ripple/five-bells-shared": "5.1.0",
+    "bignumber.js": "^2.0.7",
     "canonical-json": "0.0.4",
     "co": "^4.1.0",
     "co-body": "^4.0.0",

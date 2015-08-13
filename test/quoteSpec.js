@@ -8,18 +8,17 @@ const ratesResponse = require('./data/fxRates.json')
 const validate = require('@ripple/five-bells-shared/services/validate')
 const appHelper = require('./helpers/app')
 const logger = require('../services/log')
+const backend = require('../services/backend')
 const logHelper = require('@ripple/five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 
 describe('Quotes', function () {
   logHelper(logger)
 
-  beforeEach(function () {
+  beforeEach(function * () {
     appHelper.create(this, app)
 
-    nock('http://api.fixer.io/latest')
-      .get('')
-      .reply(200, ratesResponse)
+    yield backend.connect(ratesResponse)
   })
 
   describe('GET /quote', function () {
@@ -116,6 +115,7 @@ describe('Quotes', function () {
         .end()
     })
 
+    // TODO: make sure we're calculating the rates correctly and in our favor
     it('should return quotes for fixed destination amounts', function *() {
       yield this.request()
         .get('/quote?' +
@@ -127,7 +127,7 @@ describe('Quotes', function () {
             ledger: 'http://eur-ledger.example/EUR',
             credits: [{
               account: 'http://eur-ledger.example/accounts/mark',
-              amount: '94.23' // (1/ EUR/USD Rate of 1.0592) + .2% spread
+              amount: '94.22' // (1/ EUR/USD Rate of 1.0592) + .2% spread
             }],
             expiry_duration: '11'
           }],
