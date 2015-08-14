@@ -1,7 +1,7 @@
 'use strict'
 
 const config = require('../services/config')
-const log = require('@ripple/five-bells-shared/services/log')('quote')
+const log = require('../services/log')('quote')
 const fxRates = require('../services/fxRates')
 const NoAmountSpecifiedError = require('../errors/no-amount-specified-error')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
@@ -147,7 +147,7 @@ exports.get = function *() {
     source_transfers: [{
       ledger: this.query.source_ledger,
       credits: [{
-        account: config.id,
+        account: config.ledgerCredentials[this.query.source_ledger].account_uri,
         amount: sourceAmount
       }],
       expiry_duration: String(sourceExpiryDuration)
@@ -155,7 +155,7 @@ exports.get = function *() {
     destination_transfers: [{
       ledger: this.query.destination_ledger,
       debits: [{
-        account: config.id,
+        account: config.ledgerCredentials[this.query.destination_ledger].account_uri,
         amount: destinationAmount
       }],
       expiry_duration: String(destinationExpiryDuration)

@@ -5,17 +5,15 @@
     "ledger":"http://usd-ledger.example/USD",
     "debits":[{
       "amount":"1.07",
-      "account":"alice"
+      "account":"http://usd-ledger.example/accounts/alice"
     }],
     "credits":[{
       "amount":"1.07",
-      "account":"mark"
+      "account":"http://usd-ledger.example/accounts/mark"
     }],
     "execution_condition": {
-      "message": {
-        "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
-        "state": "executed"
-      },
+      "message_hash": "9EXcGgJa0zTIUxEQXaMKpvoGsNmYSxv8J6C12LBNA5hRMfmbwDCzAU4O14UKnqcIaQqMGULHLI+T6Nk3+qYd3Q==",
+      "signer": "http://eur-ledger.example/EUR",
       "algorithm": "ed25519-sha512",
       "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
@@ -27,11 +25,11 @@
     "ledger":"http://usd-ledger.example/USD",
     "debits": [{
       "amount": ".00010592",
-      "account": "alice"
+      "account": "http://usd-ledger.example/accounts/alice"
     }],
     "credits": [{
       "amount": ".00010592",
-      "account": "mark"
+      "account": "http://usd-ledger.example/accounts/mark"
     }],
     "state": "executed"
   }],
@@ -40,11 +38,11 @@
     "ledger":"http://eur-ledger.example/EUR",
     "debits":[{
       "amount":"1.00",
-      "account":"mark"
+      "account":"http://eur-ledger.example/accounts/mark"
     }],
     "credits":[{
       "amount":"1.00",
-      "account":"bob"
+      "account":"http://eur-ledger.example/accounts/bob"
     }],
     "state": "proposed"
   }]

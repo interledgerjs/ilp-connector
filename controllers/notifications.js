@@ -2,7 +2,7 @@
 
 const _ = require('lodash')
 const requestUtil = require('@ripple/five-bells-shared/utils/request')
-const log = require('@ripple/five-bells-shared/services/log')('notifications')
+const log = require('../services/log')('notifications')
 const subscriptionRecords = require('../services/subscriptionRecords')
 const executeSourceTransfers = require('../lib/executeSourceTransfers')
 const UnrelatedNotificationError =
