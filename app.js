@@ -11,7 +11,7 @@ const route = require('koa-route')
 const errorHandler = require('@ripple/five-bells-shared/middlewares/error-handler')
 const koa = require('koa')
 const path = require('path')
-const log = require('@ripple/five-bells-shared/services/log')
+const log = require('./services/log')
 const logger = require('koa-mag')
 const config = require('./services/config')
 const subscriber = require('./services/subscriber')
@@ -19,7 +19,7 @@ const app = module.exports = koa()
 
 // Logger
 app.use(logger())
-app.use(errorHandler)
+app.use(errorHandler({log: log('error-handler')}))
 
 app.use(route.get('/pairs', pairs.getCollection))
 

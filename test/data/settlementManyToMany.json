@@ -5,20 +5,17 @@
     "ledger":"http://usd-ledger.example/USD",
     "debits":[{
       "amount":"1.07",
-      "account":"alice"
+      "account":"http://usd-ledger.example/accounts/alice"
     }],
     "credits":[{
       "amount":"1.07",
-      "account":"mark"
+      "account":"http://usd-ledger.example/accounts/mark"
     }],
     "execution_condition": {
-      "message": {
-        "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
-        "state": "executed"
-      },
-      "signer": "http://otherledger.example",
+      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
+      "signer": "http://ledger.example",
       "algorithm": "ed25519-sha512",
-      "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
     "expires_at": "2015-06-16T00:00:11.000Z",
     "state": "prepared"
@@ -27,20 +24,17 @@
     "ledger":"http://cad-ledger.example/CAD",
     "debits":[{
       "amount":"1.07",
-      "account":"alice"
+      "account":"http://cad-ledger.example/accounts/alice"
     }],
     "credits":[{
       "amount":"1.07",
-      "account":"mark"
+      "account":"http://cad-ledger.example/accounts/mark"
     }],
     "execution_condition": {
-      "message": {
-        "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
-        "state": "executed"
-      },
-      "signer": "http://otherledger.example",
+      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
+      "signer": "http://ledger.example",
       "algorithm": "ed25519-sha512",
-      "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
     "expires_at": "2015-06-16T00:00:11.000Z",
     "state": "prepared"
@@ -50,20 +44,17 @@
     "ledger":"http://eur-ledger.example/EUR",
     "debits":[{
       "amount":"1.00",
-      "account":"mark"
+      "account":"http://eur-ledger.example/accounts/mark"
     }],
     "credits":[{
       "amount":"1.00",
-      "account":"bob"
+      "account":"http://eur-ledger.example/accounts/bob"
     }],
     "execution_condition": {
-      "message": {
-        "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
-        "state": "executed"
-      },
-      "signer": "http://otherledger.example",
+      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
+      "signer": "http://ledger.example",
       "algorithm": "ed25519-sha512",
-      "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
     "expires_at": "2015-06-16T00:00:10.000Z",
     "state": "proposed"
@@ -72,20 +63,17 @@
     "ledger":"http://cny-ledger.example/CNY",
     "debits":[{
       "amount":"1.00",
-      "account":"mark"
+      "account":"http://cny-ledger.example/accounts/mark"
     }],
     "credits":[{
       "amount":"1.00",
-      "account":"danielle"
+      "account":"http://cny-ledger.example/accounts/danielle"
     }],
     "execution_condition": {
-      "message": {
-        "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
-        "state": "executed"
-      },
-      "signer": "http://otherledger.example",
+      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
+      "signer": "http://ledger.example",
       "algorithm": "ed25519-sha512",
-      "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
     "expires_at": "2015-06-16T00:00:10.000Z",
     "state": "proposed"

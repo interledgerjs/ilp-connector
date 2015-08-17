@@ -46,15 +46,14 @@ exports.get = function * get (source_ledger, destination_ledger) {
   // The base currency trades 1:1 to itself
   rates[baseCurrency] = 1
 
-  let currencies = Object.keys(rates)
-  currencies.push(baseCurrency)
+  let currencies = _.keys(config.ledgerCredentials)
 
   let currencyPair = lookupCurrencies(source_ledger, destination_ledger)
 
   // Throw an error if the currency pair is not supported
   if (!currencyPair ||
-    !_.includes(currencies, currencyPair[0]) ||
-    !_.includes(currencies, currencyPair[1])) {
+    !_.includes(currencies, source_ledger) ||
+    !_.includes(currencies, destination_ledger)) {
     throw new AssetsNotTradedError('This trader does not support the ' +
       'given asset pair')
   }

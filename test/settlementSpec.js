@@ -8,6 +8,7 @@ nock.enableNetConnect(['localhost'])
 const config = require('../services/config')
 config.tradingPairs = require('./data/tradingPairs')
 const app = require('../app')
+const logger = require('../services/log')
 const appHelper = require('./helpers/app')
 const logHelper = require('@ripple/five-bells-shared/testHelpers/log')
 const ratesResponse = require('./data/fxRates.json')
@@ -18,7 +19,7 @@ const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 // ledger.eu secret: u3HFmtkEHDCNJQwKGT4UfGf0TBqiqDu/2IY7R99Znvsu9/di2ccswRH5UdPRpp4QkX7tZBy+niIpkB28xW2jtw==
 
 describe('Settlements', function () {
-  logHelper()
+  logHelper(logger)
 
   beforeEach(function () {
     appHelper.create(this, app)
@@ -125,7 +126,7 @@ describe('Settlements', function () {
       'trader in the source transfer credits', function *() {
         const settlement = this.formatId(this.settlementOneToOne,
           '/settlements/')
-        settlement.source_transfers[0].credits[0].account = 'mary'
+        settlement.source_transfers[0].credits[0].account = 'http://usd-ledger.example/accounts/mary'
 
         yield this.request()
           .put('/settlements/' + this.settlementOneToOne.id)
@@ -143,7 +144,7 @@ describe('Settlements', function () {
       'trader in the destination transfer debits', function *() {
         const settlement = this.formatId(this.settlementOneToOne,
           '/settlements/')
-        settlement.destination_transfers[0].debits[0].account = 'mary'
+        settlement.destination_transfers[0].debits[0].account = 'http://eur-ledger.example/accounts/mary'
 
         yield this.request()
           .put('/settlements/' + this.settlementOneToOne.id)
@@ -777,7 +778,7 @@ describe('Settlements', function () {
           '/settlements/')
         settlement.source_transfers[0].debits[0].amount = '21.07'
         settlement.source_transfers[0].credits.unshift({
-          account: 'mary',
+          account: 'http://usd-ledger.example/accounts/mary',
           amount: '20'
         })
 
@@ -838,7 +839,7 @@ describe('Settlements', function () {
           '/settlements/')
         settlement.destination_transfers[0].debits[0].amount = '0.60'
         settlement.destination_transfers[0].debits.push({
-          account: 'mark',
+          account: 'http://eur-ledger.example/accounts/mark',
           amount: '0.40'
         })
 
@@ -898,7 +899,7 @@ describe('Settlements', function () {
           '/settlements/')
         settlement.destination_transfers[0].credits[0].amount = '0.60'
         settlement.destination_transfers[0].credits.push({
-          account: 'timothy',
+          account: 'http://usd-ledger.example/accounts/timothy',
           amount: '0.40'
         })
 
@@ -956,11 +957,11 @@ describe('Settlements', function () {
           '/settlements/')
         settlement.destination_transfers[0].debits.unshift({
           amount: '10',
-          account: 'other'
+          account: 'http://eur-ledger.example/accounts/other'
         })
         settlement.destination_transfers[0].credits.unshift({
           amount: '10',
-          account: 'jane'
+          account: 'http://eur-ledger.example/accounts/jane'
         })
 
         const traderCredentials =
@@ -1198,7 +1199,7 @@ describe('Settlements', function () {
         const settlement = this.formatId(this.settlementOneToMany,
           '/settlements/')
 
-        settlement.destination_transfers[1].credits[0].account = 'mark'
+        settlement.destination_transfers[1].credits[0].account = 'http://cny-ledger.example/accounts/mark'
 
         const fulfillment = {
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
@@ -1265,7 +1266,7 @@ describe('Settlements', function () {
           '/settlements/')
 
         settlement.source_transfers[0].debits[0] = {
-          account: 'mark',
+          account: 'http://usd-ledger.example/accounts/mark',
           amount: '10',
           authorized: true
         }
@@ -1335,7 +1336,8 @@ describe('Settlements', function () {
         const settlement = this.formatId(this.settlementManyToOne,
           '/settlements/')
 
-        settlement.destination_transfers[0].credits[0].account = 'mark'
+        settlement.destination_transfers[0].credits[0].account =
+          'http://usd-ledger.example/accounts/mark'
 
         const fulfillment = {
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
@@ -1400,7 +1402,7 @@ describe('Settlements', function () {
           '/settlements/')
 
         settlement.source_transfers[0].debits[0] = {
-          account: 'mark',
+          account: 'http://usd-ledger.example/accounts/mark',
           amount: '10',
           authorized: true
         }

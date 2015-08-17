@@ -4,7 +4,7 @@ const _ = require('lodash')
 const moment = require('moment')
 const request = require('co-request')
 const requestUtil = require('@ripple/five-bells-shared/utils/request')
-const log = require('@ripple/five-bells-shared/services/log')('settlements')
+const log = require('../services/log')('settlements')
 const executeSourceTransfers = require('../lib/executeSourceTransfers')
 const config = require('../services/config')
 const fxRates = require('../services/fxRates')
@@ -23,6 +23,7 @@ const NoRelatedDestinationDebitError =
 const FundsNotHeldError = require('../errors/funds-not-held-error')
 const ManyToManyNotSupportedError =
   require('../errors/many-to-many-not-supported-error')
+const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const hashJSON = require('@ripple/five-bells-shared/utils/hashJson')
 
 function sourceConditionIsDestinationTransfer (source, destination) {
@@ -32,12 +33,6 @@ function sourceConditionIsDestinationTransfer (source, destination) {
     state: 'executed'
   }
 
-  if (source.execution_condition.message &&
-    !_.isEqual(source.execution_condition.message, expectedMessage)) {
-    log.debug('condition does not match the execution of the destination ' +
-      'transfer, unexpected message')
-    return false
-  }
   if (source.execution_condition.message_hash &&
     source.execution_condition.message_hash !== hashJSON(expectedMessage)) {
     log.debug('condition does not match the execution of the destination ' +
@@ -257,9 +252,16 @@ function validateExpiry (settlement) {
   }
 }
 
-function amountFinder (creditOrDebit) {
-  // TODO: change this check when the account ids become IRIs
-  return (creditOrDebit.account === config.id ?
+function amountFinder (ledger, creditOrDebit) {
+  // TODO: we need a more elegant way of handling assets that we don't trade
+  if (!config.ledgerCredentials[ledger]) {
+    throw new AssetsNotTradedError('This trader does not support ' +
+      'the given asset pair')
+  }
+
+  const accountUri = config.ledgerCredentials[ledger].account_uri
+
+  return (creditOrDebit.account === accountUri ?
     parseFloat(creditOrDebit.amount) :
     0)
 }
@@ -293,7 +295,7 @@ function * calculateAmountEquivalent (opts) {
 
   // Total the number of credits or debits to the traders account
     let relevantAmountTotal =
-    _.sum(transfer[opts.creditsOrDebits], amountFinder)
+    _.sum(transfer[opts.creditsOrDebits], amountFinder.bind(null, transfer.ledger))
 
     // Throw an error if we're not included in the transfer
     if (relevantAmountTotal <= 0 && !opts.noErrors) {
@@ -429,12 +431,18 @@ function validateOneToManyOrManyToOne (settlement) {
 function addAuthorizationToTransfers (transfers) {
   // TODO: make sure we're not authorizing anything extra
   // that shouldn't be taking money out of our account
+  let credentials
   for (let transfer of transfers) {
     for (let debit of transfer.debits) {
 
+      credentials = config.ledgerCredentials[transfer.ledger]
+      if (!credentials) {
+        continue
+      }
+
       // TODO change this when the trader's account
       // isn't the same on all ledgers
-      if (debit.account === config.id) {
+      if (debit.account === credentials.account_uri) {
         debit.authorized = true
       }
     }

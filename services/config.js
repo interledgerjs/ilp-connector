@@ -4,8 +4,6 @@ const url = require('url')
 
 const config = exports
 
-exports.id = process.env.TRADER_ID || 'mark'
-
 config.server = {}
 config.server.secure = !!process.env.PUBLIC_HTTPS
 config.server.bind_ip = process.env.BIND_IP || '0.0.0.0'
@@ -20,11 +18,14 @@ config.tradingPairs = JSON.parse(process.env.TRADING_PAIRS || '[]')
 // Credentials should be specified as a map of the form
 // {
 //    "<ledger_uri>": {
+//      "account_uri": "...",
 //      "username": "...",
 //      "password": "..."
 //    }
 // }
 config.ledgerCredentials = JSON.parse(process.env.TRADER_CREDENTIALS || '{}')
+
+// TODO: make sure the tradingPairs include only ledgers we have credentials for
 
 config.features = {}
 config.features.debugAutoFund = !!process.env.TRADER_DEBUG_AUTOFUND
@@ -54,11 +55,23 @@ config.server.base_uri = url.format({
 if (process.env.NODE_ENV === 'unit') {
   config.server.base_uri = 'http://localhost'
   config.ledgerCredentials = {
+    'http://cad-ledger.example/CAD': {
+      account_uri: 'http://cad-ledger.example/accounts/mark',
+      username: 'mark',
+      password: 'mark'
+    },
+    'http://usd-ledger.example/USD': {
+      account_uri: 'http://usd-ledger.example/accounts/mark',
+      username: 'mark',
+      password: 'mark'
+    },
     'http://eur-ledger.example/EUR': {
+      account_uri: 'http://eur-ledger.example/accounts/mark',
       username: 'mark',
       password: 'mark'
     },
     'http://cny-ledger.example/CNY': {
+      account_uri: 'http://cny-ledger.example/accounts/mark',
       username: 'mark',
       password: 'mark'
     }

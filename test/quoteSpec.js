@@ -6,11 +6,12 @@ const app = require('../app')
 const ratesResponse = require('./data/fxRates.json')
 const validate = require('@ripple/five-bells-shared/services/validate')
 const appHelper = require('./helpers/app')
+const logger = require('../services/log')
 const logHelper = require('@ripple/five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 
 describe('Quotes', function () {
-  logHelper()
+  logHelper(logger)
 
   beforeEach(function () {
     appHelper.create(this, app)
@@ -97,7 +98,7 @@ describe('Quotes', function () {
           source_transfers: [{
             ledger: 'http://eur-ledger.example/EUR',
             credits: [{
-              account: 'mark',
+              account: 'http://eur-ledger.example/accounts/mark',
               amount: '100.00'
             }],
             expiry_duration: '11'
@@ -106,7 +107,7 @@ describe('Quotes', function () {
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
-              account: 'mark'
+              account: 'http://usd-ledger.example/accounts/mark'
             }],
             expiry_duration: '10'
           }]
@@ -124,7 +125,7 @@ describe('Quotes', function () {
           source_transfers: [{
             ledger: 'http://eur-ledger.example/EUR',
             credits: [{
-              account: 'mark',
+              account: 'http://eur-ledger.example/accounts/mark',
               amount: '94.23' // (1/ EUR/USD Rate of 1.0592) + .2% spread
             }],
             expiry_duration: '11'
@@ -133,7 +134,7 @@ describe('Quotes', function () {
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               amount: '100.00',
-              account: 'mark'
+              account: 'http://usd-ledger.example/accounts/mark'
             }],
             expiry_duration: '10'
           }]
@@ -153,7 +154,7 @@ describe('Quotes', function () {
             source_transfers: [{
               ledger: 'http://eur-ledger.example/EUR',
               credits: [{
-                account: 'mark',
+                account: 'http://eur-ledger.example/accounts/mark',
                 amount: '100.00'
               }],
               expiry_duration: '11'
@@ -162,7 +163,7 @@ describe('Quotes', function () {
               ledger: 'http://usd-ledger.example/USD',
               debits: [{
                 amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
-                account: 'mark'
+                account: 'http://usd-ledger.example/accounts/mark'
               }],
               expiry_duration: '10'
             }]
@@ -181,7 +182,7 @@ describe('Quotes', function () {
             source_transfers: [{
               ledger: 'http://usd-ledger.example/USD',
               credits: [{
-                account: 'mark',
+                account: 'http://usd-ledger.example/accounts/mark',
                 amount: '100.00'
               }],
               expiry_duration: '11'
@@ -190,7 +191,7 @@ describe('Quotes', function () {
               ledger: 'http://eur-ledger.example/EUR',
               debits: [{
                 amount: '94.22', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
-                account: 'mark'
+                account: 'http://eur-ledger.example/accounts/mark'
               }],
               expiry_duration: '10'
             }]
@@ -210,7 +211,7 @@ describe('Quotes', function () {
             source_transfers: [{
               ledger: 'http://usd-ledger.example/USD',
               credits: [{
-                account: 'mark',
+                account: 'http://usd-ledger.example/accounts/mark',
                 amount: '100.00'
               }],
               expiry_duration: '11'
@@ -219,7 +220,7 @@ describe('Quotes', function () {
               ledger: 'http://cad-ledger.example/CAD',
               debits: [{
                 amount: '127.98', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
-                account: 'mark'
+                account: 'http://cad-ledger.example/accounts/mark'
               }],
               expiry_duration: '10'
             }]
@@ -240,14 +241,14 @@ describe('Quotes', function () {
               ledger: 'http://cad-ledger.example/CAD',
               credits: [{
                 amount: '100.00',
-                account: 'mark'
+                account: 'http://cad-ledger.example/accounts/mark'
               }],
               expiry_duration: '11'
             }],
             destination_transfers: [{
               ledger: 'http://usd-ledger.example/USD',
               debits: [{
-                account: 'mark',
+                account: 'http://usd-ledger.example/accounts/mark',
                 amount: '77.82' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
               }],
               expiry_duration: '10'

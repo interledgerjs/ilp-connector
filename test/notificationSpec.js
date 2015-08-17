@@ -6,6 +6,7 @@ config.tradingPairs = require('./data/tradingPairs')
 const app = require('../app')
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
+const logger = require('../services/log')
 const logHelper = require('@ripple/five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const sinon = require('sinon')
@@ -13,7 +14,7 @@ const sinon = require('sinon')
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
 describe('Notifications', function () {
-  logHelper()
+  logHelper(logger)
 
   describe('POST /notifications', function () {
     beforeEach(function () {

@@ -6,11 +6,11 @@
     "ledger":"http://eur-ledger.example/EUR",
     "debits":[{
       "amount":"1.00",
-      "account":"mark"
+      "account":"http://eur-ledger.example/accounts/mark"
     }],
     "credits":[{
       "amount":"1.00",
-      "account":"bob"
+      "account":"http://eur-ledger.example/accounts/bob"
     }],
     "state": "executed"
   }

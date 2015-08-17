@@ -1,10 +1,7 @@
 {
-  "message": {
-    "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
-    "state": "proposed"
-  },
+  "message_hash": "KA/8Pdjzwwkkd8/NqbwNHZ+XS84vhao861Z+AGUihFMPSInnIaJC3iAUXId+YZgYH3Pxjo2x82evS+jZZdElfA==",
   "algorithm": "ed25519-sha512",
   "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=",
   "signer": "http://eur-ledger.example",
-  "signature": "fuwOfP1BqjApfz+5ViR8nLM0hRBKakrrM0eEpCnyLvxgmTmuW3uEmuh00pXMbSMQEQiQwWtXsz6g9dPFxZ3GuDw=="
+  "signature": "0IkjoVa7ZpH/sX6ZDQjalv0sB9UvOXP851fpqfVntSr5sPK/lNzoxb7CEujC/7C7Q5Ku6/IrudAFyrk5hpXSCg=="
 }
