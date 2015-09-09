@@ -1,5 +1,6 @@
 'use strict'
 const nock = require('nock')
+nock.enableNetConnect(['localhost'])
 const config = require('../services/config')
 config.tradingPairs = require('./data/tradingPairs')
 const app = require('../app')
