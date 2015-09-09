@@ -3,8 +3,8 @@ const _ = require('lodash')
 const expect = require('chai').expect
 const sinon = require('sinon')
 const nock = require('nock')
-const moment = require('moment')
 nock.enableNetConnect(['localhost'])
+const moment = require('moment')
 const config = require('../services/config')
 config.tradingPairs = require('./data/tradingPairs')
 const app = require('../app')
@@ -254,7 +254,6 @@ describe('Settlements', function () {
               'to authorize the destination transfer')
           })
           .end()
-
       })
 
     it('should return a 422 if any of the source transfers is expired',
@@ -1004,16 +1003,17 @@ describe('Settlements', function () {
             }],
             destination_transfers: [{
               state: 'executed',
-              debits: [{}, // Don't add anything to the first one
+              debits: [
+                {}, // Don't add anything to the first one
                 {
                   authorized: true
-                }]
+                }
+              ]
             }]
           }))
           .end()
 
         submittedAuthorization.done()
-
       })
 
     it('should execute a settlement with one source transfer and multiple ' +
@@ -1328,7 +1328,6 @@ describe('Settlements', function () {
             }]
           }))
           .end()
-
       })
 
     it('should execute a many-to-one settlement where it is credited in ' +
@@ -1393,7 +1392,6 @@ describe('Settlements', function () {
             }]
           }))
           .end()
-
       })
 
     it('should execute a many-to-one settlement where it is debited in ' +
@@ -1461,7 +1459,6 @@ describe('Settlements', function () {
             }]
           }))
           .end()
-
       })
 
     it('should execute the destination_fee_transfers immediately ' +
@@ -1512,9 +1509,6 @@ describe('Settlements', function () {
           .end()
 
         submittedFeeTransfer.done()
-
       })
-
   })
-
 })

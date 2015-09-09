@@ -1,5 +1,6 @@
 'use strict'
 const nock = require('nock')
+nock.enableNetConnect(['localhost'])
 const config = require('../services/config')
 config.tradingPairs = require('./data/tradingPairs')
 const app = require('../app')
@@ -140,7 +141,6 @@ describe('Quotes', function () {
           }]
         })
         .end()
-
     })
 
     it('should return a settlement object with the source' +
@@ -169,7 +169,6 @@ describe('Quotes', function () {
             }]
           })
           .end()
-
       })
 
     it('should apply the spread correctly for settlements where the source' +
@@ -197,7 +196,6 @@ describe('Quotes', function () {
             }]
           })
           .end()
-
       })
 
     it('should determine the correct rate and spread when neither the source ' +
@@ -226,7 +224,6 @@ describe('Quotes', function () {
             }]
           })
           .end()
-
       })
 
     it('should determine the correct rate and spread when neither the source ' +
@@ -255,7 +252,6 @@ describe('Quotes', function () {
             }]
           })
           .end()
-
       })
 
     it('should fill in default values if no expiry_durations are specified',
@@ -326,5 +322,4 @@ describe('Quotes', function () {
           .end()
       })
   })
-
 })
