@@ -1,5 +1,6 @@
 'use strict'
 
+const co = require('co')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
 const settlements = require('./controllers/settlements')
@@ -39,13 +40,19 @@ app.use(serve(path.join(__dirname, 'public')))
 app.use(compress())
 
 if (!module.parent) {
-  subscriber.subscribePairs(config.tradingPairs)
-
   app.listen(config.server.port)
+
   log('app').info('trader listening on ' + config.server.bind_ip + ':' +
     config.server.port)
   log('app').info('public at ' + config.server.base_uri)
   for (let pair of config.tradingPairs) {
     log('app').info('pair', pair)
   }
+
+  // Start a coroutine that subscribes to all the ledgers in the background
+  co(function * () {
+    yield subscriber.subscribePairs(config.tradingPairs)
+  }).catch(function (err) {
+    log('app').error(typeof err === 'object' && err.stack || err)
+  })
 }
