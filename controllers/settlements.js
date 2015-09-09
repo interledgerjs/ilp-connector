@@ -102,7 +102,6 @@ function * validateExecutionConditionPublicKey (settlement) {
   // TODO: use a cache of ledgers' public keys and move this functionality
   // into the synchronous validateExecutionConditions function
   for (let sourceTransfer of settlement.source_transfers) {
-
     let conditionsAreEqual =
     sourceConditionSameAsAllDestinationConditions(
       sourceTransfer, settlement.destination_transfers)
@@ -202,9 +201,9 @@ function validateExpiry (settlement) {
     // of our account) to execute all of the source transfers
     let earliestSourceTransferExpiry =
     _.min(_.map(settlement.source_transfers, function (transfer) {
-      return (transfer.expires_at && transfer.state !== 'executed' ?
-        moment(transfer.expires_at, moment.ISO_8601).valueOf() :
-        Math.max())
+      return (transfer.expires_at && transfer.state !== 'executed'
+        ? moment(transfer.expires_at, moment.ISO_8601).valueOf()
+        : Math.max())
     }))
 
     let latestDestinationTransferExpiry =
@@ -217,7 +216,6 @@ function validateExpiry (settlement) {
         'destination transfer expiry and the earliest source transfer expiry ' +
         'is insufficient to ensure that we can execute the source transfers')
     }
-
   } else {
     // If we are the last trader we're not going to put money on hold
     // so we don't care about the maxHoldTime
@@ -261,9 +259,10 @@ function amountFinder (ledger, creditOrDebit) {
 
   const accountUri = config.ledgerCredentials[ledger].account_uri
 
-  return (creditOrDebit.account === accountUri ?
-    parseFloat(creditOrDebit.amount) :
-    0)
+  return (creditOrDebit.account === accountUri
+    ? parseFloat(creditOrDebit.amount)
+    : 0
+  )
 }
 
 /**
@@ -292,7 +291,6 @@ function * calculateAmountEquivalent (opts) {
   }
 
   for (let transfer of opts.transfers) {
-
   // Total the number of credits or debits to the traders account
     let relevantAmountTotal =
     _.sum(transfer[opts.creditsOrDebits], amountFinder.bind(null, transfer.ledger))
@@ -434,7 +432,6 @@ function addAuthorizationToTransfers (transfers) {
   let credentials
   for (let transfer of transfers) {
     for (let debit of transfer.debits) {
-
       credentials = config.ledgerCredentials[transfer.ledger]
       if (!credentials) {
         continue

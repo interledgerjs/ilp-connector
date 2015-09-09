@@ -44,8 +44,9 @@ config.expiry.maxHoldTime = process.env.MAX_HOLD_TIME || 10 // seconds
 config.expiry.feePercentage =
   process.env.FEE_PERCENTAGE || 0.01
 
-const isCustomPort = config.server.secure ?
-  +config.server.public_port !== 443 : +config.server.public_port !== 80
+const isCustomPort = config.server.secure
+  ? +config.server.public_port !== 443
+  : +config.server.public_port !== 80
 config.server.base_uri = url.format({
   protocol: 'http' + (config.server.secure ? 's' : ''),
   hostname: config.server.public_host,

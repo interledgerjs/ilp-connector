@@ -202,7 +202,6 @@ describe('Notifications', function () {
 
         // Throw an error if this nock hasn't been executed
         sourceTransferExecuted.isDone()
-
       })
 
     it('should submit the source transfer corresponding to the ' +
@@ -244,7 +243,6 @@ describe('Notifications', function () {
 
         // Throw an error if this nock hasn't been executed
         sourceTransferExecuted.isDone()
-
       })
 
     it('should submit multiple source transfers if there are multiple ' +
@@ -355,7 +353,6 @@ describe('Notifications', function () {
         // Throw an error if this nock hasn't been executed
         firstSourceTransferExecuted.isDone()
         secondSourceTransferExecuted.isDone()
-
       })
 
     it('should delete the subscription once it has submitted the source ' +
@@ -397,6 +394,5 @@ describe('Notifications', function () {
         // Throw an error if this nock hasn't been executed
         subscriptionDeleted.isDone()
       })
-
   })
 })
