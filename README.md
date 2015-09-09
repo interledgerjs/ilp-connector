@@ -30,8 +30,28 @@ Breaking down that command:
 
 #### Trading
 
-* `TRADER_ID` (default: `mark`) Account ID of the trading account.
-* `TRADING_PAIRS` (default: `[]`) Pairs to trade on, ex. `[['USD@http://ledger1.example', 'EUR@http://ledger2.example'],['EUR@http://ledger2.example', 'USD@http://ledger1.example']]`
+* `TRADING_PAIRS` (default: `[]`) Pairs to trade on, ex.
+  ``` js
+  [
+    [
+      'USD@http://ledger1.example',
+      'EUR@http://ledger2.example'
+    ],[
+      'EUR@http://ledger2.example',
+      'USD@http://ledger1.example'
+    ]
+  ]
+  ```
+* `TRADER_CREDENTIALS` (default: `{}`) Trader's login credentials, ex.
+  ``` js
+  {
+     "<ledger_uri>": {
+       "account_uri": "...",
+       "username": "...",
+       "password": "..."
+     }
+  }
+  ```
 * `TRADER_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug features to automatically create and fund the trader's accounts.
 * `TRADER_FX_API` (default: `http://api.fixer.io/latest`) FX rate endpoint. This sets the reference exchange rates the trader bases its quotes on.
 * `TRADER_FX_CACHE_TTL` (default: `86400000` =24h) How long the FX rates should be cached. In milliseconds.
