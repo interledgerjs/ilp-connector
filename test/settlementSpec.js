@@ -9,6 +9,7 @@ const config = require('../services/config')
 config.tradingPairs = require('./data/tradingPairs')
 const app = require('../app')
 const logger = require('../services/log')
+const backend = require('../services/backend')
 const appHelper = require('./helpers/app')
 const logHelper = require('@ripple/five-bells-shared/testHelpers/log')
 const ratesResponse = require('./data/fxRates.json')
@@ -21,8 +22,9 @@ const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 describe('Settlements', function () {
   logHelper(logger)
 
-  beforeEach(function () {
+  beforeEach(function * () {
     appHelper.create(this, app)
+    yield backend.connect(ratesResponse)
 
     this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -42,11 +44,6 @@ describe('Settlements', function () {
       _.cloneDeep(require('./data/transferStateProposed.json'))
     this.transferExecutedReceipt =
       _.cloneDeep(require('./data/transferStateExecuted.json'))
-
-    nock('http://api.fixer.io/latest')
-      .get('')
-      .times(3)
-      .reply(200, ratesResponse)
   })
 
   afterEach(function () {

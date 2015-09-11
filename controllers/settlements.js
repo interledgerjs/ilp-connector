@@ -2,12 +2,13 @@
 
 const _ = require('lodash')
 const moment = require('moment')
+const BigNumber = require('bignumber.js')
 const request = require('co-request')
 const requestUtil = require('@ripple/five-bells-shared/utils/request')
 const log = require('../services/log')('settlements')
 const executeSourceTransfers = require('../lib/executeSourceTransfers')
 const config = require('../services/config')
-const fxRates = require('../services/fxRates')
+const backend = require('../services/backend')
 const subscriptionRecords = require('../services/subscriptionRecords')
 const ExternalError = require('../errors/external-error')
 const UnacceptableConditionsError =
@@ -260,9 +261,8 @@ function amountFinder (ledger, creditOrDebit) {
   const accountUri = config.ledgerCredentials[ledger].account_uri
 
   return (creditOrDebit.account === accountUri
-    ? parseFloat(creditOrDebit.amount)
-    : 0
-  )
+    ? new BigNumber(creditOrDebit.amount)
+    : new BigNumber(0))
 }
 
 /**
@@ -282,21 +282,24 @@ function * calculateAmountEquivalent (opts) {
   // if the transfers are source_transfers or debits if the transfers
   // are destination_transfers (the amount that is either entering
   // or leaving our account)
-  // Then, we are going to use the fxRates to convert the amount
+  // Then, we are going to use the backend to convert the amount
   // into the asset represented by convertToLedger
-  let convertedAmountTotal = 0
+  let convertedAmountTotal = new BigNumber(0)
 
   if (!opts.transfers || opts.transfers.length === 0) {
     return convertedAmountTotal
   }
 
   for (let transfer of opts.transfers) {
-  // Total the number of credits or debits to the traders account
-    let relevantAmountTotal =
-    _.sum(transfer[opts.creditsOrDebits], amountFinder.bind(null, transfer.ledger))
+    // Total the number of credits or debits to the traders account
+    let relevantAmountTotal = _.reduce(transfer[opts.creditsOrDebits], function (result, creditOrDebit) {
+      return result.plus(amountFinder(transfer.ledger, creditOrDebit))
+    }, new BigNumber(0))
+
+    log.debug('relevantAmountTotal', relevantAmountTotal, relevantAmountTotal.constructor.name)
 
     // Throw an error if we're not included in the transfer
-    if (relevantAmountTotal <= 0 && !opts.noErrors) {
+    if (relevantAmountTotal.lte(0) && !opts.noErrors) {
       if (opts.transferSide === 'source') {
         throw new NoRelatedSourceCreditError("Trader's account " +
           'must be credited in all source transfers to ' +
@@ -310,15 +313,23 @@ function * calculateAmountEquivalent (opts) {
 
     // Calculate how much the relevantAmountTotal is worth in
     // the asset represented by convertToLedger
-    let rate
+    let quote
     if (transfer.ledger === opts.convertToLedger) {
-      convertedAmountTotal += relevantAmountTotal
+      convertedAmountTotal = convertedAmountTotal.plus(relevantAmountTotal)
     } else if (opts.transferSide === 'source') {
-      rate = yield fxRates.get(transfer.ledger, opts.convertToLedger)
-      convertedAmountTotal += relevantAmountTotal * rate
+      quote = yield backend.getQuote({
+        source_ledger: transfer.ledger,
+        destination_ledger: opts.convertToLedger,
+        source_amount: relevantAmountTotal
+      })
+      convertedAmountTotal = convertedAmountTotal.plus(quote.destination_amount)
     } else if (opts.transferSide === 'destination') {
-      rate = yield fxRates.get(opts.convertToLedger, transfer.ledger)
-      convertedAmountTotal += relevantAmountTotal / rate
+      quote = yield backend.getQuote({
+        source_ledger: opts.convertToLedger,
+        destination_ledger: transfer.ledger,
+        destination_amount: relevantAmountTotal
+      })
+      convertedAmountTotal = convertedAmountTotal.plus(quote.source_amount)
     }
   }
   return convertedAmountTotal
@@ -353,8 +364,7 @@ function * validateRate (settlement) {
     convertToLedger: convertToLedger
   })
 
-  if (fxRates.subtractSpread(sourceCreditEquivalent) <
-    destinationDebitEquivalent) {
+  if (sourceCreditEquivalent.lt(destinationDebitEquivalent)) {
     throw new UnacceptableRateError('Settlement rate does not match ' +
       'the rate currently offered')
   }
@@ -380,7 +390,7 @@ function * validateFee (settlement) {
     noErrors: true
   })
 
-  if (sourceFeesEquivalent === 0) {
+  if (sourceFeesEquivalent.eq(0)) {
     throw new InsufficientFeeError('Source fee transfer ' +
       'must be paid to account for cost of holding funds')
   }
@@ -394,8 +404,8 @@ function * validateFee (settlement) {
     convertToLedger: convertToLedger,
     noErrors: true
   })
-  const costOfHeldFunds = config.expiry.feePercentage / 100 *
-    destinationDebitEquivalent
+  const costOfHeldFunds = new BigNumber(config.expiry.feePercentage)
+    .div(100).times(destinationDebitEquivalent)
 
   // Calculate how much we're supposed to pay out in fees
   const destinationFeesEquivalent =
@@ -407,9 +417,9 @@ function * validateFee (settlement) {
     noErrors: true
   })
 
-  const totalCost = costOfHeldFunds + destinationFeesEquivalent
+  const totalCost = costOfHeldFunds.plus(destinationFeesEquivalent)
 
-  if (sourceFeesEquivalent < totalCost) {
+  if (sourceFeesEquivalent.lt(totalCost)) {
     throw new InsufficientFeeError('Source fees are ' +
       'insufficient to cover the cost of holding funds ' +
       'and paying the fees for the destination transfers')

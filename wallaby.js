@@ -1,6 +1,7 @@
 module.exports = function (wallaby) {
   return {
     files: [
+      'backends/*/*.js',
       'controllers/*.js',
       'lib/*.js',
       'services/*.js',

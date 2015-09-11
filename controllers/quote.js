@@ -2,11 +2,8 @@
 
 const config = require('../services/config')
 const log = require('../services/log')('quote')
-const fxRates = require('../services/fxRates')
-const NoAmountSpecifiedError = require('../errors/no-amount-specified-error')
+const backend = require('../services/backend')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
-const formatAmount = require('../utils/formatAmount')
-const formatAmountCeil = require('../utils/formatAmountCeil')
 
 /* eslint-disable */
 /**
@@ -86,34 +83,16 @@ const formatAmountCeil = require('../utils/formatAmountCeil')
 /* eslint-enable */
 
 exports.get = function *() {
-  let rate = yield fxRates.get(this.query.source_ledger,
-    this.query.destination_ledger)
-  rate = rate.toFixed(5)
-  // TODO: fix rounding and make a sensible
-  // policy for limiting the smallest units
-  log.debug('FX Rate for ' + this.query.source_ledger +
-    ' => ' + this.query.destination_ledger + ':', rate)
+  let quote = yield backend.getQuote({
+    source_ledger: this.query.source_ledger,
+    destination_ledger: this.query.destination_ledger,
+    source_amount: this.query.source_amount,
+    destination_amount: this.query.destination_amount
+  })
 
-  let sourceAmount, destinationAmount
-  if (this.query.source_amount) {
-    log.debug('creating quote with fixed source amount')
-    rate = fxRates.subtractSpread(rate)
-    sourceAmount = formatAmountCeil(this.query.source_amount)
-    destinationAmount = formatAmount(this.query.source_amount * rate)
-  } else if (this.query.destination_amount) {
-    log.debug('creating quote with fixed destination amount')
-    rate = fxRates.addSpread(rate)
-    sourceAmount = formatAmountCeil(this.query.destination_amount / rate)
-    destinationAmount = formatAmount(this.query.destination_amount)
-  } else {
-    throw new NoAmountSpecifiedError('Must specify either source ' +
-      'or destination amount to get quote')
-  }
-
-  let destinationExpiryDuration =
-  parseFloat(this.query.destination_expiry_duration)
-  let sourceExpiryDuration =
-  parseFloat(this.query.source_expiry_duration)
+  // TODO: include the expiry duration in the quote logic
+  let destinationExpiryDuration = parseFloat(this.query.destination_expiry_duration)
+  let sourceExpiryDuration = parseFloat(this.query.source_expiry_duration)
 
   // Check destination_expiry_duration
   if (destinationExpiryDuration) {
@@ -148,7 +127,7 @@ exports.get = function *() {
       ledger: this.query.source_ledger,
       credits: [{
         account: config.ledgerCredentials[this.query.source_ledger].account_uri,
-        amount: sourceAmount
+        amount: quote.source_amount.toFixed(2)
       }],
       expiry_duration: String(sourceExpiryDuration)
     }],
@@ -156,15 +135,15 @@ exports.get = function *() {
       ledger: this.query.destination_ledger,
       debits: [{
         account: config.ledgerCredentials[this.query.destination_ledger].account_uri,
-        amount: destinationAmount
+        amount: quote.destination_amount.toFixed(2)
       }],
       expiry_duration: String(destinationExpiryDuration)
     }]
   }
 
-  log.debug('' + sourceAmount + ' ' +
+  log.debug('' + quote.source_amount.toFixed(2) + ' ' +
     this.query.source_ledger + ' => ' +
-    destinationAmount + ' ' +
+    quote.destination_amount.toFixed(2) + ' ' +
     this.query.destination_ledger)
 
   this.body = settlementTemplate
