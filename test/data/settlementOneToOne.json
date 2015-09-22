@@ -24,11 +24,11 @@
     "id": "http://usd-ledger.example/USD/transfers/4e1362c5-f4ef-466d-81ad-85d42c38a5e3",
     "ledger":"http://usd-ledger.example/USD",
     "debits": [{
-      "amount": ".00010592",
+      "amount": ".00010614",
       "account": "http://usd-ledger.example/accounts/alice"
     }],
     "credits": [{
-      "amount": ".00010592",
+      "amount": ".00010614",
       "account": "http://usd-ledger.example/accounts/mark"
     }],
     "state": "executed"

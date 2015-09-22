@@ -6,9 +6,19 @@ const BigNumber = require('bignumber.js')
 const AssetsNotTradedError = require('../../errors/assets-not-traded-error')
 const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../services/log')('fixerio')
+const config = require('../../services/config')
 
-const CURRENCY_REGEX = /\W([A-Z]{3}|[a-z]{3})/
 const RATES_API = 'http://api.fixer.io/latest'
+
+function lookupCurrencies (source_ledger, destination_ledger) {
+  for (let pair of config.tradingPairs) {
+    if (pair[0].indexOf(source_ledger) === 4 &&
+      pair[1].indexOf(destination_ledger) === 4) {
+      return [pair[0].slice(0, 3), pair[1].slice(0, 3)]
+    }
+  }
+  return null
+}
 
 /**
  * Dummy backend that uses Fixer.io API for FX rates
@@ -58,17 +68,6 @@ class FixerIoBackend {
   }
 
   /**
-   * This is not a good way to parse the currency from
-   * a URI but this is just a test module anyway
-   *
-   * @param {String} uri Ledger URI to parse the currency from
-   * @return {String} Three-letter currency code
-   */
-  _parseCurrency (uri) {
-    return CURRENCY_REGEX.exec(uri)[1].toUpperCase()
-  }
-
-  /**
    * Check if we trade the given pair of assets
    *
    * @param {String} source The URI of the source ledger
@@ -76,10 +75,9 @@ class FixerIoBackend {
    * @return {boolean}
    */
   * hasPair (source, destination) {
-    const sourceCurrency = this._parseCurrency(source)
-    const destinationCurrency = this._parseCurrency(destination)
-    return _.includes(this.currencies, sourceCurrency) &&
-      _.includes(this.currencies, destinationCurrency)
+    const currencyPair = lookupCurrencies(source, destination)
+    return _.includes(this.currencies, currencyPair[0]) &&
+      _.includes(this.currencies, currencyPair[1])
   }
 
   _formatAmount (amount) {
@@ -116,21 +114,25 @@ class FixerIoBackend {
     }
 
     // Get ratio between currencies and apply spread
-    const destinationRate = this.rates[this._parseCurrency(params.destination_ledger)]
-    const sourceRate = this.rates[this._parseCurrency(params.source_ledger)]
+    const currencyPair = lookupCurrencies(params.source_ledger, params.destination_ledger)
+    const destinationRate = this.rates[currencyPair[1]]
+    const sourceRate = this.rates[currencyPair[0]]
     let rate = new BigNumber(destinationRate).div(sourceRate).toFixed(5)
+    // The spread is subtracted from the rate when going in either direction,
+    // so that the DestinationAmount always ends up being slightly less than
+    // the (equivalent) SourceAmount -- irrelevant of which of the 2 is fixed:
+    //
+    //   SourceAmount * Rate * (1 - Spread) = DestinationAmount
+    //
+    rate = this._subtractSpread(rate)
 
     let sourceAmount, destinationAmount
     if (params.source_amount) {
       log.debug('creating quote with fixed source amount')
-
-      rate = this._subtractSpread(rate)
       sourceAmount = new BigNumber(params.source_amount)
       destinationAmount = new BigNumber(params.source_amount).times(rate)
     } else if (params.destination_amount) {
       log.debug('creating quote with fixed destination amount')
-
-      rate = this._addSpread(rate)
       sourceAmount = new BigNumber(params.destination_amount).div(rate)
       destinationAmount = new BigNumber(params.destination_amount)
     } else {
