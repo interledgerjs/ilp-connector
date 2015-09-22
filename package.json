@@ -10,20 +10,20 @@
     "start": "nodemon app.js",
     "lint": "eslint .",
     "test": "NODE_ENV=unit node node_modules/.bin/istanbul test -- _mocha -r co-mocha",
-    "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
+    "apidoc": "apidoc -o apidoc-out -i controllers/"
   },
   "engines": {
     "iojs": ">=1.5"
   },
   "dependencies": {
-    "@ripple/five-bells-shared": "5.1.0",
+    "@ripple/five-bells-shared": "6.0.0",
     "bignumber.js": "^2.0.7",
     "canonical-json": "0.0.4",
     "co": "^4.1.0",
     "co-body": "^4.0.0",
     "co-request": "^1.0.0",
     "co-views": "^2.1.0",
-    "@ripple/five-bells-shared": "6.0.0",
     "koa": "^1.0.0",
     "koa-compress": "^1.0.6",
     "koa-mag": "^1.0.4",
@@ -42,6 +42,7 @@
     "uuid4": "^1.0.0"
   },
   "devDependencies": {
+    "apidoc": "^0.13.1",
     "chai": "^3.2.0",
     "co-mocha": "^1.1.0",
     "co-supertest": "0.0.10",

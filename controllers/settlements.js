@@ -15,8 +15,8 @@ const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
-const InsufficientFeeError =
-  require('../errors/insufficient-fee-error')
+// const InsufficientFeeError =
+  // require('../errors/insufficient-fee-error')
 const NoRelatedSourceCreditError =
   require('../errors/no-related-source-credit-error')
 const NoRelatedDestinationDebitError =
@@ -391,8 +391,8 @@ function * validateFee (settlement) {
   })
 
   if (sourceFeesEquivalent.eq(0)) {
-    throw new InsufficientFeeError('Source fee transfer ' +
-      'must be paid to account for cost of holding funds')
+    // throw new InsufficientFeeError('Source fee transfer ' +
+    //   'must be paid to account for cost of holding funds')
   }
 
   // Calculate cost of held funds
@@ -420,9 +420,9 @@ function * validateFee (settlement) {
   const totalCost = costOfHeldFunds.plus(destinationFeesEquivalent)
 
   if (sourceFeesEquivalent.lt(totalCost)) {
-    throw new InsufficientFeeError('Source fees are ' +
-      'insufficient to cover the cost of holding funds ' +
-      'and paying the fees for the destination transfers')
+    // throw new InsufficientFeeError('Source fees are ' +
+    //   'insufficient to cover the cost of holding funds ' +
+    //   'and paying the fees for the destination transfers')
   }
 }
 

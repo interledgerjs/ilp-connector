@@ -2,3 +2,4 @@ node_modules/
 *.cluster
 /npm-debug.log
 /coverage
+/apidoc-out
