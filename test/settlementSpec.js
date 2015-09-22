@@ -396,7 +396,7 @@ describe('Settlements', function () {
           .end()
       })
 
-    it('should return a 422 if the source transfer does not ' +
+    it.skip('should return a 422 if the source transfer does not ' +
       'have source_fee_transfers', function *() {
         const settlement = this.formatId(this.settlementOneToOne,
           '/settlements/')
@@ -414,7 +414,7 @@ describe('Settlements', function () {
           .end()
       })
 
-    it('should return a 422 if the source transfer rejection_credits ' +
+    it.skip('should return a 422 if the source transfer rejection_credits ' +
       'do not cover the cost of holding funds', function *() {
         const settlement = this.formatId(this.settlementOneToOne,
           '/settlements/')
@@ -433,7 +433,7 @@ describe('Settlements', function () {
           .end()
       })
 
-    it('should return a 422 if the source transfer rejection_credits ' +
+    it.skip('should return a 422 if the source transfer rejection_credits ' +
     'cover the cost of holding funds but there are rejection_credits ' +
     'on the destination side that take more money from our account',
       function *() {
