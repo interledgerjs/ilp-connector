@@ -7,6 +7,7 @@ test:
   override:
     - npm run lint
     - XUNIT_FILE=${CIRCLE_TEST_REPORTS}/mocha.xml npm test --coverage -- -R spec-xunit-file
+    - npm run apidoc
 deployment:
   production:
     branch: master
@@ -17,3 +18,4 @@ deployment:
 general:
   artifacts:
     - "coverage/lcov-report"
+    - "apidoc-out"
