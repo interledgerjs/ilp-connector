@@ -36,13 +36,10 @@ require('../errors/unrelated-notification-error')
  *           "account":"bob"
  *         }],
  *         "execution_condition": {
- *           "message": {
- *             "id": "http://otherledger.example/transfers/e80b0afb-f3dc-49d7-885c-fc802ddf4cc1",
- *             "state": "executed"
- *           },
- *           "signer": "http://otherledger.example",
+ *           "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
+ *           "signer": "http://ledger.example",
  *           "algorithm": "ed25519-sha512",
- *           "public_key": "Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg="
+ *           "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
  *         },
  *         "execution_condition_fulfillment": {
  *           "signature": "g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPCOzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=="
