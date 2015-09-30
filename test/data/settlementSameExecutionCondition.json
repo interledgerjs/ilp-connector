@@ -14,7 +14,7 @@
     "execution_condition": {
       "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
       "signer": "http://ledger.example",
-      "algorithm": "ed25519-sha512",
+      "type": "ed25519-sha512",
       "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
     "expires_at": "2015-06-16T00:00:11.000Z",
@@ -47,7 +47,7 @@
     "execution_condition": {
       "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
       "signer": "http://ledger.example",
-      "algorithm": "ed25519-sha512",
+      "type": "ed25519-sha512",
       "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
     "expires_at": "2015-06-16T00:00:10.000Z",

@@ -3,6 +3,7 @@
 const config = require('../services/config')
 const log = require('../services/log')('quote')
 const backend = require('../services/backend')
+const ledgers = require('../lib/ledgers')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 
 /* eslint-disable */
@@ -34,8 +35,8 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
  *      source_amount=100.25 \
  *      &source_ledger=https://eur-ledger.example/EUR \
  *      &destination_ledger=https://usd-ledger.example/USD \
- *      &source_expiry_duration=6000 \
- *      &destination_expiry_duration=5000 \
+ *      &source_expiry_duration=6 \
+ *      &destination_expiry_duration=5 \
  *
  * @apiSuccessExample {json} 200 Quote Response:
  *    HTTP/1.1 200 OK
@@ -162,18 +163,20 @@ exports.get = function *() {
   let settlementTemplate = {
     source_transfers: [{
       ledger: this.query.source_ledger,
-      credits: [{
-        account: config.ledgerCredentials[this.query.source_ledger].account_uri,
-        amount: quote.source_amount.toFixed(2)
-      }],
+      credits: [
+        ledgers.makeFundTemplate(this.query.source_ledger, {
+          amount: quote.source_amount.toFixed(2, 2)
+        })
+      ],
       expiry_duration: String(sourceExpiryDuration)
     }],
     destination_transfers: [{
       ledger: this.query.destination_ledger,
-      debits: [{
-        account: config.ledgerCredentials[this.query.destination_ledger].account_uri,
-        amount: quote.destination_amount.toFixed(2)
-      }],
+      debits: [
+        ledgers.makeFundTemplate(this.query.destination_ledger, {
+          amount: quote.destination_amount.toFixed(2)
+        })
+      ],
       expiry_duration: String(destinationExpiryDuration)
     }]
   }
