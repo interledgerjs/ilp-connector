@@ -3,8 +3,10 @@
 const _ = require('lodash')
 const requestUtil = require('@ripple/five-bells-shared/utils/request')
 const log = require('../services/log')('notifications')
-const subscriptionRecords = require('../services/subscriptionRecords')
+const sourceSubscriptions = require('../services/sourceSubscriptions')
+const destinationSubscriptions = require('../services/destinationSubscriptions')
 const executeSourceTransfers = require('../lib/executeSourceTransfers')
+const Settlements = require('../services/settlements')
 const UnrelatedNotificationError =
 require('../errors/unrelated-notification-error')
 
@@ -58,23 +60,30 @@ exports.post = function * postNotification () {
   let notification = yield requestUtil.validateBody(this, 'Notification')
 
   if (notification.event === 'transfer.update') {
-    let destinationTransfer = notification.resource
-    let sourceTransfers = subscriptionRecords.get(destinationTransfer.id)
+    let updatedTransfer = notification.resource
 
+    let settlement = sourceSubscriptions.get(updatedTransfer.id)
+    // updatedTransfer is a source transfer
+    if (settlement) {
+      yield Settlements.updateSourceTransfer(settlement, updatedTransfer)
+    }
+
+    let sourceTransfers = destinationSubscriptions.get(updatedTransfer.id)
     if (!sourceTransfers || sourceTransfers.length === 0) {
       // TODO: should we delete the subscription?
       throw new UnrelatedNotificationError('Notification does not match a ' +
         'settlement we have a record of or the corresponding source ' +
         'transfers may already have been executed')
     }
+    // updatedTransfer is a destination transfer
 
-    if (notification.resource.state === 'executed') {
+    if (updatedTransfer.state === 'executed') {
       // TODO: make sure the transfer is signed by the ledger
 
       log.debug('got notification about executed destination transfer')
 
       // This modifies the source_transfers states
-      yield executeSourceTransfers(sourceTransfers, [destinationTransfer])
+      yield executeSourceTransfers(sourceTransfers, [updatedTransfer])
 
       let allTransfersExecuted = _.every(sourceTransfers, function (transfer) {
         return transfer.state === 'executed'
