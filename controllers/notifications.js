@@ -38,7 +38,7 @@ require('../errors/unrelated-notification-error')
  *         "execution_condition": {
  *           "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
  *           "signer": "http://ledger.example",
- *           "algorithm": "ed25519-sha512",
+ *           "type": "ed25519-sha512",
  *           "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
  *         },
  *         "execution_condition_fulfillment": {

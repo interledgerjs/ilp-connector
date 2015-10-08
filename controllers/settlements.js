@@ -3,13 +3,13 @@
 const _ = require('lodash')
 const moment = require('moment')
 const BigNumber = require('bignumber.js')
-const request = require('co-request')
 const requestUtil = require('@ripple/five-bells-shared/utils/request')
 const log = require('../services/log')('settlements')
 const executeSourceTransfers = require('../lib/executeSourceTransfers')
 const config = require('../services/config')
 const backend = require('../services/backend')
 const subscriptionRecords = require('../services/subscriptionRecords')
+const ledgers = require('../lib/ledgers')
 const ExternalError = require('../errors/external-error')
 const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error')
@@ -27,6 +27,7 @@ const ManyToManyNotSupportedError =
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const hashJSON = require('@ripple/five-bells-shared/utils/hashJson')
 
+// TODO this should handle the different types of execution_condition's.
 function sourceConditionIsDestinationTransfer (source, destination) {
   // Check the message or message_hash
   let expectedMessage = {
@@ -111,11 +112,8 @@ function * validateExecutionConditionPublicKey (settlement) {
       // Check the public_key and algorithm
       // TODO: what do we do if the transfer hasn't been submitted
       // to the destination ledger yet?
-      let destinationTransferStateReq = yield request({
-        method: 'get',
-        uri: settlement.destination_transfers[0].id + '/state',
-        json: true
-      })
+      let destinationTransferStateReq = yield ledgers.getState(
+        settlement.destination_transfers[0])
 
       // TODO: add retry logic
       // TODO: what if the response is malformed or missing fields?
@@ -127,10 +125,10 @@ function * validateExecutionConditionPublicKey (settlement) {
           settlement.destination_transfers[0].id)
       }
 
-      if (sourceTransfer.execution_condition.algorithm !==
-        destinationTransferStateReq.body.algorithm) {
+      if (sourceTransfer.execution_condition.type !==
+        destinationTransferStateReq.body.type) {
         throw new UnacceptableConditionsError('Source transfer execution ' +
-          "condition algorithm must match the destination ledger's.")
+          "condition type must match the destination ledger's.")
       }
       if (sourceTransfer.execution_condition.public_key !==
         destinationTransferStateReq.body.public_key) {
@@ -460,35 +458,9 @@ function addAuthorizationToTransfers (transfers) {
 
 function * submitTransfers (transfers, correspondingSourceTransfers) {
   for (let transfer of transfers) {
-    // TODO: check before this point that we actually have
-    // credentials for the ledgers we're asked to settle between
-    let credentials = config.ledgerCredentials[transfer.ledger]
-    let transferReq = yield request({
-      method: 'put',
-      auth: {
-        user: credentials.username,
-        pass: credentials.password
-      },
-      uri: transfer.id,
-      body: transfer,
-      json: true
-    })
-
-    if (transferReq.statusCode >= 400) {
-      log.error('remote error while authorizing destination transfer')
-      log.debug(transferReq.body)
-      throw new ExternalError('Received an unexpected ' +
-        transferReq.body.id +
-        ' while processing destination transfer.')
-    }
-
-    // Update destination_transfer state from the ledger's response
-    transfer.state = transferReq.body.state
-
-    if (transferReq.body.state === 'executed') {
-      transfer.execution_condition_fulfillment =
-        transferReq.body.execution_condition_fulfillment
-    } else if (correspondingSourceTransfers) {
+    yield ledgers.putTransfer(transfer)
+    let newState = transfer.state
+    if (newState !== 'executed' && correspondingSourceTransfers) {
       // Store this subscription so when we get the notification
       // we know what source transfer to go and unlock
       log.debug('destination transfer not yet executed, ' +
@@ -528,7 +500,7 @@ function * submitTransfers (transfers, correspondingSourceTransfers) {
  *         "execution_condition": {
  *           "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
  *           "signer": "http://ledger.example",
- *           "algorithm": "ed25519-sha512",
+ *           "type": "ed25519-sha512",
  *           "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
  *         },
  *         "expires_at": "2015-06-16T00:00:11.000Z",
@@ -548,7 +520,7 @@ function * submitTransfers (transfers, correspondingSourceTransfers) {
  *         "execution_condition": {
  *           "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
  *           "signer": "http://ledger.example",
- *           "algorithm": "ed25519-sha512",
+ *           "type": "ed25519-sha512",
  *           "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
  *         },
  *         "expires_at": "2015-06-16T00:00:10.000Z",
@@ -575,7 +547,7 @@ function * submitTransfers (transfers, correspondingSourceTransfers) {
  *        "execution_condition": {
  *          "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
  *          "signer": "http://ledger.example",
- *          "algorithm": "ed25519-sha512",
+ *          "type": "ed25519-sha512",
  *          "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
  *        },
  *        "expires_at": "2015-06-16T00:00:11.000Z",
@@ -595,7 +567,7 @@ function * submitTransfers (transfers, correspondingSourceTransfers) {
  *        "execution_condition": {
  *          "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
  *          "signer": "http://ledger.example",
- *          "algorithm": "ed25519-sha512",
+ *          "type": "ed25519-sha512",
  *          "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
  *        },
  *        "expires_at": "2015-06-16T00:00:10.000Z",

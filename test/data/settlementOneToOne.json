@@ -14,7 +14,7 @@
     "execution_condition": {
       "message_hash": "9EXcGgJa0zTIUxEQXaMKpvoGsNmYSxv8J6C12LBNA5hRMfmbwDCzAU4O14UKnqcIaQqMGULHLI+T6Nk3+qYd3Q==",
       "signer": "http://eur-ledger.example/EUR",
-      "algorithm": "ed25519-sha512",
+      "type": "ed25519-sha512",
       "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
    "expires_at": "2015-06-16T00:00:02.000Z",
