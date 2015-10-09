@@ -25,14 +25,14 @@ describe('Notifications', function () {
 
       this.clock = sinon.useFakeTimers(START_DATE)
 
-      this.settlementOneToOne =
-        _.cloneDeep(require('./data/settlementOneToOne.json'))
-      this.settlementSameExecutionCondition =
-        _.cloneDeep(require('./data/settlementSameExecutionCondition.json'))
-      this.settlementOneToMany =
-        _.cloneDeep(require('./data/settlementOneToMany.json'))
-      this.settlementManyToOne =
-        _.cloneDeep(require('./data/settlementManyToOne.json'))
+      this.paymentOneToOne =
+        _.cloneDeep(require('./data/paymentOneToOne.json'))
+      this.paymentSameExecutionCondition =
+        _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
+      this.paymentOneToMany =
+        _.cloneDeep(require('./data/paymentOneToMany.json'))
+      this.paymentManyToOne =
+        _.cloneDeep(require('./data/paymentManyToOne.json'))
       this.transferProposedReceipt =
         _.cloneDeep(require('./data/transferStateProposed.json'))
       this.transferPreparedReceipt =
@@ -103,7 +103,7 @@ describe('Notifications', function () {
       })
 
     it('should return a 422 if the notification is not related to a ' +
-      'settlement the trader has participated in', function *() {
+      'payment the trader has participated in', function *() {
         yield this.request()
           .post('/notifications')
           .send(this.notificationWithConditionFulfillment)
@@ -111,7 +111,7 @@ describe('Notifications', function () {
           .expect(function (res) {
             expect(res.body.id).to.equal('UnrelatedNotificationError')
             expect(res.body.message).to.equal('Notification does not match a ' +
-              'settlement we have a record of or the corresponding source ' +
+              'payment we have a record of or the corresponding source ' +
               'transfers may already have been executed')
           })
           .end()
@@ -119,21 +119,21 @@ describe('Notifications', function () {
 
     it('should return a 200 if the notification is properly formatted',
       function *() {
-        const settlement = this.formatId(this.settlementSameExecutionCondition,
-          '/settlements/')
+        const payment = this.formatId(this.paymentSameExecutionCondition,
+          '/payments/')
 
-        nock(settlement.destination_transfers[0].id)
+        nock(payment.destination_transfers[0].id)
           .put('')
-          .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          .reply(201, _.assign({}, payment.destination_transfers[0], {
             state: 'prepared'
           }))
 
-        nock(settlement.source_transfers[0].id)
-          .put('', _.assign({}, settlement.source_transfers[0], {
+        nock(payment.source_transfers[0].id)
+          .put('', _.assign({}, payment.source_transfers[0], {
             execution_condition_fulfillment: this.notificationWithConditionFulfillment
               .resource.execution_condition_fulfillment
           }))
-          .reply(201, _.assign({}, settlement.source_transfers[0], {
+          .reply(201, _.assign({}, payment.source_transfers[0], {
             state: 'executed'
           }))
 
@@ -142,8 +142,8 @@ describe('Notifications', function () {
           .reply(200)
 
         yield this.request()
-          .put('/settlements/' + this.settlementSameExecutionCondition.id)
-          .send(settlement)
+          .put('/payments/' + this.paymentSameExecutionCondition.id)
+          .send(payment)
           .expect(201)
           .end()
 
@@ -156,28 +156,28 @@ describe('Notifications', function () {
     it('should submit the source transfer corresponding to the ' +
       'destination transfer it is notified about if its execution ' +
       'condition is the destination transfer', function *() {
-        const settlement = this.formatId(this.settlementOneToOne,
-          '/settlements/')
+        const payment = this.formatId(this.paymentOneToOne,
+          '/payments/')
 
-        nock(settlement.destination_transfers[0].id)
+        nock(payment.destination_transfers[0].id)
           .put('')
-          .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          .reply(201, _.assign({}, payment.destination_transfers[0], {
             state: 'prepared'
           }))
 
-        nock(settlement.destination_transfers[0].id)
+        nock(payment.destination_transfers[0].id)
           .get('/state')
           .reply(200, this.transferProposedReceipt)
           .get('/state')
           .reply(200, this.transferExecutedReceipt)
 
-        let sourceTransferExecuted = nock(settlement.source_transfers[0].id)
-          .put('', _.assign({}, settlement.source_transfers[0], {
+        let sourceTransferExecuted = nock(payment.source_transfers[0].id)
+          .put('', _.assign({}, payment.source_transfers[0], {
             execution_condition_fulfillment: {
               signature: this.transferExecutedReceipt.signature
             }
           }))
-          .reply(201, _.assign({}, settlement.source_transfers[0], {
+          .reply(201, _.assign({}, payment.source_transfers[0], {
             state: 'executed'
           }))
 
@@ -186,8 +186,8 @@ describe('Notifications', function () {
           .reply(200)
 
         yield this.request()
-          .put('/settlements/' + this.settlementOneToOne.id)
-          .send(settlement)
+          .put('/payments/' + this.paymentOneToOne.id)
+          .send(payment)
           .expect(201)
           .end()
 
@@ -204,21 +204,21 @@ describe('Notifications', function () {
     it('should submit the source transfer corresponding to the ' +
       'destination transfer it is notified about if the execution ' +
       'conditions are the same', function *() {
-        const settlement = this.formatId(this.settlementSameExecutionCondition,
-          '/settlements/')
+        const payment = this.formatId(this.paymentSameExecutionCondition,
+          '/payments/')
 
-        nock(settlement.destination_transfers[0].id)
+        nock(payment.destination_transfers[0].id)
           .put('')
-          .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          .reply(201, _.assign({}, payment.destination_transfers[0], {
             state: 'prepared'
           }))
 
-        let sourceTransferExecuted = nock(settlement.source_transfers[0].id)
-          .put('', _.assign({}, settlement.source_transfers[0], {
+        let sourceTransferExecuted = nock(payment.source_transfers[0].id)
+          .put('', _.assign({}, payment.source_transfers[0], {
             execution_condition_fulfillment: this.notificationWithConditionFulfillment
               .resource.execution_condition_fulfillment
           }))
-          .reply(201, _.assign({}, settlement.source_transfers[0], {
+          .reply(201, _.assign({}, payment.source_transfers[0], {
             state: 'executed'
           }))
 
@@ -227,8 +227,8 @@ describe('Notifications', function () {
           .reply(200)
 
         yield this.request()
-          .put('/settlements/' + this.settlementSameExecutionCondition.id)
-          .send(settlement)
+          .put('/payments/' + this.paymentSameExecutionCondition.id)
+          .send(payment)
           .expect(201)
           .end()
 
@@ -245,29 +245,29 @@ describe('Notifications', function () {
     it('should submit multiple source transfers if there are multiple ' +
     'that correspond to a single destination transfer it is notified about',
       function *() {
-        const settlement = this.formatId(this.settlementManyToOne,
-          '/settlements/')
+        const payment = this.formatId(this.paymentManyToOne,
+          '/payments/')
 
-        nock(settlement.destination_transfers[0].id)
+        nock(payment.destination_transfers[0].id)
           .put('')
-          .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          .reply(201, _.assign({}, payment.destination_transfers[0], {
             state: 'prepared'
           }))
 
-        let firstSourceTransferExecuted = nock(settlement.source_transfers[0].id)
-          .put('', _.assign({}, settlement.source_transfers[0], {
+        let firstSourceTransferExecuted = nock(payment.source_transfers[0].id)
+          .put('', _.assign({}, payment.source_transfers[0], {
             execution_condition_fulfillment: this.notificationWithConditionFulfillment
               .resource.execution_condition_fulfillment
           }))
-          .reply(201, _.assign({}, settlement.source_transfers[0], {
+          .reply(201, _.assign({}, payment.source_transfers[0], {
             state: 'executed'
           }))
-        let secondSourceTransferExecuted = nock(settlement.source_transfers[1].id)
-          .put('', _.assign({}, settlement.source_transfers[1], {
+        let secondSourceTransferExecuted = nock(payment.source_transfers[1].id)
+          .put('', _.assign({}, payment.source_transfers[1], {
             execution_condition_fulfillment: this.notificationWithConditionFulfillment
               .resource.execution_condition_fulfillment
           }))
-          .reply(201, _.assign({}, settlement.source_transfers[1], {
+          .reply(201, _.assign({}, payment.source_transfers[1], {
             state: 'executed'
           }))
 
@@ -276,8 +276,8 @@ describe('Notifications', function () {
           .reply(200)
 
         yield this.request()
-          .put('/settlements/' + this.settlementManyToOne.id)
-          .send(settlement)
+          .put('/payments/' + this.paymentManyToOne.id)
+          .send(payment)
           .expect(201)
           .end()
 
@@ -296,38 +296,38 @@ describe('Notifications', function () {
     'conditions even if one has the same condition as the destination ' +
     "transfer and another's condition is the destination transfer itself",
       function *() {
-        const settlement = this.formatId(this.settlementManyToOne,
-          '/settlements/')
-        settlement.source_transfers[0].execution_condition =
-          this.settlementOneToOne.source_transfers[0].execution_condition
+        const payment = this.formatId(this.paymentManyToOne,
+          '/payments/')
+        payment.source_transfers[0].execution_condition =
+          this.paymentOneToOne.source_transfers[0].execution_condition
 
-        nock(settlement.destination_transfers[0].id)
+        nock(payment.destination_transfers[0].id)
           .put('')
-          .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          .reply(201, _.assign({}, payment.destination_transfers[0], {
             state: 'prepared'
           }))
 
-        nock(settlement.destination_transfers[0].id)
+        nock(payment.destination_transfers[0].id)
           .get('/state')
           .reply(200, this.transferProposedReceipt)
           .get('/state')
           .reply(200, this.transferExecutedReceipt)
 
-        let firstSourceTransferExecuted = nock(settlement.source_transfers[0].id)
-          .put('', _.assign({}, settlement.source_transfers[0], {
+        let firstSourceTransferExecuted = nock(payment.source_transfers[0].id)
+          .put('', _.assign({}, payment.source_transfers[0], {
             execution_condition_fulfillment: {
               signature: this.transferExecutedReceipt.signature
             }
           }))
-          .reply(201, _.assign({}, settlement.source_transfers[0], {
+          .reply(201, _.assign({}, payment.source_transfers[0], {
             state: 'executed'
           }))
-        let secondSourceTransferExecuted = nock(settlement.source_transfers[1].id)
-          .put('', _.assign({}, settlement.source_transfers[1], {
+        let secondSourceTransferExecuted = nock(payment.source_transfers[1].id)
+          .put('', _.assign({}, payment.source_transfers[1], {
             execution_condition_fulfillment: this.notificationWithConditionFulfillment
               .resource.execution_condition_fulfillment
           }))
-          .reply(201, _.assign({}, settlement.source_transfers[1], {
+          .reply(201, _.assign({}, payment.source_transfers[1], {
             state: 'executed'
           }))
 
@@ -336,8 +336,8 @@ describe('Notifications', function () {
           .reply(200)
 
         yield this.request()
-          .put('/settlements/' + this.settlementManyToOne.id)
-          .send(settlement)
+          .put('/payments/' + this.paymentManyToOne.id)
+          .send(payment)
           .expect(201)
           .end()
 
@@ -354,21 +354,21 @@ describe('Notifications', function () {
 
     it('should delete the subscription once it has submitted the source ' +
       'transfers', function *() {
-        const settlement = this.formatId(this.settlementSameExecutionCondition,
-          '/settlements/')
+        const payment = this.formatId(this.paymentSameExecutionCondition,
+          '/payments/')
 
-        nock(settlement.destination_transfers[0].id)
+        nock(payment.destination_transfers[0].id)
           .put('')
-          .reply(201, _.assign({}, settlement.destination_transfers[0], {
+          .reply(201, _.assign({}, payment.destination_transfers[0], {
             state: 'prepared'
           }))
 
-        nock(settlement.source_transfers[0].id)
-          .put('', _.assign({}, settlement.source_transfers[0], {
+        nock(payment.source_transfers[0].id)
+          .put('', _.assign({}, payment.source_transfers[0], {
             execution_condition_fulfillment: this.notificationWithConditionFulfillment
               .resource.execution_condition_fulfillment
           }))
-          .reply(201, _.assign({}, settlement.source_transfers[0], {
+          .reply(201, _.assign({}, payment.source_transfers[0], {
             state: 'executed'
           }))
 
@@ -377,8 +377,8 @@ describe('Notifications', function () {
           .reply(200)
 
         yield this.request()
-          .put('/settlements/' + this.settlementSameExecutionCondition.id)
-          .send(settlement)
+          .put('/payments/' + this.paymentSameExecutionCondition.id)
+          .send(payment)
           .expect(201)
           .end()
 

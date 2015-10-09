@@ -1,7 +1,7 @@
 'use strict'
 
 const requestUtil = require('@ripple/five-bells-shared/utils/request')
-const Settlements = require('../services/settlements')
+const Payments = require('../services/payments')
 
 /* eslint-disable */
 /**
@@ -53,7 +53,7 @@ exports.post = function * postNotification () {
   let notification = yield requestUtil.validateBody(this, 'Notification')
 
   if (notification.event === 'transfer.update') {
-    yield Settlements.updateTransfer(notification.resource)
+    yield Payments.updateTransfer(notification.resource)
   }
 
   this.status = 200

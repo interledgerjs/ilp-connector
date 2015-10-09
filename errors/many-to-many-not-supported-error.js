@@ -12,7 +12,7 @@ module.exports = function ManyToManyNotSupportedError (message) {
 require('util').inherits(module.exports, UnprocessableEntityError)
 
 module.exports.prototype.handler = function *(ctx, log) {
-  log.warn('Many to Many Settlement Not Supported: ' + this.message)
+  log.warn('Many to Many Payment Not Supported: ' + this.message)
   ctx.status = 422
   ctx.body = {
     id: this.name,

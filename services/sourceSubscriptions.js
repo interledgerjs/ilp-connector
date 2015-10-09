@@ -2,8 +2,8 @@
 
 const records = {}
 
-exports.put = function (sourceTransferId, settlement) {
-  records[sourceTransferId] = settlement
+exports.put = function (sourceTransferId, payment) {
+  records[sourceTransferId] = payment
 }
 
 exports.get = function (sourceTransferId) {
@@ -14,8 +14,8 @@ exports.remove = function (destinationTransferId) {
   delete records[destinationTransferId]
 }
 
-exports.hasSettlement = function (settlement) {
-  for (let sourceTransfer of settlement.source_transfers) {
+exports.hasPayment = function (payment) {
+  for (let sourceTransfer of payment.source_transfers) {
     if (records[sourceTransfer.id]) {
       return true
     }

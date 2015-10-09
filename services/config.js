@@ -31,7 +31,7 @@ config.features = {}
 config.features.debugAutoFund = !!process.env.TRADER_DEBUG_AUTOFUND
 
 // Configure which backend we will use to determine
-// rates and execute settlements
+// rates and execute payments
 config.backend = process.env.TRADER_BACKEND || 'fixerio'
 
 config.expiry = {}

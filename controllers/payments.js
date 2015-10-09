@@ -2,20 +2,20 @@
 
 const requestUtil = require('@ripple/five-bells-shared/utils/request')
 const config = require('../services/config')
-const Settlements = require('../services/settlements')
+const Payments = require('../services/payments')
 
 /* eslint-disable */
 /**
- * @api {put} /settlements/:id
+ * @api {put} /payments/:id
  *
- * @apiName CreateSettlement
- * @apiGroup Settlements
+ * @apiName CreatePayment
+ * @apiGroup Payments
  *
- * @apiParam {UUID} id Settlement UUID
+ * @apiParam {UUID} id Payment UUID
  * @apiParam {Transfer[]} source_transfers Array of source transfers that credit the trader
  * @apiParam {Transfer[]} destination_transfers Array of destination transfers that debit the trader
  *
- * @apiExample {shell} One-to-one Settlement:
+ * @apiExample {shell} One-to-one Payment:
  *    curl -x PUT -H "Content-Type: application/json" -d
  *    '{
  *       "id": "c9377529-d7df-4aa1-ae37-ad5148612003",
@@ -60,9 +60,9 @@ const Settlements = require('../services/settlements')
  *         "state": "proposed"
  *       }]
  *    }'
- *    https://trader.example/settlements/c9377529-d7df-4aa1-ae37-ad5148612003
+ *    https://trader.example/payments/c9377529-d7df-4aa1-ae37-ad5148612003
  *
- * @apiSuccessExample {json} 201 New Settlement Response:
+ * @apiSuccessExample {json} 201 New Payment Response:
  *    HTTP/1.1 201 CREATED
  *    {
  *      "id": "c9377529-d7df-4aa1-ae37-ad5148612003",
@@ -108,18 +108,18 @@ const Settlements = require('../services/settlements')
  *      }]
  *    }
  *
- * @apiErrorExample {json} 400 Invalid Settlement
+ * @apiErrorExample {json} 400 Invalid Payment
  *     HTTP/1.1 400 Bad Request
  *     {
  *       "id": "InvalidBodyError",
- *       "message": "JSON request body is not a valid Settlement"
+ *       "message": "JSON request body is not a valid Payment"
  *     }
  *
  * @apiErrorExample {json} 422 Unacceptable Rate
  *     HTTP/1.1 422 Unprocessable Entity
  *     {
  *       "id": "UnacceptableRateError",
- *       "message": "Settlement rate does not match the rate currently offered"
+ *       "message": "Payment rate does not match the rate currently offered"
  *     }
  */
 /* eslint-enable */
@@ -127,26 +127,26 @@ const Settlements = require('../services/settlements')
 exports.put = function *(id) {
   // TODO: check that this UUID hasn't been used before
   requestUtil.validateUriParameter('id', id, 'Uuid')
-  let settlement = yield requestUtil.validateBody(this, 'Settlement')
+  let payment = yield requestUtil.validateBody(this, 'Payment')
 
-  if (typeof settlement.id !== 'undefined') {
+  if (typeof payment.id !== 'undefined') {
     requestUtil.assert.strictEqual(
-      settlement.id,
+      payment.id,
       config.server.base_uri + this.originalUrl,
-      'Settlement ID must match the one in the URL'
+      'Payment ID must match the one in the URL'
     )
   }
 
-  settlement.id = id.toLowerCase()
+  payment.id = id.toLowerCase()
 
-  let isPrepared = yield Settlements.validate(settlement)
+  let isPrepared = yield Payments.validate(payment)
   if (isPrepared) {
-    yield Settlements.settle(settlement)
+    yield Payments.settle(payment)
   }
 
   // Externally we want to use a full URI ID
-  settlement.id = config.server.base_uri + '/settlements/' + settlement.id
+  payment.id = config.server.base_uri + '/payments/' + payment.id
 
   this.status = 201
-  this.body = settlement
+  this.body = payment
 }

@@ -3,7 +3,7 @@
 const co = require('co')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
-const settlements = require('./controllers/settlements')
+const payments = require('./controllers/payments')
 const notifications = require('./controllers/notifications')
 const compress = require('koa-compress')
 const serve = require('koa-static')
@@ -24,7 +24,7 @@ app.use(errorHandler({log: log('error-handler')}))
 
 app.use(route.get('/pairs', pairs.getCollection))
 
-app.use(route.put('/settlements/:uuid', settlements.put))
+app.use(route.put('/payments/:uuid', payments.put))
 
 app.use(route.get('/quote', quote.get))
 
