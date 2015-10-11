@@ -234,21 +234,22 @@ describe('Settlements', function () {
           .end()
       })
 
-    it('should return a 422 if the source_transfer is not in the prepared ' +
+    it('should return a 201 if the source_transfer is not in the prepared ' +
       'or executed state', function *() {
         const settlement = this.formatId(this.settlementOneToOne,
           '/settlements/')
         settlement.source_transfers[0].state = 'proposed'
 
+        nock(settlement.destination_transfers[0].id)
+          .get('/state')
+          .reply(200, this.transferProposedReceipt)
+
         yield this.request()
           .put('/settlements/' + this.settlementOneToOne.id)
           .send(settlement)
-          .expect(422)
+          .expect(201)
           .expect(function (res) {
-            expect(res.body.id).to.equal('FundsNotHeldError')
-            expect(res.body.message).to.equal('Source transfer ' +
-              'must be in the prepared state for the trader ' +
-              'to authorize the destination transfer')
+            expect(res.body.id).to.equal(settlement.id.toLowerCase())
           })
           .end()
       })
