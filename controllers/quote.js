@@ -160,7 +160,7 @@ exports.get = function *() {
       config.expiry.minMessageWindow
   }
 
-  let settlementTemplate = {
+  let paymentTemplate = {
     source_transfers: [{
       ledger: this.query.source_ledger,
       credits: [
@@ -186,5 +186,5 @@ exports.get = function *() {
     quote.destination_amount.toFixed(2) + ' ' +
     this.query.destination_ledger)
 
-  this.body = settlementTemplate
+  this.body = paymentTemplate
 }

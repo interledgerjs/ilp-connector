@@ -1,8 +1,8 @@
 'use strict'
 
-const Settlements = require('../lib/settlements')
+const Payments = require('../lib/payments')
 
-module.exports = new Settlements({
+module.exports = new Payments({
   backend: require('./backend'),
   config: require('./config'),
   sourceSubscriptions: require('./sourceSubscriptions'),

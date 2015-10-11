@@ -74,16 +74,16 @@ describe('Quotes', function () {
           .end()
       })
 
-    it('should return a valid Settlement Template object', function *() {
+    it('should return a valid Payment Template object', function *() {
       yield this.request()
         .get('/quote?' +
           'source_amount=100' +
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(function (res) {
-          let validation = validate('SettlementTemplate', res.body)
+          let validation = validate('PaymentTemplate', res.body)
           if (!validation.valid) {
-            throw new Error('Not a valid settlement template')
+            throw new Error('Not a valid payment template')
           }
         })
         .end()
@@ -143,7 +143,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a settlement object with the source' +
+    it('should return a payment object with the source' +
     'and destination amounts filled in as debits and credits',
       function *() {
         yield this.request()
@@ -171,7 +171,7 @@ describe('Quotes', function () {
           .end()
       })
 
-    it('should apply the spread correctly for settlements where the source' +
+    it('should apply the spread correctly for payments where the source' +
       'asset is the counter currency in the fx rates', function *() {
         yield this.request()
           .get('/quote?source_amount=100' +
