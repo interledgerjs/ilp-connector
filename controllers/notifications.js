@@ -37,6 +37,7 @@ const Payments = require('../services/payments')
  *           "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
  *         },
  *         "execution_condition_fulfillment": {
+ *           "type": "ed25519-sha512",
  *           "signature": "g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPCOzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=="
  *         },
  *         "state": "executed"

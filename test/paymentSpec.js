@@ -702,6 +702,7 @@ describe('Payments', function () {
             source_transfers: [{
               state: 'executed',
               execution_condition_fulfillment: {
+                type: 'ed25519-sha512',
                 signature: this.transferExecutedReceipt.signature
               }
             }],
@@ -719,6 +720,7 @@ describe('Payments', function () {
       'condition is equal to the destination transfer condition', function *() {
         // secret: zU/Q8UzeDi4gHeKAFus1sXDNJ+F7id2AdMR8NXhe1slnYVZLVcvPzA2lFFdxef3y0LrIiuCV8jzs6yYDclN8yA==
         const fulfillment = {
+          type: 'ed25519-sha512',
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPCOzycOM' +
             'pqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
         }
@@ -814,6 +816,7 @@ describe('Payments', function () {
             source_transfers: [{
               state: 'executed',
               execution_condition_fulfillment: {
+                type: 'ed25519-sha512',
                 signature: this.transferExecutedReceipt.signature
               }
             }],
@@ -875,6 +878,7 @@ describe('Payments', function () {
             source_transfers: [{
               state: 'executed',
               execution_condition_fulfillment: {
+                type: 'ed25519-sha512',
                 signature: this.transferExecutedReceipt.signature
               }
             }],
@@ -935,6 +939,7 @@ describe('Payments', function () {
             source_transfers: [{
               state: 'executed',
               execution_condition_fulfillment: {
+                type: 'ed25519-sha512',
                 signature: this.transferExecutedReceipt.signature
               }
             }],
@@ -996,6 +1001,7 @@ describe('Payments', function () {
             source_transfers: [{
               state: 'executed',
               execution_condition_fulfillment: {
+                type: 'ed25519-sha512',
                 signature: this.transferExecutedReceipt.signature
               }
             }],
@@ -1020,6 +1026,7 @@ describe('Payments', function () {
           '/payments/')
 
         const fulfillment = {
+          type: 'ed25519-sha512',
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
             'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
         }
@@ -1094,6 +1101,7 @@ describe('Payments', function () {
           '/payments/')
 
         const fulfillment = {
+          type: 'ed25519-sha512',
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
             'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
         }
@@ -1200,6 +1208,7 @@ describe('Payments', function () {
         payment.destination_transfers[1].credits[0].account = 'http://cny-ledger.example/accounts/mark'
 
         const fulfillment = {
+          type: 'ed25519-sha512',
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
             'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
         }
@@ -1270,6 +1279,7 @@ describe('Payments', function () {
         }
 
         const fulfillment = {
+          type: 'ed25519-sha512',
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
             'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
         }
@@ -1337,6 +1347,7 @@ describe('Payments', function () {
           'http://usd-ledger.example/accounts/mark'
 
         const fulfillment = {
+          type: 'ed25519-sha512',
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
             'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
         }
@@ -1404,6 +1415,7 @@ describe('Payments', function () {
         }
 
         const fulfillment = {
+          type: 'ed25519-sha512',
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
             'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
         }
@@ -1465,6 +1477,7 @@ describe('Payments', function () {
           '/payments/')
 
         const fulfillment = {
+          type: 'ed25519-sha512',
           signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
             'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
         }
