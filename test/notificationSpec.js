@@ -174,6 +174,7 @@ describe('Notifications', function () {
         let sourceTransferExecuted = nock(payment.source_transfers[0].id)
           .put('', _.assign({}, payment.source_transfers[0], {
             execution_condition_fulfillment: {
+              type: 'ed25519-sha512',
               signature: this.transferExecutedReceipt.signature
             }
           }))
@@ -316,6 +317,7 @@ describe('Notifications', function () {
         let firstSourceTransferExecuted = nock(payment.source_transfers[0].id)
           .put('', _.assign({}, payment.source_transfers[0], {
             execution_condition_fulfillment: {
+              type: 'ed25519-sha512',
               signature: this.transferExecutedReceipt.signature
             }
           }))
