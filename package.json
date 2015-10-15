@@ -1,6 +1,6 @@
 {
   "name": "@ripple/five-bells-trader",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Five Bells trader reference implementation",
   "repository": {
     "type": "git",
