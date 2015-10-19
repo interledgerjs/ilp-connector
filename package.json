@@ -14,7 +14,7 @@
     "apidoc": "apidoc -o apidoc-out -i controllers/"
   },
   "engines": {
-    "iojs": ">=1.5"
+    "node": ">=4.0.0"
   },
   "dependencies": {
     "@ripple/five-bells-condition": "1.1.0",

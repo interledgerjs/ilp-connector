@@ -1,8 +1,6 @@
 machine:
-  pre:
-    - curl https://raw.githubusercontent.com/creationix/nvm/v0.23.3/install.sh | bash
   node:
-    version: iojs-2.0.1
+    version: 4.0.0
 test:
   override:
     - npm run lint
