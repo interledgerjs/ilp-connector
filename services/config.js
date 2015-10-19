@@ -1,15 +1,10 @@
 'use strict'
 
-const url = require('url')
+const Config = require('@ripple/five-bells-shared').Config
 
-const config = exports
+const config = module.exports = new Config('ledger')
 
-config.server = {}
-config.server.secure = !!process.env.PUBLIC_HTTPS
-config.server.bind_ip = process.env.BIND_IP || '0.0.0.0'
-config.server.port = process.env.PORT || 4000
-config.server.public_host = process.env.HOSTNAME || require('os').hostname()
-config.server.public_port = process.env.PUBLIC_PORT || config.server.port
+config.parseServerConfig()
 
 // Currency pairs traded should be specified as
 // [["USD@http://usd-ledger.example/USD","EUR@http://eur-ledger.example"],...]
@@ -40,15 +35,6 @@ config.expiry.minMessageWindow =
 config.expiry.maxHoldTime = process.env.MAX_HOLD_TIME || 10 // seconds
 config.expiry.feePercentage =
   process.env.FEE_PERCENTAGE || 0.01
-
-const isCustomPort = config.server.secure
-  ? +config.server.public_port !== 443
-  : +config.server.public_port !== 80
-config.server.base_uri = url.format({
-  protocol: 'http' + (config.server.secure ? 's' : ''),
-  hostname: config.server.public_host,
-  port: isCustomPort ? config.server.public_port : undefined
-})
 
 if (process.env.NODE_ENV === 'unit') {
   config.server.base_uri = 'http://localhost'

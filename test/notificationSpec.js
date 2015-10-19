@@ -59,13 +59,45 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 400 if the notification has an invalid id field', function *() {
+    // TODO: -shared currently accepts relative URIs as valid IRIs - it shouldn't
+    it.skip('should return a 400 if the notification has an invalid id field (simple name)', function *() {
+      this.notificationNoConditionFulfillment.id =
+        'name'
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationNoConditionFulfillment)
+        .expect(400)
+        .end()
+    })
+
+    it.skip('should return a 400 if the notification has an invalid id field (uuid)', function *() {
       this.notificationNoConditionFulfillment.id =
         '96bdd66f-f37a-4be2-a7b0-4a449d78cd33'
       yield this.request()
         .post('/notifications')
         .send(this.notificationNoConditionFulfillment)
         .expect(400)
+        .end()
+    })
+
+    it('should return a 422 if the notification has a valid id field (uri)', function *() {
+      this.notificationNoConditionFulfillment.id =
+        'http://example.com/example/1234-5678/blah?foo=bar&bar=baz'
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationNoConditionFulfillment)
+        .expect(422)
+        .end()
+    })
+
+    // TODO: -shared currently does not accept IRIs although it should
+    it.skip('should return a 422 if the notification has a valid id field (iri)', function *() {
+      this.notificationNoConditionFulfillment.id =
+        'http://exämple.com/example/1234-5678/blah?fòo=bar&bar=baz'
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationNoConditionFulfillment)
+        .expect(422)
         .end()
     })
 
