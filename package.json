@@ -14,11 +14,11 @@
     "apidoc": "apidoc -o apidoc-out -i controllers/"
   },
   "engines": {
-    "iojs": ">=1.5"
+    "node": ">=4.0.0"
   },
   "dependencies": {
     "@ripple/five-bells-condition": "1.1.0",
-    "@ripple/five-bells-shared": "6.2.1",
+    "@ripple/five-bells-shared": "7.0.1",
     "bignumber.js": "^2.0.7",
     "canonical-json": "0.0.4",
     "co": "^4.1.0",
