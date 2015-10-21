@@ -2,11 +2,76 @@
 
 > A reference implementation of the Five Bells Trader API
 
-## Usage (Docker)
+## Usage
 
-Note: You need two [Five Bells Ledger](https://github.com/ripple/five-bells-ledger) instances to trade between.
+You can see the trader in action as part of the [`five-bells-demo`](https://github.com/ripple/five-bells-demo)!
 
-Afterwards just run Five Bells Trader:
+To run the trader as a standalone server, follow these directions.
+
+Note: You need two [`five-bells-ledger`](https://github.com/ripple/five-bells-ledger) instances to trade between.
+
+### Step 1: Clone repo
+
+``` sh
+git clone https://github.com/intertrader/five-bells-trader.git
+cd five-bells-trader
+```
+
+### Step 2: Install dependencies
+
+``` sh
+npm install
+```
+
+### Step 3: Run it!
+
+``` sh
+npm start
+```
+
+### Configuration
+
+#### General
+
+* `TRADER_BIND_IP` (default: `0.0.0.0`) IP that Five Bells Trader will bind to.
+* `TRADER_PORT` (default: `4000`) Port that Five Bells Trader will listen on.
+* `TRADER_HOSTNAME` (default: *[your hostname]*) Publicly visible hostname. This is important for things like generating globally unique IDs. Make sure this is a hostname that all your clients will be able to see. The default should be fine for local testing.
+* `TRADER_PUBLIC_PORT` (default: `$PORT`) Publicly visible port. You can set this if your public port differs from the listening port, e.g. because the trader is running behind a proxy.
+* `TRADER_PUBLIC_HTTPS` (default: `''`) Whether or not the publicly visible instance of Five Bells Trader is using HTTPS.
+
+#### Trading
+
+* `TRADING_PAIRS` (default: `[]`) Pairs to trade on, ex.
+```js
+[
+  [
+    'USD@http://ledger1.example',
+    'EUR@http://ledger2.example'
+  ],[
+    'EUR@http://ledger2.example',
+    'USD@http://ledger1.example'
+  ]
+]
+```
+* `TRADER_CREDENTIALS` (default: `{}`) Trader's login credentials, ex.
+```js
+{
+   "<ledger_uri>": {
+     "account_uri": "...",
+     "username": "...",
+     "password": "..."
+   }
+}
+```
+* `TRADER_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug 
+* `TRADER_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the trader's margin.
+* `TRADER_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the trader wants to budget for getting a message to the ledgers its trading on. In seconds.
+* `TRADER_MAX_HOLD_TIME` (default: `10`) Maximum duration the trader is willing to place funds on hold while waiting for the outcome of a transaction. In seconds.
+
+## Running with Docker
+
+This project can be run in a [Docker](https://www.docker.com/) container.
+
 
 ``` sh
 docker run -it --rm -e PORT=4000 quay.io/ripple/five-bells-trader
@@ -17,45 +82,3 @@ Breaking down that command:
 * `-it` Run Five Bells Trader in an interactive terminal.
 * `--rm` Delete container when it's done running.
 * `-e PORT=4000` Set the trader's port to 4000. This is just an example for how to set a config option.
-
-### Configuration
-
-#### General
-
-* `BIND_IP` (default: `0.0.0.0`) IP that Five Bells Trader will bind to.
-* `PORT` (default: `4000`) Port that Five Bells Trader will listen on.
-* `HOSTNAME` (default: *[your hostname]*) Publicly visible hostname. This is important for things like generating globally unique IDs. Make sure this is a hostname that all your clients will be able to see. The default should be fine for local testing.
-* `PUBLIC_PORT` (default: `$PORT`) Publicly visible port. You can set this if your public port differs from the listening port, e.g. because the ledger is running behind a proxy.
-* `PUBLIC_HTTPS` (default: `''`) Whether or not the publicly visible instance of Five Bells Trader is using HTTPS.
-
-#### Trading
-
-* `TRADING_PAIRS` (default: `[]`) Pairs to trade on, ex.
-  ``` js
-  [
-    [
-      'USD@http://ledger1.example',
-      'EUR@http://ledger2.example'
-    ],[
-      'EUR@http://ledger2.example',
-      'USD@http://ledger1.example'
-    ]
-  ]
-  ```
-* `TRADER_CREDENTIALS` (default: `{}`) Trader's login credentials, ex.
-  ``` js
-  {
-     "<ledger_uri>": {
-       "account_uri": "...",
-       "username": "...",
-       "password": "..."
-     }
-  }
-  ```
-* `TRADER_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug features to automatically create and fund the trader's accounts.
-* `TRADER_FX_API` (default: `http://api.fixer.io/latest`) FX rate endpoint. This sets the reference exchange rates the trader bases its quotes on.
-* `TRADER_FX_CACHE_TTL` (default: `86400000` =24h) How long the FX rates should be cached. In milliseconds.
-* `TRADER_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the trader's margin.
-* `MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the trader wants to budget for getting a message to the ledgers its trading on. In seconds.
-* `MAX_HOLD_TIME` (default: `10`) Maximum duration the trader is willing to place funds on hold while waiting for the outcome of a transaction. In seconds.
-* `REJECTION_CREDIT_PERCENTAGE` (default: `0.01` =1%) How much the trader wishes to charge for failed transactions. Expressed as a percentage of the principle, so `0.01` means: If the transaction fails the trader receives 1% of the money she would have received if the trade went through. This revenue is intended to pay for the time that the trader had to place the funds on hold.
