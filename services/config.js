@@ -2,7 +2,7 @@
 
 const Config = require('@ripple/five-bells-shared').Config
 
-const config = module.exports = new Config('ledger')
+const config = module.exports = new Config('trader')
 
 config.parseServerConfig()
 
