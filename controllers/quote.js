@@ -69,7 +69,7 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
  *
  * @apiExample {shell} Fixed Destination Amount:
  *    curl https://trader.example? \
- *      destination_amount=100.25 \
+ *      destination_amount=105.71 \
  *      &source_ledger=https://eur-ledger.example/EUR \
  *      &destination_ledger=https://usd-ledger.example/USD \
  *      &source_expiry_duration=6000 \
