@@ -32,7 +32,7 @@ config.backend = process.env.TRADER_BACKEND || 'fixerio'
 config.expiry = {}
 config.expiry.minMessageWindow =
   process.env.MIN_MESSAGE_WINDOW || 1 // seconds
-config.expiry.maxHoldTime = process.env.MAX_HOLD_TIME || 10 // seconds
+config.expiry.maxHoldTime = process.env.TRADER_MAX_HOLD_TIME || 10 // seconds
 config.expiry.feePercentage =
   process.env.FEE_PERCENTAGE || 0.01
 
