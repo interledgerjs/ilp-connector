@@ -46,8 +46,7 @@ describe('Quotes', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Destination expiry ' +
-            'duration is too long')
+          expect(res.body.message).to.match(/Destination expiry duration is too long/)
         })
         .end()
     })
