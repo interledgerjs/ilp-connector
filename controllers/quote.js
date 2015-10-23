@@ -136,7 +136,8 @@ exports.get = function *() {
   if (destinationExpiryDuration) {
     if (destinationExpiryDuration > config.expiry.maxHoldTime) {
       throw new UnacceptableExpiryError('Destination expiry duration ' +
-        'is too long')
+        'is too long, destinationExpiryDuration: ' + destinationExpiryDuration +
+        ', maxHoldTime: ' + config.expiry.maxHoldTime)
     }
   } else if (sourceExpiryDuration) {
     destinationExpiryDuration = sourceExpiryDuration -
