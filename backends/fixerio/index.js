@@ -120,7 +120,7 @@ class FixerIoBackend {
     let rate = new BigNumber(destinationRate).div(sourceRate).toFixed(5)
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
-    // the (equivalent) SourceAmount -- irrelevant of which of the 2 is fixed:
+    // the (equivalent) SourceAmount -- regardless of which of the 2 is fixed:
     //
     //   SourceAmount * Rate * (1 - Spread) = DestinationAmount
     //

@@ -1,6 +1,5 @@
 'use strict'
 
-const co = require('co')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
 const payments = require('./controllers/payments')
@@ -12,10 +11,7 @@ const errorHandler = require('@ripple/five-bells-shared/middlewares/error-handle
 const koa = require('koa')
 const path = require('path')
 const log = require('./services/log')
-const backend = require('./services/backend')
 const logger = require('koa-mag')
-const config = require('./services/config')
-const subscriber = require('./services/subscriber')
 const app = module.exports = koa()
 
 // Logger
@@ -39,24 +35,3 @@ app.use(serve(path.join(__dirname, 'public')))
 
 // Compress
 app.use(compress())
-
-if (!module.parent) {
-  app.listen(config.server.port)
-
-  log('app').info('trader listening on ' + config.server.bind_ip + ':' +
-    config.server.port)
-  log('app').info('public at ' + config.server.base_uri)
-  for (let pair of config.tradingPairs) {
-    log('app').info('pair', pair)
-  }
-
-  // Start a coroutine that connects to the backend and
-  // subscribes to all the ledgers in the background
-  co(function * () {
-    yield backend.connect()
-
-    yield subscriber.subscribePairs(config.tradingPairs)
-  }).catch(function (err) {
-    log('app').error(typeof err === 'object' && err.stack || err)
-  })
-}

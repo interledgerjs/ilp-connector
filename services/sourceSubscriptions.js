@@ -10,8 +10,8 @@ exports.get = function (sourceTransferId) {
   return records[sourceTransferId]
 }
 
-exports.remove = function (destinationTransferId) {
-  delete records[destinationTransferId]
+exports.remove = function (sourceTransferId) {
+  delete records[sourceTransferId]
 }
 
 exports.hasPayment = function (payment) {
