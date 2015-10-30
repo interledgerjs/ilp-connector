@@ -1,8 +1,10 @@
 'use strict'
 
 const requestUtil = require('five-bells-shared/utils/request')
+const InvalidBodyError = require('five-bells-shared/errors/invalid-body-error')
 const config = require('../services/config')
 const Payments = require('../services/payments')
+const ledgers = require('../services/ledgers')
 
 /* eslint-disable */
 /**
@@ -128,6 +130,11 @@ exports.put = function *(id) {
   // TODO: check that this UUID hasn't been used before
   requestUtil.validateUriParameter('id', id, 'Uuid')
   let payment = yield requestUtil.validateBody(this, 'Payment')
+
+  let result = ledgers.validatePayment(payment)
+  if (!result.valid) {
+    throw new InvalidBodyError('Failed to parse Payment: ' + JSON.stringify(result))
+  }
 
   if (typeof payment.id !== 'undefined') {
     requestUtil.assert.strictEqual(

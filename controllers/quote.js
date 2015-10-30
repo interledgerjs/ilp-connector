@@ -3,7 +3,7 @@
 const config = require('../services/config')
 const log = require('../services/log')('quote')
 const backend = require('../services/backend')
-const ledgers = require('../lib/ledgers')
+const ledgers = require('../services/ledgers')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 
 /* eslint-disable */
@@ -163,6 +163,7 @@ exports.get = function *() {
 
   let paymentTemplate = {
     source_transfers: [{
+      type: ledgers.getType(this.query.source_ledger),
       ledger: this.query.source_ledger,
       credits: [
         ledgers.makeFundTemplate(this.query.source_ledger, {
@@ -172,6 +173,7 @@ exports.get = function *() {
       expiry_duration: String(sourceExpiryDuration)
     }],
     destination_transfers: [{
+      type: ledgers.getType(this.query.destination_ledger),
       ledger: this.query.destination_ledger,
       debits: [
         ledgers.makeFundTemplate(this.query.destination_ledger, {
