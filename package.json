@@ -1,6 +1,6 @@
 {
   "name": "five-bells-trader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Five Bells trader reference implementation",
   "repository": {
     "type": "git",
