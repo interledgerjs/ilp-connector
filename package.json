@@ -1,10 +1,20 @@
 {
-  "name": "@ripple/five-bells-trader",
+  "name": "five-bells-trader",
   "version": "1.0.0",
   "description": "Five Bells trader reference implementation",
   "repository": {
     "type": "git",
-    "url": "git@github.com:ripple/five-bells-trader.git"
+    "url": "git@github.com:interledger/five-bells-trader.git"
+  },
+  "keywords": [
+    "interledger",
+    "five-bells",
+    "payments"
+  ],
+  "author": "Ripple <info@ripple.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/interledger/five-bells-trader/issues"
   },
   "main": "index.js",
   "scripts": {
@@ -18,7 +28,7 @@
     "node": ">=4.0.0"
   },
   "dependencies": {
-    "@ripple/five-bells-shared": "7.0.1",
+    "five-bells-shared": "~8.0.1",
     "bignumber.js": "^2.0.7",
     "co": "^4.1.0",
     "co-body": "^4.0.0",

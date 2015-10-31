@@ -4,11 +4,11 @@
 
 ## Usage
 
-You can see the trader in action as part of the [`five-bells-demo`](https://github.com/ripple/five-bells-demo)!
+You can see the trader in action as part of the [`five-bells-demo`](https://github.com/interledger/five-bells-demo)!
 
 To run the trader as a standalone server, follow these directions.
 
-Note: You need two [`five-bells-ledger`](https://github.com/ripple/five-bells-ledger) instances to trade between.
+Note: You need two [`five-bells-ledger`](https://github.com/interledger/five-bells-ledger) instances to trade between.
 
 ### Step 1: Clone repo
 

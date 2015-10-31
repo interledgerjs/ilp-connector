@@ -2,6 +2,6 @@
 
 const hub = require('mag-hub')
 const mag = require('mag')
-const log = require('@ripple/five-bells-shared/lib/log')
+const log = require('five-bells-shared/lib/log')
 
 module.exports = log(mag, hub)

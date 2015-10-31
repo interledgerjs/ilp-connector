@@ -1,7 +1,7 @@
 'use strict'
 
 const UnprocessableEntityError =
-require('@ripple/five-bells-shared/errors/unprocessable-entity-error')
+require('five-bells-shared/errors/unprocessable-entity-error')
 
 module.exports = function NoRelatedSourceCreditError (message) {
   Error.captureStackTrace(this, this.constructor)

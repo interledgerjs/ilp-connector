@@ -11,7 +11,7 @@ const app = require('../app')
 const logger = require('../services/log')
 const backend = require('../services/backend')
 const appHelper = require('./helpers/app')
-const logHelper = require('@ripple/five-bells-shared/testHelpers/log')
+const logHelper = require('five-bells-shared/testHelpers/log')
 const ratesResponse = require('./data/fxRates.json')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
