@@ -1,6 +1,6 @@
 'use strict'
 
-const requestUtil = require('@ripple/five-bells-shared/utils/request')
+const requestUtil = require('five-bells-shared/utils/request')
 const Payments = require('../services/payments')
 
 /* eslint-disable */

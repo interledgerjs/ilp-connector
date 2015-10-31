@@ -1,6 +1,6 @@
 'use strict'
 
-const Config = require('@ripple/five-bells-shared').Config
+const Config = require('five-bells-shared').Config
 
 const config = module.exports = new Config('trader')
 

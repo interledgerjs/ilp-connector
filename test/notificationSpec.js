@@ -9,7 +9,7 @@ const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('../services/log')
 const backend = require('../services/backend')
-const logHelper = require('@ripple/five-bells-shared/testHelpers/log')
+const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const sinon = require('sinon')
 
