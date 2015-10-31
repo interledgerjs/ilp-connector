@@ -1,4 +1,11 @@
-# Five Bells Trader [![Circle CI](https://circleci.com/gh/ripple/five-bells-trader/tree/master.svg?style=svg&circle-token=048dca3034e51bc8b860ccf2e518f0b431e59b38)](https://circleci.com/gh/ripple/five-bells-trader/tree/master) [![Docker Repository on Quay.io](https://quay.io/repository/ripple/five-bells-trader/status?token=e232cc8f-9d65-4e41-9cac-dbce38ede72f "Docker Repository on Quay.io")](https://quay.io/repository/ripple/five-bells-trader) [![Coverage Status](https://coveralls.io/repos/ripple/five-bells-trader/badge.svg?branch=master&t=nRjW7M)](https://coveralls.io/r/ripple/five-bells-trader?branch=master)
+# Five Bells Trader [![npm][npm-image]][npm-url] [![circle][circle-image]][circle-url] [![coveralls][coveralls-image]][coveralls-url]
+
+[npm-image]: https://img.shields.io/npm/v/five-bells-trader.svg?style=flat
+[npm-url]: https://npmjs.org/package/five-bells-trader
+[circle-image]: https://circleci.com/gh/interledger/five-bells-trader.svg?style=shield
+[circle-url]: https://circleci.com/gh/interledger/five-bells-trader
+[coveralls-image]: https://coveralls.io/repos/interledger/five-bells-trader/badge.svg?branch=master
+[coveralls-url]: https://coveralls.io/r/interledger/five-bells-trader?branch=master
 
 > A reference implementation of the Five Bells Trader API
 
@@ -63,7 +70,7 @@ npm start
    }
 }
 ```
-* `TRADER_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug 
+* `TRADER_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug
 * `TRADER_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the trader's margin.
 * `TRADER_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the trader wants to budget for getting a message to the ledgers its trading on. In seconds.
 * `TRADER_MAX_HOLD_TIME` (default: `10`) Maximum duration the trader is willing to place funds on hold while waiting for the outcome of a transaction. In seconds.
