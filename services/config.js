@@ -24,6 +24,14 @@ config.ledgerCredentials = JSON.parse(process.env.TRADER_CREDENTIALS || '{}')
 
 config.features = {}
 config.features.debugAutoFund = !!process.env.TRADER_DEBUG_AUTOFUND
+config.admin = process.env.TRADER_ADMIN_USER && {
+  user: process.env.TRADER_ADMIN_USER,
+  pass: process.env.TRADER_ADMIN_PASS
+}
+
+if (config.features.debugAutoFund && !config.admin) {
+  throw new Error('TRADER_DEBUG_AUTOFUND requires TRADER_ADMIN_{USER,PASS}')
+}
 
 // Configure which backend we will use to determine
 // rates and execute payments
