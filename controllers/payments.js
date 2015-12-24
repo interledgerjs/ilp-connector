@@ -14,8 +14,8 @@ const ledgers = require('../services/ledgers')
  * @apiGroup Payments
  *
  * @apiParam {UUID} id Payment UUID
- * @apiParam {Transfer[]} source_transfers Array of source transfers that credit the trader
- * @apiParam {Transfer[]} destination_transfers Array of destination transfers that debit the trader
+ * @apiParam {Transfer[]} source_transfers Array of source transfers that credit the connector
+ * @apiParam {Transfer[]} destination_transfers Array of destination transfers that debit the connector
  *
  * @apiExample {shell} One-to-one Payment:
  *    curl -x PUT -H "Content-Type: application/json" -d
@@ -62,7 +62,7 @@ const ledgers = require('../services/ledgers')
  *         "state": "proposed"
  *       }]
  *    }'
- *    https://trader.example/payments/c9377529-d7df-4aa1-ae37-ad5148612003
+ *    https://connector.example/payments/c9377529-d7df-4aa1-ae37-ad5148612003
  *
  * @apiSuccessExample {json} 201 New Payment Response:
  *    HTTP/1.1 201 CREATED

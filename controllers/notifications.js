@@ -43,7 +43,7 @@ const Payments = require('../services/payments')
  *         "state": "executed"
  *       }
  *     }'
- *   https://trader.example/notifications
+ *   https://connector.example/notifications
  *
  * @apiSuccessExample Notification Accepted:
  *   HTTP/1.1 200 OK

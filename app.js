@@ -27,7 +27,7 @@ app.use(route.get('/quote', quote.get))
 app.use(route.post('/notifications', notifications.post))
 
 app.use(route.get('/', function *() {
-  this.body = 'Hello, I am a 5 Bells trader'
+  this.body = 'Hello, I am a 5 Bells connector'
 }))
 
 // Serve static files

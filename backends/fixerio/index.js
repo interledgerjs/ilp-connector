@@ -109,7 +109,7 @@ class FixerIoBackend {
     const hasPair = yield this.hasPair(params.source_ledger, params.destination_ledger)
     if (!hasPair) {
       console.log('doesnt have pair', params)
-      throw new AssetsNotTradedError('This trader does not support the ' +
+      throw new AssetsNotTradedError('This connector does not support the ' +
         'given asset pair')
     }
 

@@ -1,10 +1,10 @@
 {
-  "name": "five-bells-trader",
+  "name": "five-bells-connector",
   "version": "1.0.1",
-  "description": "Five Bells trader reference implementation",
+  "description": "Five Bells connector reference implementation",
   "repository": {
     "type": "git",
-    "url": "git@github.com:interledger/five-bells-trader.git"
+    "url": "git@github.com:interledger/five-bells-connector.git"
   },
   "keywords": [
     "interledger",
@@ -14,7 +14,7 @@
   "author": "Ripple <info@ripple.com>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/interledger/five-bells-trader/issues"
+    "url": "https://github.com/interledger/five-bells-connector/issues"
   },
   "main": "index.js",
   "scripts": {

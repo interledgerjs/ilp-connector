@@ -10,7 +10,7 @@ const app = require('./app')
 function listen () {
   app.listen(config.server.port)
 
-  log('app').info('trader listening on ' + config.server.bind_ip + ':' +
+  log('app').info('connector listening on ' + config.server.bind_ip + ':' +
     config.server.port)
   log('app').info('public at ' + config.server.base_uri)
   for (let pair of config.tradingPairs) {

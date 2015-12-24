@@ -1,27 +1,27 @@
-# Five Bells Trader [![npm][npm-image]][npm-url] [![circle][circle-image]][circle-url] [![coveralls][coveralls-image]][coveralls-url]
+# Five Bells Connector [![npm][npm-image]][npm-url] [![circle][circle-image]][circle-url] [![coveralls][coveralls-image]][coveralls-url]
 
-[npm-image]: https://img.shields.io/npm/v/five-bells-trader.svg?style=flat
-[npm-url]: https://npmjs.org/package/five-bells-trader
-[circle-image]: https://circleci.com/gh/interledger/five-bells-trader.svg?style=shield
-[circle-url]: https://circleci.com/gh/interledger/five-bells-trader
-[coveralls-image]: https://coveralls.io/repos/interledger/five-bells-trader/badge.svg?branch=master
-[coveralls-url]: https://coveralls.io/r/interledger/five-bells-trader?branch=master
+[npm-image]: https://img.shields.io/npm/v/five-bells-connector.svg?style=flat
+[npm-url]: https://npmjs.org/package/five-bells-connector
+[circle-image]: https://circleci.com/gh/interledger/five-bells-connector.svg?style=shield
+[circle-url]: https://circleci.com/gh/interledger/five-bells-connector
+[coveralls-image]: https://coveralls.io/repos/interledger/five-bells-connector/badge.svg?branch=master
+[coveralls-url]: https://coveralls.io/r/interledger/five-bells-connector?branch=master
 
-> A reference implementation of the Five Bells Trader API
+> A reference implementation of the Five Bells Connector API
 
 ## Usage
 
-You can see the trader in action as part of the [`five-bells-demo`](https://github.com/interledger/five-bells-demo)!
+You can see the connector in action as part of the [`five-bells-demo`](https://github.com/interledger/five-bells-demo)!
 
-To run the trader as a standalone server, follow these directions.
+To run the connector as a standalone server, follow these directions.
 
 Note: You need two [`five-bells-ledger`](https://github.com/interledger/five-bells-ledger) instances to trade between.
 
 ### Step 1: Clone repo
 
 ``` sh
-git clone https://github.com/intertrader/five-bells-trader.git
-cd five-bells-trader
+git clone https://github.com/interconnector/five-bells-connector.git
+cd five-bells-connector
 ```
 
 ### Step 2: Install dependencies
@@ -40,11 +40,11 @@ npm start
 
 #### General
 
-* `TRADER_BIND_IP` (default: `0.0.0.0`) IP that Five Bells Trader will bind to.
-* `TRADER_PORT` (default: `4000`) Port that Five Bells Trader will listen on.
-* `TRADER_HOSTNAME` (default: *[your hostname]*) Publicly visible hostname. This is important for things like generating globally unique IDs. Make sure this is a hostname that all your clients will be able to see. The default should be fine for local testing.
-* `TRADER_PUBLIC_PORT` (default: `$PORT`) Publicly visible port. You can set this if your public port differs from the listening port, e.g. because the trader is running behind a proxy.
-* `TRADER_PUBLIC_HTTPS` (default: `''`) Whether or not the publicly visible instance of Five Bells Trader is using HTTPS.
+* `CONNECTOR_BIND_IP` (default: `0.0.0.0`) IP that Five Bells Connector will bind to.
+* `CONNECTOR_PORT` (default: `4000`) Port that Five Bells Connector will listen on.
+* `CONNECTOR_HOSTNAME` (default: *[your hostname]*) Publicly visible hostname. This is important for things like generating globally unique IDs. Make sure this is a hostname that all your clients will be able to see. The default should be fine for local testing.
+* `CONNECTOR_PUBLIC_PORT` (default: `$PORT`) Publicly visible port. You can set this if your public port differs from the listening port, e.g. because the connector is running behind a proxy.
+* `CONNECTOR_PUBLIC_HTTPS` (default: `''`) Whether or not the publicly visible instance of Five Bells Connector is using HTTPS.
 
 #### Trading
 
@@ -60,7 +60,7 @@ npm start
   ]
 ]
 ```
-* `TRADER_CREDENTIALS` (default: `{}`) Trader's login credentials, ex.
+* `CONNECTOR_CREDENTIALS` (default: `{}`) Connector's login credentials, ex.
 ```js
 {
    "<ledger_uri>": {
@@ -70,10 +70,10 @@ npm start
    }
 }
 ```
-* `TRADER_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug
-* `TRADER_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the trader's margin.
-* `TRADER_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the trader wants to budget for getting a message to the ledgers its trading on. In seconds.
-* `TRADER_MAX_HOLD_TIME` (default: `10`) Maximum duration the trader is willing to place funds on hold while waiting for the outcome of a transaction. In seconds.
+* `CONNECTOR_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug
+* `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.
+* `CONNECTOR_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the connector wants to budget for getting a message to the ledgers its trading on. In seconds.
+* `CONNECTOR_MAX_HOLD_TIME` (default: `10`) Maximum duration the connector is willing to place funds on hold while waiting for the outcome of a transaction. In seconds.
 
 ## Running with Docker
 
@@ -81,11 +81,11 @@ This project can be run in a [Docker](https://www.docker.com/) container.
 
 
 ``` sh
-docker run -it --rm -e PORT=4000 quay.io/ripple/five-bells-trader
+docker run -it --rm -e PORT=4000 quay.io/ripple/five-bells-connector
 ```
 
 Breaking down that command:
 
-* `-it` Run Five Bells Trader in an interactive terminal.
+* `-it` Run Five Bells Connector in an interactive terminal.
 * `--rm` Delete container when it's done running.
-* `-e PORT=4000` Set the trader's port to 4000. This is just an example for how to set a config option.
+* `-e PORT=4000` Set the connector's port to 4000. This is just an example for how to set a config option.
