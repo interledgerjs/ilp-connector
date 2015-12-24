@@ -1,6 +1,6 @@
 'use strict'
 const co = require('co')
-const ledgers = require('./lib/ledgers')
+const ledgers = require('./services/ledgers')
 const config = require('./services/config')
 const log = require('./services/log')
 const backend = require('./services/backend')
@@ -31,7 +31,7 @@ function listen () {
 module.exports = {
   app: app,
   listen: listen,
-  addLedger: ledgers.addLedger
+  addLedger: ledgers.addLedger.bind(ledgers)
 }
 
 if (!module.parent) {
