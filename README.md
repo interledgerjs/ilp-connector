@@ -20,10 +20,10 @@ Note: You need two [`five-bells-ledger`](https://github.com/interledger/five-bel
 ### Step 1: Clone repo
 
 ``` sh
-git clone https://github.com/interconnector/five-bells-connector.git
+git clone https://github.com/interledger/five-bells-connector.git
+
 cd five-bells-connector
 ```
-
 ### Step 2: Install dependencies
 
 ``` sh
@@ -48,7 +48,18 @@ npm start
 
 #### Trading
 
-* `TRADING_PAIRS` (default: `[]`) Pairs to trade on, ex.
+* `CONNECTOR_LEDGERS` (default: `[]`) Ledgers where this connector has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
+* `CONNECTOR_CREDENTIALS` (default: `{}`) Connector's login credentials for various ledgers, ex.
+```js
+{
+  "<ledger_uri>": {
+    "account_uri": "...",
+    "username": "...",
+    "password": "..."
+  }
+}
+```
+* `CONNECTOR_PAIRS` (default: *[all possible combinations]*) Pairs to trade on, ex.
 ```js
 [
   [
@@ -59,16 +70,6 @@ npm start
     'USD@http://ledger1.example'
   ]
 ]
-```
-* `CONNECTOR_CREDENTIALS` (default: `{}`) Connector's login credentials, ex.
-```js
-{
-   "<ledger_uri>": {
-     "account_uri": "...",
-     "username": "...",
-     "password": "..."
-   }
-}
 ```
 * `CONNECTOR_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug
 * `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.
@@ -81,11 +82,11 @@ This project can be run in a [Docker](https://www.docker.com/) container.
 
 
 ``` sh
-docker run -it --rm -e PORT=4000 quay.io/ripple/five-bells-connector
+docker run -it --rm -e CONNECTOR_PORT=4000 interledger/five-bells-connector
 ```
 
 Breaking down that command:
 
 * `-it` Run Five Bells Connector in an interactive terminal.
 * `--rm` Delete container when it's done running.
-* `-e PORT=4000` Set the connector's port to 4000. This is just an example for how to set a config option.
+* `-e CONNECTOR_PORT=4000` Set the connector's port to 4000. This is just an example for how to set a config option.
