@@ -71,10 +71,17 @@ npm start
   ]
 ]
 ```
-* `CONNECTOR_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug
 * `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.
 * `CONNECTOR_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the connector wants to budget for getting a message to the ledgers its trading on. In seconds.
 * `CONNECTOR_MAX_HOLD_TIME` (default: `10`) Maximum duration the connector is willing to place funds on hold while waiting for the outcome of a transaction. In seconds.
+
+#### Auto-funding
+
+The connector can automatically create and fund accounts when it has admin credentials for all ledgers it is trading on. This is used for testing and demos.
+
+* `CONNECTOR_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug.
+* `CONNECTOR_ADMIN_USER` (default: `admin`) Admin user name on the connected ledgers.
+* `CONNECTOR_ADMIN_PASS` (required if `CONNECTOR_DEBUG_AUTOFUND` is set) Password of the ledger's admin user.
 
 ## Running with Docker
 
