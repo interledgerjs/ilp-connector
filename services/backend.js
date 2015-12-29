@@ -8,5 +8,6 @@ if (!Backend) {
     'module specified by CONNECTOR_BACKEND was not found in /backends')
 }
 
-// TODO: should we pass in configuration here?
-module.exports = new Backend()
+module.exports = new Backend({
+  spread: config.fxSpread
+})
