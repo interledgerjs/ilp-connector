@@ -129,7 +129,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 422 if the notification is not related to a payment the trader has participated in', function *() {
+    it('should return a 422 if the notification is not related to a payment the connector has participated in', function *() {
       yield this.request()
         .post('/notifications')
         .send(this.notificationWithConditionFulfillment)

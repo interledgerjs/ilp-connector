@@ -2,7 +2,7 @@
 
 const Config = require('five-bells-shared').Config
 
-const config = module.exports = new Config('trader')
+const config = module.exports = new Config('connector')
 
 config.parseServerConfig()
 
@@ -18,29 +18,29 @@ config.tradingPairs = JSON.parse(process.env.TRADING_PAIRS || '[]')
 //      "password": "..."
 //    }
 // }
-config.ledgerCredentials = JSON.parse(process.env.TRADER_CREDENTIALS || '{}')
+config.ledgerCredentials = JSON.parse(process.env.CONNECTOR_CREDENTIALS || '{}')
 
 // TODO: make sure the tradingPairs include only ledgers we have credentials for
 
 config.features = {}
-config.features.debugAutoFund = !!process.env.TRADER_DEBUG_AUTOFUND
-config.admin = process.env.TRADER_ADMIN_USER && {
-  user: process.env.TRADER_ADMIN_USER,
-  pass: process.env.TRADER_ADMIN_PASS
+config.features.debugAutoFund = !!process.env.CONNECTOR_DEBUG_AUTOFUND
+config.admin = process.env.CONNECTOR_ADMIN_USER && {
+  user: process.env.CONNECTOR_ADMIN_USER,
+  pass: process.env.CONNECTOR_ADMIN_PASS
 }
 
 if (config.features.debugAutoFund && !config.admin) {
-  throw new Error('TRADER_DEBUG_AUTOFUND requires TRADER_ADMIN_{USER,PASS}')
+  throw new Error('CONNECTOR_DEBUG_AUTOFUND requires CONNECTOR_ADMIN_{USER,PASS}')
 }
 
 // Configure which backend we will use to determine
 // rates and execute payments
-config.backend = process.env.TRADER_BACKEND || 'fixerio'
+config.backend = process.env.CONNECTOR_BACKEND || 'fixerio'
 
 config.expiry = {}
 config.expiry.minMessageWindow =
   process.env.MIN_MESSAGE_WINDOW || 1 // seconds
-config.expiry.maxHoldTime = process.env.TRADER_MAX_HOLD_TIME || 10 // seconds
+config.expiry.maxHoldTime = process.env.CONNECTOR_MAX_HOLD_TIME || 10 // seconds
 config.expiry.feePercentage =
   process.env.FEE_PERCENTAGE || 0.01
 

@@ -14,13 +14,13 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
  * @apiGroup Quote
  *
  * @apiParam {URI} source_ledger Ledger where the transfer crediting the
- *    trader's account will take place
+ *    connector's account will take place
  * @apiParam {URI} destination_ledger Ledger where the transfer debiting the
- *    trader's account will take place
- * @apiParam {Number} [source_amount="(Set by trader if destination_amount is
+ *    connector's account will take place
+ * @apiParam {Number} [source_amount="(Set by connector if destination_amount is
  *    specified)"] Fixed amount to be debited from sender's account
  *    (should not be specified if destination_amount is)
- * @apiParam {Number} [destination_amount="(Set by trader if source_amount is
+ * @apiParam {Number} [destination_amount="(Set by connector if source_amount is
  *    specified)"] Fixed amount to be credited to receiver's account
  *    (should not be specified if source_amount is)
  * @apiParam {Number} [destination_expiry_duration="(Maximum allowed if
@@ -31,7 +31,7 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
  *    destinatino transfer is proposed and when it expires
  *
  * @apiExample {shell} Fixed Source Amount:
- *    curl https://trader.example? \
+ *    curl https://connector.example? \
  *      source_amount=100.25 \
  *      &source_ledger=https://eur-ledger.example/EUR \
  *      &destination_ledger=https://usd-ledger.example/USD \
@@ -68,7 +68,7 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
  *      }
  *
  * @apiExample {shell} Fixed Destination Amount:
- *    curl https://trader.example? \
+ *    curl https://connector.example? \
  *      destination_amount=105.71 \
  *      &source_ledger=https://eur-ledger.example/EUR \
  *      &destination_ledger=https://usd-ledger.example/USD \

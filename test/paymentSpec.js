@@ -69,7 +69,7 @@ describe('Payments', function () {
     })
 
     it('should return a 422 if the payment includes multiple source transfers and multiple destination transfers', function *() {
-      // Note this behavior may be supported by other traders but not this one
+      // Note this behavior may be supported by other connectors but not this one
 
       const payment = this.formatId(this.paymentManyToMany,
         '/payments/')
@@ -80,7 +80,7 @@ describe('Payments', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('ManyToManyNotSupportedError')
-          expect(res.body.message).to.equal('This trader does not support ' +
+          expect(res.body.message).to.equal('This connector does not support ' +
             'payments that include multiple source transfers and ' +
             'multiple destination transfers')
         })
@@ -116,7 +116,7 @@ describe('Payments', function () {
       'match and the source transfer one does not have the same algorithm the' +
       'destination ledger uses')
 
-    it('should return a 422 if the payment does not include the trader in the source transfer credits', function *() {
+    it('should return a 422 if the payment does not include the connector in the source transfer credits', function *() {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
       payment.source_transfers[0].credits[0].account = 'http://usd-ledger.example/accounts/mary'
@@ -127,13 +127,13 @@ describe('Payments', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('NoRelatedSourceCreditError')
-          expect(res.body.message).to.equal('Trader\'s account must be ' +
+          expect(res.body.message).to.equal('Connector\'s account must be ' +
             'credited in all source transfers to provide payment')
         })
         .end()
     })
 
-    it('should return a 422 if the payment does not include the trader in the destination transfer debits', function *() {
+    it('should return a 422 if the payment does not include the connector in the destination transfer debits', function *() {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
       payment.destination_transfers[0].debits[0].account = 'http://eur-ledger.example/accounts/mary'
@@ -144,7 +144,7 @@ describe('Payments', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('NoRelatedDestinationDebitError')
-          expect(res.body.message).to.equal('Trader\'s account must be ' +
+          expect(res.body.message).to.equal('Connector\'s account must be ' +
             'debited in all destination transfers to provide payment')
         })
         .end()
@@ -205,7 +205,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the payment includes assets this trader does not offer rates between', function *() {
+    it('should return a 422 if the payment includes assets this connector does not offer rates between', function *() {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
       payment.source_transfers[0].ledger = 'http://abc-ledger.example/ABC'
@@ -218,7 +218,7 @@ describe('Payments', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('AssetsNotTradedError')
-          expect(res.body.message).to.equal('This trader does not support ' +
+          expect(res.body.message).to.equal('This connector does not support ' +
             'the given asset pair')
         })
         .end()
@@ -290,12 +290,12 @@ describe('Payments', function () {
           expect(res.body.id).to.equal('UnacceptableExpiryError')
           expect(res.body.message).to.equal('Destination transfers ' +
             'with execution conditions must have an expires_at field ' +
-            'for trader to agree to authorize them')
+            'for connector to agree to authorize them')
         })
         .end()
     })
 
-    it('should return a 422 if any of the destination transfers expires too far in the future (causing the trader to hold money for too long)', function *() {
+    it('should return a 422 if any of the destination transfers expires too far in the future (causing the connector to hold money for too long)', function *() {
       const payment = this.formatId(this.paymentOneToMany,
         '/payments/')
       payment.destination_transfers[1].expires_at =
@@ -308,7 +308,7 @@ describe('Payments', function () {
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableExpiryError')
           expect(res.body.message).to.equal('Destination transfer expiry is ' +
-            'too far in the future. The trader\'s money would need to be ' +
+            'too far in the future. The connector\'s money would need to be ' +
             'held for too long')
         })
         .end()
@@ -347,7 +347,7 @@ describe('Payments', function () {
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableExpiryError')
           expect(res.body.message).to.equal('There is insufficient time for ' +
-            'the trader to execute the destination transfer before it expires')
+            'the connector to execute the destination transfer before it expires')
         })
         .end()
     })
@@ -365,7 +365,7 @@ describe('Payments', function () {
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableExpiryError')
           expect(res.body.message).to.equal('There is insufficient time for ' +
-            'the trader to execute the destination transfer before the source ' +
+            'the connector to execute the destination transfer before the source ' +
             'transfer(s) expire(s)')
         })
         .end()
@@ -431,14 +431,14 @@ describe('Payments', function () {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -471,14 +471,14 @@ describe('Payments', function () {
     it('should return a 201 for a new payment', function *() {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -505,20 +505,20 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 201 for a new payment even if the trader is also the payee of the destination transfer', function *() {
+    it('should return a 201 for a new payment even if the connector is also the payee of the destination transfer', function *() {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
       payment.destination_transfers[0].credits =
         payment.destination_transfers[0].debits
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -545,20 +545,20 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 201 for a new payment even if the trader is also the payer of the source transfer', function *() {
+    it('should return a 201 for a new payment even if the connector is also the payer of the source transfer', function *() {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
       payment.source_transfers[0].debits =
         payment.source_transfers[0].credits
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -632,14 +632,14 @@ describe('Payments', function () {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -692,14 +692,14 @@ describe('Payments', function () {
       const payment = this.formatId(this.paymentSameExecutionCondition,
         '/payments/')
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed',
@@ -744,14 +744,14 @@ describe('Payments', function () {
         amount: '20'
       })
 
-      const traderCredentials =
+      const connectorCredentials =
       config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -805,14 +805,14 @@ describe('Payments', function () {
         amount: '0.40'
       })
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -865,14 +865,14 @@ describe('Payments', function () {
         amount: '0.40'
       })
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -914,7 +914,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should only add authorization to the destination transfer debits from the trader\'s account', function *() {
+    it('should only add authorization to the destination transfer debits from the connector\'s account', function *() {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
       payment.destination_transfers[0].debits.unshift({
@@ -926,14 +926,14 @@ describe('Payments', function () {
         account: 'http://eur-ledger.example/accounts/jane'
       })
 
-      const traderCredentials =
+      const connectorCredentials =
       config.ledgerCredentials[payment.destination_transfers[0].ledger]
       const submittedAuthorization =
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -990,28 +990,28 @@ describe('Payments', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       }
 
-      const traderCredentials0 =
+      const connectorCredentials0 =
       config.ledgerCredentials[payment.destination_transfers[0].ledger]
       const submittedAuthorization0 =
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials0.username,
-          pass: traderCredentials0.password
+          user: connectorCredentials0.username,
+          pass: connectorCredentials0.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed',
           execution_condition_fulfillment: fulfillment
         }))
 
-      const traderCredentials1 =
+      const connectorCredentials1 =
       config.ledgerCredentials[payment.destination_transfers[1].ledger]
       const submittedAuthorization1 =
       nock(payment.destination_transfers[1].id)
         .put('')
         .basicAuth({
-          user: traderCredentials1.username,
-          pass: traderCredentials1.password
+          user: connectorCredentials1.username,
+          pass: connectorCredentials1.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[1], {
           state: 'executed',
@@ -1064,14 +1064,14 @@ describe('Payments', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       }
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed',
@@ -1122,14 +1122,14 @@ describe('Payments', function () {
         moment(START_DATE - 1).toISOString()
       payment.source_transfers[0].state = 'executed'
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed'
@@ -1168,14 +1168,14 @@ describe('Payments', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       }
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed',
@@ -1238,14 +1238,14 @@ describe('Payments', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       }
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed',
@@ -1305,14 +1305,14 @@ describe('Payments', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       }
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed',
@@ -1372,14 +1372,14 @@ describe('Payments', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       }
 
-      const traderCredentials =
+      const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed',
@@ -1433,14 +1433,14 @@ describe('Payments', function () {
           'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
       }
 
-      const traderCredentials =
+      const connectorCredentials =
       config.ledgerCredentials[payment.destination_transfers[0].ledger]
       const submittedFeeTransfer =
       nock(payment.destination_fee_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_fee_transfers[0], {
           state: 'executed'
@@ -1449,8 +1449,8 @@ describe('Payments', function () {
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
-          user: traderCredentials.username,
-          pass: traderCredentials.password
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
           state: 'executed',
