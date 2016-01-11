@@ -30,6 +30,10 @@ describe('Payments', function () {
 
     this.paymentOneToOne =
       _.cloneDeep(require('./data/paymentOneToOne.json'))
+    this.paymentOneToOneAtomic =
+      _.cloneDeep(require('./data/paymentOneToOneAtomic.json'))
+    this.paymentOneToOneAtomic_TwoCases =
+      _.cloneDeep(require('./data/paymentOneToOneAtomic_TwoCases.json'))
     this.paymentSameExecutionCondition =
       _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
     this.paymentOneToMany =
@@ -1473,4 +1477,123 @@ describe('Payments', function () {
       submittedFeeTransfer.done()
     })
   })
+
+  describe('atomic mode', function () {
+    it('should check the expiry on a cancellation condition: valid', function *() {
+      const payment = this.formatId(this.paymentOneToOneAtomic, '/payments/')
+      const caseID = payment.destination_transfers[0].additional_info.cases[0]
+      const getCase = nock(caseID)
+        .get('')
+        .reply(200, {
+          expires_at: future(5000)
+        })
+
+      yield this.request()
+        .put('/payments/' + this.paymentOneToOneAtomic.id)
+        .send(payment)
+        .expect(201)
+        .end()
+      getCase.done()
+    })
+
+    it('should check the expiry on a cancellation condition: too long', function *() {
+      const payment = this.formatId(this.paymentOneToOneAtomic, '/payments/')
+      const caseID = payment.destination_transfers[0].additional_info.cases[0]
+      const getCase = nock(caseID)
+        .get('')
+        .reply(200, { expires_at: future(15000) })
+
+      yield this.request()
+        .put('/payments/' + this.paymentOneToOneAtomic.id)
+        .send(payment)
+        .expect(422)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError')
+          expect(res.body.message).to.equal('Destination transfer expiry is ' +
+            'too far in the future. The connector\'s money would need to be ' +
+            'held for too long')
+        })
+        .end()
+      getCase.done()
+    })
+
+    it('should check the expiry on a cancellation condition: already expired', function *() {
+      const payment = this.formatId(this.paymentOneToOneAtomic, '/payments/')
+      const caseID = payment.destination_transfers[0].additional_info.cases[0]
+      const getCase = nock(caseID)
+        .get('')
+        .reply(200, { expires_at: future(-15000) })
+
+      yield this.request()
+        .put('/payments/' + this.paymentOneToOneAtomic.id)
+        .send(payment)
+        .expect(422)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError')
+          expect(res.body.message).to.equal('Transfer has already expired')
+        })
+        .end()
+      getCase.done()
+    })
+
+    it('should check the expiry on a cancellation condition: missing expiry', function *() {
+      const payment = this.formatId(this.paymentOneToOneAtomic, '/payments/')
+      const caseID = payment.destination_transfers[0].additional_info.cases[0]
+      const getCase = nock(caseID)
+        .get('')
+        .reply(200, {})
+
+      yield this.request()
+        .put('/payments/' + this.paymentOneToOneAtomic.id)
+        .send(payment)
+        .expect(422)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError')
+          expect(res.body.message).to.equal('Cases must have an expiry.')
+        })
+        .end()
+      getCase.done()
+    })
+
+    it('should check the expiry on a cancellation condition: 2 cases, different expiries', function *() {
+      const payment = this.formatId(this.paymentOneToOneAtomic_TwoCases, '/payments/')
+      const caseID1 = payment.destination_transfers[0].additional_info.cases[0]
+      const caseID2 = payment.destination_transfers[0].additional_info.cases[1]
+      const getCase1 = nock(caseID1).get('').reply(200, {expires_at: future(5000)})
+      const getCase2 = nock(caseID2).get('').reply(200, {expires_at: future(6000)})
+
+      yield this.request()
+        .put('/payments/' + this.paymentOneToOneAtomic_TwoCases.id)
+        .send(payment)
+        .expect(422)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('UnacceptableExpiryError')
+          expect(res.body.message).to.equal('Case expiries don\'t agree')
+        })
+        .end()
+      getCase1.done()
+      getCase2.done()
+    })
+
+    it('should check the expiry on a cancellation condition: 2 cases, same expiries', function *() {
+      const payment = this.formatId(this.paymentOneToOneAtomic_TwoCases, '/payments/')
+      const caseID1 = payment.destination_transfers[0].additional_info.cases[0]
+      const caseID2 = payment.destination_transfers[0].additional_info.cases[1]
+      const expires_at = future(5000)
+      const getCase1 = nock(caseID1).get('').reply(200, {expires_at: expires_at})
+      const getCase2 = nock(caseID2).get('').reply(200, {expires_at: expires_at})
+
+      yield this.request()
+        .put('/payments/' + this.paymentOneToOneAtomic_TwoCases.id)
+        .send(payment)
+        .expect(201)
+        .end()
+      getCase1.done()
+      getCase2.done()
+    })
+  })
 })
+
+function future (diff) {
+  return (new Date(START_DATE + diff)).toISOString()
+}

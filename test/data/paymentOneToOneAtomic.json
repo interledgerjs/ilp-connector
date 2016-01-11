@@ -1,0 +1,59 @@
+{
+  "id": "c9377529-d7df-4aa1-ae37-ad5148612003",
+  "source_transfers":[{
+    "id": "http://usd-ledger.example/USD/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+    "ledger":"http://usd-ledger.example/USD",
+    "debits":[{
+      "amount":"1.07",
+      "account":"http://usd-ledger.example/accounts/alice"
+    }],
+    "credits":[{
+      "amount":"1.07",
+      "account":"http://usd-ledger.example/accounts/mark"
+    }],
+    "execution_condition": {
+      "message_hash": "9EXcGgJa0zTIUxEQXaMKpvoGsNmYSxv8J6C12LBNA5hRMfmbwDCzAU4O14UKnqcIaQqMGULHLI+T6Nk3+qYd3Q==",
+      "signer": "http://eur-ledger.example/EUR",
+      "type": "ed25519-sha512",
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
+    },
+    "cancellation_condition": {
+      "message_hash": "VgEg6oeTizz98OL6R0WlmAC2IHK3RGT6ClTgK90VF1DQYW9OLEz3ja0rwaQqDFjbpI3BikTluaKYYaQsfhdZgw==",
+      "signer": "http://notary.example",
+      "type": "ed25519-sha512",
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
+    },
+    "additional_info": {
+      "cases": [ "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a086" ]
+    },
+    "state": "proposed"
+  }],
+  "destination_transfers":[{
+    "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+    "ledger":"http://eur-ledger.example/EUR",
+    "debits":[{
+      "amount":"1.00",
+      "account":"http://eur-ledger.example/accounts/mark"
+    }],
+    "credits":[{
+      "amount":"1.00",
+      "account":"http://eur-ledger.example/accounts/bob"
+    }],
+    "execution_condition": {
+      "message_hash": "9EXcGgJa0zTIUxEQXaMKpvoGsNmYSxv8J6C12LBNA5hRMfmbwDCzAU4O14UKnqcIaQqMGULHLI+T6Nk3+qYd3Q==",
+      "signer": "http://eur-ledger.example/EUR",
+      "type": "ed25519-sha512",
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
+    },
+    "cancellation_condition": {
+      "message_hash": "VgEg6oeTizz98OL6R0WlmAC2IHK3RGT6ClTgK90VF1DQYW9OLEz3ja0rwaQqDFjbpI3BikTluaKYYaQsfhdZgw==",
+      "signer": "http://notary.example",
+      "type": "ed25519-sha512",
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
+    },
+    "additional_info": {
+      "cases": [ "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a086" ]
+    },
+    "state": "proposed"
+  }]
+}
