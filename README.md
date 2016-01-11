@@ -20,10 +20,10 @@ Note: You need two [`five-bells-ledger`](https://github.com/interledger/five-bel
 ### Step 1: Clone repo
 
 ``` sh
-git clone https://github.com/interconnector/five-bells-connector.git
+git clone https://github.com/interledger/five-bells-connector.git
+
 cd five-bells-connector
 ```
-
 ### Step 2: Install dependencies
 
 ``` sh
@@ -48,7 +48,18 @@ npm start
 
 #### Trading
 
-* `TRADING_PAIRS` (default: `[]`) Pairs to trade on, ex.
+* `CONNECTOR_LEDGERS` (default: `[]`) Ledgers where this connector has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
+* `CONNECTOR_CREDENTIALS` (default: `{}`) Connector's login credentials for various ledgers, ex.
+```js
+{
+  "<ledger_uri>": {
+    "account_uri": "...",
+    "username": "...",
+    "password": "..."
+  }
+}
+```
+* `CONNECTOR_PAIRS` (default: *[all possible combinations]*) Pairs to trade on, ex.
 ```js
 [
   [
@@ -60,20 +71,17 @@ npm start
   ]
 ]
 ```
-* `CONNECTOR_CREDENTIALS` (default: `{}`) Connector's login credentials, ex.
-```js
-{
-   "<ledger_uri>": {
-     "account_uri": "...",
-     "username": "...",
-     "password": "..."
-   }
-}
-```
-* `CONNECTOR_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug
 * `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.
 * `CONNECTOR_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the connector wants to budget for getting a message to the ledgers its trading on. In seconds.
 * `CONNECTOR_MAX_HOLD_TIME` (default: `10`) Maximum duration the connector is willing to place funds on hold while waiting for the outcome of a transaction. In seconds.
+
+#### Auto-funding
+
+The connector can automatically create and fund accounts when it has admin credentials for all ledgers it is trading on. This is used for testing and demos.
+
+* `CONNECTOR_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug.
+* `CONNECTOR_ADMIN_USER` (default: `admin`) Admin user name on the connected ledgers.
+* `CONNECTOR_ADMIN_PASS` (required if `CONNECTOR_DEBUG_AUTOFUND` is set) Password of the ledger's admin user.
 
 ## Running with Docker
 
@@ -81,11 +89,11 @@ This project can be run in a [Docker](https://www.docker.com/) container.
 
 
 ``` sh
-docker run -it --rm -e PORT=4000 quay.io/ripple/five-bells-connector
+docker run -it --rm -e CONNECTOR_PORT=4000 interledger/five-bells-connector
 ```
 
 Breaking down that command:
 
 * `-it` Run Five Bells Connector in an interactive terminal.
 * `--rm` Delete container when it's done running.
-* `-e PORT=4000` Set the connector's port to 4000. This is just an example for how to set a config option.
+* `-e CONNECTOR_PORT=4000` Set the connector's port to 4000. This is just an example for how to set a config option.

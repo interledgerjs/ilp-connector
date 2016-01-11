@@ -35,7 +35,7 @@ class FixerIoBackend {
       opts = {}
     }
 
-    this.spread = opts.spread || 0.002
+    this.spread = opts.spread || 0
     // this.ratesCacheTtl = opts.ratesCacheTtl || 24 * 3600000
 
     this.rates = {}
