@@ -1,19 +1,18 @@
 'use strict'
 
-module.exports = function ExternalError (message) {
-  Error.captureStackTrace(this, this.constructor)
-  this.name = this.constructor.name
-  this.message = message
-}
+const BaseError = require('five-bells-shared').BaseError
 
-require('util').inherits(module.exports, Error)
+class ExternalError extends BaseError {
 
-module.exports.prototype.handler = function *(ctx, log) {
-  log.warn('External Error: ' + this.message)
-  ctx.status = 502
-  ctx.body = {
-    id: this.name,
-    message: this.message,
-    owner: this.accountIdentifier
+  * handler (ctx, log) {
+    log.warn('External Error: ' + this.message)
+    ctx.status = 502
+    ctx.body = {
+      id: this.name,
+      message: this.message,
+      owner: this.accountIdentifier
+    }
   }
 }
+
+module.exports = ExternalError
