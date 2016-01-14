@@ -8,7 +8,7 @@ const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../services/log')('fixerio')
 const config = require('../../services/config')
 
-const RATES_API = 'http://api.fixer.io/latest'
+const RATES_API = 'https://api.fixer.io/latest'
 
 function lookupCurrencies (source_ledger, destination_ledger) {
   for (let pair of config.tradingPairs) {

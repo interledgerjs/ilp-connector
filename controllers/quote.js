@@ -1,5 +1,6 @@
 'use strict'
 
+const request = require('co-request')
 const config = require('../services/config')
 const log = require('../services/log')('quote')
 const backend = require('../services/backend')
@@ -28,7 +29,7 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
  *    proposed and when it expires
  * @apiParam {Number} [source_expiry_duration="(Minimum allowed based on
  *    destination_expiry_duration)"] Number of milliseconds between when the
- *    destinatino transfer is proposed and when it expires
+ *    destination transfer is proposed and when it expires
  *
  * @apiExample {shell} Fixed Source Amount:
  *    curl https://connector.example? \
@@ -121,16 +122,23 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 /* eslint-enable */
 
 exports.get = function *() {
-  let quote = yield backend.getQuote({
-    source_ledger: this.query.source_ledger,
-    destination_ledger: this.query.destination_ledger,
-    source_amount: this.query.source_amount,
-    destination_amount: this.query.destination_amount
-  })
+  const query = new QuoteQuery(this.query)
+  yield query.loadLedgers()
+  const quote = yield backend.getQuote(query.toQuoteArgs())
 
+  log.debug('' +
+    quote.source_amount.toFixed(2) + ' ' +
+    query.source_ledger + ' => ' +
+    quote.destination_amount.toFixed(2) + ' ' +
+    query.destination_ledger)
+
+  this.body = query.toPaymentTemplate(quote)
+}
+
+function QuoteQuery (params) {
   // TODO: include the expiry duration in the quote logic
-  let destinationExpiryDuration = parseFloat(this.query.destination_expiry_duration)
-  let sourceExpiryDuration = parseFloat(this.query.source_expiry_duration)
+  let destinationExpiryDuration = parseFloat(params.destination_expiry_duration)
+  let sourceExpiryDuration = parseFloat(params.source_expiry_duration)
 
   // Check destination_expiry_duration
   if (destinationExpiryDuration) {
@@ -140,8 +148,7 @@ exports.get = function *() {
         ', maxHoldTime: ' + config.expiry.maxHoldTime)
     }
   } else if (sourceExpiryDuration) {
-    destinationExpiryDuration = sourceExpiryDuration -
-      config.expiry.minMessageWindow
+    destinationExpiryDuration = sourceExpiryDuration - config.expiry.minMessageWindow
   } else {
     destinationExpiryDuration = config.expiry.maxHoldTime
   }
@@ -157,37 +164,83 @@ exports.get = function *() {
         'source transfers')
     }
   } else {
-    sourceExpiryDuration = destinationExpiryDuration +
-      config.expiry.minMessageWindow
+    sourceExpiryDuration = destinationExpiryDuration + config.expiry.minMessageWindow
   }
 
-  let paymentTemplate = {
+  this.destinationExpiryDuration = destinationExpiryDuration
+  this.sourceExpiryDuration = sourceExpiryDuration
+  this.source_amount = params.source_amount
+  this.destination_amount = params.destination_amount
+
+  this.source_ledger = params.source_ledger
+  this.destination_ledger = params.destination_ledger
+  this.source_account = params.source_account || null
+  this.destination_account = params.destination_account || null
+}
+
+QuoteQuery.prototype.loadLedgers = function * () {
+  if (this.source_ledger || this.source_account) {
+    this.source_ledger = this.source_ledger || (yield getAccountLedger(this.source_account))
+  } else {
+    throw new Error('Missing required parameter: source_ledger or source_account')
+  }
+  if (this.destination_ledger || this.destination_account) {
+    this.destination_ledger = this.destination_ledger || (yield getAccountLedger(this.destination_account))
+  } else {
+    throw new Error('Missing required parameter: destination_ledger or destination_account')
+  }
+}
+
+QuoteQuery.prototype.toQuoteArgs = function () {
+  return {
+    source_ledger: this.source_ledger,
+    destination_ledger: this.destination_ledger,
+    source_amount: this.source_amount,
+    destination_amount: this.destination_amount
+  }
+}
+
+QuoteQuery.prototype.toPaymentTemplate = function (quote) {
+  const source_amount = quote.source_amount.toFixed(2, 2)
+  const destination_amount = quote.destination_amount.toFixed(2)
+  const payment = {
     source_transfers: [{
-      type: ledgers.getType(this.query.source_ledger),
-      ledger: this.query.source_ledger,
+      type: ledgers.getType(this.source_ledger),
+      ledger: this.source_ledger,
+      debits: [{
+        account: this.source_account,
+        amount: source_amount
+      }],
       credits: [
-        ledgers.makeFundTemplate(this.query.source_ledger, {
-          amount: quote.source_amount.toFixed(2, 2)
-        })
+        ledgers.makeFundTemplate(this.source_ledger, {amount: source_amount})
       ],
-      expiry_duration: String(sourceExpiryDuration)
+      expiry_duration: String(this.sourceExpiryDuration)
     }],
     destination_transfers: [{
-      type: ledgers.getType(this.query.destination_ledger),
-      ledger: this.query.destination_ledger,
+      type: ledgers.getType(this.destination_ledger),
+      ledger: this.destination_ledger,
       debits: [
-        ledgers.makeFundTemplate(this.query.destination_ledger, {
-          amount: quote.destination_amount.toFixed(2)
-        })
+        ledgers.makeFundTemplate(this.destination_ledger, {amount: destination_amount})
       ],
-      expiry_duration: String(destinationExpiryDuration)
+      credits: [{
+        account: this.destination_account,
+        amount: destination_amount
+      }],
+      expiry_duration: String(this.destinationExpiryDuration)
     }]
   }
+  return payment
+}
 
-  log.debug('' + quote.source_amount.toFixed(2) + ' ' +
-    this.query.source_ledger + ' => ' +
-    quote.destination_amount.toFixed(2) + ' ' +
-    this.query.destination_ledger)
-
-  this.body = paymentTemplate
+function * getAccountLedger (account) {
+  const res = yield request({
+    method: 'get',
+    uri: account,
+    json: true
+  })
+  const ledger = res.body && res.body.ledger
+  if (res.statusCode !== 200 || !ledger) {
+    throw new Error('Unable to identify ledger from account: ' + account)
+  }
+  return ledger
 }
