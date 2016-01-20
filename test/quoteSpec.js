@@ -10,6 +10,7 @@ const validate = require('five-bells-shared/services/validate')
 const appHelper = require('./helpers/app')
 const logger = require('../services/log')
 const backend = require('../services/backend')
+const balanceCache = require('../services/balance-cache')
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 
@@ -33,6 +34,7 @@ describe('Quotes', function () {
           balance: 150000
         })
     })
+    balanceCache.reset()
 
     yield backend.connect(ratesResponse)
   })

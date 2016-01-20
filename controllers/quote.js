@@ -6,6 +6,7 @@ const config = require('../services/config')
 const log = require('../services/log')('quote')
 const backend = require('../services/backend')
 const ledgers = require('../services/ledgers')
+const balanceCache = require('../services/balance-cache')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const ExternalError = require('../errors/external-error')
@@ -128,7 +129,7 @@ exports.get = function *() {
   const query = yield makeQuoteQuery(this.query)
   const quote = yield backend.getQuote(makeQuoteArgs(query))
 
-  const sourceBalance = yield getConnectorBalance(query.source_ledger)
+  const sourceBalance = yield balanceCache.get(query.source_ledger)
   const sourceAmount = new BigNumber(quote.source_amount)
   if (sourceBalance.lessThan(sourceAmount)) {
     throw new UnacceptableAmountError('Insufficient liquidity in market maker account')
@@ -251,24 +252,4 @@ function * getAccountLedger (account) {
     throw new ExternalError('Unable to identify ledger from account: ' + account)
   }
   return ledger
-}
-
-function * getConnectorBalance (ledger) {
-  const creds = config.ledgerCredentials[ledger]
-  let res
-  try {
-    res = yield request({
-      method: 'get',
-      uri: creds.account_uri,
-      auth: {
-        user: creds.username,
-        pass: creds.password
-      },
-      json: true
-    })
-  } catch (e) { }
-  if (!res || res.statusCode !== 200) {
-    throw new ExternalError('Unable to determine current balance')
-  }
-  return new BigNumber(res.body.balance)
 }
