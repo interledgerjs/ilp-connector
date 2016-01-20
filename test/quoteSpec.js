@@ -1,4 +1,5 @@
 'use strict'
+const parseURL = require('url').parse
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const config = require('../services/config')
@@ -9,6 +10,7 @@ const validate = require('five-bells-shared/services/validate')
 const appHelper = require('./helpers/app')
 const logger = require('../services/log')
 const backend = require('../services/backend')
+const balanceCache = require('../services/balance-cache')
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 
@@ -18,7 +20,27 @@ describe('Quotes', function () {
   beforeEach(function * () {
     appHelper.create(this, app)
 
+    // Connector queries its balances when getting a quote to ensure it has sufficient funds.
+    ;[
+      'http://cad-ledger.example/accounts/mark',
+      'http://usd-ledger.example/accounts/mark',
+      'http://eur-ledger.example/accounts/mark',
+      'http://cny-ledger.example/accounts/mark'
+    ].forEach(function (connector_account_uri) {
+      nock(connector_account_uri).get('')
+        .reply(200, {
+          name: 'mark',
+          ledger: 'http://' + parseURL(connector_account_uri).host,
+          balance: 150000
+        })
+    })
+    balanceCache.reset()
+
     yield backend.connect(ratesResponse)
+  })
+
+  afterEach(function * () {
+    nock.cleanAll()
   })
 
   describe('GET /quote', function () {
@@ -65,6 +87,37 @@ describe('Quotes', function () {
           expect(res.body.message).to.equal('The difference between the ' +
             'destination expiry duration and the source expiry duration is ' +
             'insufficient to ensure that we can execute the source transfers')
+        })
+        .end()
+    })
+
+    it('should return a 422 for insufficient liquidity', function *() {
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=1500001' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD' +
+          '&destination_expiry_duration=10')
+        .expect(422)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('UnacceptableAmountError')
+          expect(res.body.message).to.equal('Insufficient liquidity in market maker account')
+        })
+        .end()
+    })
+
+    it('should return a 502 when unable to get balance from ledger', function *() {
+      nock.cleanAll()
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=1500001' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD' +
+          '&destination_expiry_duration=10')
+        .expect(502)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('ExternalError')
+          expect(res.body.message).to.equal('Unable to determine current balance')
         })
         .end()
     })

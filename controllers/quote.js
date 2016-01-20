@@ -1,11 +1,15 @@
 'use strict'
 
 const request = require('co-request')
+const BigNumber = require('bignumber.js')
 const config = require('../services/config')
 const log = require('../services/log')('quote')
 const backend = require('../services/backend')
 const ledgers = require('../services/ledgers')
+const balanceCache = require('../services/balance-cache')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
+const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
+const ExternalError = require('../errors/external-error')
 
 /* eslint-disable */
 /**
@@ -122,9 +126,14 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 /* eslint-enable */
 
 exports.get = function *() {
-  const query = new QuoteQuery(this.query)
-  yield query.loadLedgers()
-  const quote = yield backend.getQuote(query.toQuoteArgs())
+  const query = yield makeQuoteQuery(this.query)
+  const quote = yield backend.getQuote(makeQuoteArgs(query))
+
+  const sourceBalance = yield balanceCache.get(query.source_ledger)
+  const sourceAmount = new BigNumber(quote.source_amount)
+  if (sourceBalance.lessThan(sourceAmount)) {
+    throw new UnacceptableAmountError('Insufficient liquidity in market maker account')
+  }
 
   log.debug('' +
     quote.source_amount.toFixed(2) + ' ' +
@@ -132,10 +141,10 @@ exports.get = function *() {
     quote.destination_amount.toFixed(2) + ' ' +
     query.destination_ledger)
 
-  this.body = query.toPaymentTemplate(quote)
+  this.body = makePaymentTemplate(query, quote)
 }
 
-function QuoteQuery (params) {
+function * makeQuoteQuery (params) {
   // TODO: include the expiry duration in the quote logic
   let destinationExpiryDuration = parseFloat(params.destination_expiry_duration)
   let sourceExpiryDuration = parseFloat(params.source_expiry_duration)
@@ -167,66 +176,66 @@ function QuoteQuery (params) {
     sourceExpiryDuration = destinationExpiryDuration + config.expiry.minMessageWindow
   }
 
-  this.destinationExpiryDuration = destinationExpiryDuration
-  this.sourceExpiryDuration = sourceExpiryDuration
-  this.source_amount = params.source_amount
-  this.destination_amount = params.destination_amount
-
-  this.source_ledger = params.source_ledger
-  this.destination_ledger = params.destination_ledger
-  this.source_account = params.source_account || null
-  this.destination_account = params.destination_account || null
-}
-
-QuoteQuery.prototype.loadLedgers = function * () {
-  if (this.source_ledger || this.source_account) {
-    this.source_ledger = this.source_ledger || (yield getAccountLedger(this.source_account))
-  } else {
-    throw new Error('Missing required parameter: source_ledger or source_account')
+  let source_ledger = params.source_ledger
+  if (!source_ledger) {
+    if (params.source_account) source_ledger = yield getAccountLedger(params.source_account)
+    else throw new Error('Missing required parameter: source_ledger or source_account')
   }
-  if (this.destination_ledger || this.destination_account) {
-    this.destination_ledger = this.destination_ledger || (yield getAccountLedger(this.destination_account))
-  } else {
-    throw new Error('Missing required parameter: destination_ledger or destination_account')
-  }
-}
 
-QuoteQuery.prototype.toQuoteArgs = function () {
+  let destination_ledger = params.destination_ledger
+  if (!destination_ledger) {
+    if (params.destination_account) destination_ledger = yield getAccountLedger(params.destination_account)
+    else throw new Error('Missing required parameter: destination_ledger or destination_account')
+  }
+
   return {
-    source_ledger: this.source_ledger,
-    destination_ledger: this.destination_ledger,
-    source_amount: this.source_amount,
-    destination_amount: this.destination_amount
+    destinationExpiryDuration: destinationExpiryDuration,
+    sourceExpiryDuration: sourceExpiryDuration,
+    source_amount: params.source_amount,
+    destination_amount: params.destination_amount,
+    source_ledger: source_ledger,
+    destination_ledger: destination_ledger,
+    source_account: params.source_account || null,
+    destination_account: params.destination_account || null
   }
 }
 
-QuoteQuery.prototype.toPaymentTemplate = function (quote) {
+function makeQuoteArgs (query) {
+  return {
+    source_ledger: query.source_ledger,
+    destination_ledger: query.destination_ledger,
+    source_amount: query.source_amount,
+    destination_amount: query.destination_amount
+  }
+}
+
+function makePaymentTemplate (query, quote) {
   const source_amount = quote.source_amount.toFixed(2, 2)
   const destination_amount = quote.destination_amount.toFixed(2)
   const payment = {
     source_transfers: [{
-      type: ledgers.getType(this.source_ledger),
-      ledger: this.source_ledger,
+      type: ledgers.getType(query.source_ledger),
+      ledger: query.source_ledger,
       debits: [{
-        account: this.source_account,
+        account: query.source_account,
         amount: source_amount
       }],
       credits: [
-        ledgers.makeFundTemplate(this.source_ledger, {amount: source_amount})
+        ledgers.makeFundTemplate(query.source_ledger, {amount: source_amount})
       ],
-      expiry_duration: String(this.sourceExpiryDuration)
+      expiry_duration: String(query.sourceExpiryDuration)
     }],
     destination_transfers: [{
-      type: ledgers.getType(this.destination_ledger),
-      ledger: this.destination_ledger,
+      type: ledgers.getType(query.destination_ledger),
+      ledger: query.destination_ledger,
       debits: [
-        ledgers.makeFundTemplate(this.destination_ledger, {amount: destination_amount})
+        ledgers.makeFundTemplate(query.destination_ledger, {amount: destination_amount})
       ],
       credits: [{
-        account: this.destination_account,
+        account: query.destination_account,
         amount: destination_amount
       }],
-      expiry_duration: String(this.destinationExpiryDuration)
+      expiry_duration: String(query.destinationExpiryDuration)
     }]
   }
   return payment
@@ -240,7 +249,7 @@ function * getAccountLedger (account) {
   })
   const ledger = res.body && res.body.ledger
   if (res.statusCode !== 200 || !ledger) {
-    throw new Error('Unable to identify ledger from account: ' + account)
+    throw new ExternalError('Unable to identify ledger from account: ' + account)
   }
   return ledger
 }
