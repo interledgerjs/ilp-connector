@@ -29,7 +29,7 @@
     "node": ">=4.0.0"
   },
   "dependencies": {
-    "five-bells-shared": "~8.7.0",
+    "five-bells-shared": "~8.10.0",
     "bignumber.js": "^2.0.7",
     "co": "^4.1.0",
     "co-body": "^4.0.0",
