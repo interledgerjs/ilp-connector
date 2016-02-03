@@ -2,15 +2,15 @@
 const parseURL = require('url').parse
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
-const config = require('../services/config')
+const config = require('five-bells-connector')._test.config
 config.tradingPairs = require('./data/tradingPairs')
-const app = require('../app')
+const app = require('five-bells-connector').app
 const ratesResponse = require('./data/fxRates.json')
 const validate = require('five-bells-shared/services/validate')
 const appHelper = require('./helpers/app')
-const logger = require('../services/log')
-const backend = require('../services/backend')
-const balanceCache = require('../services/balance-cache')
+const logger = require('five-bells-connector')._test.logger
+const backend = require('five-bells-connector')._test.backend
+const balanceCache = require('five-bells-connector')._test.balanceCache
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 

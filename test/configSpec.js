@@ -1,6 +1,6 @@
 'use strict'
 
-const Config = require('../lib/config')
+const Config = require('five-bells-connector')._test.Config
 const expect = require('chai').expect
 
 describe('ConnectorConfig', function () {

@@ -3,7 +3,7 @@
 const BigNumber = require('bignumber.js')
 const nock = require('nock')
 const expect = require('chai').expect
-const BalanceCache = require('../lib/balance-cache')
+const BalanceCache = require('five-bells-connector')._test.BalanceCache
 
 describe('BalanceCache', function () {
   beforeEach(function *() {

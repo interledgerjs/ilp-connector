@@ -31,7 +31,15 @@ function listen () {
 module.exports = {
   app: app,
   listen: listen,
-  addLedger: ledgers.addLedger.bind(ledgers)
+  addLedger: ledgers.addLedger.bind(ledgers),
+  _test: {
+    BalanceCache: require('./lib/balance-cache'),
+    balanceCache: require('./services/balance-cache'),
+    Config: require('./lib/config'),
+    config: require('./services/config'),
+    logger: require('./services/log'),
+    backend: require('./services/backend')
+  }
 }
 
 if (!module.parent) {

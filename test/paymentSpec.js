@@ -5,11 +5,11 @@ const sinon = require('sinon')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const moment = require('moment')
-const config = require('../services/config')
+const config = require('five-bells-connector')._test.config
 config.tradingPairs = require('./data/tradingPairs')
-const app = require('../app')
-const logger = require('../services/log')
-const backend = require('../services/backend')
+const app = require('five-bells-connector').app
+const logger = require('five-bells-connector')._test.logger
+const backend = require('five-bells-connector')._test.backend
 const appHelper = require('./helpers/app')
 const logHelper = require('five-bells-shared/testHelpers/log')
 const ratesResponse = require('./data/fxRates.json')
