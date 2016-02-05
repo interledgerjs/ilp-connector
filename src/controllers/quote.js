@@ -151,29 +151,29 @@ function * makeQuoteQuery (params) {
 
   // Check destination_expiry_duration
   if (destinationExpiryDuration) {
-    if (destinationExpiryDuration > config.expiry.maxHoldTime) {
+    if (destinationExpiryDuration > config.getIn(['expiry', 'maxHoldTime'])) {
       throw new UnacceptableExpiryError('Destination expiry duration ' +
         'is too long, destinationExpiryDuration: ' + destinationExpiryDuration +
-        ', maxHoldTime: ' + config.expiry.maxHoldTime)
+        ', maxHoldTime: ' + config.getIn(['expiry', 'maxHoldTime']))
     }
   } else if (sourceExpiryDuration) {
-    destinationExpiryDuration = sourceExpiryDuration - config.expiry.minMessageWindow
+    destinationExpiryDuration = sourceExpiryDuration - config.getIn(['expiry', 'minMessageWindow'])
   } else {
-    destinationExpiryDuration = config.expiry.maxHoldTime
+    destinationExpiryDuration = config.getIn(['expiry', 'maxHoldTime'])
   }
 
   // Check difference between destination_expiry_duration
   // and source_expiry_duration
   if (sourceExpiryDuration) {
     if (sourceExpiryDuration - destinationExpiryDuration <
-      config.expiry.minMessageWindow) {
+      config.getIn(['expiry', 'minMessageWindow'])) {
       throw new UnacceptableExpiryError('The difference between the ' +
         'destination expiry duration and the source expiry duration ' +
         'is insufficient to ensure that we can execute the ' +
         'source transfers')
     }
   } else {
-    sourceExpiryDuration = destinationExpiryDuration + config.expiry.minMessageWindow
+    sourceExpiryDuration = destinationExpiryDuration + config.getIn(['expiry', 'minMessageWindow'])
   }
 
   let source_ledger = params.source_ledger

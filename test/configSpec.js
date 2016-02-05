@@ -1,25 +1,22 @@
 'use strict'
 
-const Config = require('five-bells-connector')._test.Config
+const _ = require('lodash')
+const loadConnectorConfig = require('five-bells-connector')._test.loadConnectorConfig
 const expect = require('chai').expect
 
 describe('ConnectorConfig', function () {
   describe('parseConnectorConfig', function () {
+    const env = _.cloneDeep(process.env)
+
     beforeEach(function *() {
-      process.env = {}
-      this.config = new Config()
-      this.config.parseServerConfig()
+      process.env = _.cloneDeep(env)
+      process.env.CONNECTOR_LEDGERS = JSON.stringify(require('./data/tradingPairs.json'))
+
+      this.config = loadConnectorConfig()
     })
 
     it('should auto-generate pairs', function *() {
-      process.env.CONNECTOR_LEDGERS = JSON.stringify([
-        'USD@https://usd-ledger.example',
-        'EUR@https://eur-ledger.example',
-        'AUD@https://aud-ledger.example'
-      ])
-      this.config.parseConnectorConfig()
-
-      expect(this.config.tradingPairs).to.deep.equal([[
+      expect(this.config.get('tradingPairs').toJS()).to.deep.equal([[
         'USD@https://usd-ledger.example',
         'EUR@https://eur-ledger.example'
       ], [

@@ -2,8 +2,6 @@
 const parseURL = require('url').parse
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
-const config = require('five-bells-connector')._test.config
-config.tradingPairs = require('./data/tradingPairs')
 const app = require('five-bells-connector').app
 const ratesResponse = require('./data/fxRates.json')
 const validate = require('five-bells-shared/services/validate')
@@ -39,7 +37,7 @@ describe('Quotes', function () {
     yield backend.connect(ratesResponse)
   })
 
-  afterEach(function * () {
+  afterEach(function () {
     nock.cleanAll()
   })
 

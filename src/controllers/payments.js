@@ -139,7 +139,7 @@ exports.put = function *(id) {
   if (typeof payment.id !== 'undefined') {
     requestUtil.assert.strictEqual(
       payment.id,
-      config.server.base_uri + this.originalUrl,
+      config.getIn(['server', 'base_uri']) + this.originalUrl,
       'Payment ID must match the one in the URL'
     )
   }
@@ -152,7 +152,7 @@ exports.put = function *(id) {
   }
 
   // Externally we want to use a full URI ID
-  payment.id = config.server.base_uri + '/payments/' + payment.id
+  payment.id = config.getIn(['server', 'base_uri']) + '/payments/' + payment.id
 
   this.status = 201
   this.body = payment

@@ -1,7 +1,7 @@
 'use strict'
 
 const config = require('./config')
-const Backend = require('../backends/' + config.backend)
+const Backend = require('../backends/' + config.get('backend'))
 
 if (!Backend) {
   throw new Error('Backend not found. The backend ' +
@@ -9,5 +9,5 @@ if (!Backend) {
 }
 
 module.exports = new Backend({
-  spread: config.fxSpread
+  spread: config.get('fxSpread')
 })

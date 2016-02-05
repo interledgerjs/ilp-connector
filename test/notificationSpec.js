@@ -2,8 +2,6 @@
 const _ = require('lodash')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
-const config = require('five-bells-connector')._test.config
-config.tradingPairs = require('./data/tradingPairs')
 const app = require('five-bells-connector').app
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
@@ -45,7 +43,7 @@ describe('Notifications', function () {
         _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'))
     })
 
-    afterEach(function () {
+    afterEach(function * () {
       nock.cleanAll()
       this.clock.restore()
     })

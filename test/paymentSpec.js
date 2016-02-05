@@ -5,14 +5,13 @@ const sinon = require('sinon')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const moment = require('moment')
-const config = require('five-bells-connector')._test.config
-config.tradingPairs = require('./data/tradingPairs')
 const app = require('five-bells-connector').app
 const logger = require('five-bells-connector')._test.logger
 const backend = require('five-bells-connector')._test.backend
 const appHelper = require('./helpers/app')
 const logHelper = require('five-bells-shared/testHelpers/log')
 const ratesResponse = require('./data/fxRates.json')
+const config = require('five-bells-connector')._test.config
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -50,7 +49,7 @@ describe('Payments', function () {
       _.cloneDeep(require('./data/transferStateExecuted.json'))
   })
 
-  afterEach(function () {
+  afterEach(function * () {
     nock.cleanAll()
     this.clock.restore()
   })
@@ -436,7 +435,7 @@ describe('Payments', function () {
         '/payments/')
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -476,7 +475,7 @@ describe('Payments', function () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -516,7 +515,7 @@ describe('Payments', function () {
         payment.destination_transfers[0].debits
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -556,7 +555,7 @@ describe('Payments', function () {
         payment.source_transfers[0].credits
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -637,7 +636,7 @@ describe('Payments', function () {
         '/payments/')
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -697,7 +696,7 @@ describe('Payments', function () {
         '/payments/')
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -749,7 +748,7 @@ describe('Payments', function () {
       })
 
       const connectorCredentials =
-      config.ledgerCredentials[payment.destination_transfers[0].ledger]
+      config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -810,7 +809,7 @@ describe('Payments', function () {
       })
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -870,7 +869,7 @@ describe('Payments', function () {
       })
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -931,7 +930,7 @@ describe('Payments', function () {
       })
 
       const connectorCredentials =
-      config.ledgerCredentials[payment.destination_transfers[0].ledger]
+      config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
       const submittedAuthorization =
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -995,7 +994,7 @@ describe('Payments', function () {
       }
 
       const connectorCredentials0 =
-      config.ledgerCredentials[payment.destination_transfers[0].ledger]
+      config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
       const submittedAuthorization0 =
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1009,7 +1008,7 @@ describe('Payments', function () {
         }))
 
       const connectorCredentials1 =
-      config.ledgerCredentials[payment.destination_transfers[1].ledger]
+      config.getIn(['ledgerCredentials', payment.destination_transfers[1], 'ledger'])
       const submittedAuthorization1 =
       nock(payment.destination_transfers[1].id)
         .put('')
@@ -1069,7 +1068,7 @@ describe('Payments', function () {
       }
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1127,7 +1126,7 @@ describe('Payments', function () {
       payment.source_transfers[0].state = 'executed'
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1173,7 +1172,7 @@ describe('Payments', function () {
       }
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1243,7 +1242,7 @@ describe('Payments', function () {
       }
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1310,7 +1309,7 @@ describe('Payments', function () {
       }
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1377,7 +1376,7 @@ describe('Payments', function () {
       }
 
       const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+        config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1438,7 +1437,7 @@ describe('Payments', function () {
       }
 
       const connectorCredentials =
-      config.ledgerCredentials[payment.destination_transfers[0].ledger]
+      config.getIn(['ledgerCredentials', payment.destination_transfers[0], 'ledger'])
       const submittedFeeTransfer =
       nock(payment.destination_fee_transfers[0].id)
         .put('')
