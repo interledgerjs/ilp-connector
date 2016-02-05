@@ -25,7 +25,7 @@ Subscriber.prototype.subscribePairs = function *(pairs) {
 Subscriber.prototype.subscribeLedger = function * (ledger) {
   log.info('subscribing to ' + ledger)
   yield ledgers.subscribe(ledger, {
-    uri: this.config.server.base_uri + '/notifications',
+    uri: this.config.getIn(['server', 'base_uri']) + '/notifications',
     transfer: this.putTransfer
   })
 }

@@ -8,12 +8,12 @@ const subscriber = require('./services/subscriber')
 const app = require('./app')
 
 function listen () {
-  app.listen(config.server.port)
+  app.listen(config.getIn(['server', 'port']))
 
-  log('app').info('connector listening on ' + config.server.bind_ip + ':' +
-    config.server.port)
-  log('app').info('public at ' + config.server.base_uri)
-  for (let pair of config.tradingPairs) {
+  log('app').info('connector listening on ' + config.getIn(['server', 'bind_ip']) + ':' +
+    config.getIn(['server', 'port']))
+  log('app').info('public at ' + config.getIn(['server', 'base_uri']))
+  for (let pair of config.get('tradingPairs')) {
     log('app').info('pair', pair)
   }
 
@@ -22,7 +22,7 @@ function listen () {
   co(function * () {
     yield backend.connect()
 
-    yield subscriber.subscribePairs(config.tradingPairs)
+    yield subscriber.subscribePairs(config.get('tradingPairs'))
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)
   })
@@ -35,7 +35,7 @@ module.exports = {
   _test: {
     BalanceCache: require('./lib/balance-cache'),
     balanceCache: require('./services/balance-cache'),
-    Config: require('./lib/config'),
+    loadConnectorConfig: require('./lib/config'),
     config: require('./services/config'),
     logger: require('./services/log'),
     backend: require('./services/backend')

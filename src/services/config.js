@@ -1,7 +1,5 @@
 'use strict'
 
-const ConnectorConfig = require('../lib/config')
+const loadConnectorConfig = require('../lib/config')
 
-const config = module.exports = new ConnectorConfig()
-config.parseServerConfig()
-config.parseConnectorConfig()
+module.exports = loadConnectorConfig()

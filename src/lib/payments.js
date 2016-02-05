@@ -178,12 +178,12 @@ Payments.prototype.validateExpiry = function * (payment) {
 
 Payments.prototype.amountFinder = function (ledger, creditOrDebit) {
   // TODO: we need a more elegant way of handling assets that we don't trade
-  if (!this.config.ledgerCredentials[ledger]) {
+  if (!this.config.getIn(['ledgerCredentials', ledger])) {
     throw new AssetsNotTradedError('This connector does not support ' +
       'the given asset pair')
   }
 
-  const accountUri = this.config.ledgerCredentials[ledger].account_uri
+  const accountUri = this.config.getIn(['ledgerCredentials', ledger, 'account_uri'])
 
   return (creditOrDebit.account === accountUri
     ? new BigNumber(creditOrDebit.amount)
@@ -329,7 +329,7 @@ Payments.prototype.validateFee = function * (payment) {
     convertToLedger: convertToLedger,
     noErrors: true
   })
-  const costOfHeldFunds = new BigNumber(this.config.expiry.feePercentage)
+  const costOfHeldFunds = new BigNumber(this.config.getIn(['expiry', 'feePercentage']))
     .div(100).times(destinationDebitEquivalent)
 
   // Calculate how much we're supposed to pay out in fees
@@ -367,7 +367,7 @@ Payments.prototype.addAuthorizationToTransfers = function (transfers) {
   let credentials
   for (const transfer of transfers) {
     for (const debit of transfer.debits) {
-      credentials = this.config.ledgerCredentials[transfer.ledger]
+      credentials = this.config.getIn(['ledgerCredentials', transfer.ledger])
       if (!credentials) {
         continue
       }

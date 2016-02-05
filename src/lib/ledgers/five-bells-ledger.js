@@ -70,7 +70,7 @@ FiveBellsLedger.prototype.putTransfer = function * (transfer) {
 
 FiveBellsLedger.prototype.subscribe = function * (target_uri) {
   let account_uri = this.credentials.account_uri
-  if (config.features.debugAutoFund) yield this._autofund()
+  if (config.getIn(['features', 'debugAutoFund'])) yield this._autofund()
   let subscribeRes = yield request_retry({
     method: 'put',
     url: this.id + '/subscriptions/' + notificationUuid,
@@ -96,12 +96,12 @@ FiveBellsLedger.prototype._autofund = function * () {
   yield request_retry({
     method: 'put',
     url: this.credentials.account_uri,
-    auth: config.admin,
+    auth: config.get('admin').toJS(),
     json: true,
     body: {
       name: this.credentials.username,
       balance: '1500000',
-      connector: config.server.base_uri,
+      connector: config.getIn(['server', 'base_uri']),
       password_hash: (yield hashPassword(this.credentials.password))
     }
   }, 'could not create account at ledger ' + this.id)

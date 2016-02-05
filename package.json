@@ -21,7 +21,7 @@
     "start": "node src/index.js",
     "start:watch": "nodemon src/index.js",
     "lint": "eslint .",
-    "test": "NODE_ENV=unit node node_modules/.bin/istanbul test -- _mocha -r co-mocha",
+    "test": "istanbul test -- _mocha",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
     "apidoc": "apidoc -o apidoc-out -i src/controllers/"
   },
@@ -29,7 +29,7 @@
     "node": ">=4.0.0"
   },
   "dependencies": {
-    "five-bells-shared": "~8.10.0",
+    "five-bells-shared": "~9.0.0",
     "bignumber.js": "^2.0.7",
     "co": "^4.1.0",
     "co-body": "^4.0.0",

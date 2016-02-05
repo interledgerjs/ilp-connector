@@ -18,10 +18,10 @@ function TransferTester (config, payment) {
   this.expiryByCase = {}
 
   // TODO use a more intelligent value for the minMessageWindow
-  this.minMessageWindow = config.expiry.minMessageWindow * 1000
+  this.minMessageWindow = config.getIn(['expiry', 'minMessageWindow']) * 1000
   // TODO use a better value for the minExecutionWindow
   this.minExecutionWindow = this.minMessageWindow
-  this.maxHoldTime = config.expiry.maxHoldTime * 1000
+  this.maxHoldTime = config.getIn(['expiry', 'maxHoldTime']) * 1000
 }
 
 TransferTester.prototype.getExpiry = function (transfer) {
