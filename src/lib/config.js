@@ -31,7 +31,7 @@ function getLocalConfig () {
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
 
   const features = {}
-  features.debugAutoFund = Config.castBool(Config.getEnv('DEBUG_AUTOFUND'))
+  features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
 
   const admin = Config.getEnv(envPrefix, 'ADMIN_PASS') && {
     user: Config.getEnv(envPrefix, 'ADMIN_USER') || 'admin',
@@ -64,10 +64,10 @@ function getLocalConfig () {
   //      "password": "..."
   //    }
   // }
-  let ledgerCredentials = JSON.parse(Config.getEnv('CREDENTIALS') || '{}')
+  let ledgerCredentials = JSON.parse(Config.getEnv(envPrefix, 'CREDENTIALS') || '{}')
 
   let server = {}
-  if (isRunningTests) {
+  if (isRunningTests()) {
     server.base_uri = 'http://localhost'
     ledgerCredentials = {
       'http://cad-ledger.example/CAD': {
