@@ -1,4 +1,5 @@
 'use strict'
+const lodash = require('lodash')
 const request = require('co-request')
 const uuid = require('uuid4')
 const validate = require('five-bells-shared/services/validate')
@@ -38,33 +39,48 @@ FiveBellsLedger.prototype.getState = function (transfer) {
 }
 
 FiveBellsLedger.prototype.putTransfer = function * (transfer) {
+  const updatedTransfer = yield this._request({
+    method: 'put',
+    uri: transfer.id,
+    body: transfer
+  })
+  updateTransfer(transfer, updatedTransfer)
+}
+
+FiveBellsLedger.prototype.putTransferFulfillment = function * (transfer, execution_condition_fulfillment) {
+  const updatedTransfer = yield this._request({
+    method: 'put',
+    uri: transfer.id + '/fulfillment',
+    body: execution_condition_fulfillment
+  })
+  updateTransfer(transfer, updatedTransfer)
+}
+
+FiveBellsLedger.prototype._request = function * (opts) {
   // TODO: check before this point that we actually have
   // credentials for the ledgers we're asked to settle between
-  let credentials = this.credentials
-  let transferReq = yield request({
-    method: 'put',
+  const credentials = this.credentials
+  const transferRes = yield request(lodash.defaults(opts, {
     auth: credentials && {
       user: credentials.username,
       pass: credentials.password
     },
-    uri: transfer.id,
-    body: transfer,
     json: true
-  })
+  }))
   // TODO for source transfers: handle this so we actually get our money back
-  if (transferReq.statusCode >= 400) {
-    log.error('remote error while authorizing transfer')
-    log.debug(transferReq.body)
-    throw new ExternalError('Received an unexpected ' +
-      transferReq.body.id + ' while processing transfer.')
+  if (transferRes.statusCode >= 400) {
+    throw new ExternalError('Remote error: status=' + transferRes.statusCode + ' body=' + transferRes.body)
   }
+  return transferRes.body
+}
 
-  // Update destination_transfer state from the ledger's response
-  transfer.state = transferReq.body.state
+// Update destination_transfer state from the ledger's response
+function updateTransfer (transfer, updatedTransfer) {
+  transfer.state = updatedTransfer.state
   if (transfer.state === 'executed' &&
   !transfer.execution_condition_fulfillment) {
     transfer.execution_condition_fulfillment =
-      transferReq.body.execution_condition_fulfillment
+      updatedTransfer.execution_condition_fulfillment
   }
 }
 

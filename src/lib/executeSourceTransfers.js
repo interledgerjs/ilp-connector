@@ -66,7 +66,10 @@ function * executeSourceTransfers (source_transfers, destination_transfers) {
 
   for (let sourceTransfer of source_transfers) {
     log.debug('requesting fulfillment of source transfer')
-    yield ledgers.putTransfer(sourceTransfer)
+    const transferFulfillment = sourceTransfer.execution_condition_fulfillment
+    if (transferFulfillment) {
+      yield ledgers.putTransferFulfillment(sourceTransfer, transferFulfillment)
+    }
 
     if (sourceTransfer.state !== 'executed') {
       log.error('Attempted to execute source transfer but it was unsucessful')
