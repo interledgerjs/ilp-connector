@@ -31,7 +31,7 @@ Multiledger.prototype.validatePayment = function (payment) {
 }
 
 Multiledger.prototype.buildLedger = function (ledger_id) {
-  let creds = this.config.getIn(['ledgerCredentials', ledger_id])
+  let creds = this.config.getIn(['ledgerCredentials', ledger_id]).toJS()
   let Ledger = this.ledger_types[creds.type]
   return new Ledger({
     ledger_id: ledger_id,

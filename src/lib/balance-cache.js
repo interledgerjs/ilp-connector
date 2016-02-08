@@ -20,7 +20,7 @@ BalanceCache.prototype.load = function * (ledger) {
   clearInterval(this.timer)
   this.timer = setInterval(this.reset.bind(this), 60000).unref()
 
-  const creds = this.config.getIn(['ledgerCredentials', ledger])
+  const creds = this.config.getIn(['ledgerCredentials', ledger]).toJS()
   let res
   try {
     res = yield request({

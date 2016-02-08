@@ -13,7 +13,7 @@ function listen () {
   log('app').info('connector listening on ' + config.getIn(['server', 'bind_ip']) + ':' +
     config.getIn(['server', 'port']))
   log('app').info('public at ' + config.getIn(['server', 'base_uri']))
-  for (let pair of config.get('tradingPairs')) {
+  for (let pair of config.get('tradingPairs').toJS()) {
     log('app').info('pair', pair)
   }
 
@@ -22,7 +22,7 @@ function listen () {
   co(function * () {
     yield backend.connect()
 
-    yield subscriber.subscribePairs(config.get('tradingPairs'))
+    yield subscriber.subscribePairs(config.get('tradingPairs').toJS())
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)
   })

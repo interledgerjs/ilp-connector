@@ -33,7 +33,7 @@ const config = require('../services/config')
  */
 /* eslint-enable */
 exports.getCollection = function * getCollection () {
-  let pairs = config.get('tradingPairs').map(function (pair) {
+  let pairs = config.get('tradingPairs').toJS().map(function (pair) {
     let currencies = pair.map(function (s) {
       return s.split('@')
     })
