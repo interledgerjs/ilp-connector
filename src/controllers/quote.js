@@ -210,8 +210,13 @@ function makeQuoteArgs (query) {
 }
 
 function makePaymentTemplate (query, quote) {
-  const source_amount = quote.source_amount.toFixed(2, 2)
-  const destination_amount = quote.destination_amount.toFixed(2)
+  // The connector will round up the source amounts and round down destination amounts
+  // This fixes a bug where the connector would not accept the quote's values as a payment because of rounding
+  // This rounding method will slightly favor the connector, giving it a marginally better rate than the absolute minimum it would have accepted
+  // TODO it would probably be good to be more precise than 2 decimal places
+  const source_amount = quote.source_amount.toFixed(2, BigNumber.ROUND_UP)
+  const destination_amount = quote.destination_amount.toFixed(2, BigNumber.ROUND_DOWN)
+
   const payment = {
     source_transfers: [{
       type: ledgers.getType(query.source_ledger),
