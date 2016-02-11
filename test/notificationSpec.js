@@ -193,12 +193,10 @@ describe('Notifications', function () {
         .reply(200, this.transferExecutedReceipt)
 
       let sourceTransferExecuted = nock(payment.source_transfers[0].id)
-        .put('', _.assign({}, payment.source_transfers[0], {
-          execution_condition_fulfillment: {
-            type: 'ed25519-sha512',
-            signature: this.transferExecutedReceipt.signature
-          }
-        }))
+        .put('/fulfillment', {
+          type: 'ed25519-sha512',
+          signature: this.transferExecutedReceipt.signature
+        })
         .reply(201, _.assign({}, payment.source_transfers[0], {
           state: 'executed'
         }))
@@ -234,10 +232,9 @@ describe('Notifications', function () {
         }))
 
       let sourceTransferExecuted = nock(payment.source_transfers[0].id)
-        .put('', _.assign({}, payment.source_transfers[0], {
-          execution_condition_fulfillment: this.notificationWithConditionFulfillment
-            .resource.execution_condition_fulfillment
-        }))
+        .put('/fulfillment',
+          this.notificationWithConditionFulfillment
+            .resource.execution_condition_fulfillment)
         .reply(201, _.assign({}, payment.source_transfers[0], {
           state: 'executed'
         }))
@@ -273,18 +270,16 @@ describe('Notifications', function () {
         }))
 
       let firstSourceTransferExecuted = nock(payment.source_transfers[0].id)
-        .put('', _.assign({}, payment.source_transfers[0], {
-          execution_condition_fulfillment: this.notificationWithConditionFulfillment
-            .resource.execution_condition_fulfillment
-        }))
+        .put('/fulfillment',
+          this.notificationWithConditionFulfillment
+            .resource.execution_condition_fulfillment)
         .reply(201, _.assign({}, payment.source_transfers[0], {
           state: 'executed'
         }))
       let secondSourceTransferExecuted = nock(payment.source_transfers[1].id)
-        .put('', _.assign({}, payment.source_transfers[1], {
-          execution_condition_fulfillment: this.notificationWithConditionFulfillment
-            .resource.execution_condition_fulfillment
-        }))
+        .put('/fulfillment',
+          this.notificationWithConditionFulfillment
+            .resource.execution_condition_fulfillment)
         .reply(201, _.assign({}, payment.source_transfers[1], {
           state: 'executed'
         }))
@@ -330,20 +325,17 @@ describe('Notifications', function () {
           .reply(200, this.transferExecutedReceipt)
 
         let firstSourceTransferExecuted = nock(payment.source_transfers[0].id)
-          .put('', _.assign({}, payment.source_transfers[0], {
-            execution_condition_fulfillment: {
-              type: 'ed25519-sha512',
-              signature: this.transferExecutedReceipt.signature
-            }
-          }))
+          .put('/fulfillment', {
+            type: 'ed25519-sha512',
+            signature: this.transferExecutedReceipt.signature
+          })
           .reply(201, _.assign({}, payment.source_transfers[0], {
             state: 'executed'
           }))
         let secondSourceTransferExecuted = nock(payment.source_transfers[1].id)
-          .put('', _.assign({}, payment.source_transfers[1], {
-            execution_condition_fulfillment: this.notificationWithConditionFulfillment
-              .resource.execution_condition_fulfillment
-          }))
+          .put('/fulfillment',
+            this.notificationWithConditionFulfillment
+              .resource.execution_condition_fulfillment)
           .reply(201, _.assign({}, payment.source_transfers[1], {
             state: 'executed'
           }))
@@ -380,10 +372,9 @@ describe('Notifications', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('', _.assign({}, payment.source_transfers[0], {
-          execution_condition_fulfillment: this.notificationWithConditionFulfillment
-            .resource.execution_condition_fulfillment
-        }))
+        .put('/fulfillment',
+          this.notificationWithConditionFulfillment
+            .resource.execution_condition_fulfillment)
         .reply(201, _.assign({}, payment.source_transfers[0], {
           state: 'executed'
         }))

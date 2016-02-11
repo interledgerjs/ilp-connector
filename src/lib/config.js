@@ -27,7 +27,7 @@ function getLocalConfig () {
 
   // Currency pairs traded should be specified as
   // [["USD@http://usd-ledger.example/USD","EUR@http://eur-ledger.example"],...]
-  const tradingPairs =
+  let tradingPairs =
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
 
   const features = {}
@@ -90,6 +90,9 @@ function getLocalConfig () {
         username: 'mark',
         password: 'mark'
       }
+    }
+    if (!tradingPairs.length) {
+      tradingPairs = require('../../test/data/tradingPairs.json')
     }
   }
 

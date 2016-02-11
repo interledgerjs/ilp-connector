@@ -21,7 +21,7 @@
     "start": "node src/index.js",
     "start:watch": "nodemon src/index.js",
     "lint": "eslint .",
-    "test": "istanbul test -- _mocha",
+    "test": "istanbul test -- _mocha -r co-mocha",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
     "apidoc": "apidoc -o apidoc-out -i src/controllers/"
   },
