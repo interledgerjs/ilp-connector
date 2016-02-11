@@ -3,8 +3,8 @@ const request = require('co-request')
 const BigNumber = require('bignumber.js')
 const ExternalError = require('../errors/external-error')
 
-function BalanceCache (config) {
-  this.config = config
+function BalanceCache (ledgerCredentials) {
+  this.ledgerCredentials = ledgerCredentials
   this.balanceByLedger = {}
   this.timer = null
 }
@@ -20,7 +20,7 @@ BalanceCache.prototype.load = function * (ledger) {
   clearInterval(this.timer)
   this.timer = setInterval(this.reset.bind(this), 60000).unref()
 
-  const creds = this.config.getIn(['ledgerCredentials', ledger]).toJS()
+  const creds = this.ledgerCredentials[ledger]
   let res
   try {
     res = yield request({

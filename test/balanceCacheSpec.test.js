@@ -8,12 +8,10 @@ const BalanceCache = require('five-bells-connector')._test.BalanceCache
 describe('BalanceCache', function () {
   beforeEach(function *() {
     this.cache = new BalanceCache({
-      ledgerCredentials: {
-        'http://ledger-ok.local': {
-          account_uri: 'http://ledger-ok.local',
-          username: 'bob',
-          password: 'bob'
-        }
+      'http://ledger-ok.local': {
+        account_uri: 'http://ledger-ok.local',
+        username: 'bob',
+        password: 'bob'
       }
     })
 

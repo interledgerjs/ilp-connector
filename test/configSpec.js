@@ -10,7 +10,12 @@ describe('ConnectorConfig', function () {
 
     beforeEach(function *() {
       process.env = _.cloneDeep(env)
-      process.env.CONNECTOR_LEDGERS = JSON.stringify(require('./data/tradingPairs.json'))
+      process.env.CONNECTOR_LEDGERS = JSON.stringify([
+        'USD@https://usd-ledger.example',
+        'EUR@https://eur-ledger.example',
+        'AUD@https://aud-ledger.example'
+      ])
+      process.env.CONNECTOR_PAIRS = ''
 
       this.config = loadConnectorConfig()
     })
