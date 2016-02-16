@@ -20,19 +20,6 @@
     "expires_at": "2015-06-16T00:00:12.000Z",
     "state": "prepared"
   }],
-  "source_fee_transfers": [{
-    "id": "http://usd-ledger.example/USD/transfers/4e1362c5-f4ef-466d-81ad-85d42c38a5e3",
-    "ledger":"http://usd-ledger.example/USD",
-    "debits": [{
-      "amount": ".002",
-      "account": "http://usd-ledger.example/accounts/alice"
-    }],
-    "credits": [{
-      "amount": ".002",
-      "account": "http://usd-ledger.example/accounts/mark"
-    }],
-    "state": "executed"
-  }],
   "destination_transfers":[{
     "id": "http://eur-ledger.example/EUR/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
     "ledger":"http://eur-ledger.example/EUR",
