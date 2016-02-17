@@ -1,76 +1,36 @@
 'use strict'
 
-const _ = require('lodash')
 const ledgers = require('../services/ledgers')
 const log = require('../services/log')('executeSourceTransfers')
-const ExternalError = require('../errors/external-error')
-
-function * addConditionFulfillments (source_transfers, destination_transfers) {
-  for (let sourceTransfer of source_transfers) {
-    // Check if the source transfer's execution_condition is
-    // the execution of the destination transfer
-    let conditionsAreEqual = _.every(destination_transfers,
-      function (destinationTransfer) {
-        return _.isEqual(sourceTransfer.execution_condition,
-          destinationTransfer.execution_condition)
-      })
-
-    if (conditionsAreEqual) {
-      let transferWithConditionFulfillment = _.find(destination_transfers, (transfer) => {
-        return transfer.execution_condition_fulfillment
-      })
-
-      if (transferWithConditionFulfillment) {
-        sourceTransfer.execution_condition_fulfillment =
-          transferWithConditionFulfillment.execution_condition_fulfillment
-      } else {
-        log.warn('attempting to add execution_condition_fulfillment to source transfers ' +
-          'but none of the destination transfers have execution_condition_fulfillments')
-      }
-    } else {
-      // we know there is only one destination transfer
-
-      log.debug('checking destination transfer state')
-
-      let destinationTransferStateReq = yield ledgers.getState(
-        destination_transfers[0])
-
-      // TODO: add retry logic
-      if (destinationTransferStateReq.statusCode >= 400) {
-        log.error('remote error while checking destination transfer state')
-        throw new ExternalError('Received an unexpected ' +
-          destinationTransferStateReq.body.id +
-          ' while checking destination transfer state ' +
-          destination_transfers[0].id)
-      }
-
-      // TODO: validate that this actually comes back in the right format
-
-      if (destinationTransferStateReq.body.message &&
-        destinationTransferStateReq.body.message.state !== 'executed') {
-        log.warn('destination transfer not yet executed')
-      } else {
-        sourceTransfer.execution_condition_fulfillment = {
-          type: destinationTransferStateReq.body.type,
-          signature: destinationTransferStateReq.body.signature
-        }
-      }
-    }
-  }
-}
 
 // Add the execution_condition_fulfillment to the source transfer
 // and submit it to the source ledger
-function * executeSourceTransfers (source_transfers, destination_transfers) {
-  yield addConditionFulfillments(source_transfers, destination_transfers)
+function * executeSourceTransfers (sourceTransfers, destinationTransfers, relatedResources) {
+  let conditionFulfillment
+  if (relatedResources && relatedResources.execution_condition_fulfillment) {
+    conditionFulfillment = relatedResources.execution_condition_fulfillment
+  }
 
-  for (let sourceTransfer of source_transfers) {
-    log.debug('requesting fulfillment of source transfer')
-    const transferFulfillment = sourceTransfer.execution_condition_fulfillment
-    if (transferFulfillment) {
-      yield ledgers.putTransferFulfillment(sourceTransfer, transferFulfillment)
+  // This is a feature that will likely be deprecated.
+  // Right now we can use the last ledger's transfer state receipt as the execution_condition_fulfillment
+  if (!conditionFulfillment) {
+    const stateReceipt = yield ledgers.getState(destinationTransfers[0])
+    if (stateReceipt.type && stateReceipt.signature) {
+      conditionFulfillment = {
+        type: stateReceipt.type,
+        signature: stateReceipt.signature
+      }
+    } else {
+      log.error('Got invalid state receipt: ' + JSON.stringify(stateReceipt))
     }
+  }
 
+  for (let sourceTransfer of sourceTransfers) {
+    log.debug('Requesting fulfillment of source transfer: ' + sourceTransfer.id + ' (fulfillment: ' + JSON.stringify(conditionFulfillment) + ')')
+    // TODO check the timestamp on the response from the ledger against
+    // the transfer's expiry date
+    // See https://github.com/interledger/five-bells-ledger/issues/149
+    yield ledgers.putTransferFulfillment(sourceTransfer, conditionFulfillment)
     if (sourceTransfer.state !== 'executed') {
       log.error('Attempted to execute source transfer but it was unsucessful')
       log.debug(sourceTransfer)
