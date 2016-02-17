@@ -3,7 +3,6 @@ const lodash = require('lodash')
 const request = require('co-request')
 const uuid = require('uuid4')
 const validate = require('five-bells-shared/services/validate')
-const hashPassword = require('five-bells-shared/utils/hashPassword')
 const config = require('../../services/config')
 const log = require('../../services/log')('fiveBellsLedger')
 const ExternalError = require('../../errors/external-error')
@@ -118,7 +117,7 @@ FiveBellsLedger.prototype._autofund = function * () {
       name: this.credentials.username,
       balance: '1500000',
       connector: config.getIn(['server', 'base_uri']),
-      password_hash: (yield hashPassword(this.credentials.password))
+      password: this.credentials.password
     }
   }, 'could not create account at ledger ' + this.id)
 }
