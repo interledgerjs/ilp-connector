@@ -44,6 +44,10 @@ describe('Notifications', function () {
     })
 
     afterEach(function * () {
+      if (nock.pendingMocks() && nock.pendingMocks().length) {
+        console.log('Pending mocks: ', nock.pendingMocks())
+        throw new Error('Pending mocks')
+      }
       nock.cleanAll()
       this.clock.restore()
     })
@@ -152,17 +156,8 @@ describe('Notifications', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('', _.assign({}, payment.source_transfers[0], {
-          execution_condition_fulfillment: this.notificationWithConditionFulfillment
-            .resource.execution_condition_fulfillment
-        }))
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
-
-      nock(this.notificationWithConditionFulfillment.id)
-        .delete('')
-        .reply(200)
+        .put('/fulfillment', this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
+        .reply(201, this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
 
       yield this.request()
         .put('/payments/' + this.paymentSameExecutionCondition.id)
@@ -201,10 +196,6 @@ describe('Notifications', function () {
           state: 'executed'
         }))
 
-      nock(this.notificationNoConditionFulfillment.id)
-        .delete('')
-        .reply(200)
-
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
@@ -238,10 +229,6 @@ describe('Notifications', function () {
         .reply(201, _.assign({}, payment.source_transfers[0], {
           state: 'executed'
         }))
-
-      nock(this.notificationWithConditionFulfillment.id)
-        .delete('')
-        .reply(200)
 
       yield this.request()
         .put('/payments/' + this.paymentSameExecutionCondition.id)
@@ -284,10 +271,6 @@ describe('Notifications', function () {
           state: 'executed'
         }))
 
-      nock(this.notificationWithConditionFulfillment.id)
-        .delete('')
-        .reply(200)
-
       yield this.request()
         .put('/payments/' + this.paymentManyToOne.id)
         .send(payment)
@@ -320,8 +303,6 @@ describe('Notifications', function () {
 
         nock(payment.destination_transfers[0].id)
           .get('/state')
-          .reply(200, this.transferProposedReceipt)
-          .get('/state')
           .reply(200, this.transferExecutedReceipt)
 
         let firstSourceTransferExecuted = nock(payment.source_transfers[0].id)
@@ -339,10 +320,6 @@ describe('Notifications', function () {
           .reply(201, _.assign({}, payment.source_transfers[1], {
             state: 'executed'
           }))
-
-        nock(this.notificationWithConditionFulfillment.id)
-          .delete('')
-          .reply(200)
 
         yield this.request()
           .put('/payments/' + this.paymentManyToOne.id)
