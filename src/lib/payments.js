@@ -9,8 +9,6 @@ const ExternalError = require('../errors/external-error')
 const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
-// const InsufficientFeeError =
-  // require('../errors/insufficient-fee-error')
 const NoRelatedSourceCreditError =
   require('../errors/no-related-source-credit-error')
 const NoRelatedDestinationDebitError =
@@ -295,62 +293,6 @@ Payments.prototype.validateRate = function * (payment) {
   }
 }
 
-Payments.prototype.validateFee = function * (payment) {
-  // Determine which ledger's asset we will convert all
-  // of the others to
-  let convertToLedger
-  if (payment.source_transfers.length === 1) {
-    convertToLedger = payment.source_transfers[0].ledger
-  } else {
-    convertToLedger = payment.destination_transfers[0].ledger
-  }
-
-  // TODO: make sure the source_fee_transfers have been executed
-  const sourceFeesEquivalent =
-  yield this.calculateAmountEquivalent({
-    transfers: payment.source_fee_transfers,
-    transferSide: 'source',
-    creditsOrDebits: 'credits',
-    convertToLedger: convertToLedger,
-    noErrors: true
-  })
-
-  if (sourceFeesEquivalent.eq(0)) {
-    // throw new InsufficientFeeError('Source fee transfer ' +
-    //   'must be paid to account for cost of holding funds')
-  }
-
-  // Calculate cost of held funds
-  const destinationDebitEquivalent =
-  yield this.calculateAmountEquivalent({
-    transfers: payment.destination_transfers,
-    transferSide: 'destination',
-    creditsOrDebits: 'debits',
-    convertToLedger: convertToLedger,
-    noErrors: true
-  })
-  const costOfHeldFunds = new BigNumber(this.config.getIn(['expiry', 'feePercentage']))
-    .div(100).times(destinationDebitEquivalent)
-
-  // Calculate how much we're supposed to pay out in fees
-  const destinationFeesEquivalent =
-  yield this.calculateAmountEquivalent({
-    transfers: payment.destination_fee_transfers,
-    transferSide: 'destination',
-    creditsOrDebits: 'debits',
-    convertToLedger: convertToLedger,
-    noErrors: true
-  })
-
-  const totalCost = costOfHeldFunds.plus(destinationFeesEquivalent)
-
-  if (sourceFeesEquivalent.lt(totalCost)) {
-    // throw new InsufficientFeeError('Source fees are ' +
-    //   'insufficient to cover the cost of holding funds ' +
-    //   'and paying the fees for the destination transfers')
-  }
-}
-
 function validateOneToManyOrManyToOne (payment) {
   if (payment.source_transfers.length > 1 &&
     payment.destination_transfers.length > 1) {
@@ -411,7 +353,6 @@ Payments.prototype.validate = function * (payment) {
 
   yield this.validateExpiry(payment)
   yield this.validateRate(payment)
-  yield this.validateFee(payment)
   validateExecutionConditions(payment)
   yield this.validateExecutionConditionPublicKey(payment)
 
@@ -419,12 +360,6 @@ Payments.prototype.validate = function * (payment) {
 }
 
 Payments.prototype.settle = function * (payment) {
-  if (payment.destination_fee_transfers) {
-    log.debug('submitting destination fee transfers')
-    this.addAuthorizationToTransfers(payment.destination_fee_transfers)
-    yield this.submitTransfers(payment.destination_fee_transfers)
-  }
-
   log.debug('submitting destination transfers')
   this.addAuthorizationToTransfers(payment.destination_transfers)
   yield this.submitTransfers(payment.destination_transfers,

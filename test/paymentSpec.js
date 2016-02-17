@@ -41,8 +41,6 @@ describe('Payments', function () {
       _.cloneDeep(require('./data/paymentManyToOne.json'))
     this.paymentManyToMany =
       _.cloneDeep(require('./data/paymentManyToMany.json'))
-    this.paymentWithDestinationFeeTransfers =
-      _.cloneDeep(require('./data/paymentWithDestinationFeeTransfers.json'))
     this.transferProposedReceipt =
       _.cloneDeep(require('./data/transferStateProposed.json'))
     this.transferExecutedReceipt =
@@ -400,24 +398,6 @@ describe('Payments', function () {
 
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
-        .send(payment)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('InsufficientFeeError')
-          expect(res.body.message).to.equal('Source fees are insufficient ' +
-            'to cover the cost of holding funds and paying the fees for ' +
-            'the destination transfers')
-        })
-        .end()
-    })
-
-    it.skip('should return a 422 if the source transfer rejection_credits cover the cost of holding funds but there are rejection_credits on the destination side that take more money from our account', function *() {
-      const payment = this.formatId(this.paymentWithDestinationFeeTransfers,
-        '/payments/')
-      payment.destination_fee_transfers[0].debits[0].amount = '.9998'
-
-      yield this.request()
-        .put('/payments/' + this.paymentSameExecutionCondition.id)
         .send(payment)
         .expect(422)
         .expect(function (res) {
@@ -1422,56 +1402,6 @@ describe('Payments', function () {
           }]
         }))
         .end()
-    })
-
-    it('should execute the destination_fee_transfers immediately if present and all the other checks pass', function *() {
-      const payment = this.formatId(this.paymentWithDestinationFeeTransfers,
-        '/payments/')
-
-      const fulfillment = {
-        type: 'ed25519-sha512',
-        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
-          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
-      }
-
-      const connectorCredentials =
-      config.ledgerCredentials[payment.destination_transfers[0].ledger]
-      const submittedFeeTransfer =
-      nock(payment.destination_fee_transfers[0].id)
-        .put('')
-        .basicAuth({
-          user: connectorCredentials.username,
-          pass: connectorCredentials.password
-        })
-        .reply(201, _.assign({}, payment.destination_fee_transfers[0], {
-          state: 'executed'
-        }))
-
-      nock(payment.destination_transfers[0].id)
-        .put('')
-        .basicAuth({
-          user: connectorCredentials.username,
-          pass: connectorCredentials.password
-        })
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      yield this.request()
-        .put('/payments/' + this.paymentWithDestinationFeeTransfers.id)
-        .send(payment)
-        .expect(201)
-        .end()
-
-      submittedFeeTransfer.done()
     })
   })
 

@@ -145,22 +145,22 @@ describe('Quotes', function () {
             ledger: 'http://eur-ledger.example/EUR',
             debits: [{
               account: null,
-              amount: '100.00'
+              amount: '100.0000'
             }],
             credits: [{
               account: 'http://eur-ledger.example/accounts/mark',
-              amount: '100.00'
+              amount: '100.0000'
             }],
             expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
-              amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
+              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'http://usd-ledger.example/accounts/mark'
             }],
             credits: [{
-              amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
+              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
               account: null
             }],
             expiry_duration: '10'
@@ -181,22 +181,22 @@ describe('Quotes', function () {
             ledger: 'http://eur-ledger.example/EUR',
             debits: [{
               account: null,
-              amount: '94.61' // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate
+              amount: '94.6001' // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate
             }],
             credits: [{
               account: 'http://eur-ledger.example/accounts/mark',
-              amount: '94.61' // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate
+              amount: '94.6001' // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate
             }],
             expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
-              amount: '100.00',
+              amount: '100.0000',
               account: 'http://usd-ledger.example/accounts/mark'
             }],
             credits: [{
-              amount: '100.00',
+              amount: '100.0000',
               account: null
             }],
             expiry_duration: '10'
@@ -215,22 +215,22 @@ describe('Quotes', function () {
             ledger: 'http://eur-ledger.example/EUR',
             debits: [{
               account: null,
-              amount: '100.00'
+              amount: '100.0000'
             }],
             credits: [{
               account: 'http://eur-ledger.example/accounts/mark',
-              amount: '100.00'
+              amount: '100.0000'
             }],
             expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
-              amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
+              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
               account: 'http://usd-ledger.example/accounts/mark'
             }],
             credits: [{
-              amount: '105.71', // EUR/USD Rate of 1.0592 - .2% spread
+              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
               account: null
             }],
             expiry_duration: '10'
@@ -249,22 +249,22 @@ describe('Quotes', function () {
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               account: null,
-              amount: '100.00'
+              amount: '100.0000'
             }],
             credits: [{
               account: 'http://usd-ledger.example/accounts/mark',
-              amount: '100.00'
+              amount: '100.0000'
             }],
             expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://eur-ledger.example/EUR',
             debits: [{
-              amount: '94.22', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
+              amount: '94.2221', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
               account: 'http://eur-ledger.example/accounts/mark'
             }],
             credits: [{
-              amount: '94.22', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
+              amount: '94.2221', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
               account: null
             }],
             expiry_duration: '10'
@@ -283,22 +283,22 @@ describe('Quotes', function () {
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               account: null,
-              amount: '100.00'
+              amount: '100.0000'
             }],
             credits: [{
               account: 'http://usd-ledger.example/accounts/mark',
-              amount: '100.00'
+              amount: '100.0000'
             }],
             expiry_duration: '11'
           }],
           destination_transfers: [{
             ledger: 'http://cad-ledger.example/CAD',
             debits: [{
-              amount: '127.98', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
+              amount: '127.9815', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
               account: 'http://cad-ledger.example/accounts/mark'
             }],
             credits: [{
-              amount: '127.98', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
+              amount: '127.9815', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
               account: null
             }],
             expiry_duration: '10'
@@ -316,11 +316,11 @@ describe('Quotes', function () {
           source_transfers: [{
             ledger: 'http://cad-ledger.example/CAD',
             debits: [{
-              amount: '100.00',
+              amount: '100.0000',
               account: null
             }],
             credits: [{
-              amount: '100.00',
+              amount: '100.0000',
               account: 'http://cad-ledger.example/accounts/mark'
             }],
             expiry_duration: '11'
@@ -329,11 +329,11 @@ describe('Quotes', function () {
             ledger: 'http://usd-ledger.example/USD',
             debits: [{
               account: 'http://usd-ledger.example/accounts/mark',
-              amount: '77.82' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
+              amount: '77.8240' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
             }],
             credits: [{
               account: null,
-              amount: '77.82' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
+              amount: '77.8240' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
             }],
             expiry_duration: '10'
           }]

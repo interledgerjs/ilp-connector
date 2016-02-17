@@ -50,8 +50,6 @@ function getLocalConfig () {
   expiry.minMessageWindow =
     Config.getEnv(envPrefix, 'MIN_MESSAGE_WINDOW') || 1 // seconds
   expiry.maxHoldTime = Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || 10 // seconds
-  expiry.feePercentage =
-    Config.getEnv(envPrefix, 'FEE_PERCENTAGE') || 0.01
 
   // The spread is added to every quoted rate
   const fxSpread = Number(Config.getEnv(envPrefix, 'FX_SPREAD')) || 0.002 // = .2%
