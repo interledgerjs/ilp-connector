@@ -23,7 +23,8 @@
     "lint": "eslint .",
     "test": "istanbul test -- _mocha",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
-    "apidoc": "apidoc -o apidoc-out -i src/controllers/"
+    "apidoc": "apidoc -o apidoc-out -i src/controllers/",
+    "integration": "integration all"
   },
   "engines": {
     "node": ">=4.0.0"
@@ -57,6 +58,7 @@
     "eslint": "^1.3.1",
     "eslint-config-standard": "^4.3.1",
     "eslint-plugin-standard": "^1.3.0",
+    "five-bells-integration-test": "^1.0.0",
     "istanbul": "^0.4.1",
     "mocha": "^2.3.2",
     "nock": "^2.10.0",
