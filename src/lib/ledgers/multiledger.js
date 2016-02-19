@@ -69,6 +69,10 @@ Multiledger.prototype.putTransferFulfillment = function (transfer, fulfillment) 
   return this.getLedger(transfer.ledger).putTransferFulfillment(transfer, fulfillment)
 }
 
+Multiledger.prototype.getTransferFulfillment = function (transfer) {
+  return this.getLedger(transfer.ledger).getTransferFulfillment(transfer)
+}
+
 // target - {uri, transfer}
 Multiledger.prototype.subscribe = function (ledger_id, target) {
   let ledger = this.getLedger(ledger_id)

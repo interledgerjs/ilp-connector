@@ -64,6 +64,14 @@ FiveBellsLedger.prototype.putTransferFulfillment = function * (transfer, executi
   return fulfillmentRes.body
 }
 
+FiveBellsLedger.prototype.getTransferFulfillment = function * (transfer) {
+  const fulfillmentRes = yield this._request({
+    method: 'get',
+    uri: transfer.id + '/fulfillment'
+  })
+  return fulfillmentRes.body
+}
+
 FiveBellsLedger.prototype._request = function * (opts) {
   // TODO: check before this point that we actually have
   // credentials for the ledgers we're asked to settle between
