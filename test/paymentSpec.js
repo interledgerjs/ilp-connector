@@ -48,10 +48,7 @@ describe('Payments', function () {
   })
 
   afterEach(function * () {
-    if (nock.pendingMocks() && nock.pendingMocks().length) {
-      console.log('Pending mocks: ', nock.pendingMocks())
-      throw new Error('Pending mocks')
-    }
+    expect(nock.pendingMocks()).to.be.empty
     nock.cleanAll()
     this.clock.restore()
   })
