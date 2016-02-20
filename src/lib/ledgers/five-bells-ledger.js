@@ -29,30 +29,47 @@ FiveBellsLedger.prototype.makeFundTemplate = function (template) {
   return template
 }
 
-FiveBellsLedger.prototype.getState = function (transfer) {
-  return request({
+FiveBellsLedger.prototype.getState = function * (transfer) {
+  const stateRes = yield this._request({
     method: 'get',
     uri: transfer.id + '/state',
     json: true
   })
+  return stateRes.body
 }
 
 FiveBellsLedger.prototype.putTransfer = function * (transfer) {
-  const updatedTransfer = yield this._request({
+  const transferRes = yield this._request({
     method: 'put',
     uri: transfer.id,
     body: transfer
   })
+  const updatedTransfer = transferRes.body
   updateTransfer(transfer, updatedTransfer)
 }
 
 FiveBellsLedger.prototype.putTransferFulfillment = function * (transfer, execution_condition_fulfillment) {
-  const updatedTransfer = yield this._request({
+  const fulfillmentRes = yield this._request({
     method: 'put',
     uri: transfer.id + '/fulfillment',
     body: execution_condition_fulfillment
   })
-  updateTransfer(transfer, updatedTransfer)
+  // TODO check the timestamp the ledger sends back
+  // See https://github.com/interledger/five-bells-ledger/issues/149
+  if (fulfillmentRes.statusCode === 200 || fulfillmentRes.statusCode === 201) {
+    transfer.state = 'executed'
+  } else {
+    log.error('Failed to submit fulfillment for transfer: ' + transfer.id + ' Error: ' + (fulfillmentRes.body ? JSON.stringify(fulfillmentRes.body) : fulfillmentRes.error))
+  }
+  return fulfillmentRes.body
+}
+
+FiveBellsLedger.prototype.getTransferFulfillment = function * (transfer) {
+  const fulfillmentRes = yield this._request({
+    method: 'get',
+    uri: transfer.id + '/fulfillment'
+  })
+  return fulfillmentRes.body
 }
 
 FiveBellsLedger.prototype._request = function * (opts) {
@@ -70,7 +87,7 @@ FiveBellsLedger.prototype._request = function * (opts) {
   if (transferRes.statusCode >= 400) {
     throw new ExternalError('Remote error: status=' + transferRes.statusCode + ' body=' + transferRes.body)
   }
-  return transferRes.body
+  return transferRes
 }
 
 // Update destination_transfer state from the ledger's response

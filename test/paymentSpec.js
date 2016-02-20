@@ -45,17 +45,20 @@ describe('Payments', function () {
       _.cloneDeep(require('./data/transferStateProposed.json'))
     this.transferExecutedReceipt =
       _.cloneDeep(require('./data/transferStateExecuted.json'))
+
+    this.notificationWithConditionFulfillment =
+      _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'))
   })
 
   afterEach(function * () {
+    expect(nock.pendingMocks()).to.be.empty
     nock.cleanAll()
     this.clock.restore()
   })
 
   describe('PUT /payments/:id', function () {
     it('should return a 400 if the id is not a valid uuid', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.id = 'not valid'
 
       yield this.request()
@@ -89,8 +92,7 @@ describe('Payments', function () {
     })
 
     it('should return a 422 if the two transfer conditions do not match and the source transfer one does not have the public key of the destination ledger', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       payment.source_transfers[0].execution_condition =
         _.assign({}, payment.source_transfers[0].execution_condition, {
@@ -118,8 +120,7 @@ describe('Payments', function () {
       'destination ledger uses')
 
     it('should return a 422 if the payment does not include the connector in the source transfer credits', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].credits[0].account = 'http://usd-ledger.example/accounts/mary'
 
       yield this.request()
@@ -135,8 +136,7 @@ describe('Payments', function () {
     })
 
     it('should return a 422 if the payment does not include the connector in the destination transfer debits', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].debits[0].account = 'http://eur-ledger.example/accounts/mary'
 
       yield this.request()
@@ -152,8 +152,7 @@ describe('Payments', function () {
     })
 
     it('should return a 422 if the rate of the payment is worse than the one currently offered', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].credits[0].amount = '1.00'
 
       yield this.request()
@@ -207,8 +206,7 @@ describe('Payments', function () {
     })
 
     it('should return a 422 if the payment includes assets this connector does not offer rates between', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].ledger = 'http://abc-ledger.example/ABC'
       payment.destination_transfers[0].ledger =
         'http://xyz-ledger.example/XYZ'
@@ -226,8 +224,7 @@ describe('Payments', function () {
     })
 
     it('should return a 201 if the source_transfer is not in the prepared or executed state', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].state = 'proposed'
 
       nock(payment.destination_transfers[0].id)
@@ -336,8 +333,7 @@ describe('Payments', function () {
     })
 
     it('should return a 422 if the source transfer\'s execution condition is the execution of the destination transfer but the destination transfer expires too soon', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].expires_at =
         moment(START_DATE + 999).toISOString()
 
@@ -354,8 +350,7 @@ describe('Payments', function () {
     })
 
     it('should return a 422 if the source transfer\'s execution condition is the execution of the destination transfer but the source transfer expires too soon (we may not be able to execute the source transfer in time)', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].expires_at =
         moment(START_DATE + 1999).toISOString()
 
@@ -372,50 +367,17 @@ describe('Payments', function () {
         .end()
     })
 
-    it.skip('should return a 422 if the source transfer does not ' +
-      'have source_fee_transfers', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
-      delete payment.source_fee_transfers
-
-      yield this.request()
-        .put('/payments/' + this.paymentOneToOne.id)
-        .send(payment)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('InsufficientFeeError')
-          expect(res.body.message).to.equal('Source fee transfer ' +
-            'must be paid to account for cost of holding funds')
-        })
-        .end()
-    })
-
-    it.skip('should return a 422 if the source transfer rejection_credits ' +
-      'do not cover the cost of holding funds', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
-      payment.source_fee_transfers[0].credits[0].amount = '.000104'
-
-      yield this.request()
-        .put('/payments/' + this.paymentOneToOne.id)
-        .send(payment)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('InsufficientFeeError')
-          expect(res.body.message).to.equal('Source fees are insufficient ' +
-            'to cover the cost of holding funds and paying the fees for ' +
-            'the destination transfers')
-        })
-        .end()
-    })
-
     it('should accept upper case UUIDs but convert them to lower case', function *() {
       this.paymentOneToOne.id = this.paymentOneToOne.id.toUpperCase()
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
+
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -428,10 +390,8 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
@@ -457,6 +417,11 @@ describe('Payments', function () {
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
+
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
@@ -468,10 +433,8 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
@@ -489,8 +452,7 @@ describe('Payments', function () {
     })
 
     it('should return a 201 for a new payment even if the connector is also the payee of the destination transfer', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].credits =
         payment.destination_transfers[0].debits
 
@@ -507,11 +469,14 @@ describe('Payments', function () {
           state: 'executed'
         }))
 
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
+
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
@@ -529,13 +494,16 @@ describe('Payments', function () {
     })
 
     it('should return a 201 for a new payment even if the connector is also the payer of the source transfer', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].debits =
         payment.source_transfers[0].credits
 
-      const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+      const connectorCredentials = config.ledgerCredentials[payment.destination_transfers[0].ledger]
+
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -548,10 +516,8 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
@@ -573,8 +539,12 @@ describe('Payments', function () {
     // })
 
     it('should authorize the transfer on the destination ledger', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
+
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
 
       // we're testing to make sure this nock gets called
       const destinationTransferNock =
@@ -593,14 +563,13 @@ describe('Payments', function () {
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
-        .times(2)
         .reply(200, this.transferProposedReceipt)
+        .get('/state')
+        .reply(200, this.transferExecutedReceipt)
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
@@ -612,11 +581,15 @@ describe('Payments', function () {
     })
 
     it('should execute a payment where the source transfer condition is the destination transfer', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
+
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -629,16 +602,12 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
         .reply(200, this.transferProposedReceipt)
-
-      nock(payment.destination_transfers[0].id)
         .get('/state')
         .reply(200, this.transferExecutedReceipt)
 
@@ -648,11 +617,7 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: {
-              type: 'ed25519-sha512',
-              signature: this.transferExecutedReceipt.signature
-            }
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
@@ -664,19 +629,13 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should execute a payment where the source transfer condition is equal to the destination transfer condition', function *() {
-      // secret: zU/Q8UzeDi4gHeKAFus1sXDNJ+F7id2AdMR8NXhe1slnYVZLVcvPzA2lFFdxef3y0LrIiuCV8jzs6yYDclN8yA==
-      const fulfillment = {
-        type: 'ed25519-sha512',
-        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPCOzycOM' +
-          'pqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
-      }
-
-      const payment = this.formatId(this.paymentSameExecutionCondition,
-        '/payments/')
+    it('should get the fulfillment and execute the source transfers when the destination transfer response indicates that it has already been executed', function * () {
+      const payment = this.formatId(this.paymentSameExecutionCondition, '/payments/')
 
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
+
+      const fulfillment = this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -685,16 +644,16 @@ describe('Payments', function () {
           pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
+          state: 'executed'
         }))
 
-      nock(payment.source_transfers[0].id)
+      const getDestinationFulfillment = nock(payment.destination_transfers[0].id)
+        .get('/fulfillment')
+        .reply(200, fulfillment)
+
+      const sourceTransferExecuted = nock(payment.source_transfers[0].id)
         .put('/fulfillment', fulfillment)
-        .reply(201, _.merge(_.cloneDeep(payment.source_transfers[0]), {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
+        .reply(201, fulfillment)
 
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
@@ -702,28 +661,95 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
             debits: [{
               authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
+            }]
           }]
         }))
         .end()
+
+      sourceTransferExecuted.done()
+      getDestinationFulfillment.done()
+    })
+
+    it('should get the fulfillment and execute the source transfers if any of the destination transfers are already executed', function * () {
+      const payment = this.formatId(this.paymentOneToMany, '/payments/')
+
+      const connectorCredentials =
+        config.ledgerCredentials[payment.destination_transfers[0].ledger]
+
+      const fulfillment = this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment
+
+      nock(payment.destination_transfers[0].id)
+        .put('')
+        .basicAuth({
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
+        })
+        .reply(201, _.assign({}, payment.destination_transfers[0], {
+          state: 'prepared'
+        }))
+
+      nock(payment.destination_transfers[1].id)
+        .put('')
+        .basicAuth({
+          user: connectorCredentials.username,
+          pass: connectorCredentials.password
+        })
+        .reply(201, _.assign({}, payment.destination_transfers[0], {
+          state: 'executed'
+        }))
+
+      const getDestinationFulfillment = nock(payment.destination_transfers[1].id)
+        .get('/fulfillment')
+        .reply(200, fulfillment)
+
+      const sourceTransferExecuted = nock(payment.source_transfers[0].id)
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
+
+      yield this.request()
+        .put('/payments/' + this.paymentOneToOne.id)
+        .send(payment)
+        .expect(201, _.merge(_.cloneDeep(payment), {
+          state: 'executed',
+          source_transfers: [{
+            state: 'executed'
+          }],
+          destination_transfers: [{
+            state: 'prepared',
+            debits: [{
+              authorized: true
+            }]
+          }, {
+            state: 'executed',
+            debits: [{
+              authorized: true
+            }]
+          }]
+        }))
+        .end()
+
+      sourceTransferExecuted.done()
+      getDestinationFulfillment.done()
     })
 
     it('should execute a payment where its account is not the only credit in the source transfer', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].debits[0].amount = '21.07'
       payment.source_transfers[0].credits.unshift({
         account: 'http://usd-ledger.example/accounts/mary',
         amount: '20'
       })
+
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
 
       const connectorCredentials =
       config.ledgerCredentials[payment.destination_transfers[0].ledger]
@@ -739,10 +765,8 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
@@ -758,11 +782,7 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: {
-              type: 'ed25519-sha512',
-              signature: this.transferExecutedReceipt.signature
-            }
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
@@ -778,13 +798,17 @@ describe('Payments', function () {
       // Note there is no good reason why this should happen but we should
       // be able to handle it appropriately anyway
 
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].debits[0].amount = '0.60'
       payment.destination_transfers[0].debits.push({
         account: 'http://eur-ledger.example/accounts/mark',
         amount: '0.40'
       })
+
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
 
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
@@ -800,10 +824,8 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
@@ -819,11 +841,7 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: {
-              type: 'ed25519-sha512',
-              signature: this.transferExecutedReceipt.signature
-            }
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
@@ -838,13 +856,17 @@ describe('Payments', function () {
     })
 
     it('should execute a payment where there are multiple credits in the destination transfer', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].credits[0].amount = '0.60'
       payment.destination_transfers[0].credits.push({
         account: 'http://usd-ledger.example/accounts/timothy',
         amount: '0.40'
       })
+
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
 
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
@@ -860,16 +882,12 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
         .reply(200, this.transferProposedReceipt)
-
-      nock(payment.destination_transfers[0].id)
         .get('/state')
         .reply(200, this.transferExecutedReceipt)
 
@@ -879,11 +897,7 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: {
-              type: 'ed25519-sha512',
-              signature: this.transferExecutedReceipt.signature
-            }
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
@@ -896,8 +910,7 @@ describe('Payments', function () {
     })
 
     it('should only add authorization to the destination transfer debits from the connector\'s account', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].debits.unshift({
         amount: '10',
         account: 'http://eur-ledger.example/accounts/other'
@@ -906,6 +919,11 @@ describe('Payments', function () {
         amount: '10',
         account: 'http://eur-ledger.example/accounts/jane'
       })
+
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
 
       const connectorCredentials =
       config.ledgerCredentials[payment.destination_transfers[0].ledger]
@@ -921,16 +939,12 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
         .reply(200, this.transferProposedReceipt)
-
-      nock(payment.destination_transfers[0].id)
         .get('/state')
         .reply(200, this.transferExecutedReceipt)
 
@@ -940,11 +954,7 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: {
-              type: 'ed25519-sha512',
-              signature: this.transferExecutedReceipt.signature
-            }
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
@@ -961,89 +971,11 @@ describe('Payments', function () {
       submittedAuthorization.done()
     })
 
-    it('should execute a payment with one source transfer and multiple destination transfers', function *() {
-      const payment = this.formatId(this.paymentOneToMany,
-        '/payments/')
-
-      const fulfillment = {
-        type: 'ed25519-sha512',
-        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
-          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
-      }
-
-      const connectorCredentials0 =
-      config.ledgerCredentials[payment.destination_transfers[0].ledger]
-      const submittedAuthorization0 =
-      nock(payment.destination_transfers[0].id)
-        .put('')
-        .basicAuth({
-          user: connectorCredentials0.username,
-          pass: connectorCredentials0.password
-        })
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      const connectorCredentials1 =
-      config.ledgerCredentials[payment.destination_transfers[1].ledger]
-      const submittedAuthorization1 =
-      nock(payment.destination_transfers[1].id)
-        .put('')
-        .basicAuth({
-          user: connectorCredentials1.username,
-          pass: connectorCredentials1.password
-        })
-        .reply(201, _.assign({}, payment.destination_transfers[1], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      yield this.request()
-        .put('/payments/' + this.paymentOneToOne.id)
-        .send(payment)
-        .expect(201, _.merge(_.cloneDeep(payment), {
-          state: 'executed',
-          source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
-          }],
-          destination_transfers: [{
-            state: 'executed',
-            debits: [{
-              authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
-          }, {
-            state: 'executed',
-            debits: [{
-              authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
-          }]
-        }))
-        .end()
-
-      submittedAuthorization0.done()
-      submittedAuthorization1.done()
-    })
-
     it('should execute a payment with multiple source transfers and one destination transfer', function *() {
       const payment = this.formatId(this.paymentManyToOne,
         '/payments/')
 
-      const fulfillment = {
-        type: 'ed25519-sha512',
-        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
-          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
-      }
+      const fulfillment = this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment
 
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
@@ -1055,23 +987,20 @@ describe('Payments', function () {
           pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
+          state: 'executed'
         }))
+
+      const getDestinationFulfillment = nock(payment.destination_transfers[0].id)
+        .get('/fulfillment')
+        .reply(200, fulfillment)
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.source_transfers[1].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
@@ -1079,26 +1008,24 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
+            state: 'executed'
           }, {
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
             debits: [{
               authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
+            }]
           }]
         }))
         .end()
+
+      getDestinationFulfillment.done()
     })
 
     it('should execute a payment where the source transfer\'s expires_at date has passed if the transfer was executed before it expired', function *() {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].expires_at =
         moment(START_DATE - 1).toISOString()
       payment.source_transfers[0].state = 'executed'
@@ -1106,6 +1033,11 @@ describe('Payments', function () {
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
 
+      const fulfillment = {
+        type: this.transferExecutedReceipt.type,
+        signature: this.transferExecutedReceipt.signature
+      }
+
       nock(payment.destination_transfers[0].id)
         .put('')
         .basicAuth({
@@ -1117,16 +1049,12 @@ describe('Payments', function () {
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(200, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(200, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
         .reply(200, this.transferProposedReceipt)
-
-      nock(payment.destination_transfers[0].id)
         .get('/state')
         .reply(200, this.transferExecutedReceipt)
 
@@ -1137,142 +1065,6 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should execute a one-to-many payment where it is credited in both the source and destination transfers', function *() {
-      const payment = this.formatId(this.paymentOneToMany,
-        '/payments/')
-
-      payment.destination_transfers[1].credits[0].account = 'http://cny-ledger.example/accounts/mark'
-
-      const fulfillment = {
-        type: 'ed25519-sha512',
-        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
-          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
-      }
-
-      const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
-
-      nock(payment.destination_transfers[0].id)
-        .put('')
-        .basicAuth({
-          user: connectorCredentials.username,
-          pass: connectorCredentials.password
-        })
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      nock(payment.destination_transfers[1].id)
-        .put('')
-        .reply(201, _.assign({}, payment.destination_transfers[1], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      yield this.request()
-        .put('/payments/' + this.paymentOneToOne.id)
-        .send(payment)
-        .expect(201, _.merge(_.cloneDeep(payment), {
-          state: 'executed',
-          source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
-          }],
-          destination_transfers: [{
-            state: 'executed',
-            debits: [{
-              authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
-          }, {
-            state: 'executed',
-            debits: [{
-              authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
-          }]
-        }))
-        .end()
-    })
-
-    it('should execute a one-to-many payment where it is debited in both the source and destination transfers', function *() {
-      const payment = this.formatId(this.paymentOneToMany,
-        '/payments/')
-
-      payment.source_transfers[0].debits[0] = {
-        account: 'http://usd-ledger.example/accounts/mark',
-        amount: '10',
-        authorized: true
-      }
-
-      const fulfillment = {
-        type: 'ed25519-sha512',
-        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
-          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
-      }
-
-      const connectorCredentials =
-        config.ledgerCredentials[payment.destination_transfers[0].ledger]
-
-      nock(payment.destination_transfers[0].id)
-        .put('')
-        .basicAuth({
-          user: connectorCredentials.username,
-          pass: connectorCredentials.password
-        })
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      nock(payment.destination_transfers[1].id)
-        .put('')
-        .reply(201, _.assign({}, payment.destination_transfers[1], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
-
-      yield this.request()
-        .put('/payments/' + this.paymentOneToOne.id)
-        .send(payment)
-        .expect(201, _.merge(_.cloneDeep(payment), {
-          state: 'executed',
-          source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
-          }],
-          destination_transfers: [{
-            state: 'executed',
-            debits: [{
-              authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
-          }, {
-            state: 'executed',
-            debits: [{
-              authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
-          }]
-        }))
-        .end()
-    })
-
     it('should execute a many-to-one payment where it is credited in both the source and destination transfers', function *() {
       const payment = this.formatId(this.paymentManyToOne,
         '/payments/')
@@ -1280,14 +1072,14 @@ describe('Payments', function () {
       payment.destination_transfers[0].credits[0].account =
         'http://usd-ledger.example/accounts/mark'
 
-      const fulfillment = {
-        type: 'ed25519-sha512',
-        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
-          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
-      }
+      const fulfillment = this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment
 
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
+
+      const getDestinationFulfillment = nock(payment.destination_transfers[0].id)
+        .get('/fulfillment')
+        .reply(200, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1296,23 +1088,16 @@ describe('Payments', function () {
           pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
+          state: 'executed'
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.source_transfers[1].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
@@ -1320,21 +1105,20 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
+            state: 'executed'
           }, {
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
             debits: [{
               authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
+            }]
           }]
         }))
         .end()
+
+      getDestinationFulfillment.done()
     })
 
     it('should execute a many-to-one payment where it is debited in both the source and destination transfers', function *() {
@@ -1347,14 +1131,14 @@ describe('Payments', function () {
         authorized: true
       }
 
-      const fulfillment = {
-        type: 'ed25519-sha512',
-        signature: 'g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPC' +
-          'OzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=='
-      }
+      const fulfillment = this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment
 
       const connectorCredentials =
         config.ledgerCredentials[payment.destination_transfers[0].ledger]
+
+      const getDestinationFulfillment = nock(payment.destination_transfers[0].id)
+        .get('/fulfillment')
+        .reply(200, fulfillment)
 
       nock(payment.destination_transfers[0].id)
         .put('')
@@ -1363,23 +1147,16 @@ describe('Payments', function () {
           pass: connectorCredentials.password
         })
         .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
+          state: 'executed'
         }))
 
       nock(payment.source_transfers[0].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       nock(payment.source_transfers[1].id)
-        .put('/fulfillment')
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed',
-          execution_condition_fulfillment: fulfillment
-        }))
+        .put('/fulfillment', fulfillment)
+        .reply(201, fulfillment)
 
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
@@ -1387,21 +1164,20 @@ describe('Payments', function () {
         .expect(201, _.merge(_.cloneDeep(payment), {
           state: 'executed',
           source_transfers: [{
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
+            state: 'executed'
           }, {
-            state: 'executed',
-            execution_condition_fulfillment: fulfillment
+            state: 'executed'
           }],
           destination_transfers: [{
             state: 'executed',
             debits: [{
               authorized: true
-            }],
-            execution_condition_fulfillment: fulfillment
+            }]
           }]
         }))
         .end()
+
+      getDestinationFulfillment.done()
     })
   })
 
