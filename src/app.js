@@ -1,5 +1,6 @@
 'use strict'
 
+const health = require('./controllers/health')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
 const payments = require('./controllers/payments')
@@ -18,6 +19,7 @@ const app = module.exports = koa()
 app.use(logger())
 app.use(errorHandler({log: log('error-handler')}))
 
+app.use(route.get('/health', health.getResource))
 app.use(route.get('/pairs', pairs.getCollection))
 
 app.use(route.put('/payments/:uuid', payments.put))
