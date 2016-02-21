@@ -49,6 +49,12 @@ npm start
 #### Trading
 
 * `CONNECTOR_LEDGERS` (default: `[]`) Ledgers where this connector has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
+```js
+[
+  "USD@http://usd-ledger.example",
+  "EUR@http://eur-ledger.example"
+]
+```
 * `CONNECTOR_CREDENTIALS` (default: `{}`) Connector's login credentials for various ledgers, ex.
 ```js
 {
