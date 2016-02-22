@@ -81,6 +81,9 @@ FiveBellsLedger.prototype._request = function * (opts) {
       user: credentials.username,
       pass: credentials.password
     },
+    cert: credentials.cert,
+    key: credentials.key,
+    ca: credentials.ca,
     json: true
   }))
   // TODO for source transfers: handle this so we actually get our money back

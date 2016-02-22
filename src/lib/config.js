@@ -51,9 +51,9 @@ function validateLocalEnvConfig () {
   const credentials = parseCredentialsEnv()
 
   _.forEach(credentials, (credential, ledger) => {
-    if (credential.username === undefined ^ credential.password === undefined) {
+    if ((credential.username === undefined) !== (credential.password === undefined)) {
       throw new Error(`Missing username or password for ledger: ${ledger}`)
-    } else if (credential.cert === undefined ^ credential.key === undefined) {
+    } else if ((credential.cert === undefined) !== (credential.key === undefined)) {
       throw new Error(`Missing certificate or key for ledger: ${ledger}`)
     } else if (credential.account_uri === undefined) {
       throw new Error(`Missing account_uri for ledger: ${ledger}`)
