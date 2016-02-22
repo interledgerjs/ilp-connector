@@ -3,6 +3,7 @@
 const _ = require('lodash')
 const loadConnectorConfig = require('five-bells-connector')._test.loadConnectorConfig
 const expect = require('chai').expect
+const fs = require('fs')
 
 describe('ConnectorConfig', function () {
   describe('parseConnectorConfig', function () {
@@ -41,7 +42,7 @@ describe('ConnectorConfig', function () {
       })
 
       it('should parse ledger credentials', function * () {
-        const ledgerCredentials = {
+        const ledgerCredentialsEnv = {
           'http://cad-ledger.example/CAD': {
             account_uri: 'http://cad-ledger.example/accounts/mark',
             username: 'mark',
@@ -56,8 +57,22 @@ describe('ConnectorConfig', function () {
         }
 
         process.env.UNIT_TEST_OVERRIDE = 'true'
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(ledgerCredentials)
+        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(ledgerCredentialsEnv)
         const config = loadConnectorConfig()
+
+        const ledgerCredentials = {
+          'http://cad-ledger.example/CAD': {
+            account_uri: 'http://cad-ledger.example/accounts/mark',
+            username: 'mark',
+            password: 'mark'
+          },
+          'http://usd-ledger.example/USD': {
+            account_uri: 'http://cad-ledger.example/accounts/mark',
+            cert: fs.readFileSync('test/data/client1-crt.pem'),
+            key: fs.readFileSync('test/data/client1-key.pem'),
+            ca: fs.readFileSync('test/data/ca-crt.pem')
+          }
+        }
 
         expect(config.get('ledgerCredentials').toJS())
           .to.deep.equal(ledgerCredentials)

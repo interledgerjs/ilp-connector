@@ -23,12 +23,32 @@ function generateDefaultPairs (ledgers) {
   })
 }
 
-function parseCredentials () {
+function parseCredentialsEnv () {
   return JSON.parse(Config.getEnv(envPrefix, 'CREDENTIALS') || '{}')
 }
 
+function parseCredentials () {
+  const credentialsEnv = parseCredentialsEnv()
+
+  return _.reduce(credentialsEnv, (parsed, credentials, ledger) => {
+    const isClientCertCredential = credentials.key !== undefined
+
+    if (isClientCertCredential) {
+      parsed[ledger] = _.assign(credentials, {
+        key: fs.readFileSync(credentials.key),
+        cert: fs.readFileSync(credentials.cert),
+        ca: credentials.cert && fs.readFileSync(credentials.ca)
+      })
+    } else {
+      parsed[ledger] = credentials
+    }
+
+    return parsed
+  }, {})
+}
+
 function validateLocalEnvConfig () {
-  const credentials = parseCredentials()
+  const credentials = parseCredentialsEnv()
 
   _.forEach(credentials, (credential, ledger) => {
     if (credential.username === undefined ^ credential.password === undefined) {
