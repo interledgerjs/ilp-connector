@@ -1,7 +1,9 @@
 'use strict'
 
+const fs = require('fs')
 const Config = require('five-bells-shared').Config
 const Utils = require('../lib/utils')
+const _ = require('lodash')
 
 const envPrefix = 'connector'
 
@@ -11,13 +13,65 @@ function isRunningTests () {
      process.argv[1].endsWith('mocha'))
 }
 
+function useTestConfig () {
+  return !Config.castBool(process.env.UNIT_TEST_OVERRIDE) && isRunningTests()
+}
+
 function generateDefaultPairs (ledgers) {
   return Utils.getPairs(ledgers).map((pair) => {
     return pair.map(desc => desc.currency + '@' + desc.ledger)
   })
 }
 
+function parseCredentialsEnv () {
+  return JSON.parse(Config.getEnv(envPrefix, 'CREDENTIALS') || '{}')
+}
+
+function parseCredentials () {
+  const credentialsEnv = parseCredentialsEnv()
+
+  return _.reduce(credentialsEnv, (parsed, credentials, ledger) => {
+    const isClientCertCredential = credentials.key !== undefined
+
+    if (isClientCertCredential) {
+      parsed[ledger] = _.assign(credentials, {
+        key: fs.readFileSync(credentials.key),
+        cert: fs.readFileSync(credentials.cert),
+        ca: credentials.cert && fs.readFileSync(credentials.ca)
+      })
+    } else {
+      parsed[ledger] = credentials
+    }
+
+    return parsed
+  }, {})
+}
+
+function validateLocalEnvConfig () {
+  const credentials = parseCredentialsEnv()
+
+  _.forEach(credentials, (credential, ledger) => {
+    if ((credential.username === undefined) !== (credential.password === undefined)) {
+      throw new Error(`Missing username or password for ledger: ${ledger}`)
+    } else if ((credential.cert === undefined) !== (credential.key === undefined)) {
+      throw new Error(`Missing certificate or key for ledger: ${ledger}`)
+    } else if (credential.account_uri === undefined) {
+      throw new Error(`Missing account_uri for ledger: ${ledger}`)
+    }
+
+    try {
+      credential.cert && fs.accessSync(credential.cert)
+      credential.key && fs.accessSync(credential.key)
+      credential.ca && fs.accessSync(credential.ca)
+    } catch (e) {
+      throw new Error(`Failed to read credentials for ${ledger}: ${e.message}`)
+    }
+  })
+}
+
 function getLocalConfig () {
+  validateLocalEnvConfig()
+
   // List of ledgers this connector has accounts on (used to auto-generate pairs)
   // e.g. ["USD@http://usd-ledger.example","EUR@http://eur-ledger.example/some/path"]
   const ledgers = JSON.parse(Config.getEnv(envPrefix, 'LEDGERS') || '[]').map(ledger => {
@@ -62,36 +116,17 @@ function getLocalConfig () {
   //      "password": "..."
   //    }
   // }
-  let ledgerCredentials = JSON.parse(Config.getEnv(envPrefix, 'CREDENTIALS') || '{}')
-
+  let ledgerCredentials = {}
   let server = {}
-  if (isRunningTests()) {
+
+  if (useTestConfig()) {
     server.base_uri = 'http://localhost'
-    ledgerCredentials = {
-      'http://cad-ledger.example/CAD': {
-        account_uri: 'http://cad-ledger.example/accounts/mark',
-        username: 'mark',
-        password: 'mark'
-      },
-      'http://usd-ledger.example/USD': {
-        account_uri: 'http://usd-ledger.example/accounts/mark',
-        username: 'mark',
-        password: 'mark'
-      },
-      'http://eur-ledger.example/EUR': {
-        account_uri: 'http://eur-ledger.example/accounts/mark',
-        username: 'mark',
-        password: 'mark'
-      },
-      'http://cny-ledger.example/CNY': {
-        account_uri: 'http://cny-ledger.example/accounts/mark',
-        username: 'mark',
-        password: 'mark'
-      }
-    }
+    ledgerCredentials = require('../../test/data/ledgerCredentials.json')
     if (!tradingPairs.length) {
       tradingPairs = require('../../test/data/tradingPairs.json')
     }
+  } else {
+    ledgerCredentials = parseCredentials()
   }
 
   return {
