@@ -1,6 +1,6 @@
 {
   "name": "five-bells-connector",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Five Bells connector reference implementation",
   "repository": {
     "type": "git",
@@ -21,7 +21,7 @@
     "start": "node src/index.js",
     "start:watch": "nodemon src/index.js",
     "lint": "eslint .",
-    "test": "istanbul test -- _mocha -r co-mocha",
+    "test": "istanbul test -- _mocha",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
     "apidoc": "apidoc -o apidoc-out -i src/controllers/"
   },
@@ -29,14 +29,15 @@
     "node": ">=4.0.0"
   },
   "dependencies": {
-    "five-bells-shared": "~9.0.1",
     "bignumber.js": "^2.0.7",
     "co": "^4.1.0",
     "co-body": "^4.0.0",
     "co-request": "^1.0.0",
+    "five-bells-shared": "~10.0.0",
     "koa": "^1.0.0",
     "koa-compress": "^1.0.6",
     "koa-mag": "^1.0.4",
+    "koa-passport": "^1.2.0",
     "koa-route": "^2.4.2",
     "koa-static": "^1.4.5",
     "lodash": "^3.5.0",
@@ -44,6 +45,7 @@
     "mag-hub": "^0.1.1",
     "moment": "^2.10.2",
     "node-uuid": "^1.4.2",
+    "passport-client-certificate": "^0.1.1",
     "uuid4": "^1.0.0"
   },
   "devDependencies": {

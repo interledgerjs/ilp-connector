@@ -8,7 +8,31 @@ const subscriber = require('./services/subscriber')
 const app = require('./app')
 
 function listen () {
-  app.listen(config.getIn(['server', 'port']))
+  if (config.getIn(['server', 'secure'])) {
+    const https = require('https')
+    const tls = config.get('tls').toJS()
+
+    const options = {
+      port: config.getIn(['server', 'port']),
+      host: config.getIn(['server', 'bind_ip']),
+      key: tls.key,
+      cert: tls.cert,
+      ca: tls.ca,
+      crl: tls.crl,
+      requestCert: config.getIn(['auth', 'client_certificates_enabled']),
+
+      // Certificates are checked in the passport-client-cert middleware
+      // Authorization check is disabled here to allow clients to connect
+      // to some endpoints without presenting client certificates, or using a
+      // different authentication method (e.g., Basic Auth)
+      rejectUnauthorized: false
+    }
+
+    https.createServer(
+      options, app.callback()).listen(config.getIn(['server', 'port']))
+  } else {
+    app.listen(config.getIn(['server', 'port']))
+  }
 
   log('app').info('connector listening on ' + config.getIn(['server', 'bind_ip']) + ':' +
     config.getIn(['server', 'port']))

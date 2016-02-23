@@ -2,6 +2,7 @@
 
 const requestUtil = require('five-bells-shared/utils/request')
 const Payments = require('../services/payments')
+const log = require('../services/log')('notifications')
 
 /* eslint-disable */
 /**
@@ -36,12 +37,14 @@ const Payments = require('../services/payments')
  *           "type": "ed25519-sha512",
  *           "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
  *         },
+ *         "state": "executed"
+ *       },
+ *      "related_resources": {
  *         "execution_condition_fulfillment": {
  *           "type": "ed25519-sha512",
  *           "signature": "g8fxfTqO4z7ohmqYARSqKFhIgBZt6KvxD2irrSHHhES9diPCOzycOMpqHjg68+UmKPMYNQOq6Fov61IByzWhAA=="
  *         },
- *         "state": "executed"
- *       }
+ *      }
  *     }'
  *   https://connector.example/notifications
  *
@@ -53,8 +56,10 @@ const Payments = require('../services/payments')
 exports.post = function * postNotification () {
   let notification = yield requestUtil.validateBody(this, 'Notification')
 
+  log.debug('Got notification: ' + JSON.stringify(notification))
+
   if (notification.event === 'transfer.update') {
-    yield Payments.updateTransfer(notification.resource)
+    yield Payments.updateTransfer(notification.resource, notification.related_resources)
   }
 
   this.status = 200

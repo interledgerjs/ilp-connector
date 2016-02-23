@@ -1,5 +1,6 @@
 'use strict'
 
+const health = require('./controllers/health')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
 const payments = require('./controllers/payments')
@@ -12,12 +13,18 @@ const koa = require('koa')
 const path = require('path')
 const log = require('./services/log')
 const logger = require('koa-mag')
+const passport = require('koa-passport')
 const app = module.exports = koa()
+
+// Configure passport
+require('./services/auth')
 
 // Logger
 app.use(logger())
 app.use(errorHandler({log: log('error-handler')}))
+app.use(passport.initialize())
 
+app.use(route.get('/health', health.getResource))
 app.use(route.get('/pairs', pairs.getCollection))
 
 app.use(route.put('/payments/:uuid', payments.put))

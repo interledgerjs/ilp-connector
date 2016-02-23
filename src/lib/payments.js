@@ -5,12 +5,9 @@ const BigNumber = require('bignumber.js')
 const testPaymentExpiry = require('./testPaymentExpiry')
 const log = require('../services/log')('payments')
 const executeSourceTransfers = require('./executeSourceTransfers')
-const ExternalError = require('../errors/external-error')
 const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
-// const InsufficientFeeError =
-  // require('../errors/insufficient-fee-error')
 const NoRelatedSourceCreditError =
   require('../errors/no-related-source-credit-error')
 const NoRelatedDestinationDebitError =
@@ -40,16 +37,12 @@ function sourceConditionIsDestinationTransfer (source, destination) {
 
   if (source.execution_condition.message_hash &&
     source.execution_condition.message_hash !== hashJSON(expectedMessage)) {
-    log.debug('condition does not match the execution of the destination ' +
-      'transfer, unexpected message hash')
     return false
   }
 
   // Check the signer
   if (source.execution_condition.signer &&
     source.execution_condition.signer !== destination.ledger) {
-    log.debug('condition does not match the execution of the destination ' +
-      'transfer, unexpected signer')
     return false
   }
 
@@ -115,26 +108,16 @@ Payments.prototype.validateExecutionConditionPublicKey = function * (payment) {
       // Check the public_key and algorithm
       // TODO: what do we do if the transfer hasn't been submitted
       // to the destination ledger yet?
-      const destinationTransferStateReq = yield this.ledgers.getState(
+      const destinationTransferState = yield this.ledgers.getState(
         payment.destination_transfers[0])
 
-      // TODO: add retry logic
-      // TODO: what if the response is malformed or missing fields?
-      if (destinationTransferStateReq.statusCode >= 400) {
-        log.error('remote error while checking destination transfer state')
-        throw new ExternalError('Received an unexpected ' +
-          destinationTransferStateReq.body.id +
-          ' while checking destination transfer state ' +
-          payment.destination_transfers[0].id)
-      }
-
       if (sourceTransfer.execution_condition.type !==
-        destinationTransferStateReq.body.type) {
+        destinationTransferState.type) {
         throw new UnacceptableConditionsError('Source transfer execution ' +
           "condition type must match the destination ledger's.")
       }
       if (sourceTransfer.execution_condition.public_key !==
-        destinationTransferStateReq.body.public_key) {
+        destinationTransferState.public_key) {
         throw new UnacceptableConditionsError('Source transfer execution ' +
           "condition public key must match the destination ledger's.")
       }
@@ -221,8 +204,6 @@ Payments.prototype.calculateAmountEquivalent = function * (opts) {
       return result.plus(this.amountFinder(transfer.ledger, creditOrDebit))
     }, new BigNumber(0), this)
 
-    log.debug('relevantAmountTotal', relevantAmountTotal, relevantAmountTotal.constructor.name)
-
     // Throw an error if we're not included in the transfer
     if (relevantAmountTotal.lte(0) && !opts.noErrors) {
       if (opts.transferSide === 'source') {
@@ -295,62 +276,6 @@ Payments.prototype.validateRate = function * (payment) {
   }
 }
 
-Payments.prototype.validateFee = function * (payment) {
-  // Determine which ledger's asset we will convert all
-  // of the others to
-  let convertToLedger
-  if (payment.source_transfers.length === 1) {
-    convertToLedger = payment.source_transfers[0].ledger
-  } else {
-    convertToLedger = payment.destination_transfers[0].ledger
-  }
-
-  // TODO: make sure the source_fee_transfers have been executed
-  const sourceFeesEquivalent =
-  yield this.calculateAmountEquivalent({
-    transfers: payment.source_fee_transfers,
-    transferSide: 'source',
-    creditsOrDebits: 'credits',
-    convertToLedger: convertToLedger,
-    noErrors: true
-  })
-
-  if (sourceFeesEquivalent.eq(0)) {
-    // throw new InsufficientFeeError('Source fee transfer ' +
-    //   'must be paid to account for cost of holding funds')
-  }
-
-  // Calculate cost of held funds
-  const destinationDebitEquivalent =
-  yield this.calculateAmountEquivalent({
-    transfers: payment.destination_transfers,
-    transferSide: 'destination',
-    creditsOrDebits: 'debits',
-    convertToLedger: convertToLedger,
-    noErrors: true
-  })
-  const costOfHeldFunds = new BigNumber(this.config.getIn(['expiry', 'feePercentage']))
-    .div(100).times(destinationDebitEquivalent)
-
-  // Calculate how much we're supposed to pay out in fees
-  const destinationFeesEquivalent =
-  yield this.calculateAmountEquivalent({
-    transfers: payment.destination_fee_transfers,
-    transferSide: 'destination',
-    creditsOrDebits: 'debits',
-    convertToLedger: convertToLedger,
-    noErrors: true
-  })
-
-  const totalCost = costOfHeldFunds.plus(destinationFeesEquivalent)
-
-  if (sourceFeesEquivalent.lt(totalCost)) {
-    // throw new InsufficientFeeError('Source fees are ' +
-    //   'insufficient to cover the cost of holding funds ' +
-    //   'and paying the fees for the destination transfers')
-  }
-}
-
 function validateOneToManyOrManyToOne (payment) {
   if (payment.source_transfers.length > 1 &&
     payment.destination_transfers.length > 1) {
@@ -390,8 +315,7 @@ Payments.prototype.submitTransfers = function * (transfers, correspondingSourceT
     if (newState !== 'executed' && correspondingSourceTransfers) {
       // Store this subscription so when we get the notification
       // we know what source transfer to go and unlock
-      log.debug('destination transfer not yet executed, ' +
-        'added subscription record')
+      log.debug('Destination transfer not yet executed, added subscription record (transfer: ' + transfer.id + ')')
       this.destinationSubscriptions.put(transfer.id,
         correspondingSourceTransfers)
     }
@@ -411,7 +335,6 @@ Payments.prototype.validate = function * (payment) {
 
   yield this.validateExpiry(payment)
   yield this.validateRate(payment)
-  yield this.validateFee(payment)
   validateExecutionConditions(payment)
   yield this.validateExecutionConditionPublicKey(payment)
 
@@ -419,13 +342,7 @@ Payments.prototype.validate = function * (payment) {
 }
 
 Payments.prototype.settle = function * (payment) {
-  if (payment.destination_fee_transfers) {
-    log.debug('submitting destination fee transfers')
-    this.addAuthorizationToTransfers(payment.destination_fee_transfers)
-    yield this.submitTransfers(payment.destination_fee_transfers)
-  }
-
-  log.debug('submitting destination transfers')
+  log.debug('Settle payment: ' + JSON.stringify(payment))
   this.addAuthorizationToTransfers(payment.destination_transfers)
   yield this.submitTransfers(payment.destination_transfers,
     payment.source_transfers)
@@ -444,7 +361,7 @@ Payments.prototype.settle = function * (payment) {
   }
 }
 
-Payments.prototype.updateTransfer = function * (updatedTransfer) {
+Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResources) {
   // Maybe its a source transfer:
   const payment = this.sourceSubscriptions.get(updatedTransfer.id)
   if (payment) {
@@ -455,7 +372,7 @@ Payments.prototype.updateTransfer = function * (updatedTransfer) {
   // Or a destination transfer:
   const sourceTransfers = this.destinationSubscriptions.get(updatedTransfer.id)
   if (sourceTransfers && sourceTransfers.length) {
-    yield this.updateDestinationTransfer(updatedTransfer, sourceTransfers)
+    yield this.updateDestinationTransfer(updatedTransfer, sourceTransfers, relatedResources)
     return
   }
 
@@ -488,17 +405,17 @@ Payments.prototype.updateSourceTransfer = function * (updatedTransfer, payment) 
   }
 }
 
-Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, sourceTransfers) {
+Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, sourceTransfers, relatedResources) {
   if (updatedTransfer.state !== 'executed') {
-    log.debug('got notification about unknown or incomplete transfer')
+    log.debug('Got notification about unknown or incomplete transfer: ' + updatedTransfer.id)
     return
   }
 
   // TODO: make sure the transfer is signed by the ledger
-  log.debug('got notification about executed destination transfer')
+  log.debug('Got notification about executed destination transfer')
 
   // This modifies the source_transfers states
-  yield executeSourceTransfers(sourceTransfers, [updatedTransfer])
+  yield executeSourceTransfers(sourceTransfers, [updatedTransfer], relatedResources)
   const allTransfersExecuted = _.every(sourceTransfers, function (transfer) {
     return transfer.state === 'executed'
   })

@@ -117,7 +117,7 @@ class FixerIoBackend {
     const currencyPair = lookupCurrencies(params.source_ledger, params.destination_ledger)
     const destinationRate = this.rates[currencyPair[1]]
     const sourceRate = this.rates[currencyPair[0]]
-    let rate = new BigNumber(destinationRate).div(sourceRate).toFixed(5)
+    let rate = new BigNumber(destinationRate).div(sourceRate)
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
     // the (equivalent) SourceAmount -- regardless of which of the 2 is fixed:
@@ -140,11 +140,17 @@ class FixerIoBackend {
         'or destination amount to get quote')
     }
 
+    // Round amounts
+    // TODO Rounding should be based on the level of precision the given ledger supports
+    const AMOUNT_PRECISION = 4
+    const roundedSourceAmount = sourceAmount.toFixed(AMOUNT_PRECISION, BigNumber.ROUND_UP)
+    const roundedDestinationAmount = destinationAmount.toFixed(AMOUNT_PRECISION, BigNumber.ROUND_DOWN)
+
     let quote = {
       source_ledger: params.source_ledger,
       destination_ledger: params.destination_ledger,
-      source_amount: sourceAmount,
-      destination_amount: destinationAmount
+      source_amount: roundedSourceAmount,
+      destination_amount: roundedDestinationAmount
     }
 
     return quote

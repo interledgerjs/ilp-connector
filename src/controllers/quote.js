@@ -136,9 +136,9 @@ exports.get = function *() {
   }
 
   log.debug('' +
-    quote.source_amount.toFixed(2) + ' ' +
+    quote.source_amount + ' ' +
     query.source_ledger + ' => ' +
-    quote.destination_amount.toFixed(2) + ' ' +
+    quote.destination_amount + ' ' +
     query.destination_ledger)
 
   this.body = makePaymentTemplate(query, quote)
@@ -210,8 +210,8 @@ function makeQuoteArgs (query) {
 }
 
 function makePaymentTemplate (query, quote) {
-  const source_amount = quote.source_amount.toFixed(2, 2)
-  const destination_amount = quote.destination_amount.toFixed(2)
+  const source_amount = quote.source_amount
+  const destination_amount = quote.destination_amount
   const payment = {
     source_transfers: [{
       type: ledgers.getType(query.source_ledger),
