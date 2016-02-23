@@ -1,5 +1,4 @@
 'use strict'
-const fs = require('fs')
 const co = require('co')
 const ledgers = require('./services/ledgers')
 const config = require('./services/config')
@@ -16,10 +15,10 @@ function listen () {
     const options = {
       port: config.getIn(['server', 'port']),
       host: config.getIn(['server', 'bind_ip']),
-      key: fs.readFileSync(tls.key),
-      cert: fs.readFileSync(tls.cert),
-      ca: tls.ca && fs.readFileSync(tls.ca),
-      crl: tls.crl && fs.readFileSync(tls.crl),
+      key: tls.key,
+      cert: tls.cert,
+      ca: tls.ca,
+      crl: tls.crl,
       requestCert: config.getIn(['auth', 'client_certificates_enabled']),
 
       // Certificates are checked in the passport-client-cert middleware
