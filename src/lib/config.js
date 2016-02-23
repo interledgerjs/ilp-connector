@@ -97,7 +97,8 @@ function getLocalConfig () {
   }
 
   // Configure which backend we will use to determine
-  // rates and execute payments
+  // rates and execute payments. The list of available backends
+  // can be found in src/backends
   const backend = Config.getEnv(envPrefix, 'BACKEND') || 'fixerio'
 
   const expiry = {}
@@ -107,6 +108,11 @@ function getLocalConfig () {
 
   // The spread is added to every quoted rate
   const fxSpread = Number(Config.getEnv(envPrefix, 'FX_SPREAD')) || 0.002 // = .2%
+
+  // BACKEND_URI must be defined for backends that connect to an external
+  // component to retrieve the rate or amounts (it is therefore required
+  // when using the ilp-quote backend)
+  const backendUri = Config.getEnv(envPrefix, 'BACKEND_URI')
 
   // Credentials should be specified as a map of the form
   // {
@@ -137,7 +143,8 @@ function getLocalConfig () {
     features,
     admin,
     tradingPairs,
-    server
+    server,
+    backendUri
   }
 }
 
