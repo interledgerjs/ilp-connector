@@ -6,7 +6,7 @@ const log = require('../services/log')('notifications')
 
 /* eslint-disable */
 /**
- * @api {post} /notifications
+ * @api {post} /notifications Receive ledger notifications
  *
  * @apiName Notifications
  * @apiGroup Notifications
@@ -14,6 +14,9 @@ const log = require('../services/log')('notifications')
  * @apiParam {URI} id Subscription URI that created this notification
  * @apiParam {String} event EventId of the event that triggered the notification
  * @apiParam {Transfer} resource The resource described by the notification
+ *
+ * @apiDescription This is the endpoint where the connector will receive notifications
+ *    from the ledgers about transfers affecting their accounts.
  *
  * @apiExample {shell} Send Notification:
  *   curl -X POST -H "Content-Type: application/json" -d
@@ -50,6 +53,8 @@ const log = require('../services/log')('notifications')
  *
  * @apiSuccessExample Notification Accepted:
  *   HTTP/1.1 200 OK
+ *
+ * @apiUse UnrelatedNotificationError
  */
 /* eslint-enable */
 

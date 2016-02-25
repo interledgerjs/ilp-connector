@@ -4,10 +4,13 @@ const config = require('../services/config')
 
 /* eslint-disable */
 /**
- * @api {get} /pairs
+ * @api {get} /pairs Get currency pairs
  *
  * @apiName GetPairs
  * @apiGroup Currency Pairs
+ *
+ * @apiDescription Get the currency pairs for which this connector can provide quotes
+ *    and facilitate payments.
  *
  * @apiSuccessExample {json} Get Currency Pairs
  *   HTTP/1.1 200 OK

@@ -8,7 +8,7 @@ const ledgers = require('../services/ledgers')
 
 /* eslint-disable */
 /**
- * @api {put} /payments/:id
+ * @api {put} /payments/:id Create payment
  *
  * @apiName CreatePayment
  * @apiGroup Payments
@@ -16,6 +16,10 @@ const ledgers = require('../services/ledgers')
  * @apiParam {UUID} id Payment UUID
  * @apiParam {Transfer[]} source_transfers Array of source transfers that credit the connector
  * @apiParam {Transfer[]} destination_transfers Array of destination transfers that debit the connector
+ *
+ * @apiDescription Request that the connector facilitate an interledger payment.
+ *    As soon as the `source_transfers` are prepared, the connector will authorize
+ *    the debits from its account(s) on the destination ledger(s).
  *
  * @apiExample {shell} One-to-one Payment:
  *    curl -x PUT -H "Content-Type: application/json" -d
@@ -110,19 +114,9 @@ const ledgers = require('../services/ledgers')
  *      }]
  *    }
  *
- * @apiErrorExample {json} 400 Invalid Payment
- *     HTTP/1.1 400 Bad Request
- *     {
- *       "id": "InvalidBodyError",
- *       "message": "JSON request body is not a valid Payment"
- *     }
- *
- * @apiErrorExample {json} 422 Unacceptable Rate
- *     HTTP/1.1 422 Unprocessable Entity
- *     {
- *       "id": "UnacceptableRateError",
- *       "message": "Payment rate does not match the rate currently offered"
- *     }
+ * @apiUse InvalidBodyError
+ * @apiUse UnacceptableRateError
+ * @apiUse AssetsNotTradedError
  */
 /* eslint-enable */
 

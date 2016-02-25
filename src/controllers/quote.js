@@ -13,7 +13,7 @@ const ExternalError = require('../errors/external-error')
 
 /* eslint-disable */
 /**
- * @api {get} /quote
+ * @api {get} /quote Get quote
  *
  * @apiName Quote
  * @apiGroup Quote
@@ -34,6 +34,9 @@ const ExternalError = require('../errors/external-error')
  * @apiParam {Number} [source_expiry_duration="(Minimum allowed based on
  *    destination_expiry_duration)"] Number of milliseconds between when the
  *    destination transfer is proposed and when it expires
+ *
+ * @apiDescription Get a quote from the connector based on either a fixed source
+ *    or fixed destination amount.
  *
  * @apiExample {shell} Fixed Source Amount:
  *    curl https://connector.example? \
@@ -109,19 +112,8 @@ const ExternalError = require('../errors/external-error')
  *        ]
  *      }
  *
- * @apiErrorExample {json} 400 No Amount Specified:
- *    HTTP/1.1 400 Bad Request
- *      {
- *        "id": "NoAmountSpecifiedError",
- *        "message": "Must specify either source or destination amount to get quote"
- *      }
- *
- * @apiErrorExample {json} 422 Message Window Too Short:
- *    HTTP/1.1 422 Bad Request
- *      {
- *        "id": "UnacceptableExpiryError",
- *        "message": "The difference between the destination expiry duration and the source expiry duration is insufficient to ensure that we can execute the source transfers"
- *      }
+ * @apiUse UnacceptableExpiryError
+ * @apiUse AssetsNotTradedError
  */
 /* eslint-enable */
 
