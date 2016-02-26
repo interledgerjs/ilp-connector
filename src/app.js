@@ -1,5 +1,6 @@
 'use strict'
 
+const metadata = require('./controllers/metadata')
 const health = require('./controllers/health')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
@@ -24,6 +25,7 @@ app.use(logger())
 app.use(errorHandler({log: log('error-handler')}))
 app.use(passport.initialize())
 
+app.use(route.get('/', metadata.getResource))
 app.use(route.get('/health', health.getResource))
 app.use(route.get('/pairs', pairs.getCollection))
 
@@ -32,10 +34,6 @@ app.use(route.put('/payments/:uuid', payments.put))
 app.use(route.get('/quote', quote.get))
 
 app.use(route.post('/notifications', notifications.post))
-
-app.use(route.get('/', function *() {
-  this.body = 'Hello, I am a 5 Bells connector'
-}))
 
 // Serve static files
 app.use(serve(path.join(__dirname, 'public')))
