@@ -1,4 +1,10 @@
 {
   "title": "Five Bells Connector API",
-  "url": "https://acme-connector.example"
+  "url": "https://acme-connector.example",
+  "order": [
+    "Quote",
+    "Payments",
+    "Pairs",
+    "Notification"
+  ]
 }
