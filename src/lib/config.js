@@ -5,7 +5,7 @@ const Config = require('five-bells-shared').Config
 const Utils = require('../lib/utils')
 const _ = require('lodash')
 
-const envPrefix = 'connector'
+const envPrefix = 'CONNECTOR'
 
 function isRunningTests () {
   return process.argv[0].endsWith('mocha') ||
@@ -47,6 +47,22 @@ function parseCredentials () {
   }, {})
 }
 
+function parseAdminEnv () {
+  const adminUser = Config.getEnv(envPrefix, 'ADMIN_USER') || 'admin'
+  const adminPass = Config.getEnv(envPrefix, 'ADMIN_PASS')
+  const adminKey = Config.getEnv(envPrefix, 'ADMIN_KEY')
+  const adminCert = Config.getEnv(envPrefix, 'ADMIN_CERT')
+  const adminCa = Config.getEnv(envPrefix, 'ADMIN_CA')
+
+  return {
+    user: adminUser,
+    pass: adminPass,
+    key: adminKey,
+    cert: adminCert,
+    ca: adminCa
+  }
+}
+
 function validateLocalEnvConfig () {
   const credentials = parseCredentialsEnv()
 
@@ -60,13 +76,27 @@ function validateLocalEnvConfig () {
     }
 
     try {
-      credential.cert && fs.accessSync(credential.cert)
-      credential.key && fs.accessSync(credential.key)
-      credential.ca && fs.accessSync(credential.ca)
+      credential.cert && fs.accessSync(credential.cert, fs.R_OK)
+      credential.key && fs.accessSync(credential.key, fs.R_OK)
+      credential.ca && fs.accessSync(credential.ca, fs.R_OK)
     } catch (e) {
       throw new Error(`Failed to read credentials for ${ledger}: ${e.message}`)
     }
   })
+
+  const admin = parseAdminEnv()
+
+  if ((admin.cert === undefined) !== (admin.key === undefined)) {
+    throw new Error('Missing ADMIN_CERT or ADMIN_KEY')
+  }
+
+  try {
+    admin.cert && fs.accessSync(admin.cert, fs.R_OK)
+    admin.key && fs.accessSync(admin.key, fs.R_OK)
+    admin.ca && fs.accessSync(admin.ca, fs.R_OK)
+  } catch (e) {
+    throw new Error(`Failed to read admin credentials: ${e.message}`)
+  }
 }
 
 function getLocalConfig () {
@@ -87,14 +117,19 @@ function getLocalConfig () {
   const features = {}
   features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
 
-  const admin = Config.getEnv(envPrefix, 'ADMIN_PASS') && {
-    user: Config.getEnv(envPrefix, 'ADMIN_USER') || 'admin',
-    pass: Config.getEnv(envPrefix, 'ADMIN_PASS')
+  const adminEnv = parseAdminEnv()
+  const useAdmin = adminEnv.user && (adminEnv.pass || adminEnv.key)
+  if (features.debugAutoFund && !useAdmin) {
+    throw new Error(`${envPrefix}_DEBUG_AUTOFUND requires either ${envPrefix}_ADMIN_PASS or ${envPrefix}_ADMIN_KEY`)
   }
 
-  if (features.debugAutoFund && !admin) {
-    throw new Error('CONNECTOR_DEBUG_AUTOFUND requires CONNECTOR_ADMIN_PASS')
-  }
+  const admin = useAdmin ? _.omit({
+    user: adminEnv.user,
+    pass: adminEnv.pass,
+    key: adminEnv.key && fs.readFileSync(adminEnv.key),
+    cert: adminEnv.cert && fs.readFileSync(adminEnv.cert),
+    ca: adminEnv.ca && fs.readFileSync(adminEnv.ca)
+  }, _.isUndefined) : undefined
 
   // Configure which backend we will use to determine
   // rates and execute payments. The list of available backends
