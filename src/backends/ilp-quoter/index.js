@@ -9,6 +9,7 @@ const UnacceptableQuoterAmountError =
   require('../../errors/unacceptable-quoter-amount-error')
 const log = require('../../services/log')('ilpquote')
 const config = require('../../services/config')
+const BigNumber = require('bignumber.js')
 
 function lookupCurrencies (source_ledger, destination_ledger) {
   for (let pair of config.get('tradingPairs').toJS()) {
@@ -43,16 +44,13 @@ class ILPQuoter {
    *   and checks that all the pairs are supported
    */
   * connect () {
-    const body = { pairs: this.pairs }
-    const pairsUri = this.backendUri + '/pairs'
-    const pairsReq = yield request({
-      method: 'PUT',
-      uri: pairsUri,
-      body,
-      json: true
+    const requests = this.pairs.map((pair) => {
+      const uri = this.backendUri + '/pair/' + pair[0] + '/' + pair[1]
+      return request({ method: 'PUT', uri, json: true })
     })
+    const responses = yield requests
     // TODO: report an error if pairs not supported
-    return pairsReq
+    return responses
   }
 
   /**
@@ -85,13 +83,15 @@ class ILPQuoter {
     }
     const uri = this.backendUri + '/quote/' +
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
-                '?type=' + type
+                '/' + type
     const result = yield request({ uri, json: true })
     const fixedAmount = type === 'source' ? result.body.source_amount
                                           : result.body.destination_amount
     if (fixedAmount !== amount.toString()) {
-      throw new UnacceptableQuoterAmountError('Backend returned an invalid ' +
-                type + ' amount: ' + fixedAmount + ' (expected: ' + amount + ')')
+      if (!(new BigNumber(fixedAmount).equals(new BigNumber(amount)))) {
+        throw new UnacceptableQuoterAmountError('Backend returned an invalid ' +
+                  type + ' amount: ' + fixedAmount + ' (expected: ' + amount + ')')
+      }
     }
     const quote = {
       source_ledger: params.source_ledger,
