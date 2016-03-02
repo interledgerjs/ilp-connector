@@ -25,7 +25,7 @@
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
     "apidoc": "apidoc -o apidoc-out -i src/controllers/",
     "integration": "integration all",
-    "bump": "./bin/bump.sh"
+    "bump": "version-bump"
   },
   "engines": {
     "node": ">=4.0.0"
@@ -35,7 +35,7 @@
     "co": "^4.1.0",
     "co-body": "^4.0.0",
     "co-request": "^1.0.0",
-    "five-bells-shared": "~11.0.0",
+    "five-bells-shared": "~11.2.0",
     "koa": "^1.0.0",
     "koa-compress": "^1.0.6",
     "koa-mag": "^1.0.4",
