@@ -141,7 +141,8 @@ FiveBellsLedger.prototype._autofund = function * () {
       name: this.credentials.username,
       balance: '1500000',
       connector: config.getIn(['server', 'base_uri']),
-      password: this.credentials.password
+      password: this.credentials.password,
+      fingerprint: this.credentials.fingerprint
     },
     cert: admin.cert,
     ca: admin.ca,

@@ -68,6 +68,7 @@ npm start
   // Using Client Certificate Auth
   "<ledger_uri_2>": {
     "account_uri": "...",
+    "username": "...",
     "cert": "...",
     "key": "...",
     "ca": "...", // Optional
