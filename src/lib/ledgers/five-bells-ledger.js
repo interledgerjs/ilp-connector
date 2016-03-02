@@ -128,17 +128,24 @@ FiveBellsLedger.prototype.subscribe = function * (target_uri) {
 
 FiveBellsLedger.prototype._autofund = function * () {
   log.info('autofunded account at ' + this.id)
+  const admin = config.get('admin').toJS()
   yield request_retry({
     method: 'put',
     url: this.credentials.account_uri,
-    auth: config.get('admin').toJS(),
+    auth: admin.pass && {
+      user: admin.user,
+      pass: admin.pass
+    },
     json: true,
     body: {
       name: this.credentials.username,
       balance: '1500000',
       connector: config.getIn(['server', 'base_uri']),
       password: this.credentials.password
-    }
+    },
+    cert: admin.cert,
+    ca: admin.ca,
+    key: admin.key
   }, 'could not create account at ledger ' + this.id)
 }
 

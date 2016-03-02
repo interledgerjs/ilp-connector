@@ -102,7 +102,10 @@ The connector can automatically create and fund accounts when it has admin crede
 
 * `CONNECTOR_DEBUG_AUTOFUND` (default: `''`) Debug feature which uses corresponding ledger debug.
 * `CONNECTOR_ADMIN_USER` (default: `admin`) Admin user name on the connected ledgers.
-* `CONNECTOR_ADMIN_PASS` (required if `CONNECTOR_DEBUG_AUTOFUND` is set) Password of the ledger's admin user.
+* `CONNECTOR_ADMIN_PASS` (required if `CONNECTOR_DEBUG_AUTOFUND` is set and using HTTP Basic Auth) Password of the ledger's admin user.
+* `CONNECTOR_ADMIN_KEY` (required if `CONNECTOR_DEBUG_AUTOFUND` is set and using TLS Client Certificate Auth) The path to the private key file to use for the admin account.
+* `CONNECTOR_ADMIN_CERT` (required if `CONNECTOR_DEBUG_AUTOFUND` is set and using TLS Client Certificate Auth) The path to the certificate file to use for the admin account.
+* `CONNECTOR_ADMIN_CA` (optional if `CONNECTOR_DEBUG_AUTOFUND` is set and using TLS Client Certificate Auth) The path to a trusted certificate to be used in addition to using the [default list](https://github.com/nodejs/node/blob/v4.3.0/src/node_root_certs.h).
 
 ## Running with Docker
 
