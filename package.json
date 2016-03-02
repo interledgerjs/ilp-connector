@@ -25,8 +25,7 @@
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
     "apidoc": "apidoc -o apidoc-out -i src/controllers/",
     "integration": "integration all",
-    "preversion": "npm test",
-    "postversion": "git push --follow-tags"
+    "bump": "./bin/bump.sh"
   },
   "engines": {
     "node": ">=4.0.0"
