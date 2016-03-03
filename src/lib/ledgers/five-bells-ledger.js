@@ -109,10 +109,13 @@ FiveBellsLedger.prototype.subscribe = function * (target_uri) {
   let subscribeRes = yield request_retry({
     method: 'put',
     url: this.id + '/subscriptions/' + notificationUuid,
-    auth: {
+    auth: this.credentials && {
       user: this.credentials.username,
       pass: this.credentials.password
     },
+    cert: this.credentials.cert,
+    key: this.credentials.key,
+    ca: this.credentials.ca,
     json: true,
     body: {
       owner: account_uri,
