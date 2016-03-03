@@ -50,6 +50,7 @@ describe('ConnectorConfig', function () {
           },
           'http://usd-ledger.example/USD': {
             account_uri: 'http://cad-ledger.example/accounts/mark',
+            username: 'mark',
             cert: 'test/data/client1-crt.pem',
             key: 'test/data/client1-key.pem',
             ca: 'test/data/ca-crt.pem'
@@ -68,6 +69,7 @@ describe('ConnectorConfig', function () {
           },
           'http://usd-ledger.example/USD': {
             account_uri: 'http://cad-ledger.example/accounts/mark',
+            username: 'mark',
             cert: fs.readFileSync('test/data/client1-crt.pem'),
             key: fs.readFileSync('test/data/client1-key.pem'),
             ca: fs.readFileSync('test/data/ca-crt.pem')
@@ -87,7 +89,7 @@ describe('ConnectorConfig', function () {
         }
 
         process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingPassword)
-        expect(() => loadConnectorConfig()).to.throw().match(/Missing username or password/)
+        expect(() => loadConnectorConfig()).to.throw().match(/Missing key or password/)
       })
 
       it('throws if missing username', () => {
@@ -99,25 +101,27 @@ describe('ConnectorConfig', function () {
         }
 
         process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingUsername)
-        expect(() => loadConnectorConfig()).to.throw().match(/Missing username or password/)
+        expect(() => loadConnectorConfig()).to.throw().match(/Missing username/)
       })
 
       it('throws if missing key', () => {
         const missingKey = {
           'http://cad-ledger.example/CAD': {
             account_uri: 'http://cad-ledger.example/accounts/mark',
+            username: 'mark',
             cert: '/cert'
           }
         }
 
         process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingKey)
-        expect(() => loadConnectorConfig()).to.throw().match(/Missing certificate or key/)
+        expect(() => loadConnectorConfig()).to.throw().match(/Missing key or password/)
       })
 
       it('throws if missing cert', () => {
         const missingCert = {
           'http://cad-ledger.example/CAD': {
             account_uri: 'http://cad-ledger.example/accounts/mark',
+            username: 'mark',
             key: '/key'
           }
         }
@@ -129,6 +133,7 @@ describe('ConnectorConfig', function () {
       it('throws if missing account_uri', () => {
         const missingAccountUri = {
           'http://cad-ledger.example/CAD': {
+            username: 'mark',
             cert: 'test/data/client1-crt.pem',
             key: 'test/data/client1-key.pem',
             ca: 'test/data/ca-crt.pem'
@@ -143,6 +148,7 @@ describe('ConnectorConfig', function () {
         const missingKeyFile = {
           'http://usd-ledger.example/USD': {
             account_uri: 'http://cad-ledger.example/accounts/mark',
+            username: 'mark',
             cert: 'test/data/client1-crt.pem',
             key: 'foo',
             ca: 'test/data/ca-crt.pem'
@@ -158,6 +164,7 @@ describe('ConnectorConfig', function () {
         const missingCertFile = {
           'http://usd-ledger.example/USD': {
             account_uri: 'http://cad-ledger.example/accounts/mark',
+            username: 'mark',
             cert: 'foo',
             key: 'test/data/client1-key.pem',
             ca: 'test/data/ca-crt.pem'
@@ -173,6 +180,7 @@ describe('ConnectorConfig', function () {
         const missingCertFile = {
           'http://usd-ledger.example/USD': {
             account_uri: 'http://cad-ledger.example/accounts/mark',
+            username: 'mark',
             cert: 'test/data/client1-crt.pem',
             key: 'test/data/client1-key.pem',
             ca: 'foo'

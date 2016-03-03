@@ -26,10 +26,13 @@ BalanceCache.prototype.load = function * (ledger) {
     res = yield request({
       method: 'get',
       uri: creds.account_uri,
-      auth: {
+      auth: creds.password && {
         user: creds.username,
         pass: creds.password
       },
+      ca: creds.ca,
+      cert: creds.cert,
+      key: creds.key,
       json: true
     })
   } catch (e) { }

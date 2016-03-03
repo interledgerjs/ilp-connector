@@ -67,8 +67,10 @@ function validateLocalEnvConfig () {
   const credentials = parseCredentialsEnv()
 
   _.forEach(credentials, (credential, ledger) => {
-    if ((credential.username === undefined) !== (credential.password === undefined)) {
-      throw new Error(`Missing username or password for ledger: ${ledger}`)
+    if ((credential.key === undefined) && (credential.password === undefined)) {
+      throw new Error(`Missing key or password for ledger: ${ledger}`)
+    } else if (credential.username === undefined) {
+      throw new Error(`Missing username for ledger: ${ledger}`)
     } else if ((credential.cert === undefined) !== (credential.key === undefined)) {
       throw new Error(`Missing certificate or key for ledger: ${ledger}`)
     } else if (credential.account_uri === undefined) {
@@ -80,7 +82,7 @@ function validateLocalEnvConfig () {
       credential.key && fs.accessSync(credential.key, fs.R_OK)
       credential.ca && fs.accessSync(credential.ca, fs.R_OK)
     } catch (e) {
-      throw new Error(`Failed to read credentials for ${ledger}: ${e.message}`)
+      throw new Error(`Failed to read credentials for ledger ${ledger}: ${e.message}`)
     }
   })
 
