@@ -5,7 +5,6 @@ const FiveBellsLedger = require('./five-bells-ledger')
 function Multiledger (options) {
   this.config = options.config
   this.log = options.log
-  this.sourceSubscriptions = options.sourceSubscriptions
   this.ledger_types = {undefined: FiveBellsLedger}
   this.ledgers = {}
 }
@@ -36,8 +35,7 @@ Multiledger.prototype.buildLedger = function (ledger_id) {
   return new Ledger({
     ledger_id: ledger_id,
     credentials: creds,
-    log: this.log(Ledger.name),
-    sourceSubscriptions: this.sourceSubscriptions
+    log: this.log(Ledger.name)
   })
 }
 

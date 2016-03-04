@@ -12,6 +12,7 @@ const appHelper = require('./helpers/app')
 const logHelper = require('five-bells-shared/testHelpers/log')
 const ratesResponse = require('./data/fxRates.json')
 const config = require('five-bells-connector')._test.config.toJS()
+const settlementQueue = require('../src/services/settlementQueue')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -24,6 +25,7 @@ describe('Payments', function () {
   beforeEach(function * () {
     appHelper.create(this, app)
     yield backend.connect(ratesResponse)
+    settlementQueue._reset()
 
     this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -48,6 +50,8 @@ describe('Payments', function () {
 
     this.notificationWithConditionFulfillment =
       _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'))
+    this.notificationSourceTransferPrepared =
+      _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
   })
 
   afterEach(function * () {
@@ -409,6 +413,11 @@ describe('Payments', function () {
           expect(res.body.id).to.equal(payment.id.toLowerCase())
         })
         .end()
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .end()
     })
 
     it('should return a 201 for a new payment', function *() {
@@ -448,6 +457,11 @@ describe('Payments', function () {
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
         .expect(201)
+        .end()
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
         .end()
     })
 
@@ -491,6 +505,11 @@ describe('Payments', function () {
         .send(payment)
         .expect(201)
         .end()
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .end()
     })
 
     it('should return a 201 for a new payment even if the connector is also the payer of the source transfer', function *() {
@@ -531,6 +550,11 @@ describe('Payments', function () {
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
         .expect(201)
+        .end()
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
         .end()
     })
 
@@ -576,8 +600,26 @@ describe('Payments', function () {
         .send(payment)
         .expect(201)
         .end()
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .end()
 
       destinationTransferNock.done() // Throw error if this wasn't called
+    })
+
+    it('should not authorize the destination transfer when the source isn\'t lying about being prepared', function *() {
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
+      nock(payment.destination_transfers[0].id)
+        .get('/state')
+        .reply(200, this.transferProposedReceipt)
+
+      yield this.request()
+        .put('/payments/' + this.paymentOneToOne.id)
+        .send(payment)
+        .expect(201)
+        .end()
     })
 
     it('should execute a payment where the source transfer condition is the destination transfer', function *() {
@@ -611,6 +653,11 @@ describe('Payments', function () {
         .get('/state')
         .reply(200, this.transferExecutedReceipt)
 
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(422)
+        .end()
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
@@ -655,6 +702,16 @@ describe('Payments', function () {
         .put('/fulfillment', fulfillment)
         .reply(201, fulfillment)
 
+      yield this.request()
+        .post('/notifications')
+        .send({
+          id: this.notificationSourceTransferPrepared.id,
+          event: 'transfer.update',
+          resource: payment.source_transfers[0],
+          related_resources: {}
+        })
+        .expect(422)
+        .end()
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
@@ -712,6 +769,16 @@ describe('Payments', function () {
         .put('/fulfillment', fulfillment)
         .reply(201, fulfillment)
 
+      yield this.request()
+        .post('/notifications')
+        .send({
+          id: this.notificationSourceTransferPrepared.id,
+          event: 'transfer.update',
+          resource: payment.source_transfers[0],
+          related_resources: {}
+        })
+        .expect(422)
+        .end()
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
@@ -777,6 +844,16 @@ describe('Payments', function () {
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
+        .post('/notifications')
+        .send({
+          id: this.notificationSourceTransferPrepared.id,
+          event: 'transfer.update',
+          resource: payment.source_transfers[0],
+          related_resources: {}
+        })
+        .expect(422)
+        .end()
+      yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
         .expect(201, _.merge(_.cloneDeep(payment), {
@@ -836,6 +913,11 @@ describe('Payments', function () {
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(422)
+        .end()
+      yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
         .expect(201, _.merge(_.cloneDeep(payment), {
@@ -891,6 +973,11 @@ describe('Payments', function () {
         .get('/state')
         .reply(200, this.transferExecutedReceipt)
 
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(422)
+        .end()
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
@@ -949,6 +1036,11 @@ describe('Payments', function () {
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(422)
+        .end()
+      yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
         .expect(201, _.merge(_.cloneDeep(payment), {
@@ -1002,6 +1094,18 @@ describe('Payments', function () {
         .put('/fulfillment', fulfillment)
         .reply(201, fulfillment)
 
+      for (let source_transfer of payment.source_transfers) {
+        yield this.request()
+          .post('/notifications')
+          .send({
+            id: this.notificationSourceTransferPrepared.id,
+            event: 'transfer.update',
+            resource: source_transfer,
+            related_resources: {}
+          })
+          .expect(422)
+          .end()
+      }
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
@@ -1059,6 +1163,11 @@ describe('Payments', function () {
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(422)
+        .end()
+      yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
         .expect(201)
@@ -1099,6 +1208,18 @@ describe('Payments', function () {
         .put('/fulfillment', fulfillment)
         .reply(201, fulfillment)
 
+      for (let source_transfer of payment.source_transfers) {
+        yield this.request()
+          .post('/notifications')
+          .send({
+            id: this.notificationSourceTransferPrepared.id,
+            event: 'transfer.update',
+            resource: source_transfer,
+            related_resources: {}
+          })
+          .expect(422)
+          .end()
+      }
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
@@ -1158,6 +1279,18 @@ describe('Payments', function () {
         .put('/fulfillment', fulfillment)
         .reply(201, fulfillment)
 
+      for (let source_transfer of payment.source_transfers) {
+        yield this.request()
+          .post('/notifications')
+          .send({
+            id: this.notificationSourceTransferPrepared.id,
+            event: 'transfer.update',
+            resource: source_transfer,
+            related_resources: {}
+          })
+          .expect(422)
+          .end()
+      }
       yield this.request()
         .put('/payments/' + this.paymentOneToOne.id)
         .send(payment)
