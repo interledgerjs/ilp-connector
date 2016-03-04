@@ -19,7 +19,7 @@ function useTestConfig () {
 
 function generateDefaultPairs (ledgers) {
   return Utils.getPairs(ledgers).map((pair) => {
-    return pair.map(desc => desc.currency + '@' + desc.ledger)
+    return pair.map((desc) => desc.currency + '@' + desc.ledger)
   })
 }
 
@@ -106,7 +106,7 @@ function getLocalConfig () {
 
   // List of ledgers this connector has accounts on (used to auto-generate pairs)
   // e.g. ["USD@http://usd-ledger.example","EUR@http://eur-ledger.example/some/path"]
-  const ledgers = JSON.parse(Config.getEnv(envPrefix, 'LEDGERS') || '[]').map(ledger => {
+  const ledgers = JSON.parse(Config.getEnv(envPrefix, 'LEDGERS') || '[]').map((ledger) => {
     const sep = ledger.indexOf('@')
     return { currency: ledger.substr(0, sep), ledger: ledger.substr(sep + 1) }
   })

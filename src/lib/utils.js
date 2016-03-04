@@ -13,7 +13,7 @@ module.exports = class Utils {
    */
   static getPairs (arr) {
     return arr.reduce((prev, cur, i) => (
-      prev.concat(arr.slice(i + 1).map(val => [cur, val]))
+      prev.concat(arr.slice(i + 1).map((val) => [cur, val]))
     ), [])
   }
 }
