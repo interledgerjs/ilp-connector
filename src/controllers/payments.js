@@ -142,10 +142,10 @@ exports.put = function *(id) {
   payment.id = id.toLowerCase()
 
   yield Payments.validate(payment)
-  const truePayment = settlementQueue.storePayment(payment)
-  if (truePayment) {
-    yield Payments.settle(truePayment)
-    payment = truePayment
+  const trustedPayment = settlementQueue.storePayment(payment)
+  if (trustedPayment) {
+    yield Payments.settle(trustedPayment)
+    payment = trustedPayment
   }
 
   // Externally we want to use a full URI ID

@@ -342,11 +342,11 @@ Payments.prototype.settle = function * (payment) {
 }
 
 Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResources) {
-  const truePayment = this.settlementQueue.storeTransfer(updatedTransfer)
+  const trustedPayment = this.settlementQueue.storeTransfer(updatedTransfer)
   // Maybe its a source transfer:
   // When all of the payment's source transfers are "prepared", authorized/submit the payment.
-  if (truePayment) {
-    yield this.settle(truePayment)
+  if (trustedPayment) {
+    yield this.settle(trustedPayment)
     return
   }
 
