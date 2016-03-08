@@ -21,7 +21,7 @@ describe('ConnectorConfig', function () {
 
     it('should auto-generate pairs', function * () {
       const config = loadConnectorConfig()
-      expect(config.get('tradingPairs').toJS()).to.deep.equal([[
+      expect(config.get('tradingPairs')).to.deep.equal([[
         'USD@https://usd-ledger.example',
         'EUR@https://eur-ledger.example'
       ], [
@@ -37,7 +37,7 @@ describe('ConnectorConfig', function () {
       it('should parse ledger credentials -- test env', function * () {
         const config = loadConnectorConfig()
         const ledgerCredentials = require('./data/ledgerCredentials.json')
-        expect(config.get('ledgerCredentials').toJS())
+        expect(config.get('ledgerCredentials'))
           .to.deep.equal(ledgerCredentials)
       })
 
@@ -76,7 +76,7 @@ describe('ConnectorConfig', function () {
           }
         }
 
-        expect(config.get('ledgerCredentials').toJS())
+        expect(config.get('ledgerCredentials'))
           .to.deep.equal(ledgerCredentials)
       })
 
@@ -199,7 +199,7 @@ describe('ConnectorConfig', function () {
         process.env.CONNECTOR_ADMIN_PASS = 'bar'
         process.env.TESTING = 'bar'
         const config = loadConnectorConfig()
-        expect(config.get('admin').toJS()).to.deep.equal({
+        expect(config.get('admin')).to.deep.equal({
           username: 'foo',
           password: 'bar'
         })
@@ -210,7 +210,7 @@ describe('ConnectorConfig', function () {
         process.env.CONNECTOR_ADMIN_USER = 'foo'
         process.env.CONNECTOR_ADMIN_PASS = 'bar'
         const config = loadConnectorConfig()
-        expect(config.get('admin').toJS()).to.deep.equal({
+        expect(config.get('admin')).to.deep.equal({
           username: 'foo',
           password: 'bar'
         })
@@ -222,7 +222,7 @@ describe('ConnectorConfig', function () {
         process.env.CONNECTOR_ADMIN_KEY = 'test/data/key'
         process.env.CONNECTOR_ADMIN_CERT = 'test/data/cert'
         const config = loadConnectorConfig()
-        expect(config.get('admin').toJS()).to.deep.equal({
+        expect(config.get('admin')).to.deep.equal({
           username: 'foo',
           cert: fs.readFileSync('test/data/cert'),
           key: fs.readFileSync('test/data/key')
@@ -238,7 +238,7 @@ describe('ConnectorConfig', function () {
       it('missing ADMIN_USER -- default admin user', () => {
         process.env.CONNECTOR_ADMIN_PASS = 'foo'
         const config = loadConnectorConfig()
-        expect(config.get('admin').toJS()).to.deep.equal({
+        expect(config.get('admin')).to.deep.equal({
           username: 'admin',
           password: 'foo'
         })

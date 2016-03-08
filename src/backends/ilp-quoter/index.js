@@ -12,7 +12,7 @@ const config = require('../../services/config')
 const BigNumber = require('bignumber.js')
 
 function lookupCurrencies (source_ledger, destination_ledger) {
-  for (let pair of config.get('tradingPairs').toJS()) {
+  for (let pair of config.get('tradingPairs')) {
     if (pair[0].indexOf(source_ledger) === 4 &&
         pair[1].indexOf(destination_ledger) === 4) {
       const currencyA = pair[0].slice(0, 3)
@@ -33,7 +33,7 @@ function lookupCurrencies (source_ledger, destination_ledger) {
 class ILPQuoter {
   constructor (opts) {
     log.debug('ILPQuoter ctor')
-    const pairs = config.get('tradingPairs').toJS()
+    const pairs = config.get('tradingPairs')
     this.pairs = pairs.map((p) => [p[0].slice(0, 3),
                                    p[1].slice(0, 3)])
     this.backendUri = config.get('backendUri')

@@ -123,7 +123,7 @@ FiveBellsLedger.prototype.subscribe = function * (target_uri) {
 
 FiveBellsLedger.prototype._autofund = function * () {
   log.info('autofunded account at ' + this.id)
-  const admin = config.get('admin').toJS()
+  const admin = config.get('admin')
   yield request_retry({
     method: 'put',
     url: this.credentials.account_uri,

@@ -35,7 +35,7 @@
     "co": "^4.1.0",
     "co-body": "^4.0.0",
     "co-request": "^1.0.0",
-    "five-bells-shared": "~11.2.0",
+    "five-bells-shared": "^12.1.0",
     "koa": "^1.0.0",
     "koa-compress": "^1.0.6",
     "koa-mag": "^1.0.4",
