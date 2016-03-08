@@ -61,7 +61,7 @@ describe('Payments', function () {
   })
 
   describe('PUT /payments/:id', function () {
-    it('should return a 400 if the id is not a valid uuid', function *() {
+    it('should return a 400 if the id is not a valid uuid', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.id = 'not valid'
 
@@ -76,7 +76,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the payment includes multiple source transfers and multiple destination transfers', function *() {
+    it('should return a 422 if the payment includes multiple source transfers and multiple destination transfers', function * () {
       // Note this behavior may be supported by other connectors but not this one
 
       const payment = this.formatId(this.paymentManyToMany,
@@ -95,7 +95,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the two transfer conditions do not match and the source transfer one does not have the public key of the destination ledger', function *() {
+    it('should return a 422 if the two transfer conditions do not match and the source transfer one does not have the public key of the destination ledger', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       payment.source_transfers[0].execution_condition =
@@ -123,7 +123,7 @@ describe('Payments', function () {
       'match and the source transfer one does not have the same algorithm the' +
       'destination ledger uses')
 
-    it('should return a 422 if the payment does not include the connector in the source transfer credits', function *() {
+    it('should return a 422 if the payment does not include the connector in the source transfer credits', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].credits[0].account = 'http://usd-ledger.example/accounts/mary'
 
@@ -139,7 +139,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the payment does not include the connector in the destination transfer debits', function *() {
+    it('should return a 422 if the payment does not include the connector in the destination transfer debits', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].debits[0].account = 'http://eur-ledger.example/accounts/mary'
 
@@ -155,7 +155,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the rate of the payment is worse than the one currently offered', function *() {
+    it('should return a 422 if the rate of the payment is worse than the one currently offered', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].credits[0].amount = '1.00'
 
@@ -171,7 +171,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the rate of the payment with multiple source transfers is worse than the one currently offered', function *() {
+    it('should return a 422 if the rate of the payment with multiple source transfers is worse than the one currently offered', function * () {
       const payment = this.formatId(this.paymentManyToOne,
         '/payments/')
 
@@ -190,7 +190,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the rate of the payment with multiple destination transfers is worse than the one currently offered', function *() {
+    it('should return a 422 if the rate of the payment with multiple destination transfers is worse than the one currently offered', function * () {
       const payment = this.formatId(this.paymentOneToMany,
         '/payments/')
 
@@ -209,7 +209,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the payment includes assets this connector does not offer rates between', function *() {
+    it('should return a 422 if the payment includes assets this connector does not offer rates between', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].ledger = 'http://abc-ledger.example/ABC'
       payment.destination_transfers[0].ledger =
@@ -227,7 +227,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 201 if the source_transfer is not in the prepared or executed state', function *() {
+    it('should return a 201 if the source_transfer is not in the prepared or executed state', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].state = 'proposed'
 
@@ -245,7 +245,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if any of the source transfers is expired', function *() {
+    it('should return a 422 if any of the source transfers is expired', function * () {
       const payment = this.formatId(this.paymentManyToOne,
         '/payments/')
       payment.source_transfers[1].expires_at =
@@ -262,7 +262,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if any of the destination transfers is expired', function *() {
+    it('should return a 422 if any of the destination transfers is expired', function * () {
       const payment = this.formatId(this.paymentOneToMany,
         '/payments/')
       payment.destination_transfers[1].expires_at =
@@ -279,7 +279,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if a destination transfer has an execution_condition but no expiry', function *() {
+    it('should return a 422 if a destination transfer has an execution_condition but no expiry', function * () {
       const payment = this.formatId(this.paymentOneToMany,
         '/payments/')
       delete payment.destination_transfers[1].expires_at
@@ -297,7 +297,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if any of the destination transfers expires too far in the future (causing the connector to hold money for too long)', function *() {
+    it('should return a 422 if any of the destination transfers expires too far in the future (causing the connector to hold money for too long)', function * () {
       const payment = this.formatId(this.paymentOneToMany,
         '/payments/')
       payment.destination_transfers[1].expires_at =
@@ -316,7 +316,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the source transfer expires too soon after the destination transfer (we may not be able to execute the source transfer in time)', function *() {
+    it('should return a 422 if the source transfer expires too soon after the destination transfer (we may not be able to execute the source transfer in time)', function * () {
       const payment = this.formatId(this.paymentOneToMany,
         '/payments/')
       payment.source_transfers[0].expires_at =
@@ -336,7 +336,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the source transfer\'s execution condition is the execution of the destination transfer but the destination transfer expires too soon', function *() {
+    it('should return a 422 if the source transfer\'s execution condition is the execution of the destination transfer but the destination transfer expires too soon', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].expires_at =
         moment(START_DATE + 999).toISOString()
@@ -353,7 +353,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 422 if the source transfer\'s execution condition is the execution of the destination transfer but the source transfer expires too soon (we may not be able to execute the source transfer in time)', function *() {
+    it('should return a 422 if the source transfer\'s execution condition is the execution of the destination transfer but the source transfer expires too soon (we may not be able to execute the source transfer in time)', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].expires_at =
         moment(START_DATE + 1999).toISOString()
@@ -371,7 +371,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should accept upper case UUIDs but convert them to lower case', function *() {
+    it('should accept upper case UUIDs but convert them to lower case', function * () {
       this.paymentOneToOne.id = this.paymentOneToOne.id.toUpperCase()
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
@@ -420,7 +420,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 201 for a new payment', function *() {
+    it('should return a 201 for a new payment', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       const connectorCredentials =
@@ -465,7 +465,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 201 for a new payment even if the connector is also the payee of the destination transfer', function *() {
+    it('should return a 201 for a new payment even if the connector is also the payee of the destination transfer', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].credits =
         payment.destination_transfers[0].debits
@@ -512,7 +512,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should return a 201 for a new payment even if the connector is also the payer of the source transfer', function *() {
+    it('should return a 201 for a new payment even if the connector is also the payer of the source transfer', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].debits =
         payment.source_transfers[0].credits
@@ -562,7 +562,7 @@ describe('Payments', function () {
 
     // })
 
-    it('should authorize the transfer on the destination ledger', function *() {
+    it('should authorize the transfer on the destination ledger', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       const fulfillment = {
@@ -609,7 +609,7 @@ describe('Payments', function () {
       destinationTransferNock.done() // Throw error if this wasn't called
     })
 
-    it('should not authorize the destination transfer when the source isn\'t lying about being prepared', function *() {
+    it('should not authorize the destination transfer when the source isn\'t lying about being prepared', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       nock(payment.destination_transfers[0].id)
         .get('/state')
@@ -622,7 +622,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should execute a payment where the source transfer condition is the destination transfer', function *() {
+    it('should execute a payment where the source transfer condition is the destination transfer', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       const connectorCredentials =
@@ -805,7 +805,7 @@ describe('Payments', function () {
       getDestinationFulfillment.done()
     })
 
-    it('should execute a payment where its account is not the only credit in the source transfer', function *() {
+    it('should execute a payment where its account is not the only credit in the source transfer', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].debits[0].amount = '21.07'
       payment.source_transfers[0].credits.unshift({
@@ -871,7 +871,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should execute a payment where there are multiple debits from its account in the destination transfer', function *() {
+    it('should execute a payment where there are multiple debits from its account in the destination transfer', function * () {
       // Note there is no good reason why this should happen but we should
       // be able to handle it appropriately anyway
 
@@ -937,7 +937,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should execute a payment where there are multiple credits in the destination transfer', function *() {
+    it('should execute a payment where there are multiple credits in the destination transfer', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].credits[0].amount = '0.60'
       payment.destination_transfers[0].credits.push({
@@ -996,7 +996,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should only add authorization to the destination transfer debits from the connector\'s account', function *() {
+    it('should only add authorization to the destination transfer debits from the connector\'s account', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.destination_transfers[0].debits.unshift({
         amount: '10',
@@ -1063,7 +1063,7 @@ describe('Payments', function () {
       submittedAuthorization.done()
     })
 
-    it('should execute a payment with multiple source transfers and one destination transfer', function *() {
+    it('should execute a payment with multiple source transfers and one destination transfer', function * () {
       const payment = this.formatId(this.paymentManyToOne,
         '/payments/')
 
@@ -1128,7 +1128,7 @@ describe('Payments', function () {
       getDestinationFulfillment.done()
     })
 
-    it('should execute a payment where the source transfer\'s expires_at date has passed if the transfer was executed before it expired', function *() {
+    it('should execute a payment where the source transfer\'s expires_at date has passed if the transfer was executed before it expired', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
       payment.source_transfers[0].expires_at =
         moment(START_DATE - 1).toISOString()
@@ -1174,7 +1174,7 @@ describe('Payments', function () {
         .end()
     })
 
-    it('should execute a many-to-one payment where it is credited in both the source and destination transfers', function *() {
+    it('should execute a many-to-one payment where it is credited in both the source and destination transfers', function * () {
       const payment = this.formatId(this.paymentManyToOne,
         '/payments/')
 
@@ -1242,7 +1242,7 @@ describe('Payments', function () {
       getDestinationFulfillment.done()
     })
 
-    it('should execute a many-to-one payment where it is debited in both the source and destination transfers', function *() {
+    it('should execute a many-to-one payment where it is debited in both the source and destination transfers', function * () {
       const payment = this.formatId(this.paymentManyToOne,
         '/payments/')
 
@@ -1315,7 +1315,7 @@ describe('Payments', function () {
   })
 
   describe('atomic mode', function () {
-    it('should check the expiry on a cancellation condition: valid', function *() {
+    it('should check the expiry on a cancellation condition: valid', function * () {
       const payment = this.formatId(this.paymentOneToOneAtomic, '/payments/')
       const caseID = payment.destination_transfers[0].additional_info.cases[0]
       const getCase = nock(caseID)
@@ -1332,7 +1332,7 @@ describe('Payments', function () {
       getCase.done()
     })
 
-    it('should check the expiry on a cancellation condition: too long', function *() {
+    it('should check the expiry on a cancellation condition: too long', function * () {
       const payment = this.formatId(this.paymentOneToOneAtomic, '/payments/')
       const caseID = payment.destination_transfers[0].additional_info.cases[0]
       const getCase = nock(caseID)
@@ -1353,7 +1353,7 @@ describe('Payments', function () {
       getCase.done()
     })
 
-    it('should check the expiry on a cancellation condition: already expired', function *() {
+    it('should check the expiry on a cancellation condition: already expired', function * () {
       const payment = this.formatId(this.paymentOneToOneAtomic, '/payments/')
       const caseID = payment.destination_transfers[0].additional_info.cases[0]
       const getCase = nock(caseID)
@@ -1372,7 +1372,7 @@ describe('Payments', function () {
       getCase.done()
     })
 
-    it('should check the expiry on a cancellation condition: missing expiry', function *() {
+    it('should check the expiry on a cancellation condition: missing expiry', function * () {
       const payment = this.formatId(this.paymentOneToOneAtomic, '/payments/')
       const caseID = payment.destination_transfers[0].additional_info.cases[0]
       const getCase = nock(caseID)
@@ -1391,7 +1391,7 @@ describe('Payments', function () {
       getCase.done()
     })
 
-    it('should check the expiry on a cancellation condition: 2 cases, different expiries', function *() {
+    it('should check the expiry on a cancellation condition: 2 cases, different expiries', function * () {
       const payment = this.formatId(this.paymentOneToOneAtomic_TwoCases, '/payments/')
       const caseID1 = payment.destination_transfers[0].additional_info.cases[0]
       const caseID2 = payment.destination_transfers[0].additional_info.cases[1]
@@ -1411,7 +1411,7 @@ describe('Payments', function () {
       getCase2.done()
     })
 
-    it('should check the expiry on a cancellation condition: 2 cases, same expiries', function *() {
+    it('should check the expiry on a cancellation condition: 2 cases, same expiries', function * () {
       const payment = this.formatId(this.paymentOneToOneAtomic_TwoCases, '/payments/')
       const caseID1 = payment.destination_transfers[0].additional_info.cases[0]
       const caseID2 = payment.destination_transfers[0].additional_info.cases[1]

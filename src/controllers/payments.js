@@ -121,7 +121,7 @@ const ledgers = require('../services/ledgers')
  */
 /* eslint-enable */
 
-exports.put = function *(id) {
+exports.put = function * (id) {
   // TODO: check that this UUID hasn't been used before
   requestUtil.validateUriParameter('id', id, 'Uuid')
   let payment = yield requestUtil.validateBody(this, 'Payment')

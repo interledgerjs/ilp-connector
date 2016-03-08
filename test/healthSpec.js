@@ -15,7 +15,7 @@ describe('Health', function () {
   logHelper(logger)
 
   describe('GET /health', function () {
-    it('should return 200', function *() {
+    it('should return 200', function * () {
       yield this.request()
         .get('/health')
         .expect(200)

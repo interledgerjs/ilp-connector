@@ -19,7 +19,7 @@ describe('ConnectorConfig', function () {
       process.env.CONNECTOR_PAIRS = ''
     })
 
-    it('should auto-generate pairs', function *() {
+    it('should auto-generate pairs', function * () {
       const config = loadConnectorConfig()
       expect(config.get('tradingPairs').toJS()).to.deep.equal([[
         'USD@https://usd-ledger.example',
