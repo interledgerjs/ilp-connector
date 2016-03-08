@@ -6,6 +6,6 @@ module.exports = new Payments({
   backend: require('./backend'),
   config: require('./config'),
   ledgers: require('./ledgers'),
-  sourceSubscriptions: require('./sourceSubscriptions'),
+  settlementQueue: require('./settlementQueue'),
   destinationSubscriptions: require('./destinationSubscriptions')
 })

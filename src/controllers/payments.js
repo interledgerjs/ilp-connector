@@ -4,6 +4,7 @@ const requestUtil = require('five-bells-shared/utils/request')
 const InvalidBodyError = require('five-bells-shared/errors/invalid-body-error')
 const config = require('../services/config')
 const Payments = require('../services/payments')
+const settlementQueue = require('../services/settlementQueue')
 const ledgers = require('../services/ledgers')
 
 /* eslint-disable */
@@ -140,9 +141,11 @@ exports.put = function *(id) {
 
   payment.id = id.toLowerCase()
 
-  let isPrepared = yield Payments.validate(payment)
-  if (isPrepared) {
-    yield Payments.settle(payment)
+  yield Payments.validate(payment)
+  const trustedPayment = settlementQueue.storePayment(payment)
+  if (trustedPayment) {
+    yield Payments.settle(trustedPayment)
+    payment = trustedPayment
   }
 
   // Externally we want to use a full URI ID

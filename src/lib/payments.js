@@ -23,7 +23,7 @@ function Payments (options) {
   this.config = options.config
   this.backend = options.backend
   this.ledgers = options.ledgers
-  this.sourceSubscriptions = options.sourceSubscriptions
+  this.settlementQueue = options.settlementQueue
   this.destinationSubscriptions = options.destinationSubscriptions
 }
 
@@ -123,25 +123,6 @@ Payments.prototype.validateExecutionConditionPublicKey = function * (payment) {
       }
     }
   }
-}
-
-function sourceTransferIsPrepared (transfer) {
-  return transfer.state === 'prepared' ||
-         transfer.state === 'executed' ||
-         transfer.state === 'rejected'
-}
-
-Payments.prototype.paymentIsPrepared = function (payment) {
-  let isPrepared = true
-  for (const sourceTransfer of payment.source_transfers) {
-    if (sourceTransferIsPrepared(sourceTransfer)) {
-      this.sourceSubscriptions.remove(sourceTransfer.id)
-    } else {
-      this.sourceSubscriptions.put(sourceTransfer.id, payment)
-      isPrepared = false
-    }
-  }
-  return isPrepared
 }
 
 Payments.prototype.validateExpiry = function * (payment) {
@@ -337,8 +318,6 @@ Payments.prototype.validate = function * (payment) {
   yield this.validateRate(payment)
   validateExecutionConditions(payment)
   yield this.validateExecutionConditionPublicKey(payment)
-
-  return this.paymentIsPrepared(payment)
 }
 
 Payments.prototype.settle = function * (payment) {
@@ -346,6 +325,7 @@ Payments.prototype.settle = function * (payment) {
   this.addAuthorizationToTransfers(payment.destination_transfers)
   yield this.submitTransfers(payment.destination_transfers,
     payment.source_transfers)
+  this.settlementQueue.removePayment(payment)
 
   const anyTransfersAreExecuted = _.some(payment.destination_transfers, (transfer) => {
     return transfer.state === 'executed'
@@ -362,10 +342,11 @@ Payments.prototype.settle = function * (payment) {
 }
 
 Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResources) {
+  const trustedPayment = this.settlementQueue.storeTransfer(updatedTransfer)
   // Maybe its a source transfer:
-  const payment = this.sourceSubscriptions.get(updatedTransfer.id)
-  if (payment) {
-    yield this.updateSourceTransfer(updatedTransfer, payment)
+  // When all of the payment's source transfers are "prepared", authorized/submit the payment.
+  if (trustedPayment) {
+    yield this.settle(trustedPayment)
     return
   }
 
@@ -376,33 +357,15 @@ Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResource
     return
   }
 
+  // Relevant source transfer, but not ready to settle yet.
+  if (this.settlementQueue.hasPaymentForTransfer(updatedTransfer.id)) {
+    return
+  }
+
   // TODO: should we delete the subscription?
   throw new UnrelatedNotificationError('Notification does not match a ' +
     'payment we have a record of or the corresponding source ' +
     'transfers may already have been executed')
-}
-
-// A notification about `updatedTransfer` (which is a source transfer) arrived,
-// so update the state on the corresponding transfer within the cached
-// payment. When all of the payment's source transfers are "prepared",
-// authorized/submit the payment.
-Payments.prototype.updateSourceTransfer = function * (updatedTransfer, payment) {
-  const target_id = updatedTransfer.id
-  const source_transfers = payment.source_transfers
-  for (var i = 0; i < source_transfers.length; i++) {
-    if (source_transfers[i].id === target_id) {
-      source_transfers[i] = updatedTransfer
-      log.debug('updateSourceTransfer', target_id)
-      break
-    }
-  }
-
-  if (updatedTransfer.state === 'prepared') {
-    this.sourceSubscriptions.remove(target_id)
-    if (!this.sourceSubscriptions.hasPayment(payment)) {
-      yield this.settle(payment)
-    }
-  }
 }
 
 Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, sourceTransfers, relatedResources) {

@@ -10,6 +10,7 @@ const backend = require('five-bells-connector')._test.backend
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const sinon = require('sinon')
+const settlementQueue = require('../src/services/settlementQueue')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -20,6 +21,7 @@ describe('Notifications', function () {
     beforeEach(function * () {
       appHelper.create(this, app)
       yield backend.connect(ratesResponse)
+      settlementQueue._reset()
 
       this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -41,6 +43,8 @@ describe('Notifications', function () {
         _.cloneDeep(require('./data/notificationNoConditionFulfillment.json'))
       this.notificationWithConditionFulfillment =
         _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'))
+      this.notificationSourceTransferPrepared =
+        _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
     })
 
     afterEach(function * () {
@@ -161,6 +165,11 @@ describe('Notifications', function () {
         .send(payment)
         .expect(201)
         .end()
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .end()
 
       yield this.request()
         .post('/notifications')
@@ -201,6 +210,11 @@ describe('Notifications', function () {
 
       yield this.request()
         .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .end()
+      yield this.request()
+        .post('/notifications')
         .send(this.notificationNoConditionFulfillment)
         .expect(200)
         .end()
@@ -233,6 +247,11 @@ describe('Notifications', function () {
         .expect(201)
         .end()
 
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .end()
       yield this.request()
         .post('/notifications')
         .send(this.notificationWithConditionFulfillment)
@@ -272,6 +291,19 @@ describe('Notifications', function () {
         .put('/payments/' + this.paymentManyToOne.id)
         .send(payment)
         .expect(201)
+        .end()
+
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .end()
+      yield this.request()
+        .post('/notifications')
+        .send(_.merge({}, this.notificationSourceTransferPrepared, {
+          resource: {id: payment.source_transfers[1].id}
+        }))
+        .expect(200)
         .end()
 
       yield this.request()
@@ -322,6 +354,19 @@ describe('Notifications', function () {
           .put('/payments/' + this.paymentManyToOne.id)
           .send(payment)
           .expect(201)
+          .end()
+
+        yield this.request()
+          .post('/notifications')
+          .send(this.notificationSourceTransferPrepared)
+          .expect(200)
+          .end()
+        yield this.request()
+          .post('/notifications')
+          .send(_.merge({}, this.notificationSourceTransferPrepared, {
+            resource: {id: payment.source_transfers[1].id}
+          }))
+          .expect(200)
           .end()
 
         yield this.request()

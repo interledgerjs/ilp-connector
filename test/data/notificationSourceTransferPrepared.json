@@ -1,0 +1,26 @@
+{
+  "id": "http://eur-ledger.example/EUR/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d",
+  "event": "transfer.update",
+  "resource": {
+    "id": "http://usd-ledger.example/USD/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+    "ledger":"http://usd-ledger.example/USD",
+    "debits":[{
+      "amount":"1.07",
+      "account":"http://usd-ledger.example/accounts/alice"
+    }],
+    "credits":[{
+      "amount":"1.07",
+      "account":"http://usd-ledger.example/accounts/mark"
+    }],
+    "execution_condition": {
+      "message_hash": "9EXcGgJa0zTIUxEQXaMKpvoGsNmYSxv8J6C12LBNA5hRMfmbwDCzAU4O14UKnqcIaQqMGULHLI+T6Nk3+qYd3Q==",
+      "signer": "http://eur-ledger.example/EUR",
+      "type": "ed25519-sha512",
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
+    },
+    "expires_at": "2015-06-16T00:00:02.000Z",
+    "state": "prepared"
+  },
+  "related_resources": {
+  }
+}
