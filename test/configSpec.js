@@ -200,8 +200,8 @@ describe('ConnectorConfig', function () {
         process.env.TESTING = 'bar'
         const config = loadConnectorConfig()
         expect(config.get('admin').toJS()).to.deep.equal({
-          user: 'foo',
-          pass: 'bar'
+          username: 'foo',
+          password: 'bar'
         })
       })
 
@@ -211,8 +211,8 @@ describe('ConnectorConfig', function () {
         process.env.CONNECTOR_ADMIN_PASS = 'bar'
         const config = loadConnectorConfig()
         expect(config.get('admin').toJS()).to.deep.equal({
-          user: 'foo',
-          pass: 'bar'
+          username: 'foo',
+          password: 'bar'
         })
       })
 
@@ -223,7 +223,7 @@ describe('ConnectorConfig', function () {
         process.env.CONNECTOR_ADMIN_CERT = 'test/data/cert'
         const config = loadConnectorConfig()
         expect(config.get('admin').toJS()).to.deep.equal({
-          user: 'foo',
+          username: 'foo',
           cert: fs.readFileSync('test/data/cert'),
           key: fs.readFileSync('test/data/key')
         })
@@ -239,15 +239,14 @@ describe('ConnectorConfig', function () {
         process.env.CONNECTOR_ADMIN_PASS = 'foo'
         const config = loadConnectorConfig()
         expect(config.get('admin').toJS()).to.deep.equal({
-          user: 'admin',
-          pass: 'foo'
+          username: 'admin',
+          password: 'foo'
         })
       })
 
       it('DEBUG_AUTOFUND=1 and missing ADMIN_KEY', () => {
         process.env.DEBUG_AUTOFUND = 1
         process.env.CONNECTOR_ADMIN_USER = 'foo'
-        // process.env.CONNECTOR_ADMIN_KEY = 'test/data/key'
         process.env.CONNECTOR_ADMIN_CERT = 'test/data/cert'
         expect(() => loadConnectorConfig()).to.throw()
       })

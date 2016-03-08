@@ -76,8 +76,8 @@ FiveBellsLedger.prototype._request = function * (opts) {
   // TODO: check before this point that we actually have
   // credentials for the ledgers we're asked to settle between
   const credentials = this.credentials
-  const transferRes = yield request(lodash.defaults(opts, {
-    auth: credentials && {
+  const transferRes = yield request(lodash.defaults(opts, lodash.omit({
+    auth: credentials.username && credentials.password && {
       user: credentials.username,
       pass: credentials.password
     },
@@ -85,7 +85,7 @@ FiveBellsLedger.prototype._request = function * (opts) {
     key: credentials.key,
     ca: credentials.ca,
     json: true
-  }))
+  }, lodash.isUndefined)))
   // TODO for source transfers: handle this so we actually get our money back
   if (transferRes.statusCode >= 400) {
     throw new ExternalError('Remote error: status=' + transferRes.statusCode + ' body=' + transferRes.body)
@@ -109,21 +109,13 @@ FiveBellsLedger.prototype.subscribe = function * (target_uri) {
   let subscribeRes = yield request_retry({
     method: 'put',
     url: this.id + '/subscriptions/' + notificationUuid,
-    auth: this.credentials && {
-      user: this.credentials.username,
-      pass: this.credentials.password
-    },
-    cert: this.credentials.cert,
-    key: this.credentials.key,
-    ca: this.credentials.ca,
-    json: true,
     body: {
       owner: account_uri,
       event: 'transfer.update',
       target: target_uri,
       subject: account_uri
     }
-  }, 'could not subscribe to ledger ' + this.id)
+  }, 'could not subscribe to ledger ' + this.id, this.credentials)
   if (subscribeRes.statusCode >= 400) {
     throw new Error('subscribe unexpected status code: ' + subscribeRes.statusCode)
   }
@@ -135,10 +127,6 @@ FiveBellsLedger.prototype._autofund = function * () {
   yield request_retry({
     method: 'put',
     url: this.credentials.account_uri,
-    auth: admin.pass && {
-      user: admin.user,
-      pass: admin.pass
-    },
     json: true,
     body: {
       name: this.credentials.username,
@@ -146,18 +134,24 @@ FiveBellsLedger.prototype._autofund = function * () {
       connector: config.getIn(['server', 'base_uri']),
       password: this.credentials.password,
       fingerprint: this.credentials.fingerprint
-    },
-    cert: admin.cert,
-    ca: admin.ca,
-    key: admin.key
-  }, 'could not create account at ledger ' + this.id)
+    }
+  }, 'could not create account at ledger ' + this.id, admin)
 }
 
-function * request_retry (opts, error_msg) {
+function * request_retry (opts, error_msg, credentials) {
   let delay = backoffMin
   while (true) {
     try {
-      let res = yield request(opts)
+      let res = yield request(lodash.defaults(opts, lodash.omit({
+        auth: credentials.password && credentials.username && {
+          user: credentials.username,
+          pass: credentials.password
+        },
+        cert: credentials.cert,
+        key: credentials.key,
+        ca: credentials.ca,
+        json: true
+      }, lodash.isUndefined)))
       return res
     } catch (err) {
       log.warn(error_msg)
@@ -168,10 +162,10 @@ function * request_retry (opts, error_msg) {
 }
 
 FiveBellsLedger.prototype.unsubscribe = function * () {
-  yield request({
+  yield request_retry({
     method: 'delete',
     url: this.id + '/subscriptions/' + notificationUuid
-  })
+  }, 'could not unsubscribe from ledger ' + this.id, this.credentials)
 }
 
 function wait (ms) {

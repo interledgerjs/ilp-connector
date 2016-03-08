@@ -55,8 +55,8 @@ function parseAdminEnv () {
   const adminCa = Config.getEnv(envPrefix, 'ADMIN_CA')
 
   return {
-    user: adminUser,
-    pass: adminPass,
+    username: adminUser,
+    password: adminPass,
     key: adminKey,
     cert: adminCert,
     ca: adminCa
@@ -120,14 +120,14 @@ function getLocalConfig () {
   features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
 
   const adminEnv = parseAdminEnv()
-  const useAdmin = adminEnv.user && (adminEnv.pass || adminEnv.key)
+  const useAdmin = adminEnv.username && (adminEnv.password || adminEnv.key)
   if (features.debugAutoFund && !useAdmin) {
     throw new Error(`${envPrefix}_DEBUG_AUTOFUND requires either ${envPrefix}_ADMIN_PASS or ${envPrefix}_ADMIN_KEY`)
   }
 
   const admin = useAdmin ? _.omit({
-    user: adminEnv.user,
-    pass: adminEnv.pass,
+    username: adminEnv.username,
+    password: adminEnv.password,
     key: adminEnv.key && fs.readFileSync(adminEnv.key),
     cert: adminEnv.cert && fs.readFileSync(adminEnv.cert),
     ca: adminEnv.ca && fs.readFileSync(adminEnv.ca)
