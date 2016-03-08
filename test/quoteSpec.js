@@ -42,7 +42,7 @@ describe('Quotes', function () {
   })
 
   describe('GET /quote', function () {
-    it('should return a 400 if no amount is specified', function *() {
+    it('should return a 400 if no amount is specified', function * () {
       yield this.request()
         .get('/quote?' +
           'source_ledger=http://eur-ledger.example/EUR' +
@@ -56,7 +56,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a 422 if the destination_expiry_duration is too long', function *() {
+    it('should return a 422 if the destination_expiry_duration is too long', function * () {
       yield this.request()
         .get('/quote?' +
           'source_amount=100' +
@@ -71,7 +71,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a 422 if the difference between the source_expiry_duration and destination_expiry_duration is less than the minMessageWindow', function *() {
+    it('should return a 422 if the difference between the source_expiry_duration and destination_expiry_duration is less than the minMessageWindow', function * () {
       yield this.request()
         .get('/quote?' +
           'source_amount=100' +
@@ -89,7 +89,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a 422 for insufficient liquidity', function *() {
+    it('should return a 422 for insufficient liquidity', function * () {
       yield this.request()
         .get('/quote?' +
           'source_amount=1500001' +
@@ -104,7 +104,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a 502 when unable to get balance from ledger', function *() {
+    it('should return a 502 when unable to get balance from ledger', function * () {
       nock.cleanAll()
       yield this.request()
         .get('/quote?' +
@@ -120,7 +120,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a valid Payment Template object', function *() {
+    it('should return a valid Payment Template object', function * () {
       yield this.request()
         .get('/quote?' +
           'source_amount=100' +
@@ -135,7 +135,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return quotes for fixed source amounts', function *() {
+    it('should return quotes for fixed source amounts', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://eur-ledger.example/EUR' +
@@ -170,7 +170,7 @@ describe('Quotes', function () {
     })
 
     // TODO: make sure we're calculating the rates correctly and in our favor
-    it('should return quotes for fixed destination amounts', function *() {
+    it('should return quotes for fixed destination amounts', function * () {
       yield this.request()
         .get('/quote?' +
           'source_ledger=http://eur-ledger.example/EUR' +
@@ -205,7 +205,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a payment object with the source and destination amounts filled in as debits and credits', function *() {
+    it('should return a payment object with the source and destination amounts filled in as debits and credits', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://eur-ledger.example/EUR' +
@@ -239,7 +239,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', function *() {
+    it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://usd-ledger.example/USD' +
@@ -273,7 +273,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates', function *() {
+    it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://usd-ledger.example/USD' +
@@ -307,7 +307,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates and the rate must be flipped', function *() {
+    it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates and the rate must be flipped', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://cad-ledger.example/CAD' +
@@ -341,7 +341,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should fill in default values if no expiry_durations are specified', function *() {
+    it('should fill in default values if no expiry_durations are specified', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://cad-ledger.example/CAD' +
@@ -356,7 +356,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return the specified expiry_durations if they are acceptable', function *() {
+    it('should return the specified expiry_durations if they are acceptable', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://cad-ledger.example/CAD' +
@@ -373,7 +373,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should set the source_expiry_duration if only the destination_expiry_duration is specified', function *() {
+    it('should set the source_expiry_duration if only the destination_expiry_duration is specified', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://cad-ledger.example/CAD' +
@@ -389,7 +389,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should set the destination_expiry_duration if only the source_expiry_duration is specified', function *() {
+    it('should set the destination_expiry_duration if only the source_expiry_duration is specified', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://cad-ledger.example/CAD' +
@@ -405,7 +405,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should get the source_ledger if source_account is specified', function *() {
+    it('should get the source_ledger if source_account is specified', function * () {
       const mockGet = nock('http://cad-ledger.example/accounts/foo')
         .get('')
         .reply(200, {ledger: 'http://cad-ledger.example/CAD'})
@@ -424,7 +424,7 @@ describe('Quotes', function () {
       mockGet.done()
     })
 
-    it('should get the destination_ledger if destination_account is specified', function *() {
+    it('should get the destination_ledger if destination_account is specified', function * () {
       const mockGet = nock('http://usd-ledger.example/accounts/foo')
         .get('')
         .reply(200, {ledger: 'http://usd-ledger.example/USD'})

@@ -53,7 +53,7 @@ describe('Notifications', function () {
       this.clock.restore()
     })
 
-    it('should return a 400 if the notification does not have an id field', function *() {
+    it('should return a 400 if the notification does not have an id field', function * () {
       delete this.notificationNoConditionFulfillment.id
       yield this.request()
         .post('/notifications')
@@ -63,7 +63,7 @@ describe('Notifications', function () {
     })
 
     // TODO: -shared currently accepts relative URIs as valid IRIs - it shouldn't
-    it.skip('should return a 400 if the notification has an invalid id field (simple name)', function *() {
+    it.skip('should return a 400 if the notification has an invalid id field (simple name)', function * () {
       this.notificationNoConditionFulfillment.id =
         'name'
       yield this.request()
@@ -73,7 +73,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it.skip('should return a 400 if the notification has an invalid id field (uuid)', function *() {
+    it.skip('should return a 400 if the notification has an invalid id field (uuid)', function * () {
       this.notificationNoConditionFulfillment.id =
         '96bdd66f-f37a-4be2-a7b0-4a449d78cd33'
       yield this.request()
@@ -83,7 +83,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 422 if the notification has a valid id field (uri)', function *() {
+    it('should return a 422 if the notification has a valid id field (uri)', function * () {
       this.notificationNoConditionFulfillment.id =
         'http://example.com/example/1234-5678/blah?foo=bar&bar=baz'
       yield this.request()
@@ -94,7 +94,7 @@ describe('Notifications', function () {
     })
 
     // TODO: -shared currently does not accept IRIs although it should
-    it.skip('should return a 422 if the notification has a valid id field (iri)', function *() {
+    it.skip('should return a 422 if the notification has a valid id field (iri)', function * () {
       this.notificationNoConditionFulfillment.id =
         'http://exämple.com/example/1234-5678/blah?fòo=bar&bar=baz'
       yield this.request()
@@ -104,7 +104,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 400 if the notification does not have an event field', function *() {
+    it('should return a 400 if the notification does not have an event field', function * () {
       delete this.notificationNoConditionFulfillment.event
       yield this.request()
         .post('/notifications')
@@ -113,7 +113,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 400 if the notification has an invalid event field', function *() {
+    it('should return a 400 if the notification has an invalid event field', function * () {
       this.notificationNoConditionFulfillment.event = 'hello there'
       yield this.request()
         .post('/notifications')
@@ -122,7 +122,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 400 if the resource field is not a valid transfer', function *() {
+    it('should return a 400 if the resource field is not a valid transfer', function * () {
       this.notificationNoConditionFulfillment.resource.additional_field =
         'blah'
       yield this.request()
@@ -132,7 +132,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 422 if the notification is not related to a payment the connector has participated in', function *() {
+    it('should return a 422 if the notification is not related to a payment the connector has participated in', function * () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationWithConditionFulfillment)
@@ -146,7 +146,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 200 if the notification is properly formatted', function *() {
+    it('should return a 200 if the notification is properly formatted', function * () {
       const payment = this.formatId(this.paymentSameExecutionCondition,
         '/payments/')
 
@@ -177,7 +177,7 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should submit the source transfer corresponding to the destination transfer it is notified about if its execution condition is the destination transfer', function *() {
+    it('should submit the source transfer corresponding to the destination transfer it is notified about if its execution condition is the destination transfer', function * () {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
 
@@ -223,7 +223,7 @@ describe('Notifications', function () {
       sourceTransferExecuted.done()
     })
 
-    it('should submit the source transfer corresponding to the destination transfer it is notified about if the execution conditions are the same', function *() {
+    it('should submit the source transfer corresponding to the destination transfer it is notified about if the execution conditions are the same', function * () {
       const payment = this.formatId(this.paymentSameExecutionCondition,
         '/payments/')
 
@@ -262,7 +262,7 @@ describe('Notifications', function () {
       sourceTransferExecuted.done()
     })
 
-    it('should submit multiple source transfers if there are multiple that correspond to a single destination transfer it is notified about', function *() {
+    it('should submit multiple source transfers if there are multiple that correspond to a single destination transfer it is notified about', function * () {
       const payment = this.formatId(this.paymentManyToOne,
         '/payments/')
 
@@ -318,7 +318,7 @@ describe('Notifications', function () {
     })
 
     it('should submit multiple source transfers with the right execution conditions even if one has the same condition as the destination transfer and another\'s condition is the destination transfer itself',
-      function *() {
+      function * () {
         const payment = this.formatId(this.paymentManyToOne,
           '/payments/')
         payment.source_transfers[0].execution_condition =

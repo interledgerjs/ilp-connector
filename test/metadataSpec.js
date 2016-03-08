@@ -16,7 +16,7 @@ describe('Metadata', function () {
   logHelper(logger)
 
   describe('GET /', function () {
-    it('should return metadata', function *() {
+    it('should return metadata', function * () {
       yield this.request()
         .get('/')
         .expect(200)

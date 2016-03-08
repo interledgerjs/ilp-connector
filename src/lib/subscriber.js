@@ -9,7 +9,7 @@ function Subscriber (config, payments) {
   this.putTransfer = payments.updateTransfer.bind(payments)
 }
 
-Subscriber.prototype.subscribePairs = function *(pairs) {
+Subscriber.prototype.subscribePairs = function * (pairs) {
   let ledgers = _(pairs)
     .flatten()
     .map(function (d) {

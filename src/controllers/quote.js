@@ -117,7 +117,7 @@ const ExternalError = require('../errors/external-error')
  */
 /* eslint-enable */
 
-exports.get = function *() {
+exports.get = function * () {
   const query = yield makeQuoteQuery(this.query)
   const quote = yield backend.getQuote(makeQuoteArgs(query))
 
