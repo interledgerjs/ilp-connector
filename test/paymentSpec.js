@@ -11,7 +11,7 @@ const backend = require('five-bells-connector')._test.backend
 const appHelper = require('./helpers/app')
 const logHelper = require('five-bells-shared/testHelpers/log')
 const ratesResponse = require('./data/fxRates.json')
-const config = require('five-bells-connector')._test.config.toJS()
+const config = require('five-bells-connector')._test.config
 const settlementQueue = require('../src/services/settlementQueue')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT

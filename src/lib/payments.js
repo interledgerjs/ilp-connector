@@ -280,7 +280,7 @@ Payments.prototype.addAuthorizationToTransfers = function (transfers) {
 
       // TODO change this when the connector's account
       // isn't the same on all ledgers
-      if (debit.account === credentials.get('account_uri')) {
+      if (debit.account === credentials.account_uri) {
         debit.authorized = true
       }
     }

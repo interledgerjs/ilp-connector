@@ -11,7 +11,7 @@ const config = require('../../services/config')
 const RATES_API = 'https://api.fixer.io/latest'
 
 function lookupCurrencies (source_ledger, destination_ledger) {
-  for (let pair of config.get('tradingPairs').toJS()) {
+  for (let pair of config.get('tradingPairs')) {
     if (pair[0].indexOf(source_ledger) === 4 &&
       pair[1].indexOf(destination_ledger) === 4) {
       return [pair[0].slice(0, 3), pair[1].slice(0, 3)]
