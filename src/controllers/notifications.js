@@ -1,8 +1,8 @@
 'use strict'
 
 const requestUtil = require('five-bells-shared/utils/request')
-const Payments = require('../services/payments')
 const log = require('../services/log')('notifications')
+const model = require('../models/notifications')
 
 /* eslint-disable */
 /**
@@ -59,13 +59,9 @@ const log = require('../services/log')('notifications')
 /* eslint-enable */
 
 exports.post = function * postNotification () {
-  let notification = yield requestUtil.validateBody(this, 'Notification')
-
+  const notification = yield requestUtil.validateBody(this, 'Notification')
   log.debug('Got notification: ' + JSON.stringify(notification))
-
-  if (notification.event === 'transfer.update') {
-    yield Payments.updateTransfer(notification.resource, notification.related_resources)
-  }
+  yield model.processNotification(notification)
 
   this.status = 200
 }

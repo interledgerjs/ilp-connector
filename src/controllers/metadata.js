@@ -1,16 +1,6 @@
 'use strict'
-const config = require('../services/config')
 
-const metadata = {
-  public_key: config.getIn(['keys', 'ed25519', 'public']),
-  urls: {
-    health: '/health',
-    pairs: '/pairs',
-    payment: '/payments/:uuid',
-    quote: '/quote',
-    notifications: '/notifications'
-  }
-}
+const model = require('../models/metadata')
 
 /**
  * @api {get} / Get the server metadata
@@ -22,4 +12,4 @@ const metadata = {
  *
  * @returns {void}
  */
-exports.getResource = function * () { this.body = metadata }
+exports.getResource = function * () { this.body = model.getMetadata() }
