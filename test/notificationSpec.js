@@ -10,7 +10,6 @@ const backend = require('five-bells-connector')._test.backend
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const sinon = require('sinon')
-const settlementQueue = require('../src/services/settlementQueue')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -21,7 +20,6 @@ describe('Notifications', function () {
     beforeEach(function * () {
       appHelper.create(this, app)
       yield backend.connect(ratesResponse)
-      settlementQueue._reset()
 
       this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -29,10 +27,6 @@ describe('Notifications', function () {
         _.cloneDeep(require('./data/paymentOneToOne.json'))
       this.paymentSameExecutionCondition =
         _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
-      this.paymentOneToMany =
-        _.cloneDeep(require('./data/paymentOneToMany.json'))
-      this.paymentManyToOne =
-        _.cloneDeep(require('./data/paymentManyToOne.json'))
       this.transferProposedReceipt =
         _.cloneDeep(require('./data/transferStateProposed.json'))
       this.transferPreparedReceipt =
@@ -161,13 +155,14 @@ describe('Notifications', function () {
         .reply(201, this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
 
       yield this.request()
-        .put('/payments/' + this.paymentSameExecutionCondition.id)
-        .send(payment)
-        .expect(201)
-        .end()
-      yield this.request()
         .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
+        .send({
+          id: this.notificationSourceTransferPrepared.id,
+          event: 'transfer.update',
+          resource: _.merge({}, payment.source_transfers[0], {
+            credits: [{memo: payment.destination_transfers[0]}]
+          })
+        })
         .expect(200)
         .end()
 
@@ -203,12 +198,6 @@ describe('Notifications', function () {
         }))
 
       yield this.request()
-        .put('/payments/' + this.paymentOneToOne.id)
-        .send(payment)
-        .expect(201)
-        .end()
-
-      yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
         .expect(200)
@@ -242,14 +231,14 @@ describe('Notifications', function () {
         }))
 
       yield this.request()
-        .put('/payments/' + this.paymentSameExecutionCondition.id)
-        .send(payment)
-        .expect(201)
-        .end()
-
-      yield this.request()
         .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
+        .send({
+          id: this.notificationSourceTransferPrepared.id,
+          event: 'transfer.update',
+          resource: _.merge({}, payment.source_transfers[0], {
+            credits: [{memo: payment.destination_transfers[0]}]
+          })
+        })
         .expect(200)
         .end()
       yield this.request()
@@ -261,123 +250,5 @@ describe('Notifications', function () {
       // Throw an error if this nock hasn't been executed
       sourceTransferExecuted.done()
     })
-
-    it('should submit multiple source transfers if there are multiple that correspond to a single destination transfer it is notified about', function * () {
-      const payment = this.formatId(this.paymentManyToOne,
-        '/payments/')
-
-      nock(payment.destination_transfers[0].id)
-        .put('')
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'prepared'
-        }))
-
-      let firstSourceTransferExecuted = nock(payment.source_transfers[0].id)
-        .put('/fulfillment',
-          this.notificationWithConditionFulfillment
-            .resource.execution_condition_fulfillment)
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
-      let secondSourceTransferExecuted = nock(payment.source_transfers[1].id)
-        .put('/fulfillment',
-          this.notificationWithConditionFulfillment
-            .resource.execution_condition_fulfillment)
-        .reply(201, _.assign({}, payment.source_transfers[1], {
-          state: 'executed'
-        }))
-
-      yield this.request()
-        .put('/payments/' + this.paymentManyToOne.id)
-        .send(payment)
-        .expect(201)
-        .end()
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-      yield this.request()
-        .post('/notifications')
-        .send(_.merge({}, this.notificationSourceTransferPrepared, {
-          resource: {id: payment.source_transfers[1].id}
-        }))
-        .expect(200)
-        .end()
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationWithConditionFulfillment)
-        .expect(200)
-        .end()
-
-      // Throw an error if this nock hasn't been executed
-      firstSourceTransferExecuted.done()
-      secondSourceTransferExecuted.done()
-    })
-
-    it('should submit multiple source transfers with the right execution conditions even if one has the same condition as the destination transfer and another\'s condition is the destination transfer itself',
-      function * () {
-        const payment = this.formatId(this.paymentManyToOne,
-          '/payments/')
-        payment.source_transfers[0].execution_condition =
-          this.paymentOneToOne.source_transfers[0].execution_condition
-
-        nock(payment.destination_transfers[0].id)
-          .put('')
-          .reply(201, _.assign({}, payment.destination_transfers[0], {
-            state: 'prepared'
-          }))
-
-        nock(payment.destination_transfers[0].id)
-          .get('/state')
-          .reply(200, this.transferExecutedReceipt)
-
-        let firstSourceTransferExecuted = nock(payment.source_transfers[0].id)
-          .put('/fulfillment', {
-            type: 'ed25519-sha512',
-            signature: this.transferExecutedReceipt.signature
-          })
-          .reply(201, _.assign({}, payment.source_transfers[0], {
-            state: 'executed'
-          }))
-        let secondSourceTransferExecuted = nock(payment.source_transfers[1].id)
-          .put('/fulfillment',
-            this.notificationWithConditionFulfillment
-              .resource.execution_condition_fulfillment)
-          .reply(201, _.assign({}, payment.source_transfers[1], {
-            state: 'executed'
-          }))
-
-        yield this.request()
-          .put('/payments/' + this.paymentManyToOne.id)
-          .send(payment)
-          .expect(201)
-          .end()
-
-        yield this.request()
-          .post('/notifications')
-          .send(this.notificationSourceTransferPrepared)
-          .expect(200)
-          .end()
-        yield this.request()
-          .post('/notifications')
-          .send(_.merge({}, this.notificationSourceTransferPrepared, {
-            resource: {id: payment.source_transfers[1].id}
-          }))
-          .expect(200)
-          .end()
-
-        yield this.request()
-          .post('/notifications')
-          .send(this.notificationWithConditionFulfillment)
-          .expect(200)
-          .end()
-
-        // Throw an error if this nock hasn't been executed
-        firstSourceTransferExecuted.done()
-        secondSourceTransferExecuted.done()
-      })
   })
 })

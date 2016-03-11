@@ -23,7 +23,6 @@ function Payments (options) {
   this.config = options.config
   this.backend = options.backend
   this.ledgers = options.ledgers
-  this.settlementQueue = options.settlementQueue
   this.destinationSubscriptions = options.destinationSubscriptions
 }
 
@@ -257,11 +256,11 @@ Payments.prototype.validateRate = function * (payment) {
   }
 }
 
-function validateOneToManyOrManyToOne (payment) {
-  if (payment.source_transfers.length > 1 &&
-    payment.destination_transfers.length > 1) {
+function validateOneToOne (payment) {
+  if (payment.source_transfers.length !== 1 ||
+    payment.destination_transfers.length !== 1) {
     throw new ManyToManyNotSupportedError('This connector does not support ' +
-      'payments that include multiple source transfers and multiple ' +
+      'payments that include multiple source transfers or multiple ' +
       'destination transfers')
   }
 }
@@ -308,11 +307,9 @@ Payments.prototype.validate = function * (payment) {
   // TODO: Check ledger signature on source payment
   // TODO: Check ledger signature on destination payment
 
-  log.debug('validating payment ID: ' + payment.id)
-
   // Note that some connectors may facilitate many to many
   // payments but this one will throw an error
-  validateOneToManyOrManyToOne(payment)
+  validateOneToOne(payment)
 
   yield this.validateExpiry(payment)
   yield this.validateRate(payment)
@@ -325,7 +322,6 @@ Payments.prototype.settle = function * (payment) {
   this.addAuthorizationToTransfers(payment.destination_transfers)
   yield this.submitTransfers(payment.destination_transfers,
     payment.source_transfers)
-  this.settlementQueue.removePayment(payment)
 
   const anyTransfersAreExecuted = _.some(payment.destination_transfers, (transfer) => {
     return transfer.state === 'executed'
@@ -342,11 +338,11 @@ Payments.prototype.settle = function * (payment) {
 }
 
 Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResources) {
-  const trustedPayment = this.settlementQueue.storeTransfer(updatedTransfer)
-  // Maybe its a source transfer:
-  // When all of the payment's source transfers are "prepared", authorized/submit the payment.
-  if (trustedPayment) {
-    yield this.settle(trustedPayment)
+  // Maybe it's a source transfer:
+  // When the payment's source transfer is "prepared", authorized/submit the payment.
+  const traderCredit = updatedTransfer.credits.find(this.isTraderFunds, this)
+  if (traderCredit) {
+    yield this.updateSourceTransfer(updatedTransfer, traderCredit)
     return
   }
 
@@ -357,15 +353,27 @@ Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResource
     return
   }
 
-  // Relevant source transfer, but not ready to settle yet.
-  if (this.settlementQueue.hasPaymentForTransfer(updatedTransfer.id)) {
-    return
-  }
-
   // TODO: should we delete the subscription?
   throw new UnrelatedNotificationError('Notification does not match a ' +
     'payment we have a record of or the corresponding source ' +
     'transfers may already have been executed')
+}
+
+Payments.prototype.updateSourceTransfer = function * (updatedTransfer, traderCredit) {
+  const destinationTransfer = traderCredit.memo
+  if (!destinationTransfer) return
+
+  // The source transfer isn't prepared yet, so ignore it.
+  if (updatedTransfer.state !== 'prepared' && updatedTransfer.state !== 'executed') {
+    return
+  }
+
+  const payment = {
+    source_transfers: [updatedTransfer],
+    destination_transfers: [destinationTransfer]
+  }
+  yield this.validate(payment)
+  yield this.settle(payment)
 }
 
 Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, sourceTransfers, relatedResources) {
@@ -379,13 +387,22 @@ Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, sour
 
   // This modifies the source_transfers states
   yield executeSourceTransfers(sourceTransfers, [updatedTransfer], relatedResources)
+
   const allTransfersExecuted = _.every(sourceTransfers, function (transfer) {
     return transfer.state === 'executed'
   })
-  if (!allTransfersExecuted) {
+  if (allTransfersExecuted) {
+    this.destinationSubscriptions.remove(updatedTransfer.id)
+  } else {
     log.error('not all source transfers have been executed, ' +
       'meaning we have not been fully repaid')
   }
+}
+
+Payments.prototype.isTraderFunds = function (funds) {
+  return _.some(this.config.ledgerCredentials, function (credentials) {
+    return credentials.account_uri === funds.account
+  })
 }
 
 module.exports = Payments
