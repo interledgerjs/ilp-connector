@@ -122,3 +122,8 @@ Breaking down that command:
 * `-it` Run Five Bells Connector in an interactive terminal.
 * `--rm` Delete container when it's done running.
 * `-e CONNECTOR_PORT=4000` Set the connector's port to 4000. This is just an example for how to set a config option.
+
+## Payments
+
+The connector will facilitate an interledger payment upon receiving a notification for a transfer in which it is credited. That "source" transfer must have a `destination_transfer` in it's credit's `memo` that debits the connector.
+As soon as the source transfer is prepared, the connector will authorize the debits from its account(s) on the destination ledger.

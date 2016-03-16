@@ -9,6 +9,7 @@ const ledgers = require('../services/ledgers')
 const balanceCache = require('../services/balance-cache')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
+const InvalidURIParameterError = require('five-bells-shared').InvalidUriParameterError
 const ExternalError = require('../errors/external-error')
 
 /* eslint-disable */
@@ -171,13 +172,13 @@ function * makeQuoteQuery (params) {
   let source_ledger = params.source_ledger
   if (!source_ledger) {
     if (params.source_account) source_ledger = yield getAccountLedger(params.source_account)
-    else throw new Error('Missing required parameter: source_ledger or source_account')
+    else throw new InvalidURIParameterError('Missing required parameter: source_ledger or source_account')
   }
 
   let destination_ledger = params.destination_ledger
   if (!destination_ledger) {
     if (params.destination_account) destination_ledger = yield getAccountLedger(params.destination_account)
-    else throw new Error('Missing required parameter: destination_ledger or destination_account')
+    else throw new InvalidURIParameterError('Missing required parameter: destination_ledger or destination_account')
   }
 
   return {

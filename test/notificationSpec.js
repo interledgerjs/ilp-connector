@@ -85,6 +85,15 @@ describe('Notifications', function () {
         .end()
     })
 
+    it('returns 200 if the transfer is proposed', function * () {
+      this.notificationSourceTransferPrepared.resource.state = 'proposed'
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .end()
+    })
+
     it('should return a 200 if the notification has a valid id field (uri)', function * () {
       this.notificationNoConditionFulfillment.id =
         'http://example.com/example/1234-5678/blah?foo=bar&bar=baz'
@@ -376,6 +385,22 @@ describe('Notifications', function () {
           expect(res.body.id).to.equal('AssetsNotTradedError')
           expect(res.body.message).to.equal('This connector does not support ' +
             'the given asset pair')
+        })
+        .end()
+    })
+
+    it('returns 400 if the source transfer\'s destination_transfer isn\'t a Transfer', function * () {
+      this.notificationSourceTransferPrepared
+        .resource.credits[0].memo
+        .destination_transfer.debits = []
+
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidBodyError')
+          expect(res.body.message).to.equal('TransferTemplate schema validation error: Array is too short (0), minimum 1')
         })
         .end()
     })

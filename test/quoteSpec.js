@@ -442,5 +442,37 @@ describe('Quotes', function () {
         .end()
       mockGet.done()
     })
+
+    it('returns 400 if no source is specified', function * () {
+      nock('http://usd-ledger.example/accounts/foo')
+        .get('')
+        .reply(200, {ledger: 'http://usd-ledger.example/USD'})
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&destination_account=http://usd-ledger.example/accounts/foo' +
+          '&source_expiry_duration=6')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidUriParameterError')
+          expect(res.body.message).to.equal('Missing required parameter: source_ledger or source_account')
+        })
+        .end()
+    })
+
+    it('returns 400 if no destination is specified', function * () {
+      nock('http://cad-ledger.example/accounts/foo')
+        .get('')
+        .reply(200, {ledger: 'http://cad-ledger.example/CAD'})
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_account=http://cad-ledger.example/accounts/foo' +
+          '&source_expiry_duration=6')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidUriParameterError')
+          expect(res.body.message).to.equal('Missing required parameter: destination_ledger or destination_account')
+        })
+        .end()
+    })
   })
 })
