@@ -2,7 +2,7 @@
 const lodash = require('lodash')
 const request = require('co-request')
 const uuid = require('uuid4')
-const validate = require('five-bells-shared/services/validate')
+const validate = require('../validate')
 const config = require('../../services/config')
 const log = require('../../services/log')('fiveBellsLedger')
 const ExternalError = require('../../errors/external-error')
@@ -19,9 +19,7 @@ function FiveBellsLedger (options) {
   this.credentials = options.credentials
 }
 
-FiveBellsLedger.validateTransfer = function (transfer) {
-  return validate('TransferTemplate', transfer)
-}
+FiveBellsLedger.validateTransfer = function (transfer) { validate('TransferTemplate', transfer) }
 
 // template - {amount}
 FiveBellsLedger.prototype.makeFundTemplate = function (template) {

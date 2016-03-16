@@ -136,11 +136,11 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 200 if the notification is not related to a payment the connector has participated in', function * () {
+    it('should return a 400 if the notification is not related to a payment the connector has participated in', function * () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationWithConditionFulfillment)
-        .expect(200)
+        .expect(400)
         .end()
     })
 
@@ -779,17 +779,23 @@ describe('Notifications', function () {
         .reply(200, this.transferProposedReceipt)
 
       const connectorCredentials = config.ledgerCredentials[destination_transfer.ledger]
+      const debitMemo = {
+        source_transfer_ledger: source_transfer.ledger,
+        source_transfer_id: source_transfer.id
+      }
+      const authorizedDestinationTransfer = _.merge({}, destination_transfer, {
+        debits: [
+          {memo: debitMemo},
+          {memo: debitMemo, authorized: true}
+        ]
+      })
       nock(destination_transfer.id)
-        .put('', _.merge({}, destination_transfer, {
-          debits: [{}, {authorized: true}]
-        }))
+        .put('', authorizedDestinationTransfer)
         .basicAuth({
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.merge({}, destination_transfer, {
-          debits: [{}, {authorized: true}]
-        }))
+        .reply(201, authorizedDestinationTransfer)
 
       yield this.request()
         .post('/notifications')

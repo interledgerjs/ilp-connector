@@ -18,17 +18,6 @@ Multiledger.prototype.getLedger = function (ledger_id) {
         (this.ledgers[ledger_id] = this.buildLedger(ledger_id))
 }
 
-Multiledger.prototype.validatePayment = function (payment) {
-  let transfers = payment.source_transfers.concat(payment.destination_transfers)
-  for (let transfer of transfers) {
-    let result = this.validateTransfer(transfer)
-    if (!result.valid) {
-      return result
-    }
-  }
-  return {valid: true, errors: []}
-}
-
 Multiledger.prototype.buildLedger = function (ledger_id) {
   let creds = this.config.getIn(['ledgerCredentials', ledger_id])
   let Ledger = this.ledger_types[creds.type]

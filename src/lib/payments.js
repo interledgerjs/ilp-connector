@@ -276,6 +276,16 @@ Payments.prototype.addAuthorizationToTransfers = function (transfers) {
 // TODO authorize credits
 }
 
+Payments.prototype.submitTransfer = function * (destinationTransfer, sourceTransfer) {
+  for (const debit of destinationTransfer.debits) {
+    debit.memo = Object.assign({}, debit.memo, {
+      source_transfer_ledger: sourceTransfer.ledger,
+      source_transfer_id: sourceTransfer.id
+    })
+  }
+  yield this.ledgers.putTransfer(destinationTransfer)
+}
+
 Payments.prototype.validate = function * (payment) {
   // TODO: Check expiry settings
   // TODO: Check ledger signature on source payment
@@ -291,8 +301,9 @@ Payments.prototype.settle = function * (payment) {
   log.debug('Settle payment: ' + JSON.stringify(payment))
   this.addAuthorizationToTransfers(payment.destination_transfers)
 
+  const sourceTransfer = payment.source_transfers[0]
   for (const destinationTransfer of payment.destination_transfers) {
-    yield this.ledgers.putTransfer(destinationTransfer)
+    yield this.submitTransfer(destinationTransfer, sourceTransfer)
   }
 
   const anyTransfersAreExecuted = _.some(payment.destination_transfers, (transfer) => {
@@ -334,6 +345,7 @@ Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResource
 Payments.prototype.updateSourceTransfer = function * (updatedTransfer, traderCredit) {
   const destinationTransfer = traderCredit.memo && traderCredit.memo.destination_transfer
   if (!destinationTransfer) return
+  this.ledgers.validateTransfer(destinationTransfer)
 
   const isTransferReady = updatedTransfer.state === 'prepared' || updatedTransfer.state === 'executed'
   if (!isTransferReady) return
