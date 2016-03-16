@@ -48,20 +48,19 @@ FiveBellsLedger.prototype.putTransfer = function * (transfer) {
   updateTransfer(transfer, updatedTransfer)
 }
 
-FiveBellsLedger.prototype.putTransferFulfillment = function * (transfer, execution_condition_fulfillment) {
+FiveBellsLedger.prototype.putTransferFulfillment = function * (transferID, execution_condition_fulfillment) {
   const fulfillmentRes = yield this._request({
     method: 'put',
-    uri: transfer.id + '/fulfillment',
+    uri: transferID + '/fulfillment',
     body: execution_condition_fulfillment
   })
   // TODO check the timestamp the ledger sends back
   // See https://github.com/interledger/five-bells-ledger/issues/149
   if (fulfillmentRes.statusCode === 200 || fulfillmentRes.statusCode === 201) {
-    transfer.state = 'executed'
+    return 'executed'
   } else {
-    log.error('Failed to submit fulfillment for transfer: ' + transfer.id + ' Error: ' + (fulfillmentRes.body ? JSON.stringify(fulfillmentRes.body) : fulfillmentRes.error))
+    log.error('Failed to submit fulfillment for transfer: ' + transferID + ' Error: ' + (fulfillmentRes.body ? JSON.stringify(fulfillmentRes.body) : fulfillmentRes.error))
   }
-  return fulfillmentRes.body
 }
 
 FiveBellsLedger.prototype.getTransferFulfillment = function * (transfer) {

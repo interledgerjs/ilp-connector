@@ -12,8 +12,6 @@ const NoRelatedSourceCreditError =
   require('../errors/no-related-source-credit-error')
 const NoRelatedDestinationDebitError =
   require('../errors/no-related-destination-debit-error')
-const ManyToManyNotSupportedError =
-  require('../errors/many-to-many-not-supported-error')
 const UnrelatedNotificationError =
   require('../errors/unrelated-notification-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
@@ -23,7 +21,6 @@ function Payments (options) {
   this.config = options.config
   this.backend = options.backend
   this.ledgers = options.ledgers
-  this.destinationSubscriptions = options.destinationSubscriptions
 }
 
 // TODO this should handle the different types of execution_condition's.
@@ -256,15 +253,6 @@ Payments.prototype.validateRate = function * (payment) {
   }
 }
 
-function validateOneToOne (payment) {
-  if (payment.source_transfers.length !== 1 ||
-    payment.destination_transfers.length !== 1) {
-    throw new ManyToManyNotSupportedError('This connector does not support ' +
-      'payments that include multiple source transfers or multiple ' +
-      'destination transfers')
-  }
-}
-
 // Note this modifies the original object
 Payments.prototype.addAuthorizationToTransfers = function (transfers) {
   // TODO: make sure we're not authorizing anything extra
@@ -288,28 +276,10 @@ Payments.prototype.addAuthorizationToTransfers = function (transfers) {
 // TODO authorize credits
 }
 
-Payments.prototype.submitTransfers = function * (transfers, correspondingSourceTransfers) {
-  for (const transfer of transfers) {
-    yield this.ledgers.putTransfer(transfer)
-    const newState = transfer.state
-    if (newState !== 'executed' && correspondingSourceTransfers) {
-      // Store this subscription so when we get the notification
-      // we know what source transfer to go and unlock
-      log.debug('Destination transfer not yet executed, added subscription record (transfer: ' + transfer.id + ')')
-      this.destinationSubscriptions.put(transfer.id,
-        correspondingSourceTransfers)
-    }
-  }
-}
-
 Payments.prototype.validate = function * (payment) {
   // TODO: Check expiry settings
   // TODO: Check ledger signature on source payment
   // TODO: Check ledger signature on destination payment
-
-  // Note that some connectors may facilitate many to many
-  // payments but this one will throw an error
-  validateOneToOne(payment)
 
   yield this.validateExpiry(payment)
   yield this.validateRate(payment)
@@ -320,16 +290,17 @@ Payments.prototype.validate = function * (payment) {
 Payments.prototype.settle = function * (payment) {
   log.debug('Settle payment: ' + JSON.stringify(payment))
   this.addAuthorizationToTransfers(payment.destination_transfers)
-  yield this.submitTransfers(payment.destination_transfers,
-    payment.source_transfers)
+
+  for (const destinationTransfer of payment.destination_transfers) {
+    yield this.ledgers.putTransfer(destinationTransfer)
+  }
 
   const anyTransfersAreExecuted = _.some(payment.destination_transfers, (transfer) => {
     return transfer.state === 'executed'
   })
 
   if (anyTransfersAreExecuted) {
-    yield executeSourceTransfers(payment.source_transfers,
-      payment.destination_transfers)
+    yield executeSourceTransfers(payment.destination_transfers)
 
     // TODO: is the payment execute when the destination transfer
     // is execute or only once we've gotten paid back?
@@ -338,6 +309,7 @@ Payments.prototype.settle = function * (payment) {
 }
 
 Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResources) {
+  // TODO: make sure the transfer is signed by the ledger
   // Maybe it's a source transfer:
   // When the payment's source transfer is "prepared", authorized/submit the payment.
   const traderCredit = updatedTransfer.credits.find(this.isTraderFunds, this)
@@ -347,9 +319,9 @@ Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResource
   }
 
   // Or a destination transfer:
-  const sourceTransfers = this.destinationSubscriptions.get(updatedTransfer.id)
-  if (sourceTransfers && sourceTransfers.length) {
-    yield this.updateDestinationTransfer(updatedTransfer, sourceTransfers, relatedResources)
+  const traderDebit = updatedTransfer.debits.find(this.isTraderFunds, this)
+  if (traderDebit) {
+    yield this.updateDestinationTransfer(updatedTransfer, traderDebit, relatedResources)
     return
   }
 
@@ -360,13 +332,11 @@ Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResource
 }
 
 Payments.prototype.updateSourceTransfer = function * (updatedTransfer, traderCredit) {
-  const destinationTransfer = traderCredit.memo
+  const destinationTransfer = traderCredit.memo && traderCredit.memo.destination_transfer
   if (!destinationTransfer) return
 
-  // The source transfer isn't prepared yet, so ignore it.
-  if (updatedTransfer.state !== 'prepared' && updatedTransfer.state !== 'executed') {
-    return
-  }
+  const isTransferReady = updatedTransfer.state === 'prepared' || updatedTransfer.state === 'executed'
+  if (!isTransferReady) return
 
   const payment = {
     source_transfers: [updatedTransfer],
@@ -376,27 +346,14 @@ Payments.prototype.updateSourceTransfer = function * (updatedTransfer, traderCre
   yield this.settle(payment)
 }
 
-Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, sourceTransfers, relatedResources) {
+Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, traderDebit, relatedResources) {
   if (updatedTransfer.state !== 'executed') {
     log.debug('Got notification about unknown or incomplete transfer: ' + updatedTransfer.id)
     return
   }
 
-  // TODO: make sure the transfer is signed by the ledger
   log.debug('Got notification about executed destination transfer')
-
-  // This modifies the source_transfers states
-  yield executeSourceTransfers(sourceTransfers, [updatedTransfer], relatedResources)
-
-  const allTransfersExecuted = _.every(sourceTransfers, function (transfer) {
-    return transfer.state === 'executed'
-  })
-  if (allTransfersExecuted) {
-    this.destinationSubscriptions.remove(updatedTransfer.id)
-  } else {
-    log.error('not all source transfers have been executed, ' +
-      'meaning we have not been fully repaid')
-  }
+  yield executeSourceTransfers([updatedTransfer], relatedResources)
 }
 
 Payments.prototype.isTraderFunds = function (funds) {

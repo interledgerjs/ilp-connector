@@ -63,8 +63,8 @@ Multiledger.prototype.putTransfer = function (transfer) {
   return this.getLedger(transfer.ledger).putTransfer(transfer)
 }
 
-Multiledger.prototype.putTransferFulfillment = function (transfer, fulfillment) {
-  return this.getLedger(transfer.ledger).putTransferFulfillment(transfer, fulfillment)
+Multiledger.prototype.putTransferFulfillment = function (ledgerID, transferID, fulfillment) {
+  return this.getLedger(ledgerID).putTransferFulfillment(transferID, fulfillment)
 }
 
 Multiledger.prototype.getTransferFulfillment = function (transfer) {
