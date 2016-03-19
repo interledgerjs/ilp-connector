@@ -2,7 +2,7 @@
 const lodash = require('lodash')
 const request = require('co-request')
 const uuid = require('uuid4')
-const validate = require('five-bells-shared/services/validate')
+const validate = require('../validate')
 const config = require('../../services/config')
 const log = require('../../services/log')('fiveBellsLedger')
 const ExternalError = require('../../errors/external-error')
@@ -19,9 +19,7 @@ function FiveBellsLedger (options) {
   this.credentials = options.credentials
 }
 
-FiveBellsLedger.validateTransfer = function (transfer) {
-  return validate('TransferTemplate', transfer)
-}
+FiveBellsLedger.validateTransfer = function (transfer) { validate('TransferTemplate', transfer) }
 
 // template - {amount}
 FiveBellsLedger.prototype.makeFundTemplate = function (template) {
@@ -48,20 +46,19 @@ FiveBellsLedger.prototype.putTransfer = function * (transfer) {
   updateTransfer(transfer, updatedTransfer)
 }
 
-FiveBellsLedger.prototype.putTransferFulfillment = function * (transfer, execution_condition_fulfillment) {
+FiveBellsLedger.prototype.putTransferFulfillment = function * (transferID, execution_condition_fulfillment) {
   const fulfillmentRes = yield this._request({
     method: 'put',
-    uri: transfer.id + '/fulfillment',
+    uri: transferID + '/fulfillment',
     body: execution_condition_fulfillment
   })
   // TODO check the timestamp the ledger sends back
   // See https://github.com/interledger/five-bells-ledger/issues/149
   if (fulfillmentRes.statusCode === 200 || fulfillmentRes.statusCode === 201) {
-    transfer.state = 'executed'
+    return 'executed'
   } else {
-    log.error('Failed to submit fulfillment for transfer: ' + transfer.id + ' Error: ' + (fulfillmentRes.body ? JSON.stringify(fulfillmentRes.body) : fulfillmentRes.error))
+    log.error('Failed to submit fulfillment for transfer: ' + transferID + ' Error: ' + (fulfillmentRes.body ? JSON.stringify(fulfillmentRes.body) : fulfillmentRes.error))
   }
-  return fulfillmentRes.body
 }
 
 FiveBellsLedger.prototype.getTransferFulfillment = function * (transfer) {

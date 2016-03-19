@@ -4,7 +4,6 @@ const metadata = require('./controllers/metadata')
 const health = require('./controllers/health')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
-const payments = require('./controllers/payments')
 const notifications = require('./controllers/notifications')
 const compress = require('koa-compress')
 const serve = require('koa-static')
@@ -28,8 +27,6 @@ app.use(passport.initialize())
 app.use(route.get('/', metadata.getResource))
 app.use(route.get('/health', health.getResource))
 app.use(route.get('/pairs', pairs.getCollection))
-
-app.use(route.put('/payments/:uuid', payments.put))
 
 app.use(route.get('/quote', quote.get))
 

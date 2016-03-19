@@ -5,7 +5,6 @@ const config = require('./services/config')
 const log = require('./services/log')
 const backend = require('./services/backend')
 const subscriber = require('./services/subscriber')
-const settlementQueue = require('./services/settlementQueue')
 const app = require('./app')
 
 function listen () {
@@ -42,7 +41,6 @@ function listen () {
     log('app').info('pair', pair)
   }
 
-  settlementQueue.startPruner()
   // Start a coroutine that connects to the backend and
   // subscribes to all the ledgers in the background
   co(function * () {
@@ -62,7 +60,6 @@ module.exports = {
     BalanceCache: require('./lib/balance-cache'),
     balanceCache: require('./services/balance-cache'),
     loadConnectorConfig: require('./lib/config'),
-    SettlementQueue: require('./lib/settlementQueue'),
     config: require('./services/config'),
     logger: require('./services/log'),
     backend: require('./services/backend')

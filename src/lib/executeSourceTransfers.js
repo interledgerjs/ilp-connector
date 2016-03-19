@@ -3,6 +3,7 @@
 const _ = require('lodash')
 const ledgers = require('../services/ledgers')
 const log = require('../services/log')('executeSourceTransfers')
+const validate = require('./validate')
 
 function * getConditionFulfillment (destinationTransfers, relatedResources) {
   // There are 3 possible places we can get the fulfillment from:
@@ -50,7 +51,7 @@ function * getConditionFulfillment (destinationTransfers, relatedResources) {
 
 // Add the execution_condition_fulfillment to the source transfer
 // and submit it to the source ledger
-function * executeSourceTransfers (sourceTransfers, destinationTransfers, relatedResources) {
+function * executeSourceTransfers (destinationTransfers, relatedResources) {
   const conditionFulfillment = yield getConditionFulfillment(destinationTransfers, relatedResources)
 
   if (!conditionFulfillment) {
@@ -58,15 +59,20 @@ function * executeSourceTransfers (sourceTransfers, destinationTransfers, relate
     return
   }
 
-  for (let sourceTransfer of sourceTransfers) {
-    log.debug('Requesting fulfillment of source transfer: ' + sourceTransfer.id + ' (fulfillment: ' + JSON.stringify(conditionFulfillment) + ')')
+  for (let destinationTransfer of destinationTransfers) {
+    const destinationDebitMemo = destinationTransfer.debits[0].memo || {}
+    const sourceTransferLedger = destinationDebitMemo.source_transfer_ledger
+    const sourceTransferID = destinationDebitMemo.source_transfer_id
+    validate('Iri', sourceTransferLedger)
+    validate('Iri', sourceTransferID)
+
+    log.debug('Requesting fulfillment of source transfer: ' + sourceTransferID + ' (fulfillment: ' + JSON.stringify(conditionFulfillment) + ')')
     // TODO check the timestamp on the response from the ledger against
     // the transfer's expiry date
     // See https://github.com/interledger/five-bells-ledger/issues/149
-    yield ledgers.putTransferFulfillment(sourceTransfer, conditionFulfillment)
-    if (sourceTransfer.state !== 'executed') {
-      log.error('Attempted to execute source transfer but it was unsucessful')
-      log.debug(sourceTransfer)
+    const sourceTransferState = yield ledgers.putTransferFulfillment(sourceTransferLedger, sourceTransferID, conditionFulfillment)
+    if (sourceTransferState !== 'executed') {
+      log.error('Attempted to execute source transfer but it was unsucessful: we have not been fully repaid')
     }
   }
 }

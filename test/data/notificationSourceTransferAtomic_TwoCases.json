@@ -27,6 +27,24 @@
             "amount":"1.00",
             "account":"http://eur-ledger.example/accounts/bob"
           }],
+          "execution_condition": {
+            "message_hash": "9EXcGgJa0zTIUxEQXaMKpvoGsNmYSxv8J6C12LBNA5hRMfmbwDCzAU4O14UKnqcIaQqMGULHLI+T6Nk3+qYd3Q==",
+            "signer": "http://eur-ledger.example/EUR",
+            "type": "ed25519-sha512",
+            "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
+          },
+          "cancellation_condition": {
+            "message_hash": "VgEg6oeTizz98OL6R0WlmAC2IHK3RGT6ClTgK90VF1DQYW9OLEz3ja0rwaQqDFjbpI3BikTluaKYYaQsfhdZgw==",
+            "signer": "http://notary.example",
+            "type": "ed25519-sha512",
+            "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
+          },
+          "additional_info": {
+            "cases": [
+              "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a086",
+              "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a087"
+            ]
+          },
           "state": "proposed"
         }
       }
@@ -37,7 +55,18 @@
       "type": "ed25519-sha512",
       "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
     },
-    "expires_at": "2015-06-16T00:00:02.000Z",
+    "cancellation_condition": {
+      "message_hash": "VgEg6oeTizz98OL6R0WlmAC2IHK3RGT6ClTgK90VF1DQYW9OLEz3ja0rwaQqDFjbpI3BikTluaKYYaQsfhdZgw==",
+      "signer": "http://notary.example",
+      "type": "ed25519-sha512",
+      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
+    },
+    "additional_info": {
+      "cases": [
+        "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a086",
+        "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a087"
+      ]
+    },
     "state": "prepared"
   }
 }

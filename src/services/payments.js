@@ -5,7 +5,5 @@ const Payments = require('../lib/payments')
 module.exports = new Payments({
   backend: require('./backend'),
   config: require('./config'),
-  ledgers: require('./ledgers'),
-  settlementQueue: require('./settlementQueue'),
-  destinationSubscriptions: require('./destinationSubscriptions')
+  ledgers: require('./ledgers')
 })
