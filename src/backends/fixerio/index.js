@@ -142,7 +142,7 @@ class FixerIoBackend {
 
     // Round amounts
     // TODO Rounding should be based on the level of precision the given ledger supports
-    const AMOUNT_PRECISION = 4
+    const AMOUNT_PRECISION = 2
     const roundedSourceAmount = sourceAmount.toFixed(AMOUNT_PRECISION, BigNumber.ROUND_UP)
     const roundedDestinationAmount = destinationAmount.toFixed(AMOUNT_PRECISION, BigNumber.ROUND_DOWN)
 
