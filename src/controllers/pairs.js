@@ -1,6 +1,6 @@
 'use strict'
 
-const config = require('../services/config')
+const model = require('../models/pairs')
 
 /* eslint-disable */
 /**
@@ -36,16 +36,5 @@ const config = require('../services/config')
  */
 /* eslint-enable */
 exports.getCollection = function * getCollection () {
-  let pairs = config.get('tradingPairs').map(function (pair) {
-    let currencies = pair.map(function (s) {
-      return s.split('@')
-    })
-    return {
-      source_asset: currencies[0][0],
-      source_ledger: currencies[0][1],
-      destination_asset: currencies[1][0],
-      destination_ledger: currencies[1][1]
-    }
-  })
-  this.body = pairs
+  this.body = model.getPairs()
 }
