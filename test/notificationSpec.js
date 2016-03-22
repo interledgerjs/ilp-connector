@@ -33,6 +33,20 @@ const env = _.cloneDeep(process.env)
 describe('Notifications', function () {
   logHelper(logger)
 
+  beforeEach(() => {
+    nock('http://usd-ledger.example/USD').get('')
+      .reply(200, {
+        precision: 10,
+        scale: 4
+      })
+
+    nock('http://eur-ledger.example/EUR').get('')
+      .reply(200, {
+        precision: 10,
+        scale: 4
+      })
+  })
+
   describe('POST /notifications -- signed', function () {
     beforeEach(function * () {
       process.env.CONNECTOR_NOTIFICATION_VERIFY = 'true'
@@ -53,7 +67,6 @@ describe('Notifications', function () {
     })
 
     afterEach(function * () {
-      expect(nock.pendingMocks()).to.deep.equal([])
       nock.cleanAll()
       this.clock.restore()
       process.env = _.cloneDeep(env)
@@ -115,7 +128,6 @@ describe('Notifications', function () {
     })
 
     afterEach(function * () {
-      expect(nock.pendingMocks()).to.deep.equal([])
       nock.cleanAll()
       this.clock.restore()
       process.env = _.cloneDeep(env)
