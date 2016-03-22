@@ -245,6 +245,25 @@ describe('Notifications', function () {
       sourceTransferExecuted.done()
     })
 
+    it('should not cause server error if source transfer is missing execution_condition', function * () {
+      const payment = this.formatId(this.paymentOneToOne, '/payments/')
+
+      nock(payment.destination_transfers[0].id)
+        .put('')
+        .reply(201, _.assign({}, payment.destination_transfers[0], {
+          state: 'prepared'
+        }))
+
+      const notification = _.cloneDeep(this.notificationSourceTransferPrepared)
+      delete notification.resource.execution_condition
+
+      yield this.request()
+        .post('/notifications')
+        .send(notification)
+        .expect(200)
+        .end()
+    })
+
     it('should submit the source transfer corresponding to the destination transfer it is notified about if the execution conditions are the same', function * () {
       const payment = this.formatId(this.paymentSameExecutionCondition,
         '/payments/')
