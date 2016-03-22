@@ -2,9 +2,9 @@
 
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
-const testPaymentExpiry = require('./testPaymentExpiry')
+const testPaymentExpiry = require('../lib/testPaymentExpiry')
 const log = require('../services/log')('payments')
-const executeSourceTransfers = require('./executeSourceTransfers')
+const executeSourceTransfers = require('../lib/executeSourceTransfers')
 const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
@@ -16,12 +16,9 @@ const UnrelatedNotificationError =
   require('../errors/unrelated-notification-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const hashJSON = require('five-bells-shared/utils/hashJson')
-
-function Payments (options) {
-  this.config = options.config
-  this.backend = options.backend
-  this.ledgers = options.ledgers
-}
+const config = require('../services/config')
+const backend = require('../services/backend')
+const ledgers = require('../services/ledgers')
 
 // TODO this should handle the different types of execution_condition's.
 function sourceConditionIsDestinationTransfer (source, destination) {
@@ -92,7 +89,7 @@ function validateExecutionConditions (payment) {
   }
 }
 
-Payments.prototype.validateExecutionConditionPublicKey = function * (payment) {
+function * validateExecutionConditionPublicKey (payment) {
   // TODO: use a cache of ledgers' public keys and move this functionality
   // into the synchronous validateExecutionConditions function
   for (const sourceTransfer of payment.source_transfers) {
@@ -104,7 +101,7 @@ Payments.prototype.validateExecutionConditionPublicKey = function * (payment) {
       // Check the public_key and algorithm
       // TODO: what do we do if the transfer hasn't been submitted
       // to the destination ledger yet?
-      const destinationTransferState = yield this.ledgers.getState(
+      const destinationTransferState = yield ledgers.getState(
         payment.destination_transfers[0])
 
       if (sourceTransfer.execution_condition.type !==
@@ -121,10 +118,10 @@ Payments.prototype.validateExecutionConditionPublicKey = function * (payment) {
   }
 }
 
-Payments.prototype.validateExpiry = function * (payment) {
+function * validateExpiry (payment) {
   // TODO tie the maxHoldTime to the fx rate
   // TODO bring all these loops into one to speed this up
-  const tester = yield testPaymentExpiry(this.config, payment)
+  const tester = yield testPaymentExpiry(config, payment)
   yield tester.validateNotExpired()
   if (tester.isAtomic()) {
     yield tester.validateMaxHoldTime()
@@ -136,14 +133,14 @@ Payments.prototype.validateExpiry = function * (payment) {
   }
 }
 
-Payments.prototype.amountFinder = function (ledger, creditOrDebit) {
+function amountFinder (ledger, creditOrDebit) {
   // TODO: we need a more elegant way of handling assets that we don't trade
-  if (!this.config.getIn(['ledgerCredentials', ledger])) {
+  if (!config.getIn(['ledgerCredentials', ledger])) {
     throw new AssetsNotTradedError('This connector does not support ' +
       'the given asset pair')
   }
 
-  const accountUri = this.config.getIn(['ledgerCredentials', ledger, 'account_uri'])
+  const accountUri = config.getIn(['ledgerCredentials', ledger, 'account_uri'])
 
   return (creditOrDebit.account === accountUri
     ? new BigNumber(creditOrDebit.amount)
@@ -162,7 +159,7 @@ Payments.prototype.amountFinder = function (ledger, creditOrDebit) {
  * @param {String} opts.convertToLedger The ledger representing the asset we will convert all of the amounts into (for easier comparisons)
  * @yield {Float} The total amount converted into the asset represented by opts.convertToLedger
  */
-Payments.prototype.calculateAmountEquivalent = function * (opts) {
+function * calculateAmountEquivalent (opts) {
   // convertedAmountTotal is going to be the total of either the credits
   // if the transfers are source_transfers or debits if the transfers
   // are destination_transfers (the amount that is either entering
@@ -178,7 +175,7 @@ Payments.prototype.calculateAmountEquivalent = function * (opts) {
   for (const transfer of opts.transfers) {
     // Total the number of credits or debits to the connectors account
     const relevantAmountTotal = _.reduce(transfer[opts.creditsOrDebits], function (result, creditOrDebit) {
-      return result.plus(this.amountFinder(transfer.ledger, creditOrDebit))
+      return result.plus(amountFinder(transfer.ledger, creditOrDebit))
     }, new BigNumber(0), this)
 
     // Throw an error if we're not included in the transfer
@@ -200,14 +197,14 @@ Payments.prototype.calculateAmountEquivalent = function * (opts) {
     if (transfer.ledger === opts.convertToLedger) {
       convertedAmountTotal = convertedAmountTotal.plus(relevantAmountTotal)
     } else if (opts.transferSide === 'source') {
-      quote = yield this.backend.getQuote({
+      quote = yield backend.getQuote({
         source_ledger: transfer.ledger,
         destination_ledger: opts.convertToLedger,
         source_amount: relevantAmountTotal
       })
       convertedAmountTotal = convertedAmountTotal.plus(quote.destination_amount)
     } else if (opts.transferSide === 'destination') {
-      quote = yield this.backend.getQuote({
+      quote = yield backend.getQuote({
         source_ledger: opts.convertToLedger,
         destination_ledger: transfer.ledger,
         destination_amount: relevantAmountTotal
@@ -218,7 +215,7 @@ Payments.prototype.calculateAmountEquivalent = function * (opts) {
   return convertedAmountTotal
 }
 
-Payments.prototype.validateRate = function * (payment) {
+function * validateRate (payment) {
   log.debug('validating rate')
 
   // Determine which ledger's asset we will convert all
@@ -233,14 +230,14 @@ Payments.prototype.validateRate = function * (payment) {
   // Convert the source credits and destination debits to a
   // common asset so we can more easily compare them
   const sourceCreditEquivalent =
-  yield this.calculateAmountEquivalent({
+  yield calculateAmountEquivalent({
     transfers: payment.source_transfers,
     transferSide: 'source',
     creditsOrDebits: 'credits',
     convertToLedger: convertToLedger
   })
   const destinationDebitEquivalent =
-  yield this.calculateAmountEquivalent({
+  yield calculateAmountEquivalent({
     transfers: payment.destination_transfers,
     transferSide: 'destination',
     creditsOrDebits: 'debits',
@@ -254,13 +251,13 @@ Payments.prototype.validateRate = function * (payment) {
 }
 
 // Note this modifies the original object
-Payments.prototype.addAuthorizationToTransfers = function (transfers) {
+function addAuthorizationToTransfers (transfers) {
   // TODO: make sure we're not authorizing anything extra
   // that shouldn't be taking money out of our account
   let credentials
   for (const transfer of transfers) {
     for (const debit of transfer.debits) {
-      credentials = this.config.getIn(['ledgerCredentials', transfer.ledger])
+      credentials = config.getIn(['ledgerCredentials', transfer.ledger])
       if (!credentials) {
         continue
       }
@@ -276,34 +273,34 @@ Payments.prototype.addAuthorizationToTransfers = function (transfers) {
 // TODO authorize credits
 }
 
-Payments.prototype.submitTransfer = function * (destinationTransfer, sourceTransfer) {
+function * submitTransfer (destinationTransfer, sourceTransfer) {
   for (const debit of destinationTransfer.debits) {
     debit.memo = Object.assign({}, debit.memo, {
       source_transfer_ledger: sourceTransfer.ledger,
       source_transfer_id: sourceTransfer.id
     })
   }
-  yield this.ledgers.putTransfer(destinationTransfer)
+  yield ledgers.putTransfer(destinationTransfer)
 }
 
-Payments.prototype.validate = function * (payment) {
+function * validate (payment) {
   // TODO: Check expiry settings
   // TODO: Check ledger signature on source payment
   // TODO: Check ledger signature on destination payment
 
-  yield this.validateExpiry(payment)
-  yield this.validateRate(payment)
+  yield validateExpiry(payment)
+  yield validateRate(payment)
   validateExecutionConditions(payment)
-  yield this.validateExecutionConditionPublicKey(payment)
+  yield validateExecutionConditionPublicKey(payment)
 }
 
-Payments.prototype.settle = function * (payment) {
+function * settle (payment) {
   log.debug('Settle payment: ' + JSON.stringify(payment))
-  this.addAuthorizationToTransfers(payment.destination_transfers)
+  addAuthorizationToTransfers(payment.destination_transfers)
 
   const sourceTransfer = payment.source_transfers[0]
   for (const destinationTransfer of payment.destination_transfers) {
-    yield this.submitTransfer(destinationTransfer, sourceTransfer)
+    yield submitTransfer(destinationTransfer, sourceTransfer)
   }
 
   const anyTransfersAreExecuted = _.some(payment.destination_transfers, (transfer) => {
@@ -319,33 +316,16 @@ Payments.prototype.settle = function * (payment) {
   }
 }
 
-Payments.prototype.updateTransfer = function * (updatedTransfer, relatedResources) {
-  // TODO: make sure the transfer is signed by the ledger
-  // Maybe it's a source transfer:
-  // When the payment's source transfer is "prepared", authorized/submit the payment.
-  const traderCredit = updatedTransfer.credits.find(this.isTraderFunds, this)
-  if (traderCredit) {
-    yield this.updateSourceTransfer(updatedTransfer, traderCredit)
-    return
-  }
-
-  // Or a destination transfer:
-  const traderDebit = updatedTransfer.debits.find(this.isTraderFunds, this)
-  if (traderDebit) {
-    yield this.updateDestinationTransfer(updatedTransfer, traderDebit, relatedResources)
-    return
-  }
-
-  // TODO: should we delete the subscription?
-  throw new UnrelatedNotificationError('Notification does not match a ' +
-    'payment we have a record of or the corresponding source ' +
-    'transfers may already have been executed')
+function isTraderFunds (funds) {
+  return _.some(config.ledgerCredentials, (credentials) => {
+    return credentials.account_uri === funds.account
+  })
 }
 
-Payments.prototype.updateSourceTransfer = function * (updatedTransfer, traderCredit) {
+function * updateSourceTransfer (updatedTransfer, traderCredit) {
   const destinationTransfer = traderCredit.memo && traderCredit.memo.destination_transfer
   if (!destinationTransfer) return
-  this.ledgers.validateTransfer(destinationTransfer)
+  ledgers.validateTransfer(destinationTransfer)
 
   const isTransferReady = updatedTransfer.state === 'prepared' || updatedTransfer.state === 'executed'
   if (!isTransferReady) return
@@ -354,11 +334,11 @@ Payments.prototype.updateSourceTransfer = function * (updatedTransfer, traderCre
     source_transfers: [updatedTransfer],
     destination_transfers: [destinationTransfer]
   }
-  yield this.validate(payment)
-  yield this.settle(payment)
+  yield validate(payment)
+  yield settle(payment)
 }
 
-Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, traderDebit, relatedResources) {
+function * updateDestinationTransfer (updatedTransfer, traderDebit, relatedResources) {
   if (updatedTransfer.state !== 'executed') {
     log.debug('Got notification about unknown or incomplete transfer: ' + updatedTransfer.id)
     return
@@ -368,10 +348,29 @@ Payments.prototype.updateDestinationTransfer = function * (updatedTransfer, trad
   yield executeSourceTransfers([updatedTransfer], relatedResources)
 }
 
-Payments.prototype.isTraderFunds = function (funds) {
-  return _.some(this.config.ledgerCredentials, function (credentials) {
-    return credentials.account_uri === funds.account
-  })
+function * updateTransfer (updatedTransfer, relatedResources) {
+  // TODO: make sure the transfer is signed by the ledger
+  // Maybe it's a source transfer:
+  // When the payment's source transfer is "prepared", authorized/submit the payment.
+  const traderCredit = updatedTransfer.credits.find(isTraderFunds)
+  if (traderCredit) {
+    yield updateSourceTransfer(updatedTransfer, traderCredit)
+    return
+  }
+
+  // Or a destination transfer:
+  const traderDebit = updatedTransfer.debits.find(isTraderFunds)
+  if (traderDebit) {
+    yield updateDestinationTransfer(updatedTransfer, traderDebit, relatedResources)
+    return
+  }
+
+  // TODO: should we delete the subscription?
+  throw new UnrelatedNotificationError('Notification does not match a ' +
+    'payment we have a record of or the corresponding source ' +
+    'transfers may already have been executed')
 }
 
-module.exports = Payments
+module.exports = {
+  updateTransfer
+}

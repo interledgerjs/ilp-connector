@@ -4,8 +4,9 @@ const ledgers = require('./services/ledgers')
 const config = require('./services/config')
 const log = require('./services/log')
 const backend = require('./services/backend')
-const subscriber = require('./services/subscriber')
+const subscriptions = require('./models/subscriptions')
 const app = require('./app')
+const ledgersService = require('./services/ledgers')
 
 function listen () {
   if (config.getIn(['server', 'secure'])) {
@@ -46,7 +47,7 @@ function listen () {
   co(function * () {
     yield backend.connect()
 
-    yield subscriber.subscribePairs(config.get('tradingPairs'))
+    yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgersService, config)
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)
   })
