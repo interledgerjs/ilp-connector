@@ -10,7 +10,7 @@ const ledgersService = require('./services/ledgers')
 
 function listen () {
   if (config.getIn(['server', 'secure'])) {
-    const https = require('https')
+    const spdy = require('spdy')
     const tls = config.get('tls')
 
     const options = {
@@ -29,7 +29,7 @@ function listen () {
       rejectUnauthorized: false
     }
 
-    https.createServer(
+    spdy.createServer(
       options, app.callback()).listen(config.getIn(['server', 'port']))
   } else {
     app.listen(config.getIn(['server', 'port']))
