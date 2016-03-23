@@ -72,7 +72,7 @@ exports.post = function * postNotification () {
   const notification = yield requestUtil.validateBody(this, 'Notification')
   log.debug('Got notification: ' + JSON.stringify(notification))
   try {
-    yield model.processNotification(notification)
+    yield model.processNotification(notification, this.config, this.backend, this.ledgers)
   } catch (e) {
     if (!(e instanceof UnacceptableExpiryError)) {
       log.error('Notification handling received critical error: ' + e)
