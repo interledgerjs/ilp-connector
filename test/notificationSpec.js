@@ -405,22 +405,18 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return a 422 if the source transfer is expired', function * () {
+    it('should return a 200 if the source transfer is expired', function * () {
       this.notificationSourceTransferPrepared.resource.expires_at =
         moment(START_DATE - 1).toISOString()
 
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Transfer has already expired')
-        })
+        .expect(200)
         .end()
     })
 
-    it('should return a 422 if any of the destination transfers is expired', function * () {
+    it('should return a 200 if any of the destination transfers is expired', function * () {
       this.notificationSourceTransferPrepared
         .resource.credits[0].memo
         .destination_transfer.expires_at = moment(START_DATE - 1).toISOString()
@@ -428,15 +424,11 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Transfer has already expired')
-        })
+        .expect(200)
         .end()
     })
 
-    it('should return a 422 if a destination transfer has an execution_condition but no expiry', function * () {
+    it('should return a 200 if a destination transfer has an execution_condition but no expiry', function * () {
       const destination_transfer = this.notificationSourceTransferPrepared
         .resource.credits[0].memo.destination_transfer
       delete destination_transfer.expires_at
@@ -446,17 +438,11 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Destination transfers ' +
-            'with execution conditions must have an expires_at field ' +
-            'for connector to agree to authorize them')
-        })
+        .expect(200)
         .end()
     })
 
-    it('should return a 422 if any of the destination transfers expires too far in the future (causing the connector to hold money for too long)', function * () {
+    it('should return a 200 if any of the destination transfers expires too far in the future (causing the connector to hold money for too long)', function * () {
       const destination_transfer = this.notificationSourceTransferPrepared
         .resource.credits[0].memo.destination_transfer
       destination_transfer.expires_at = moment(START_DATE + 10001).toISOString()
@@ -466,17 +452,11 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Destination transfer expiry is ' +
-            'too far in the future. The connector\'s money would need to be ' +
-            'held for too long')
-        })
+        .expect(200)
         .end()
     })
 
-    it('should return a 422 if the source transfer expires too soon after the destination transfer (we may not be able to execute the source transfer in time)', function * () {
+    it('should return a 200 if the source transfer expires too soon after the destination transfer (we may not be able to execute the source transfer in time)', function * () {
       const destination_transfer = this.notificationSourceTransferPrepared
         .resource.credits[0].memo.destination_transfer
       destination_transfer.expires_at =
@@ -487,47 +467,29 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('The window between the latest ' +
-            'destination transfer expiry and the earliest source transfer ' +
-            'expiry is insufficient to ensure that we can execute the ' +
-            'source transfers')
-        })
+        .expect(200)
         .end()
     })
 
-    it('should return a 422 if the source transfer\'s execution condition is the execution of the destination transfer but the destination transfer expires too soon', function * () {
+    it('should return a 200 if the source transfer\'s execution condition is the execution of the destination transfer but the destination transfer expires too soon', function * () {
       this.notificationSourceTransferPrepared.resource.credits[0].memo
         .destination_transfer.expires_at = moment(START_DATE + 999).toISOString()
 
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('There is insufficient time for ' +
-            'the connector to execute the destination transfer before it expires')
-        })
+        .expect(200)
         .end()
     })
 
-    it('should return a 422 if the source transfer\'s execution condition is the execution of the destination transfer but the source transfer expires too soon (we may not be able to execute the source transfer in time)', function * () {
+    it('should return a 200 if the source transfer\'s execution condition is the execution of the destination transfer but the source transfer expires too soon (we may not be able to execute the source transfer in time)', function * () {
       this.notificationSourceTransferPrepared.resource.expires_at =
         moment(START_DATE + 1999).toISOString()
 
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('There is insufficient time for ' +
-            'the connector to execute the destination transfer before the source ' +
-            'transfer(s) expire(s)')
-        })
+        .expect(200)
         .end()
     })
 
@@ -883,13 +845,7 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferAtomic)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Destination transfer expiry is ' +
-            'too far in the future. The connector\'s money would need to be ' +
-            'held for too long')
-        })
+        .expect(200)
         .end()
     })
 
@@ -902,11 +858,7 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferAtomic)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Transfer has already expired')
-        })
+        .expect(200)
         .end()
     })
 
@@ -919,11 +871,7 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferAtomic)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Cases must have an expiry.')
-        })
+        .expect(200)
         .end()
     })
   })
@@ -943,11 +891,7 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferAtomic_TwoCases)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableExpiryError')
-          expect(res.body.message).to.equal('Case expiries don\'t agree')
-        })
+        .expect(200)
         .end()
     })
 

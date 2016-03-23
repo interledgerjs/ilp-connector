@@ -3,6 +3,7 @@
 const requestUtil = require('five-bells-shared/utils/request')
 const log = require('../services/log')('notifications')
 const model = require('../models/notifications')
+const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 
 /* eslint-disable */
 /**
@@ -70,7 +71,19 @@ const model = require('../models/notifications')
 exports.post = function * postNotification () {
   const notification = yield requestUtil.validateBody(this, 'Notification')
   log.debug('Got notification: ' + JSON.stringify(notification))
-  yield model.processNotification(notification)
-
+  try {
+    yield model.processNotification(notification)
+  } catch (e) {
+    if (!(e instanceof UnacceptableExpiryError)) {
+      log.error('Notification handling received critical error: ' + e)
+      throw e
+    } else {
+      // If this receives UnacceptableExpiryError, do not respond with HTTP error 422.
+      // Doing so would cause Ledger to reply with the same message, creating an infinite loop.
+      // Error handling mechanism for mode.processNotifiation() should be improved in the future.
+      // It should not throw an error in this situation.
+      log.debug('Notification handling received non-critical error: ' + e)
+    }
+  }
   this.status = 200
 }

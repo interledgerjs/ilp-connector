@@ -176,7 +176,7 @@ TransferTester.prototype.loadCaseExpiry = function * (caseID) {
     json: true
   })
   if (caseRes.statusCode !== 200) {
-    throw new Error('Unexpected remote error: ' + caseRes.statusCode + ' ' + caseRes.body)
+    throw new UnacceptableExpiryError('Unexpected remote error: ' + caseRes.statusCode + ' ' + caseRes.body)
   }
   const expiry = caseRes.body.expires_at
   if (expiry) {
