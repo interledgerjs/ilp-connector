@@ -125,7 +125,7 @@ function getLocalConfig () {
     throw new Error(`${envPrefix}_DEBUG_AUTOFUND requires either ${envPrefix}_ADMIN_PASS or ${envPrefix}_ADMIN_KEY`)
   }
 
-  const admin = useAdmin ? _.omit({
+  const admin = useAdmin ? _.omitBy({
     username: adminEnv.username,
     password: adminEnv.password,
     key: adminEnv.key && fs.readFileSync(adminEnv.key),

@@ -73,7 +73,7 @@ FiveBellsLedger.prototype._request = function * (opts) {
   // TODO: check before this point that we actually have
   // credentials for the ledgers we're asked to settle between
   const credentials = this.credentials
-  const transferRes = yield request(lodash.defaults(opts, lodash.omit({
+  const transferRes = yield request(lodash.defaults(opts, lodash.omitBy({
     auth: credentials.username && credentials.password && {
       user: credentials.username,
       pass: credentials.password
@@ -139,7 +139,7 @@ function * request_retry (opts, error_msg, credentials) {
   let delay = backoffMin
   while (true) {
     try {
-      let res = yield request(lodash.defaults(opts, lodash.omit({
+      let res = yield request(lodash.defaults(opts, lodash.omitBy({
         auth: credentials.password && credentials.username && {
           user: credentials.username,
           pass: credentials.password
