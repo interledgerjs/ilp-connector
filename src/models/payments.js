@@ -28,6 +28,10 @@ function sourceConditionIsDestinationTransfer (source, destination) {
     state: 'executed'
   }
 
+  if (!source.execution_condition) {
+    return false
+  }
+
   if (source.execution_condition.message_hash &&
     source.execution_condition.message_hash !== hashJSON(expectedMessage)) {
     return false
