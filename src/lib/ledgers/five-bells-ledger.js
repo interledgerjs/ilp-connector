@@ -3,8 +3,7 @@ const lodash = require('lodash')
 const request = require('co-request')
 const uuid = require('uuid4')
 const validate = require('../validate')
-const config = require('../../services/config')
-const log = require('../../services/log')('fiveBellsLedger')
+const log = require('../../common').log('fiveBellsLedger')
 const ExternalError = require('../../errors/external-error')
 
 const backoffMin = 1000
@@ -17,6 +16,7 @@ const notificationUuid = uuid()
 function FiveBellsLedger (options) {
   this.id = options.ledger_id
   this.credentials = options.credentials
+  this.config = options.config
 }
 
 FiveBellsLedger.validateTransfer = function (transfer) { validate('TransferTemplate', transfer) }
@@ -102,7 +102,7 @@ function updateTransfer (transfer, updatedTransfer) {
 
 FiveBellsLedger.prototype.subscribe = function * (target_uri) {
   let account_uri = this.credentials.account_uri
-  if (config.getIn(['features', 'debugAutoFund'])) yield this._autofund()
+  if (this.config.getIn(['features', 'debugAutoFund'])) yield this._autofund()
   let subscribeRes = yield request_retry({
     method: 'put',
     url: this.id + '/subscriptions/' + notificationUuid,
@@ -120,7 +120,7 @@ FiveBellsLedger.prototype.subscribe = function * (target_uri) {
 
 FiveBellsLedger.prototype._autofund = function * () {
   log.info('autofunded account at ' + this.id)
-  const admin = config.get('admin')
+  const admin = this.config.get('admin')
   yield request_retry({
     method: 'put',
     url: this.credentials.account_uri,
@@ -128,7 +128,7 @@ FiveBellsLedger.prototype._autofund = function * () {
     body: {
       name: this.credentials.username,
       balance: '1500000',
-      connector: config.getIn(['server', 'base_uri']),
+      connector: this.config.getIn(['server', 'base_uri']),
       password: this.credentials.password,
       fingerprint: this.credentials.fingerprint
     }

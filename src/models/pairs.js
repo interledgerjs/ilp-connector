@@ -1,8 +1,6 @@
 'use strict'
 
-const config = require('../services/config')
-
-function getPairs () {
+function getPairs (config) {
   const tradingPairs = config.get('tradingPairs')
   return tradingPairs.map((pair) => {
     const currencies = pair.map(function (currencyLedgerString) {

@@ -109,6 +109,7 @@ const model = require('../models/quote')
 /* eslint-enable */
 
 exports.get = function * () {
-  this.body = yield model.getQuote(this.query)
+  this.body = yield model.getQuote(
+    this.query, this.ledgers, this.config)
 }
 

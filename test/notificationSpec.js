@@ -3,14 +3,11 @@ const _ = require('lodash')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const moment = require('moment')
-const app = require('five-bells-connector').app
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('five-bells-connector')._test.logger
-const backend = require('five-bells-connector')._test.backend
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
-const config = require('five-bells-connector')._test.config
 const sinon = require('sinon')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
@@ -19,8 +16,8 @@ describe('Notifications', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    appHelper.create(this, app)
-    yield backend.connect(ratesResponse)
+    appHelper.create(this)
+    yield this.backend.connect(ratesResponse)
 
     this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -518,7 +515,7 @@ describe('Notifications', function () {
       destination_transfer.credits = destination_transfer.debits
 
       const connectorCredentials =
-        config.ledgerCredentials[destination_transfer.ledger]
+        this.config.ledgerCredentials[destination_transfer.ledger]
 
       nock(destination_transfer.id)
         .put('')
@@ -563,7 +560,7 @@ describe('Notifications', function () {
       const destination_transfer = source_transfer.credits[0].memo.destination_transfer
       source_transfer.debits = source_transfer.credits
 
-      const connectorCredentials = config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
       const fulfillment = {
         type: this.transferExecutedReceipt.type,
@@ -614,7 +611,7 @@ describe('Notifications', function () {
         signature: this.transferExecutedReceipt.signature
       }
 
-      const connectorCredentials = config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
       nock(destination_transfer.id)
         .put('')
@@ -655,7 +652,7 @@ describe('Notifications', function () {
         amount: '20'
       })
 
-      const connectorCredentials = config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
       nock(destination_transfer.id)
         .put('')
@@ -699,7 +696,7 @@ describe('Notifications', function () {
         signature: this.transferExecutedReceipt.signature
       }
 
-      const connectorCredentials = config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
       nock(destination_transfer.id)
         .put('')
@@ -740,7 +737,7 @@ describe('Notifications', function () {
         signature: this.transferExecutedReceipt.signature
       }
 
-      const connectorCredentials = config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
       nock(destination_transfer.id)
         .put('')
@@ -784,7 +781,7 @@ describe('Notifications', function () {
         .get('/state')
         .reply(200, this.transferProposedReceipt)
 
-      const connectorCredentials = config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
       const debitMemo = {
         source_transfer_ledger: source_transfer.ledger,
         source_transfer_id: source_transfer.id
@@ -817,7 +814,7 @@ describe('Notifications', function () {
       source_transfer.expires_at = moment(START_DATE - 1).toISOString()
       source_transfer.state = 'executed'
 
-      const connectorCredentials = config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
       const fulfillment = {
         type: this.transferExecutedReceipt.type,
         signature: this.transferExecutedReceipt.signature

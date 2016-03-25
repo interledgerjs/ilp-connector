@@ -1,7 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
-const log = require('../services/log')('subscriptions')
+const log = require('../common').log('subscriptions')
 const payments = require('../models/payments')
 
 function * subscribePairs (pairs, ledgersService, config) {

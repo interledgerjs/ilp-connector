@@ -5,7 +5,7 @@ const request = require('co-request')
 const BigNumber = require('bignumber.js')
 const AssetsNotTradedError = require('../../errors/assets-not-traded-error')
 const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
-const log = require('../../services/log')('fixerio')
+const log = require('../../common').log('fixerio')
 const config = require('../../services/config')
 
 const RATES_API = 'https://api.fixer.io/latest'

@@ -1,8 +1,6 @@
 'use strict'
 
-const config = require('../services/config')
-
-function getMetadata () {
+function getMetadata (config) {
   return {
     public_key: config.getIn(['keys', 'ed25519', 'public']),
     urls: {

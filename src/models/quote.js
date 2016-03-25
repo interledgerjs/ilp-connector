@@ -2,17 +2,15 @@
 
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
-const config = require('../services/config')
-const log = require('../services/log')('quote')
-const backend = require('../services/backend')
-const ledgers = require('../services/ledgers')
-const balanceCache = require('../services/balance-cache')
+const log = require('../common').log('quote')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const InvalidURIParameterError = require('five-bells-shared').InvalidUriParameterError
 const ExternalError = require('../errors/external-error')
+const balanceCache = require('../services/balance-cache.js')
+const backend = require('../services/backend')
 
-function * makeQuoteQuery (params) {
+function * makeQuoteQuery (params, config) {
   // TODO: include the expiry duration in the quote logic
   let destinationExpiryDuration = parseFloat(params.destination_expiry_duration)
   let sourceExpiryDuration = parseFloat(params.source_expiry_duration)
@@ -77,7 +75,7 @@ function makeQuoteArgs (query) {
   }
 }
 
-function makePaymentTemplate (query, quote) {
+function makePaymentTemplate (query, quote, ledgers) {
   const source_amount = quote.source_amount
   const destination_amount = quote.destination_amount
   const payment = {
@@ -122,8 +120,8 @@ function * getAccountLedger (account) {
   return ledger
 }
 
-function * getQuote (params) {
-  const query = yield makeQuoteQuery(params)
+function * getQuote (params, ledgers, config) {
+  const query = yield makeQuoteQuery(params, config)
   const quote = yield backend.getQuote(makeQuoteArgs(query))
 
   const sourceBalance = yield balanceCache.get(query.source_ledger)
@@ -138,7 +136,7 @@ function * getQuote (params) {
     quote.destination_amount + ' ' +
     query.destination_ledger)
 
-  return makePaymentTemplate(query, quote)
+  return makePaymentTemplate(query, quote, ledgers)
 }
 
 module.exports = {

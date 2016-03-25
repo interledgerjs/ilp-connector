@@ -2,7 +2,7 @@
 
 const _ = require('lodash')
 const ledgers = require('../services/ledgers')
-const log = require('../services/log')('executeSourceTransfers')
+const log = require('../common').log('executeSourceTransfers')
 const validate = require('./validate')
 
 function * getConditionFulfillment (destinationTransfers, relatedResources) {

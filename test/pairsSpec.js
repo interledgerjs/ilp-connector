@@ -4,9 +4,14 @@ nock.enableNetConnect(['localhost'])
 const logger = require('five-bells-connector')._test.logger
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
+const appHelper = require('./helpers/app')
 
 describe('Pairs', function () {
   logHelper(logger)
+
+  beforeEach(function * () {
+    appHelper.create(this)
+  })
 
   describe('GET /pairs', function () {
     it('returns an array of currency pairs', function * () {

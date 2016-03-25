@@ -3,7 +3,7 @@
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const testPaymentExpiry = require('../lib/testPaymentExpiry')
-const log = require('../services/log')('payments')
+const log = require('../common').log('payments')
 const executeSourceTransfers = require('../lib/executeSourceTransfers')
 const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error')
@@ -16,9 +16,7 @@ const UnrelatedNotificationError =
   require('../errors/unrelated-notification-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const hashJSON = require('five-bells-shared/utils/hashJson')
-const config = require('../services/config')
 const backend = require('../services/backend')
-const ledgers = require('../services/ledgers')
 
 // TODO this should handle the different types of execution_condition's.
 function sourceConditionIsDestinationTransfer (source, destination) {
@@ -93,7 +91,7 @@ function validateExecutionConditions (payment) {
   }
 }
 
-function * validateExecutionConditionPublicKey (payment) {
+function * validateExecutionConditionPublicKey (payment, ledgers) {
   // TODO: use a cache of ledgers' public keys and move this functionality
   // into the synchronous validateExecutionConditions function
   for (const sourceTransfer of payment.source_transfers) {
@@ -122,7 +120,7 @@ function * validateExecutionConditionPublicKey (payment) {
   }
 }
 
-function * validateExpiry (payment) {
+function * validateExpiry (payment, config) {
   // TODO tie the maxHoldTime to the fx rate
   // TODO bring all these loops into one to speed this up
   const tester = yield testPaymentExpiry(config, payment)
@@ -137,7 +135,7 @@ function * validateExpiry (payment) {
   }
 }
 
-function amountFinder (ledger, creditOrDebit) {
+function amountFinder (ledger, creditOrDebit, config) {
   // TODO: we need a more elegant way of handling assets that we don't trade
   if (!config.getIn(['ledgerCredentials', ledger])) {
     throw new AssetsNotTradedError('This connector does not support ' +
@@ -163,7 +161,7 @@ function amountFinder (ledger, creditOrDebit) {
  * @param {String} opts.convertToLedger The ledger representing the asset we will convert all of the amounts into (for easier comparisons)
  * @yield {Float} The total amount converted into the asset represented by opts.convertToLedger
  */
-function * calculateAmountEquivalent (opts) {
+function * calculateAmountEquivalent (opts, config) {
   // convertedAmountTotal is going to be the total of either the credits
   // if the transfers are source_transfers or debits if the transfers
   // are destination_transfers (the amount that is either entering
@@ -178,9 +176,9 @@ function * calculateAmountEquivalent (opts) {
 
   for (const transfer of opts.transfers) {
     // Total the number of credits or debits to the connectors account
-    const relevantAmountTotal = _.reduce(transfer[opts.creditsOrDebits], function (result, creditOrDebit) {
-      return result.plus(amountFinder(transfer.ledger, creditOrDebit))
-    }, new BigNumber(0), this)
+    const relevantAmountTotal = _.reduce(transfer[opts.creditsOrDebits], (result, creditOrDebit) => {
+      return result.plus(amountFinder(transfer.ledger, creditOrDebit, config))
+    }, new BigNumber(0))
 
     // Throw an error if we're not included in the transfer
     if (relevantAmountTotal.lte(0) && !opts.noErrors) {
@@ -219,7 +217,7 @@ function * calculateAmountEquivalent (opts) {
   return convertedAmountTotal
 }
 
-function * validateRate (payment) {
+function * validateRate (payment, config) {
   log.debug('validating rate')
 
   // Determine which ledger's asset we will convert all
@@ -239,14 +237,14 @@ function * validateRate (payment) {
     transferSide: 'source',
     creditsOrDebits: 'credits',
     convertToLedger: convertToLedger
-  })
+  }, config)
   const destinationDebitEquivalent =
   yield calculateAmountEquivalent({
     transfers: payment.destination_transfers,
     transferSide: 'destination',
     creditsOrDebits: 'debits',
     convertToLedger: convertToLedger
-  })
+  }, config)
 
   if (sourceCreditEquivalent.lt(destinationDebitEquivalent)) {
     throw new UnacceptableRateError('Payment rate does not match ' +
@@ -255,7 +253,7 @@ function * validateRate (payment) {
 }
 
 // Note this modifies the original object
-function addAuthorizationToTransfers (transfers) {
+function addAuthorizationToTransfers (transfers, config) {
   // TODO: make sure we're not authorizing anything extra
   // that shouldn't be taking money out of our account
   let credentials
@@ -277,7 +275,7 @@ function addAuthorizationToTransfers (transfers) {
 // TODO authorize credits
 }
 
-function * submitTransfer (destinationTransfer, sourceTransfer) {
+function * submitTransfer (destinationTransfer, sourceTransfer, ledgers) {
   for (const debit of destinationTransfer.debits) {
     debit.memo = Object.assign({}, debit.memo, {
       source_transfer_ledger: sourceTransfer.ledger,
@@ -287,24 +285,24 @@ function * submitTransfer (destinationTransfer, sourceTransfer) {
   yield ledgers.putTransfer(destinationTransfer)
 }
 
-function * validate (payment) {
+function * validate (payment, ledgers, config) {
   // TODO: Check expiry settings
   // TODO: Check ledger signature on source payment
   // TODO: Check ledger signature on destination payment
 
-  yield validateExpiry(payment)
-  yield validateRate(payment)
+  yield validateExpiry(payment, config)
+  yield validateRate(payment, config)
   validateExecutionConditions(payment)
-  yield validateExecutionConditionPublicKey(payment)
+  yield validateExecutionConditionPublicKey(payment, ledgers)
 }
 
-function * settle (payment) {
+function * settle (payment, config, ledgers) {
   log.debug('Settle payment: ' + JSON.stringify(payment))
-  addAuthorizationToTransfers(payment.destination_transfers)
+  addAuthorizationToTransfers(payment.destination_transfers, config)
 
   const sourceTransfer = payment.source_transfers[0]
   for (const destinationTransfer of payment.destination_transfers) {
-    yield submitTransfer(destinationTransfer, sourceTransfer)
+    yield submitTransfer(destinationTransfer, sourceTransfer, ledgers)
   }
 
   const anyTransfersAreExecuted = _.some(payment.destination_transfers, (transfer) => {
@@ -320,13 +318,13 @@ function * settle (payment) {
   }
 }
 
-function isTraderFunds (funds) {
+function isTraderFunds (config, funds) {
   return _.some(config.ledgerCredentials, (credentials) => {
     return credentials.account_uri === funds.account
   })
 }
 
-function * updateSourceTransfer (updatedTransfer, traderCredit) {
+function * updateSourceTransfer (updatedTransfer, traderCredit, ledgers, config) {
   const destinationTransfer = traderCredit.memo && traderCredit.memo.destination_transfer
   if (!destinationTransfer) return
   ledgers.validateTransfer(destinationTransfer)
@@ -338,8 +336,9 @@ function * updateSourceTransfer (updatedTransfer, traderCredit) {
     source_transfers: [updatedTransfer],
     destination_transfers: [destinationTransfer]
   }
-  yield validate(payment)
-  yield settle(payment)
+
+  yield validate(payment, ledgers, config)
+  yield settle(payment, config, ledgers)
 }
 
 function * updateDestinationTransfer (updatedTransfer, traderDebit, relatedResources) {
@@ -352,18 +351,17 @@ function * updateDestinationTransfer (updatedTransfer, traderDebit, relatedResou
   yield executeSourceTransfers([updatedTransfer], relatedResources)
 }
 
-function * updateTransfer (updatedTransfer, relatedResources) {
-  // TODO: make sure the transfer is signed by the ledger
+function * updateTransfer (updatedTransfer, relatedResources, ledgers, config) {
   // Maybe it's a source transfer:
   // When the payment's source transfer is "prepared", authorized/submit the payment.
-  const traderCredit = updatedTransfer.credits.find(isTraderFunds)
+  const traderCredit = updatedTransfer.credits.find(_.partial(isTraderFunds, config))
   if (traderCredit) {
-    yield updateSourceTransfer(updatedTransfer, traderCredit)
+    yield updateSourceTransfer(updatedTransfer, traderCredit, ledgers, config)
     return
   }
 
   // Or a destination transfer:
-  const traderDebit = updatedTransfer.debits.find(isTraderFunds)
+  const traderDebit = updatedTransfer.debits.find(_.partial(isTraderFunds, config))
   if (traderDebit) {
     yield updateDestinationTransfer(updatedTransfer, traderDebit, relatedResources)
     return

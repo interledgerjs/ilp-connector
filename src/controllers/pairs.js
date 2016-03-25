@@ -36,5 +36,5 @@ const model = require('../models/pairs')
  */
 /* eslint-enable */
 exports.getCollection = function * getCollection () {
-  this.body = model.getPairs()
+  this.body = model.getPairs(this.config)
 }

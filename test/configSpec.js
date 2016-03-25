@@ -4,11 +4,10 @@ const _ = require('lodash')
 const loadConnectorConfig = require('five-bells-connector')._test.loadConnectorConfig
 const expect = require('chai').expect
 const fs = require('fs')
+const env = _.cloneDeep(process.env)
 
 describe('ConnectorConfig', function () {
   describe('parseConnectorConfig', function () {
-    const env = _.cloneDeep(process.env)
-
     beforeEach(function () {
       process.env = _.cloneDeep(env)
       process.env.CONNECTOR_LEDGERS = JSON.stringify([
@@ -17,6 +16,10 @@ describe('ConnectorConfig', function () {
         'AUD@https://aud-ledger.example'
       ])
       process.env.CONNECTOR_PAIRS = ''
+    })
+
+    afterEach(function () {
+      process.env = _.cloneDeep(env)
     })
 
     it('should auto-generate pairs', function * () {
