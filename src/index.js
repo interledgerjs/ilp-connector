@@ -9,6 +9,7 @@ const connector = createApp(config, backend, ledgers)
 
 module.exports = {
   app: connector.koaApp,
+  createApp: createApp,
   listen: connector.listen,
   addLedger: ledgers.addLedger.bind(ledgers),
   _test: {
@@ -16,7 +17,7 @@ module.exports = {
     balanceCache: balanceCache,
     loadConnectorConfig: require('./lib/config'),
     config: require('./services/config'),
-    logger: require('./services/log'),
+    logger: require('./common').log,
     backend: require('./services/backend')
   }
 }

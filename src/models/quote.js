@@ -2,7 +2,7 @@
 
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
-const log = require('../services/log')('quote')
+const log = require('../common').log('quote')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const InvalidURIParameterError = require('five-bells-shared').InvalidUriParameterError

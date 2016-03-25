@@ -16,7 +16,7 @@ const koa = require('koa')
 const path = require('path')
 const logger = require('koa-mag')
 const Passport = require('koa-passport').KoaPassport
-const log = require('./services/log')
+const log = require('./common/log')
 
 function listen (koaApp, config, backend, ledgers) {
   if (config.getIn(['server', 'secure'])) {
@@ -95,7 +95,8 @@ function createApp (config, backend, ledgers) {
 
   return {
     koaApp: koaApp,
-    listen: _.partial(listen, koaApp, config, backend, ledgers)
+    listen: _.partial(listen, koaApp, config, backend, ledgers),
+    callback: koaApp.callback.bind(koaApp)
   }
 }
 

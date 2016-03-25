@@ -1,7 +1,7 @@
 'use strict'
 
 const requestUtil = require('five-bells-shared/utils/request')
-const log = require('../services/log')('notifications')
+const log = require('../common').log('notifications')
 const model = require('../models/notifications')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 

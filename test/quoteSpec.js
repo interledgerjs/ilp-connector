@@ -2,12 +2,10 @@
 const parseURL = require('url').parse
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
-const app = require('five-bells-connector').app
 const ratesResponse = require('./data/fxRates.json')
 const validate = require('five-bells-shared/services/validate')
 const appHelper = require('./helpers/app')
 const logger = require('five-bells-connector')._test.logger
-const backend = require('five-bells-connector')._test.backend
 const balanceCache = require('five-bells-connector')._test.balanceCache
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
@@ -16,7 +14,7 @@ describe('Quotes', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    appHelper.create(this, app)
+    appHelper.create(this)
 
     // Connector queries its balances when getting a quote to ensure it has sufficient funds.
     ;[
@@ -34,7 +32,7 @@ describe('Quotes', function () {
     })
     balanceCache.reset()
 
-    yield backend.connect(ratesResponse)
+    yield this.backend.connect(ratesResponse)
   })
 
   afterEach(function () {

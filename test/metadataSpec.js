@@ -3,13 +3,12 @@
 const nock = require('nock')
 const expect = require('chai').expect
 nock.enableNetConnect(['localhost', '127.0.0.1'])
-const app = require('five-bells-connector').app
 const appHelper = require('./helpers/app')
-const logger = require('../src/services/log')
+const logger = require('../src/common').log
 const logHelper = require('five-bells-shared/testHelpers/log')
 
 beforeEach(function () {
-  appHelper.create(this, app)
+  appHelper.create(this)
 })
 
 describe('Metadata', function () {

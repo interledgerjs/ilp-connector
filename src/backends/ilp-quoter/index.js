@@ -7,7 +7,7 @@ const NoAmountSpecifiedError =
   require('../../errors/no-amount-specified-error')
 const UnacceptableQuoterAmountError =
   require('../../errors/unacceptable-quoter-amount-error')
-const log = require('../../services/log')('ilpquote')
+const log = require('../../common').log('ilpquote')
 const config = require('../../services/config')
 const BigNumber = require('bignumber.js')
 

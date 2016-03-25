@@ -4,7 +4,7 @@ const request = require('co-request')
 const uuid = require('uuid4')
 const validate = require('../validate')
 const config = require('../../services/config')
-const log = require('../../services/log')('fiveBellsLedger')
+const log = require('../../common').log('fiveBellsLedger')
 const ExternalError = require('../../errors/external-error')
 
 const backoffMin = 1000

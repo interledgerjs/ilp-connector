@@ -3,7 +3,7 @@
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const testPaymentExpiry = require('../lib/testPaymentExpiry')
-const log = require('../services/log')('payments')
+const log = require('../common').log('payments')
 const executeSourceTransfers = require('../lib/executeSourceTransfers')
 const UnacceptableConditionsError =
   require('../errors/unacceptable-conditions-error')
