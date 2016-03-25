@@ -6,19 +6,9 @@ const BigNumber = require('bignumber.js')
 const AssetsNotTradedError = require('../../errors/assets-not-traded-error')
 const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../common').log('fixerio')
-const config = require('../../services/config')
+const utils = require('../utils')
 
 const RATES_API = 'https://api.fixer.io/latest'
-
-function lookupCurrencies (source_ledger, destination_ledger) {
-  for (let pair of config.get('tradingPairs')) {
-    if (pair[0].indexOf(source_ledger) === 4 &&
-      pair[1].indexOf(destination_ledger) === 4) {
-      return [pair[0].slice(0, 3), pair[1].slice(0, 3)]
-    }
-  }
-  return null
-}
 
 /**
  * Dummy backend that uses Fixer.io API for FX rates
@@ -67,19 +57,6 @@ class FixerIoBackend {
     this.currencies.sort()
   }
 
-  /**
-   * Check if we trade the given pair of assets
-   *
-   * @param {String} source The URI of the source ledger
-   * @param {String} destination The URI of the destination ledger
-   * @return {boolean}
-   */
-  * hasPair (source, destination) {
-    const currencyPair = lookupCurrencies(source, destination)
-    return _.includes(this.currencies, currencyPair[0]) &&
-      _.includes(this.currencies, currencyPair[1])
-  }
-
   _formatAmount (amount) {
     return new BigNumber(amount).toFixed(2)
   }
@@ -106,15 +83,15 @@ class FixerIoBackend {
    */
   * getQuote (params) {
     // Throw an error if the currency pair is not supported
-    const hasPair = yield this.hasPair(params.source_ledger, params.destination_ledger)
+    const hasPair = utils.hasPair(this.currencies, params.source_ledger, params.destination_ledger)
     if (!hasPair) {
-      console.log('doesnt have pair', params)
+      log.error('doesnt have pair', JSON.stringify(params))
       throw new AssetsNotTradedError('This connector does not support the ' +
         'given asset pair')
     }
 
     // Get ratio between currencies and apply spread
-    const currencyPair = lookupCurrencies(params.source_ledger, params.destination_ledger)
+    const currencyPair = utils.getCurrencyPair(params.source_ledger, params.destination_ledger)
     const destinationRate = this.rates[currencyPair[1]]
     const sourceRate = this.rates[currencyPair[0]]
 

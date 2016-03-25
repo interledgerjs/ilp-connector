@@ -8,20 +8,10 @@ const NoAmountSpecifiedError =
 const UnacceptableQuoterAmountError =
   require('../../errors/unacceptable-quoter-amount-error')
 const log = require('../../common').log('ilpquote')
+const ServerError = require('five-bells-shared/errors/server-error')
 const config = require('../../services/config')
 const BigNumber = require('bignumber.js')
-
-function lookupCurrencies (source_ledger, destination_ledger) {
-  for (let pair of config.get('tradingPairs')) {
-    if (pair[0].indexOf(source_ledger) === 4 &&
-        pair[1].indexOf(destination_ledger) === 4) {
-      const currencyA = pair[0].slice(0, 3)
-      const currencyB = pair[1].slice(0, 3)
-      return [currencyA, currencyB]
-    }
-  }
-  return null
-}
+const utils = require('../utils')
 
 /**
  * Example backend that connects to an external component to get
@@ -61,13 +51,13 @@ class ILPQuoter {
    */
   * getQuote (params) {
     log.debug('Connecting to ' + this.backendUri)
-    const hasPair = yield this.hasPair(params.source_ledger,
+    const hasPair = utils.hasPair(this.pairs, params.source_ledger,
                                        params.destination_ledger)
     if (!hasPair) {
       throw new AssetsNotTradedError('This connector does not support the ' +
         'given asset pair')
     }
-    const currencyPair = lookupCurrencies(params.source_ledger,
+    const currencyPair = utils.getCurrencyPair(params.source_ledger,
                                           params.destination_ledger)
     let amount, type
     if (params.source_amount) {
@@ -85,6 +75,10 @@ class ILPQuoter {
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
                 '/' + type
     const result = yield request({ uri, json: true })
+    if (result.statusCode >= 400) {
+      log.error('Error getting quote: ', JSON.stringify(result.body))
+      throw new ServerError('Unable to get quote from backend.')
+    }
     const fixedAmount = type === 'source' ? result.body.source_amount
                                           : result.body.destination_amount
     if (fixedAmount !== amount.toString()) {
@@ -100,15 +94,6 @@ class ILPQuoter {
       destination_amount: result.body.destination_amount
     }
     return quote
-  }
-
-  * hasPair (source, destination) {
-    const pair = lookupCurrencies(source, destination)
-    if (!pair) {
-      return false
-    }
-    const success = this.pairs.find((p) => (p[0] === pair[0]) && (p[1] === pair[1])) !== undefined
-    return success
   }
 }
 
