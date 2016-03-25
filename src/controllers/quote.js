@@ -110,6 +110,6 @@ const model = require('../models/quote')
 
 exports.get = function * () {
   this.body = yield model.getQuote(
-    this.query, this.ledgers, this.backend, this.config)
+    this.query, this.ledgers, this.config)
 }
 

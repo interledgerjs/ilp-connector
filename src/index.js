@@ -1,11 +1,10 @@
 'use strict'
 const ledgers = require('./services/ledgers')
 const config = require('./services/config')
-const backend = require('./services/backend')
 const balanceCache = require('./services/balance-cache')
 const createApp = require('./app')
 
-const connector = createApp(config, backend, ledgers)
+const connector = createApp(config, ledgers)
 
 module.exports = {
   app: connector.koaApp,

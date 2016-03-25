@@ -2,10 +2,10 @@
 
 const payments = require('./payments')
 
-function * processNotification (notification, config, backend, ledgers) {
+function * processNotification (notification, ledgers, config) {
   if (notification.event === 'transfer.update') {
     yield payments.updateTransfer(
-      notification.resource, notification.related_resources, config, backend, ledgers)
+      notification.resource, notification.related_resources, ledgers, config)
   }
 }
 

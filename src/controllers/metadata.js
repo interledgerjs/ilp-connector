@@ -12,4 +12,6 @@ const model = require('../models/metadata')
  *
  * @returns {void}
  */
-exports.getResource = function * () { this.body = model.getMetadata() }
+exports.getResource = function * () {
+  this.body = model.getMetadata(this.config)
+}

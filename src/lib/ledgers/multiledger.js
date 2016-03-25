@@ -24,7 +24,8 @@ Multiledger.prototype.buildLedger = function (ledger_id) {
   return new Ledger({
     ledger_id: ledger_id,
     credentials: creds,
-    log: this.log(Ledger.name)
+    log: this.log(Ledger.name),
+    config: this.config
   })
 }
 

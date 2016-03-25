@@ -8,6 +8,7 @@ const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const InvalidURIParameterError = require('five-bells-shared').InvalidUriParameterError
 const ExternalError = require('../errors/external-error')
 const balanceCache = require('../services/balance-cache.js')
+const backend = require('../services/backend')
 
 function * makeQuoteQuery (params, config) {
   // TODO: include the expiry duration in the quote logic
@@ -119,7 +120,7 @@ function * getAccountLedger (account) {
   return ledger
 }
 
-function * getQuote (params, ledgers, backend, config) {
+function * getQuote (params, ledgers, config) {
   const query = yield makeQuoteQuery(params, config)
   const quote = yield backend.getQuote(makeQuoteArgs(query))
 

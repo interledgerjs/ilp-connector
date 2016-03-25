@@ -6,7 +6,7 @@ const superagent = require('co-supertest')
 const log = require('../../src/common').log
 
 const loadConfig = require('../../src/lib/config')
-const createBackend = require('../../src/lib/backend')
+const backend = require('../../src/services/backend')
 const Multiledger = require('../../src/lib/ledgers/multiledger')
 
 const createApp = require('five-bells-connector').createApp
@@ -17,8 +17,7 @@ exports.create = function (context) {
     config: config,
     log: log
   })
-  const backend = createBackend(config)
-  const app = createApp(config, backend, ledgers)
+  const app = createApp(config, ledgers)
   context.app = app
   context.backend = backend
   context.ledgers = ledgers

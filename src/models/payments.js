@@ -16,6 +16,7 @@ const UnrelatedNotificationError =
   require('../errors/unrelated-notification-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const hashJSON = require('five-bells-shared/utils/hashJson')
+const backend = require('../services/backend')
 
 // TODO this should handle the different types of execution_condition's.
 function sourceConditionIsDestinationTransfer (source, destination) {
@@ -160,7 +161,7 @@ function amountFinder (ledger, creditOrDebit, config) {
  * @param {String} opts.convertToLedger The ledger representing the asset we will convert all of the amounts into (for easier comparisons)
  * @yield {Float} The total amount converted into the asset represented by opts.convertToLedger
  */
-function * calculateAmountEquivalent (opts, config, backend) {
+function * calculateAmountEquivalent (opts, config) {
   // convertedAmountTotal is going to be the total of either the credits
   // if the transfers are source_transfers or debits if the transfers
   // are destination_transfers (the amount that is either entering
@@ -216,7 +217,7 @@ function * calculateAmountEquivalent (opts, config, backend) {
   return convertedAmountTotal
 }
 
-function * validateRate (payment, config, backend) {
+function * validateRate (payment, config) {
   log.debug('validating rate')
 
   // Determine which ledger's asset we will convert all
@@ -236,14 +237,14 @@ function * validateRate (payment, config, backend) {
     transferSide: 'source',
     creditsOrDebits: 'credits',
     convertToLedger: convertToLedger
-  }, config, backend)
+  }, config)
   const destinationDebitEquivalent =
   yield calculateAmountEquivalent({
     transfers: payment.destination_transfers,
     transferSide: 'destination',
     creditsOrDebits: 'debits',
     convertToLedger: convertToLedger
-  }, config, backend)
+  }, config)
 
   if (sourceCreditEquivalent.lt(destinationDebitEquivalent)) {
     throw new UnacceptableRateError('Payment rate does not match ' +
@@ -284,13 +285,13 @@ function * submitTransfer (destinationTransfer, sourceTransfer, ledgers) {
   yield ledgers.putTransfer(destinationTransfer)
 }
 
-function * validate (payment, ledgers, config, backend) {
+function * validate (payment, ledgers, config) {
   // TODO: Check expiry settings
   // TODO: Check ledger signature on source payment
   // TODO: Check ledger signature on destination payment
 
   yield validateExpiry(payment, config)
-  yield validateRate(payment, config, backend)
+  yield validateRate(payment, config)
   validateExecutionConditions(payment)
   yield validateExecutionConditionPublicKey(payment, ledgers)
 }
@@ -323,7 +324,7 @@ function isTraderFunds (config, funds) {
   })
 }
 
-function * updateSourceTransfer (updatedTransfer, traderCredit, ledgers, config, backend) {
+function * updateSourceTransfer (updatedTransfer, traderCredit, ledgers, config) {
   const destinationTransfer = traderCredit.memo && traderCredit.memo.destination_transfer
   if (!destinationTransfer) return
   ledgers.validateTransfer(destinationTransfer)
@@ -336,7 +337,7 @@ function * updateSourceTransfer (updatedTransfer, traderCredit, ledgers, config,
     destination_transfers: [destinationTransfer]
   }
 
-  yield validate(payment, ledgers, config, backend)
+  yield validate(payment, ledgers, config)
   yield settle(payment, config, ledgers)
 }
 
@@ -350,12 +351,12 @@ function * updateDestinationTransfer (updatedTransfer, traderDebit, relatedResou
   yield executeSourceTransfers([updatedTransfer], relatedResources)
 }
 
-function * updateTransfer (updatedTransfer, relatedResources, config, backend, ledgers) {
+function * updateTransfer (updatedTransfer, relatedResources, ledgers, config) {
   // Maybe it's a source transfer:
   // When the payment's source transfer is "prepared", authorized/submit the payment.
   const traderCredit = updatedTransfer.credits.find(_.partial(isTraderFunds, config))
   if (traderCredit) {
-    yield updateSourceTransfer(updatedTransfer, traderCredit, ledgers, config, backend)
+    yield updateSourceTransfer(updatedTransfer, traderCredit, ledgers, config)
     return
   }
 
