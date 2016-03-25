@@ -16,9 +16,9 @@ describe('ConnectorConfig', function () {
       ])
       process.env.CONNECTOR_PAIRS = ''
       process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-        'https://usd-ledger.example': 'test/data/ledger1sign.pem',
-        'https://eur-ledger.example': 'test/data/ledger2sign.pem',
-        'https://aud-ledger.example': 'test/data/ledger3sign.pem'
+        'https://usd-ledger.example': 'test/data/ledger1public.pem',
+        'https://eur-ledger.example': 'test/data/ledger2public.pem',
+        'https://aud-ledger.example': 'test/data/ledger3public.pem'
       })
     })
 
@@ -304,7 +304,7 @@ describe('ConnectorConfig', function () {
           process.env.CONNECTOR_NOTIFICATION_VERIFY = '1'
         })
 
-        it('config.notifications.must_verify=false', () => {
+        it('config.notifications.must_verify=true', () => {
           const config = loadConnectorConfig()
           expect(config.get('notifications.must_verify')).to.equal(true)
         })
@@ -316,9 +316,9 @@ describe('ConnectorConfig', function () {
 
         it('throws if missing public key for any ledger', () => {
           process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-            // 'https://usd-ledger.example': 'test/data/ledger1sign.pem',
-            'https://eur-ledger.example': 'test/data/ledger2sign.pem',
-            'https://aud-ledger.example': 'test/data/ledger3sign.pem'
+            // 'https://usd-ledger.example': 'test/data/ledger1public.pem',
+            'https://eur-ledger.example': 'test/data/ledger2public.pem',
+            'https://aud-ledger.example': 'test/data/ledger3public.pem'
           })
           expect(() => loadConnectorConfig()).to.throw().match(/Missing notification signing keys./)
         })
@@ -326,8 +326,8 @@ describe('ConnectorConfig', function () {
         it('throws if missing public key file for any ledger', () => {
           process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
             'https://usd-ledger.example': 'test/foo',
-            'https://eur-ledger.example': 'test/data/ledger2sign.pem',
-            'https://aud-ledger.example': 'test/data/ledger3sign.pem'
+            'https://eur-ledger.example': 'test/data/ledger2public.pem',
+            'https://aud-ledger.example': 'test/data/ledger3public.pem'
           })
           expect(() => loadConnectorConfig())
             .to.throw().match(/Failed to read signing key for ledger https:\/\/usd-ledger.example/)
@@ -336,21 +336,31 @@ describe('ConnectorConfig', function () {
         it('parses keys', () => {
           const config = loadConnectorConfig()
           expect(config.get('notifications.keys')).to.deep.equal({
-            'https://aud-ledger.example': fs.readFileSync('test/data/ledger3sign.pem'),
-            'https://eur-ledger.example': fs.readFileSync('test/data/ledger2sign.pem'),
-            'https://usd-ledger.example': fs.readFileSync('test/data/ledger1sign.pem')
+            'https://aud-ledger.example': fs.readFileSync('test/data/ledger3public.pem', 'utf8'),
+            'https://eur-ledger.example': fs.readFileSync('test/data/ledger2public.pem', 'utf8'),
+            'https://usd-ledger.example': fs.readFileSync('test/data/ledger1public.pem', 'utf8')
           })
         })
       })
 
-      describe('CONNECTOR_NOTIFICATIONS_VERIFY=false', () => {
+      describe('CONNECTOR_NOTIFICATION_VERIFY=false -- production', () => {
         beforeEach(() => {
-          process.env.CONNECTOR_NOTIFICATIONS_VERIFY = '0'
+          process.env.CONNECTOR_NOTIFICATION_VERIFY = '0'
+          process.env.NODE_ENV = 'production'
         })
 
         it('config.notifications.must_verify=false', () => {
           const config = loadConnectorConfig()
           expect(config.get('notifications.must_verify')).to.equal(false)
+        })
+
+        it('does not throw if missing public key for any ledger', () => {
+          process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
+            // 'https://usd-ledger.example': 'test/data/ledger1public.pem',
+            'https://eur-ledger.example': 'test/data/ledger2public.pem',
+            'https://aud-ledger.example': 'test/data/ledger3public.pem'
+          })
+          expect(() => loadConnectorConfig()).to.not.throw()
         })
       })
     })

@@ -9,49 +9,118 @@ const logger = require('five-bells-connector')._test.logger
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const sinon = require('sinon')
+const jsonSigning = require('five-bells-shared').JSONSigning
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
+
+const path = require('path')
+const fs = require('fs')
+const ledgerPrivateKey = fs.readFileSync('./test/data/ledger1private.pem', 'utf8')
+
+function signNotification (notification) {
+  const algorithm = 'PS256'
+  return jsonSigning.sign(notification, algorithm, ledgerPrivateKey)
+}
+
+function invalidlySignNotification (notification) {
+  const key = fs.readFileSync('./test/data/ledger2private.pem', 'utf8')
+  const algorithm = 'PS256'
+  return jsonSigning.sign(notification, algorithm, key)
+}
+
+const env = _.cloneDeep(process.env)
 
 describe('Notifications', function () {
   logHelper(logger)
 
-  beforeEach(function * () {
-    appHelper.create(this)
-    yield this.backend.connect(ratesResponse)
+  describe('POST /notifications -- signed', function () {
+    beforeEach(function * () {
+      process.env.CONNECTOR_NOTIFICATION_VERIFY = 'true'
+      process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
+        'http://eur-ledger.example': path.resolve(__dirname, './data/ledger1public.pem'),
+        'http://example.com': path.resolve(__dirname, './data/ledger1public.pem')
+      })
+      process.env.CONNECTOR_LEDGERS = JSON.stringify([
+        'EUR@http://eur-ledger.example',
+        'USD@http://example.com'
+      ])
+      appHelper.create(this)
+      yield this.backend.connect(ratesResponse)
 
-    this.clock = sinon.useFakeTimers(START_DATE)
+      this.clock = sinon.useFakeTimers(START_DATE)
+      this.notificationSourceTransferPrepared =
+        _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
+    })
 
-    this.paymentOneToOne =
-      _.cloneDeep(require('./data/paymentOneToOne.json'))
-    this.paymentManyToOne =
-      _.cloneDeep(require('./data/paymentManyToOne.json'))
-    this.paymentSameExecutionCondition =
-      _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
-    this.transferProposedReceipt =
-      _.cloneDeep(require('./data/transferStateProposed.json'))
-    this.transferPreparedReceipt =
-      _.cloneDeep(require('./data/transferStatePrepared.json'))
-    this.transferExecutedReceipt =
-      _.cloneDeep(require('./data/transferStateExecuted.json'))
-    this.notificationNoConditionFulfillment =
-      _.cloneDeep(require('./data/notificationNoConditionFulfillment.json'))
-    this.notificationWithConditionFulfillment =
-      _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'))
-    this.notificationSourceTransferPrepared =
-      _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
-    this.notificationSourceTransferAtomic =
-      _.cloneDeep(require('./data/notificationSourceTransferAtomic.json'))
-    this.notificationSourceTransferAtomic_TwoCases =
-      _.cloneDeep(require('./data/notificationSourceTransferAtomic_TwoCases.json'))
-  })
+    afterEach(function * () {
+      expect(nock.pendingMocks()).to.deep.equal([])
+      nock.cleanAll()
+      this.clock.restore()
+      process.env = _.cloneDeep(env)
+    })
 
-  afterEach(function * () {
-    expect(nock.pendingMocks()).to.deep.equal([])
-    nock.cleanAll()
-    this.clock.restore()
+    it('returns 200 if the notification is signed', function * () {
+      this.notificationSourceTransferPrepared.resource.state = 'proposed'
+      yield this.request()
+        .post('/notifications')
+        .send(signNotification(this.notificationSourceTransferPrepared))
+        .expect(200)
+        .end()
+    })
+
+    it('returns 422 if the notification has an invalid signature', function * () {
+      const notification = this.notificationSourceTransferPrepared
+      const signedNotifcation = invalidlySignNotification(notification)
+      yield this.request()
+        .post('/notifications')
+        .send(signedNotifcation)
+        .expect(422)
+        .end()
+    })
   })
 
   describe('POST /notifications', function () {
+    beforeEach(function * () {
+      process.env.CONNECTOR_LEDGERS = JSON.stringify([
+        'EUR@http://eur-ledger.example',
+        'USD@http://example.com'
+      ])
+      appHelper.create(this)
+      yield this.backend.connect(ratesResponse)
+
+      this.clock = sinon.useFakeTimers(START_DATE)
+
+      this.paymentOneToOne =
+        _.cloneDeep(require('./data/paymentOneToOne.json'))
+      this.paymentManyToOne =
+        _.cloneDeep(require('./data/paymentManyToOne.json'))
+      this.paymentSameExecutionCondition =
+        _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
+      this.transferProposedReceipt =
+        _.cloneDeep(require('./data/transferStateProposed.json'))
+      this.transferPreparedReceipt =
+        _.cloneDeep(require('./data/transferStatePrepared.json'))
+      this.transferExecutedReceipt =
+        _.cloneDeep(require('./data/transferStateExecuted.json'))
+      this.notificationNoConditionFulfillment =
+        _.cloneDeep(require('./data/notificationNoConditionFulfillment.json'))
+      this.notificationWithConditionFulfillment =
+        _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'))
+      this.notificationSourceTransferPrepared =
+        _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
+      this.notificationSourceTransferAtomic =
+        _.cloneDeep(require('./data/notificationSourceTransferAtomic.json'))
+      this.notificationSourceTransferAtomic_TwoCases =
+        _.cloneDeep(require('./data/notificationSourceTransferAtomic_TwoCases.json'))
+    })
+
+    afterEach(function * () {
+      expect(nock.pendingMocks()).to.deep.equal([])
+      nock.cleanAll()
+      this.clock.restore()
+      process.env = _.cloneDeep(env)
+    })
+
     it('should return a 400 if the notification does not have an id field', function * () {
       delete this.notificationNoConditionFulfillment.id
       yield this.request()
@@ -844,92 +913,92 @@ describe('Notifications', function () {
         .expect(200)
         .end()
     })
-  })
 
-  describe('atomic mode: one case', function () {
-    beforeEach(function () {
-      this.source_transfer = this.notificationSourceTransferAtomic.resource
-      this.destination_transfer = this.source_transfer.credits[0].memo.destination_transfer
-    })
-
-    it('should check the expiry on a cancellation condition: too long', function * () {
-      const caseID = this.destination_transfer.additional_info.cases[0]
-      nock(caseID)
-        .get('')
-        .reply(200, { expires_at: future(15000) })
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferAtomic)
-        .expect(200)
-        .end()
-    })
-
-    it('should check the expiry on a cancellation condition: already expired', function * () {
-      const caseID = this.destination_transfer.additional_info.cases[0]
-      nock(caseID)
-        .get('')
-        .reply(200, { expires_at: future(-15000) })
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferAtomic)
-        .expect(200)
-        .end()
-    })
-
-    it('should check the expiry on a cancellation condition: missing expiry', function * () {
-      const caseID = this.destination_transfer.additional_info.cases[0]
-      nock(caseID)
-        .get('')
-        .reply(200, {})
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferAtomic)
-        .expect(200)
-        .end()
-    })
-  })
-
-  describe('atomic mode: two cases', function () {
-    beforeEach(function () {
-      this.source_transfer = this.notificationSourceTransferAtomic_TwoCases.resource
-      this.destination_transfer = this.source_transfer.credits[0].memo.destination_transfer
-    })
-
-    it('should check the expiry on a cancellation condition: different expiries', function * () {
-      const caseID1 = this.destination_transfer.additional_info.cases[0]
-      const caseID2 = this.destination_transfer.additional_info.cases[1]
-      nock(caseID1).get('').reply(200, {expires_at: future(5000)})
-      nock(caseID2).get('').reply(200, {expires_at: future(6000)})
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferAtomic_TwoCases)
-        .expect(200)
-        .end()
-    })
-
-    it('should check the expiry on a cancellation condition: same expiries', function * () {
-      const caseID1 = this.destination_transfer.additional_info.cases[0]
-      const caseID2 = this.destination_transfer.additional_info.cases[1]
-      const authorizedDestinationTransfer = _.merge({}, this.destination_transfer, {
-        debits: [{authorized: true}]
+    describe('atomic mode: one case', function () {
+      beforeEach(function () {
+        this.source_transfer = this.notificationSourceTransferAtomic.resource
+        this.destination_transfer = this.source_transfer.credits[0].memo.destination_transfer
       })
-      const expires_at = future(5000)
-      nock(caseID1).get('').reply(200, {expires_at: expires_at})
-      nock(caseID2).get('').reply(200, {expires_at: expires_at})
 
-      nock(this.destination_transfer.id)
-        .put('', authorizedDestinationTransfer)
-        .reply(201, authorizedDestinationTransfer)
+      it('should check the expiry on a cancellation condition: too long', function * () {
+        const caseID = this.destination_transfer.additional_info.cases[0]
+        nock(caseID)
+          .get('')
+          .reply(200, { expires_at: future(15000) })
 
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferAtomic_TwoCases)
-        .expect(200)
-        .end()
+        yield this.request()
+          .post('/notifications')
+          .send(this.notificationSourceTransferAtomic)
+          .expect(200)
+          .end()
+      })
+
+      it('should check the expiry on a cancellation condition: already expired', function * () {
+        const caseID = this.destination_transfer.additional_info.cases[0]
+        nock(caseID)
+          .get('')
+          .reply(200, { expires_at: future(-15000) })
+
+        yield this.request()
+          .post('/notifications')
+          .send(this.notificationSourceTransferAtomic)
+          .expect(200)
+          .end()
+      })
+
+      it('should check the expiry on a cancellation condition: missing expiry', function * () {
+        const caseID = this.destination_transfer.additional_info.cases[0]
+        nock(caseID)
+          .get('')
+          .reply(200, {})
+
+        yield this.request()
+          .post('/notifications')
+          .send(this.notificationSourceTransferAtomic)
+          .expect(200)
+          .end()
+      })
+    })
+
+    describe('atomic mode: two cases', function () {
+      beforeEach(function () {
+        this.source_transfer = this.notificationSourceTransferAtomic_TwoCases.resource
+        this.destination_transfer = this.source_transfer.credits[0].memo.destination_transfer
+      })
+
+      it('should check the expiry on a cancellation condition: different expiries', function * () {
+        const caseID1 = this.destination_transfer.additional_info.cases[0]
+        const caseID2 = this.destination_transfer.additional_info.cases[1]
+        nock(caseID1).get('').reply(200, {expires_at: future(5000)})
+        nock(caseID2).get('').reply(200, {expires_at: future(6000)})
+
+        yield this.request()
+          .post('/notifications')
+          .send(this.notificationSourceTransferAtomic_TwoCases)
+          .expect(200)
+          .end()
+      })
+
+      it('should check the expiry on a cancellation condition: same expiries', function * () {
+        const caseID1 = this.destination_transfer.additional_info.cases[0]
+        const caseID2 = this.destination_transfer.additional_info.cases[1]
+        const authorizedDestinationTransfer = _.merge({}, this.destination_transfer, {
+          debits: [{authorized: true}]
+        })
+        const expires_at = future(5000)
+        nock(caseID1).get('').reply(200, {expires_at: expires_at})
+        nock(caseID2).get('').reply(200, {expires_at: expires_at})
+
+        nock(this.destination_transfer.id)
+          .put('', authorizedDestinationTransfer)
+          .reply(201, authorizedDestinationTransfer)
+
+        yield this.request()
+          .post('/notifications')
+          .send(this.notificationSourceTransferAtomic_TwoCases)
+          .expect(200)
+          .end()
+      })
     })
   })
 })

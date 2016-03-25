@@ -93,7 +93,7 @@ function parseNotificationSignEnv () {
 function parseNotificationSign () {
   const signEnv = parseNotificationSignEnv()
   return _.merge(signEnv, {
-    keys: _.mapValues(signEnv.keys, (path) => fs.readFileSync(path))
+    keys: _.mapValues(signEnv.keys, (path) => fs.readFileSync(path, 'utf8'))
   })
 }
 
