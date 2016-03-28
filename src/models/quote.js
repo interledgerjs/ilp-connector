@@ -147,8 +147,17 @@ function * getAccountLedger (account) {
 }
 
 function validatePrecision (amount, precision, ledger) {
-  if (new BigNumber(amount).precision() > precision) {
-    throw new UnacceptableAmountError(`Amount (${amount}) exceeds ledger precision on ${ledger} ledger`)
+  log.debug('validatePrecision', {amount, precision, ledger})
+  const bnAmount = new BigNumber(amount)
+
+  if (bnAmount.precision() > precision) {
+    throw new UnacceptableAmountError(
+      `Amount (${amount}) exceeds ledger precision on ${ledger} ledger`)
+  }
+
+  if (bnAmount.lte(0)) {
+    throw new UnacceptableAmountError(
+      `Quoted ${ledger} is lower than minimum amount allowed`)
   }
 }
 

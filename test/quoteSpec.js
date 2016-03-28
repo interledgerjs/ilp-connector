@@ -126,6 +126,19 @@ describe('Quotes', function () {
         .end()
     })
 
+    it('should return a 422 if destination_ledger rounded amount is less than or equal to 0', function * () {
+      yield this.request()
+        .get('/quote?source_amount=0.00001' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(422)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('UnacceptableAmountError')
+          expect(res.body.message).to.equal('Quoted destination is lower than minimum amount allowed')
+        })
+        .end()
+    })
+
     it('should return a 422 if the destination_expiry_duration is too long', function * () {
       yield this.request()
         .get('/quote?' +
