@@ -3,7 +3,7 @@
 const _ = require('lodash')
 const ledgers = require('../services/ledgers')
 const log = require('../common').log('executeSourceTransfers')
-const validate = require('./validate')
+const validator = require('./validate')
 
 function * getConditionFulfillment (destinationTransfers, relatedResources) {
   // There are 3 possible places we can get the fulfillment from:
@@ -63,8 +63,8 @@ function * executeSourceTransfers (destinationTransfers, relatedResources) {
     const destinationDebitMemo = destinationTransfer.debits[0].memo || {}
     const sourceTransferLedger = destinationDebitMemo.source_transfer_ledger
     const sourceTransferID = destinationDebitMemo.source_transfer_id
-    validate('Iri', sourceTransferLedger)
-    validate('Iri', sourceTransferID)
+    validator.validate('Iri', sourceTransferLedger)
+    validator.validate('Iri', sourceTransferID)
 
     log.debug('Requesting fulfillment of source transfer: ' + sourceTransferID + ' (fulfillment: ' + JSON.stringify(conditionFulfillment) + ')')
     // TODO check the timestamp on the response from the ledger against

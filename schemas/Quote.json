@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "Quote",
+  "description": "A quote object",
+  "type": "object",
+  "properties": {
+    "source_ledger": {
+      "description": "The URI of the source ledger",
+      "$ref": "Iri.json"
+    },
+    "destination_ledger": {
+      "description": "The URI of the destination ledger",
+      "$ref": "Iri.json"
+    },
+    "source_amount": {
+      "description": "The amount in the currency used by the source ledger",
+      "$ref": "PositiveFiniteAmount.json"
+    },
+    "destination_amount": {
+      "description": "The amount in the currency used by the destination ledger",
+      "$ref": "PositiveFiniteAmount.json"
+    }
+  },
+  "required": ["source_ledger", "destination_ledger", "source_amount", "destination_amount"],
+  "additionalProperties": false
+}

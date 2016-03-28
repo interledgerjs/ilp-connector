@@ -2,36 +2,32 @@
 
 const _ = require('lodash')
 const config = require('../services/config')
+const AssetsNotTradedError = require('../errors/assets-not-traded-error')
+const log = require('../common').log('fixerio')
 
-function getCurrencyPair (source_ledger, destination_ledger) {
+/**
+ * Return currency pair for ledgers
+ *
+ * @param {String} source The URI of the source ledger
+ * @param {String} destination The URI of the destination ledger
+ * @return {Array}
+ */
+function getCurrencyPair (sourceLedger, destinationLedger) {
   if (!_.isEmpty(config.get('tradingPairs'))) {
     for (let pair of config.get('tradingPairs')) {
       // trading pair is of the form
       // ["<currency@<source_ledger>","<currency>@<destination_ledger>"]
-      if (pair[0].indexOf(source_ledger) === 4 &&
-        pair[1].indexOf(destination_ledger) === 4) {
+      if (pair[0].indexOf(sourceLedger) === 4 &&
+        pair[1].indexOf(destinationLedger) === 4) {
         return [pair[0].slice(0, 3), pair[1].slice(0, 3)]
       }
     }
   }
-  // No currency pair found
-  return ['', '']
-}
-
-/**
- * Check if we trade the given pair of assets
- *
- * @param {String} source The URI of the source ledger
- * @param {String} destination The URI of the destination ledger
- * @return {boolean}
- */
-function hasPair (currencyPairs, source, destination) {
-  const currencyPair = getCurrencyPair(source, destination)
-  return _.includes(currencyPairs, currencyPair[0]) &&
-    _.includes(currencyPairs, currencyPair[1])
+  log.error('no currency pair for ledgers ', sourceLedger, ', ', destinationLedger)
+  throw new AssetsNotTradedError('This connector does not support the ' +
+        'given asset pair')
 }
 
 module.exports = {
-  getCurrencyPair,
-  hasPair
+  getCurrencyPair
 }

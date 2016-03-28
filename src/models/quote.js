@@ -11,6 +11,9 @@ const ExternalError = require('../errors/external-error')
 const balanceCache = require('../services/balance-cache.js')
 const backend = require('../services/backend')
 const precisionCache = require('../services/precision-cache.js')
+const UnacceptableQuoterAmountError = require('../errors/unacceptable-quoter-amount-error')
+const ServerError = require('five-bells-shared/errors/server-error')
+const validator = require('../lib/validate')
 
 function * makeQuoteQuery (params, config) {
   // TODO: include the expiry duration in the quote logic
@@ -130,7 +133,6 @@ function validatePrecision (amount, precision, ledger) {
     throw new UnacceptableAmountError(
       `Amount (${amount}) exceeds ledger precision on ${ledger} ledger`)
   }
-
   if (bnAmount.lte(0)) {
     throw new UnacceptableAmountError(
       `Quoted ${ledger} is lower than minimum amount allowed`)
@@ -147,11 +149,29 @@ function * validateBalance (query, quote) {
 
 function * getQuote (params, ledgers, config) {
   const query = yield makeQuoteQuery(params, config)
+  const type = query.source_amount ? 'source' : 'destination'
+  const amount = query.source_amount || query.destination_amount
   const quote = yield backend.getQuote((yield makeQuoteArgs(query)))
+
+  const validationResult = validator.isValid('Quote', quote)
+  if (!validationResult.valid) {
+    log.error('Quote failed to validate against schema. Quote: ', JSON.stringify(quote))
+    log.error(JSON.stringify(_.omit(validationResult.errors[0], 'stack')))
+    throw new ServerError('Error getting quote from backend')
+  }
+
+  const fixedAmount = type === 'source' ? quote.source_amount
+                                          : quote.destination_amount
+
+  if (fixedAmount !== amount.toString()) {
+    if (!(new BigNumber(fixedAmount).equals(new BigNumber(amount)))) {
+      throw new UnacceptableQuoterAmountError('Backend returned an invalid ' +
+                type + ' amount: ' + fixedAmount + ' (expected: ' + amount + ')')
+    }
+  }
 
   const sourcePrecisionAndScale = yield precisionCache.get(query.source_ledger)
   const dstPrecisionAndScale = yield precisionCache.get(query.destination_ledger)
-
   const roundedSourceAmount = new BigNumber(quote.source_amount).toFixed(
     sourcePrecisionAndScale.scale, BigNumber.ROUND_UP)
 

@@ -95,36 +95,10 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a 400 if source_amount is infinite', function * () {
-      yield this.request()
-        .get('/quote?' +
-          'source_amount=1e100000&source_ledger=http://eur-ledger.example/EUR' +
-          '&destination_ledger=http://usd-ledger.example/USD')
-        .expect(400)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('InvalidAmountSpecifiedError')
-          expect(res.body.message).to.equal('source_amount must be finite and positive')
-        })
-        .end()
-    })
-
     it('should return a 400 if destination_amount is zero', function * () {
       yield this.request()
         .get('/quote?' +
           'destination_amount=0&source_ledger=http://eur-ledger.example/EUR' +
-          '&destination_ledger=http://usd-ledger.example/USD')
-        .expect(400)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('InvalidAmountSpecifiedError')
-          expect(res.body.message).to.equal('destination_amount must be finite and positive')
-        })
-        .end()
-    })
-
-    it('should return a 400 if destination_amount is infinite', function * () {
-      yield this.request()
-        .get('/quote?' +
-          'destination_amount=1e100000&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(400)
         .expect(function (res) {

@@ -3,10 +3,11 @@
 const _ = require('lodash')
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
-const AssetsNotTradedError = require('../../errors/assets-not-traded-error')
 const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../common').log('fixerio')
+const config = require('../../services/config')
 const utils = require('../utils')
+const ServerError = require('five-bells-shared/errors/server-error')
 
 const RATES_API = 'https://api.fixer.io/latest'
 
@@ -30,6 +31,12 @@ class FixerIoBackend {
 
     this.rates = {}
     this.currencies = []
+    const ledgerPairs = config.get('tradingPairs')
+    if (_.isEmpty(ledgerPairs)) {
+      throw new ServerError('No trading pairs found for this connector')
+    }
+    this.currencyPairs = ledgerPairs.map((p) => [p[0].slice(0, 3),
+                                   p[1].slice(0, 3)])
   }
 
   /**
@@ -50,7 +57,6 @@ class FixerIoBackend {
       })
       apiData = result.body
     }
-
     this.rates = apiData.rates
     this.rates[apiData.base] = 1
     this.currencies = _.keys(this.rates)
@@ -82,14 +88,6 @@ class FixerIoBackend {
    * @param {String|Integer|BigNumber} params.destination_amount The amount of the destination asset we want to send (either this or the source_amount must be set)
    */
   * getQuote (params) {
-    // Throw an error if the currency pair is not supported
-    const hasPair = utils.hasPair(this.currencies, params.source_ledger, params.destination_ledger)
-    if (!hasPair) {
-      log.error('doesnt have pair', JSON.stringify(params))
-      throw new AssetsNotTradedError('This connector does not support the ' +
-        'given asset pair')
-    }
-
     // Get ratio between currencies and apply spread
     const currencyPair = utils.getCurrencyPair(params.source_ledger, params.destination_ledger)
     const destinationRate = this.rates[currencyPair[1]]
@@ -122,8 +120,8 @@ class FixerIoBackend {
     return {
       source_ledger: params.source_ledger,
       destination_ledger: params.destination_ledger,
-      source_amount: sourceAmount,
-      destination_amount: destinationAmount
+      source_amount: sourceAmount.toString(),
+      destination_amount: destinationAmount.toString()
     }
   }
 
