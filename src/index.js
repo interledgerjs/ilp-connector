@@ -3,6 +3,7 @@ const ledgers = require('./services/ledgers')
 const config = require('./services/config')
 const balanceCache = require('./services/balance-cache')
 const createApp = require('./app')
+const precisionCache = require('./services/precision-cache')
 
 const connector = createApp(config, ledgers)
 
@@ -17,7 +18,8 @@ module.exports = {
     loadConnectorConfig: require('./lib/config'),
     config: require('./services/config'),
     logger: require('./common').log,
-    backend: require('./services/backend')
+    backend: require('./services/backend'),
+    precisionCache: precisionCache
   }
 }
 

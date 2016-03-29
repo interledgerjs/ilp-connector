@@ -10,31 +10,7 @@ const InvalidURIParameterError = require('five-bells-shared').InvalidUriParamete
 const ExternalError = require('../errors/external-error')
 const balanceCache = require('../services/balance-cache.js')
 const backend = require('../services/backend')
-
-function * getPrecisionAndScale (ledger) {
-  log.debug('getPrecisionAndScale', ledger)
-  function throwErr () {
-    throw new ExternalError('Unable to determine ledger precision')
-  }
-
-  let res
-  try {
-    res = yield request(ledger, {json: true})
-  } catch (e) {
-    if (!res || res.statusCode !== 200) {
-      log.debug('getPrecisionAndScale', e)
-      throwErr()
-    }
-  }
-
-  if (!res || res.statusCode !== 200) throwErr()
-
-  log.debug('getPrecisionAndScale', res.body)
-  return {
-    precision: res.body.precision,
-    scale: res.body.scale
-  }
-}
+const precisionCache = require('../services/precision-cache.js')
 
 function * makeQuoteQuery (params, config) {
   // TODO: include the expiry duration in the quote logic
@@ -173,8 +149,8 @@ function * getQuote (params, ledgers, config) {
   const query = yield makeQuoteQuery(params, config)
   const quote = yield backend.getQuote((yield makeQuoteArgs(query)))
 
-  const sourcePrecisionAndScale = yield getPrecisionAndScale(query.source_ledger)
-  const dstPrecisionAndScale = yield getPrecisionAndScale(query.destination_ledger)
+  const sourcePrecisionAndScale = yield precisionCache.get(query.source_ledger)
+  const dstPrecisionAndScale = yield precisionCache.get(query.destination_ledger)
 
   const roundedSourceAmount = new BigNumber(quote.source_amount).toFixed(
     sourcePrecisionAndScale.scale, BigNumber.ROUND_UP)

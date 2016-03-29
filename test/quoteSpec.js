@@ -10,6 +10,7 @@ const balanceCache = require('five-bells-connector')._test.balanceCache
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const _ = require('lodash')
+const precisionCache = require('five-bells-connector')._test.precisionCache
 
 describe('Quotes', function () {
   logHelper(logger)
@@ -43,6 +44,7 @@ describe('Quotes', function () {
         })
     })
     balanceCache.reset()
+    precisionCache.reset()
 
     yield this.backend.connect(ratesResponse)
   })
@@ -359,6 +361,44 @@ describe('Quotes', function () {
             expiry_duration: '10'
           }]
         })
+        .end()
+    })
+
+    it('caches source and destination ledger precision', function * () {
+      nock.cleanAll()
+      nock('http://eur-ledger.example/EUR')
+        .get('').reply(200, {precision: 10, scale: 4})
+        .get('').reply(500, 'Invalid request')
+
+      nock('http://usd-ledger.example/USD')
+        .get('').reply(200, {precision: 10, scale: 4})
+        .get('').reply(500, 'Invalid request')
+
+      nock('http://eur-ledger.example/accounts/mark').get('')
+        .reply(200, {
+          name: 'mark',
+          ledger: 'http://eur-ledger.example/accounts/mark',
+          balance: 150000
+        })
+      nock('http://usd-ledger.example/accounts/mark').get('')
+        .reply(200, {
+          name: 'mark',
+          ledger: 'http://usd-ledger.example/accounts/mark',
+          balance: 150000
+        })
+
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(200)
+        .end()
+
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(200)
         .end()
     })
 
