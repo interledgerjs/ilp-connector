@@ -104,6 +104,9 @@ class ILPQuoter {
 
   * hasPair (source, destination) {
     const pair = lookupCurrencies(source, destination)
+    if (!pair) {
+      return false
+    }
     const success = this.pairs.find((p) => (p[0] === pair[0]) && (p[1] === pair[1])) !== undefined
     return success
   }
