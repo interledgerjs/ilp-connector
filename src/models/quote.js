@@ -28,11 +28,28 @@ function * getPrecisionAndScale (ledger) {
   }
 
   if (!res || res.statusCode !== 200) throwErr()
+  if (!res.body.precision || !res.body.scale) throwErr()
 
   log.debug('getPrecisionAndScale', res.body)
   return {
     precision: res.body.precision,
     scale: res.body.scale
+  }
+}
+
+const LRU = require('lru-cache')
+const cache = LRU({
+  max: 100,
+  maxAge: 1 / 0, // Infinity. Never expire
+})
+function * getCachedPrecisionAndScale (ledger) {
+  const cachedVal = cache.get(ledger)
+  if (cachedVal) {
+    return cachedVal
+  } else {
+    const freshVal = yield getPrecisionAndScale(ledger)
+    cache.set(ledger, freshVal)
+    return freshVal
   }
 }
 
@@ -173,8 +190,8 @@ function * getQuote (params, ledgers, config) {
   const query = yield makeQuoteQuery(params, config)
   const quote = yield backend.getQuote((yield makeQuoteArgs(query)))
 
-  const sourcePrecisionAndScale = yield getPrecisionAndScale(query.source_ledger)
-  const dstPrecisionAndScale = yield getPrecisionAndScale(query.destination_ledger)
+  const sourcePrecisionAndScale = yield getCachedPrecisionAndScale(query.source_ledger)
+  const dstPrecisionAndScale = yield getCachedPrecisionAndScale(query.destination_ledger)
 
   const roundedSourceAmount = new BigNumber(quote.source_amount).toFixed(
     sourcePrecisionAndScale.scale, BigNumber.ROUND_UP)
