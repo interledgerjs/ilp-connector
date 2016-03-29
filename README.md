@@ -88,7 +88,7 @@ npm start
 ]
 ```
 
-* `CONNECTOR_NOTIFICATION_VERIFY` (default: `'true'`) The connector verifies the signatures on notifications.
+* `CONNECTOR_NOTIFICATION_VERIFY` (default: `'true'` if `NODE_ENV=production` else `false`) The connector verifies  signatures on notifications.
 * `CONNECTOR_NOTIFICATION_KEYS` (default: none) The paths to files with the public key in PEM format to verify ledgers' notification signatures. Required if `CONNECTOR_NOTICATION_VERIFY='true'`
 ex.
 ```js
