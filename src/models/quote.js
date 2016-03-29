@@ -1,6 +1,7 @@
 'use strict'
 
 const request = require('co-request')
+const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const log = require('../common').log('quote')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
@@ -9,6 +10,31 @@ const InvalidURIParameterError = require('five-bells-shared').InvalidUriParamete
 const ExternalError = require('../errors/external-error')
 const balanceCache = require('../services/balance-cache.js')
 const backend = require('../services/backend')
+
+function * getPrecisionAndScale (ledger) {
+  log.debug('getPrecisionAndScale', ledger)
+  function throwErr () {
+    throw new ExternalError('Unable to determine ledger precision')
+  }
+
+  let res
+  try {
+    res = yield request(ledger, {json: true})
+  } catch (e) {
+    if (!res || res.statusCode !== 200) {
+      log.debug('getPrecisionAndScale', e)
+      throwErr()
+    }
+  }
+
+  if (!res || res.statusCode !== 200) throwErr()
+
+  log.debug('getPrecisionAndScale', res.body)
+  return {
+    precision: res.body.precision,
+    scale: res.body.scale
+  }
+}
 
 function * makeQuoteQuery (params, config) {
   // TODO: include the expiry duration in the quote logic
@@ -120,23 +146,59 @@ function * getAccountLedger (account) {
   return ledger
 }
 
-function * getQuote (params, ledgers, config) {
-  const query = yield makeQuoteQuery(params, config)
-  const quote = yield backend.getQuote(makeQuoteArgs(query))
+function validatePrecision (amount, precision, ledger) {
+  log.debug('validatePrecision', {amount, precision, ledger})
+  const bnAmount = new BigNumber(amount)
 
+  if (bnAmount.precision() > precision) {
+    throw new UnacceptableAmountError(
+      `Amount (${amount}) exceeds ledger precision on ${ledger} ledger`)
+  }
+
+  if (bnAmount.lte(0)) {
+    throw new UnacceptableAmountError(
+      `Quoted ${ledger} is lower than minimum amount allowed`)
+  }
+}
+
+function * validateBalance (query, quote) {
   const sourceBalance = yield balanceCache.get(query.source_ledger)
   const sourceAmount = new BigNumber(quote.source_amount)
   if (sourceBalance.lessThan(sourceAmount)) {
     throw new UnacceptableAmountError('Insufficient liquidity in market maker account')
   }
+}
+
+function * getQuote (params, ledgers, config) {
+  const query = yield makeQuoteQuery(params, config)
+  const quote = yield backend.getQuote((yield makeQuoteArgs(query)))
+
+  const sourcePrecisionAndScale = yield getPrecisionAndScale(query.source_ledger)
+  const dstPrecisionAndScale = yield getPrecisionAndScale(query.destination_ledger)
+
+  const roundedSourceAmount = new BigNumber(quote.source_amount).toFixed(
+    sourcePrecisionAndScale.scale, BigNumber.ROUND_UP)
+
+  const roundedDestinationAmount = new BigNumber(quote.destination_amount).toFixed(
+    dstPrecisionAndScale.scale, BigNumber.ROUND_DOWN)
+
+  validatePrecision(roundedSourceAmount, sourcePrecisionAndScale.precision, 'source')
+  validatePrecision(roundedDestinationAmount, dstPrecisionAndScale.precision, 'destination')
+
+  const roundedQuote = _.assign(_.clone(quote), {
+    source_amount: roundedSourceAmount,
+    destination_amount: roundedDestinationAmount
+  })
+
+  yield validateBalance(query, roundedQuote)
 
   log.debug('' +
-    quote.source_amount + ' ' +
+    roundedQuote.source_amount + ' ' +
     query.source_ledger + ' => ' +
-    quote.destination_amount + ' ' +
+    roundedQuote.destination_amount + ' ' +
     query.destination_ledger)
 
-  return makePaymentTemplate(query, quote, ledgers)
+  return makePaymentTemplate(query, roundedQuote, ledgers)
 }
 
 module.exports = {
