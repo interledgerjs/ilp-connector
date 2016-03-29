@@ -43,6 +43,7 @@
     "koa-route": "^2.4.2",
     "koa-static": "^1.4.5",
     "lodash": "^4.6.1",
+    "lru-cache": "^4.0.1",
     "mag": "^0.9.1",
     "mag-hub": "^0.1.1",
     "moment": "^2.10.2",
