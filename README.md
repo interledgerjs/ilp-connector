@@ -87,10 +87,20 @@ npm start
   ]
 ]
 ```
+
+* `CONNECTOR_NOTIFICATION_VERIFY` (default: `'true'`) The connector verifies the signatures on notifications.
+* `CONNECTOR_NOTIFICATION_KEYS` (default: none) The paths to files with the public key in PEM format to verify ledgers' notification signatures. Required if `CONNECTOR_NOTICATION_VERIFY='true'`
+ex.
+```js
+{
+  "<ledger_uri": "<path-to-file>"
+}
+```
+
 * `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.
 * `CONNECTOR_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the connector wants to budget for getting a message to the ledgers its trading on. In seconds.
-* `CONNECTOR_MAX_HOLD_TIME` (default: `10`) Maximum duration the connector is willing to place funds on hold while waiting for the outcome of a transaction. In seconds.
-* `CONNECTOR_AUTH_CLIENT_CERT_ENABLED` (default `0`) whether or not to allow TLS Client Certificate authentication (requires HTTPS).
+* `CONNECTOR_MAX_HOLD_TIME` (default: `10`) Maximum duration (seconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.
+* `CONNECTOR_AUTH_CLIENT_CERT_ENABLED` (default `0`) whether or not to enable TLS Client Certificate authentication (requires HTTPS).
 * `CONNECTOR_USE_HTTPS` (default `0`) whether or not to run the server using HTTPS.
 * `CONNECTOR_TLS_KEY` (default: none) the path to the server private key file. Required if using HTTPS.
 * `CONNECTOR_TLS_CERTIFICATE` (default: none) the path to the server certificate file. Required if using HTTPS.

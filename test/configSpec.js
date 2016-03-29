@@ -9,13 +9,21 @@ const env = _.cloneDeep(process.env)
 describe('ConnectorConfig', function () {
   describe('parseConnectorConfig', function () {
     beforeEach(function () {
-      process.env = _.cloneDeep(env)
       process.env.CONNECTOR_LEDGERS = JSON.stringify([
         'USD@https://usd-ledger.example',
         'EUR@https://eur-ledger.example',
         'AUD@https://aud-ledger.example'
       ])
       process.env.CONNECTOR_PAIRS = ''
+      process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
+        'https://usd-ledger.example': 'test/data/ledger1public.pem',
+        'https://eur-ledger.example': 'test/data/ledger2public.pem',
+        'https://aud-ledger.example': 'test/data/ledger3public.pem'
+      })
+    })
+
+    afterEach(() => {
+      process.env = _.cloneDeep(env)
     })
 
     afterEach(function () {
@@ -275,6 +283,85 @@ describe('ConnectorConfig', function () {
         process.env.CONNECTOR_ADMIN_CERT = '/foo'
         process.env.CONNECTOR_ADMIN_KEY = 'test/data/key'
         expect(() => loadConnectorConfig()).to.throw()
+      })
+    })
+
+    describe('ledger notification signing public keys', () => {
+      it('defaults to validating notifications -- production', () => {
+        process.env.NODE_ENV = 'production'
+        const config = loadConnectorConfig()
+        expect(config.get('notifications.must_verify')).to.equal(true)
+      })
+
+      it('defaults to NOT validating notifications -- non-production', () => {
+        process.env.NODE_ENV = undefined
+        const config = loadConnectorConfig()
+        expect(config.get('notifications.must_verify')).to.equal(false)
+      })
+
+      describe('CONNECTOR_NOTIFICATION_VERIFY=true', () => {
+        beforeEach(() => {
+          process.env.CONNECTOR_NOTIFICATION_VERIFY = '1'
+        })
+
+        it('config.notifications.must_verify=true', () => {
+          const config = loadConnectorConfig()
+          expect(config.get('notifications.must_verify')).to.equal(true)
+        })
+
+        it('throws if missing public key for all ledgers', () => {
+          process.env.CONNECTOR_NOTIFICATION_KEYS = undefined
+          expect(() => loadConnectorConfig()).to.throw().match(/Missing notification signing keys./)
+        })
+
+        it('throws if missing public key for any ledger', () => {
+          process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
+            // 'https://usd-ledger.example': 'test/data/ledger1public.pem',
+            'https://eur-ledger.example': 'test/data/ledger2public.pem',
+            'https://aud-ledger.example': 'test/data/ledger3public.pem'
+          })
+          expect(() => loadConnectorConfig()).to.throw().match(/Missing notification signing keys./)
+        })
+
+        it('throws if missing public key file for any ledger', () => {
+          process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
+            'https://usd-ledger.example': 'test/foo',
+            'https://eur-ledger.example': 'test/data/ledger2public.pem',
+            'https://aud-ledger.example': 'test/data/ledger3public.pem'
+          })
+          expect(() => loadConnectorConfig())
+            .to.throw().match(/Failed to read signing key for ledger https:\/\/usd-ledger.example/)
+        })
+
+        it('parses keys', () => {
+          const config = loadConnectorConfig()
+          expect(config.get('notifications.keys')).to.deep.equal({
+            'https://aud-ledger.example': fs.readFileSync('test/data/ledger3public.pem', 'utf8'),
+            'https://eur-ledger.example': fs.readFileSync('test/data/ledger2public.pem', 'utf8'),
+            'https://usd-ledger.example': fs.readFileSync('test/data/ledger1public.pem', 'utf8')
+          })
+        })
+      })
+
+      describe('CONNECTOR_NOTIFICATION_VERIFY=false -- production', () => {
+        beforeEach(() => {
+          process.env.CONNECTOR_NOTIFICATION_VERIFY = '0'
+          process.env.NODE_ENV = 'production'
+        })
+
+        it('config.notifications.must_verify=false', () => {
+          const config = loadConnectorConfig()
+          expect(config.get('notifications.must_verify')).to.equal(false)
+        })
+
+        it('does not throw if missing public key for any ledger', () => {
+          process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
+            // 'https://usd-ledger.example': 'test/data/ledger1public.pem',
+            'https://eur-ledger.example': 'test/data/ledger2public.pem',
+            'https://aud-ledger.example': 'test/data/ledger3public.pem'
+          })
+          expect(() => loadConnectorConfig()).to.not.throw()
+        })
       })
     })
   })

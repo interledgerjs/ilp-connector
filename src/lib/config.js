@@ -63,7 +63,41 @@ function parseAdminEnv () {
   }
 }
 
-function validateLocalEnvConfig () {
+function parseLedgers () {
+  // List of ledgers this connector has accounts on (used to auto-generate pairs)
+  // e.g. ["USD@http://usd-ledger.example","EUR@http://eur-ledger.example/some/path"]
+  return JSON.parse(Config.getEnv(envPrefix, 'LEDGERS') || '[]').map((ledger) => {
+    const sep = ledger.indexOf('@')
+    return { currency: ledger.substr(0, sep), ledger: ledger.substr(sep + 1) }
+  })
+}
+
+function parseNotificationSignEnv () {
+  // On by default in prod
+  const isProduction = process.env.NODE_ENV === 'production'
+  const must_verify = Config.castBool(Config.getEnv(envPrefix, 'NOTIFICATION_VERIFY'), isProduction)
+
+  let keys
+  try {
+    keys = JSON.parse(Config.getEnv(envPrefix, 'NOTIFICATION_KEYS') || '{}')
+  } catch (e) {
+    throw new Error('Failed to parse CONNECTOR_NOTIFICATION_KEYS')
+  }
+
+  return {
+    must_verify,
+    keys
+  }
+}
+
+function parseNotificationSign () {
+  const signEnv = parseNotificationSignEnv()
+  return _.merge(signEnv, {
+    keys: _.mapValues(signEnv.keys, (path) => fs.readFileSync(path, 'utf8'))
+  })
+}
+
+function validateCredentialsEnv () {
   const credentials = parseCredentialsEnv()
 
   _.forEach(credentials, (credential, ledger) => {
@@ -85,7 +119,9 @@ function validateLocalEnvConfig () {
       throw new Error(`Failed to read credentials for ledger ${ledger}: ${e.message}`)
     }
   })
+}
 
+function validateAdminEnv () {
   const admin = parseAdminEnv()
 
   if ((admin.cert === undefined) !== (admin.key === undefined)) {
@@ -101,16 +137,37 @@ function validateLocalEnvConfig () {
   }
 }
 
+function validateNotificationEnv () {
+  // Validate notification signing public keys
+  const notifications = parseNotificationSignEnv()
+
+  if (notifications.must_verify) {
+    const ledgers = parseLedgers()
+    for (let ledgerObj of ledgers) {
+      const uri = ledgerObj.ledger
+      if (notifications.keys[uri] === undefined) {
+        throw new Error(`Missing notification signing keys for ledger: ${uri}`)
+      }
+
+      try {
+        fs.accessSync(notifications.keys[uri], fs.R_OK)
+      } catch (e) {
+        throw new Error(`Failed to read signing key for ledger ${uri}: ${e.message}`)
+      }
+    }
+  }
+}
+
+function validateLocalEnvConfig () {
+  validateNotificationEnv()
+  validateCredentialsEnv()
+  validateAdminEnv()
+}
+
 function getLocalConfig () {
   validateLocalEnvConfig()
 
-  // List of ledgers this connector has accounts on (used to auto-generate pairs)
-  // e.g. ["USD@http://usd-ledger.example","EUR@http://eur-ledger.example/some/path"]
-  const ledgers = JSON.parse(Config.getEnv(envPrefix, 'LEDGERS') || '[]').map((ledger) => {
-    const sep = ledger.indexOf('@')
-    return { currency: ledger.substr(0, sep), ledger: ledger.substr(sep + 1) }
-  })
-
+  const ledgers = parseLedgers()
   // Currency pairs traded should be specified as
   // [["USD@http://usd-ledger.example/USD","EUR@http://eur-ledger.example"],...]
   let tradingPairs =
@@ -172,6 +229,8 @@ function getLocalConfig () {
     ledgerCredentials = parseCredentials()
   }
 
+  const notifications = parseNotificationSign()
+
   return {
     backend,
     ledgerCredentials,
@@ -181,12 +240,13 @@ function getLocalConfig () {
     admin,
     tradingPairs,
     server,
-    backendUri
+    backendUri,
+    notifications
   }
 }
 
 function loadConnectorConfig () {
-  return Config.loadConfig(envPrefix, getLocalConfig())
+  return Config.loadConfig(envPrefix, getLocalConfig(), {ed25519: false})
 }
 
 module.exports = loadConnectorConfig

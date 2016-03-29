@@ -4,6 +4,8 @@ const requestUtil = require('five-bells-shared/utils/request')
 const log = require('../common').log('notifications')
 const model = require('../models/notifications')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
+const UnprocessableEntityError =
+  require('five-bells-shared').UnprocessableEntityError
 
 /* eslint-disable */
 /**
@@ -71,6 +73,16 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 exports.post = function * postNotification () {
   const notification = yield requestUtil.validateBody(this, 'Notification')
   log.debug('Got notification: ' + JSON.stringify(notification))
+
+  const verifySignature = this.config.get('notifications.must_verify')
+  if (verifySignature) {
+    const result = model.verifySignature(notification, this.config)
+    if (!result.valid) {
+      log.warn('Signature verification failed: ' + result.error)
+      throw new UnprocessableEntityError('Notification failed signature verification')
+    }
+  }
+
   try {
     yield model.processNotification(notification, this.ledgers, this.config)
   } catch (e) {

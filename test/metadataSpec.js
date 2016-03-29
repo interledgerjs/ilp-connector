@@ -20,9 +20,7 @@ describe('Metadata', function () {
         .get('/')
         .expect(200)
         .expect(function (res) {
-          expect(res.body.public_key).to.be.a('string')
           expect(res.body).to.deep.equal({
-            public_key: res.body.public_key,
             urls: {
               health: '/health',
               pairs: '/pairs',
