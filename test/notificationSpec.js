@@ -274,6 +274,30 @@ describe('Notifications', function () {
         .end()
     })
 
+    it('should return a 502 if the upstream ledger returns 5XX', function * () {
+      const payment = this.formatId(this.paymentSameExecutionCondition,
+        '/payments/')
+
+      nock(payment.source_transfers[0].id)
+        .put('/fulfillment', this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
+        .reply(500)
+
+      yield this.request()
+        .post('/notifications')
+        .send(_.merge({}, this.notificationWithConditionFulfillment, {
+          resource: {
+            debits: [{
+              memo: {
+                source_transfer_ledger: payment.source_transfers[0].ledger,
+                source_transfer_id: payment.source_transfers[0].id
+              }
+            }]
+          }
+        }))
+        .expect(502)
+        .end()
+    })
+
     it('should submit the source transfer corresponding to the destination transfer it is notified about if its execution condition is the destination transfer', function * () {
       const payment = this.formatId(this.paymentOneToOne,
         '/payments/')
