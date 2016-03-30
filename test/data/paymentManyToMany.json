@@ -20,15 +20,15 @@
     "expires_at": "2015-06-16T00:00:11.000Z",
     "state": "prepared"
   }, {
-    "id": "http://cad-ledger.example/CAD/transfers/e042b737-8f20-40f0-87aa-e5b186512064",
-    "ledger":"http://cad-ledger.example/CAD",
+    "id": "http://cad-ledger.example:1000/CAD/transfers/e042b737-8f20-40f0-87aa-e5b186512064",
+    "ledger":"http://cad-ledger.example:1000/CAD",
     "debits":[{
       "amount":"1.07",
       "account":"http://cad-ledger.example/accounts/alice"
     }],
     "credits":[{
       "amount":"1.07",
-      "account":"http://cad-ledger.example/accounts/mark"
+      "account":"http://cad-ledger.example:1000/accounts/mark"
     }],
     "execution_condition": {
       "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",

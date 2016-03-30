@@ -39,8 +39,5 @@ function * processNotification (notification, ledgers, config) {
 
 module.exports = {
   verifySignature: verifySignature,
-  processNotification: processNotification,
-  _test: {
-    parseLedger
-  }
+  processNotification: processNotification
 }
