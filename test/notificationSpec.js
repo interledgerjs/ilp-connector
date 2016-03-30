@@ -10,6 +10,7 @@ const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const sinon = require('sinon')
 const jsonSigning = require('five-bells-shared').JSONSigning
+const notificationModel = require('../src/models/notifications')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -1035,6 +1036,13 @@ describe('Notifications', function () {
           .expect(200)
           .end()
       })
+    })
+  })
+
+  describe('parseLedger', function () {
+    it('should return the ledger URI from a notification ID', function * () {
+      expect(notificationModel._test.parseLedger('http://eur-ledger.example:3000/EUR/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d'))
+      .to.equal('http://eur-ledger.example:3000')
     })
   })
 })

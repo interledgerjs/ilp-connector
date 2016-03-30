@@ -7,7 +7,7 @@ const log = require('../common/log')('notifications')
 
 function parseLedger (notificationId) {
   const parsedUrl = url.parse(notificationId)
-  return parsedUrl.protocol + '//' + parsedUrl.hostname
+  return parsedUrl.protocol + '//' + parsedUrl.host
 }
 
 /**
@@ -39,5 +39,8 @@ function * processNotification (notification, ledgers, config) {
 
 module.exports = {
   verifySignature: verifySignature,
-  processNotification: processNotification
+  processNotification: processNotification,
+  _test: {
+    parseLedger
+  }
 }
