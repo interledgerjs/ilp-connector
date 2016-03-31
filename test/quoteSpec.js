@@ -62,8 +62,74 @@ describe('Quotes', function () {
         .expect(400)
         .expect(function (res) {
           expect(res.body.id).to.equal('NoAmountSpecifiedError')
-          expect(res.body.message).to.equal('Must specify either source or ' +
-            'destination amount to get quote')
+          expect(res.body.message).to.equal('Exactly one of source_amount ' +
+            'or destination_amount must be specified')
+        })
+        .end()
+    })
+
+    it('should return a 400 if both source_amount and destination_amount are specified', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=100&destination_amount=100source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidUriParameterError')
+          expect(res.body.message).to.equal('Exactly one of source_amount ' +
+            'or destination_amount must be specified')
+        })
+        .end()
+    })
+
+    it('should return a 400 if source_amount is zero', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=0&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidAmountSpecifiedError')
+          expect(res.body.message).to.equal('source_amount must be finite and positive')
+        })
+        .end()
+    })
+
+    it('should return a 400 if destination_amount is zero', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'destination_amount=0&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidAmountSpecifiedError')
+          expect(res.body.message).to.equal('destination_amount must be finite and positive')
+        })
+        .end()
+    })
+
+    it('should return a 400 if source_amount isNan', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'destination_amount=foo&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidAmountSpecifiedError')
+          expect(res.body.message).to.equal('destination_amount must be finite and positive')
+        })
+        .end()
+    })
+
+    it('should return a 400 if destination_amount isNan', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'destination_amount=foo&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidAmountSpecifiedError')
+          expect(res.body.message).to.equal('destination_amount must be finite and positive')
         })
         .end()
     })
@@ -128,6 +194,21 @@ describe('Quotes', function () {
         .end()
     })
 
+    it('should return 422 when the source ledger is not supported', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=100' +
+          '&source_ledger=http://fake-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD' +
+          '&destination_expiry_duration=1.001')
+        .expect(422)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('AssetsNotTradedError')
+          expect(res.body.message).to.match(/This connector does not support the given asset pair/)
+        })
+        .end()
+    })
+
     it('should return a 422 if destination_ledger rounded amount is less than or equal to 0', function * () {
       yield this.request()
         .get('/quote?source_amount=0.00001' +
@@ -137,6 +218,21 @@ describe('Quotes', function () {
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableAmountError')
           expect(res.body.message).to.equal('Quoted destination is lower than minimum amount allowed')
+        })
+        .end()
+    })
+
+    it('should return 422 when the destination ledger is not supported', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=100' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://fake-ledger.example/USD' +
+          '&destination_expiry_duration=1.001')
+        .expect(422)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('AssetsNotTradedError')
+          expect(res.body.message).to.match(/This connector does not support the given asset pair/)
         })
         .end()
     })

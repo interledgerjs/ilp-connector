@@ -1,6 +1,9 @@
 'use strict'
 
 const model = require('../models/quote')
+const NoAmountSpecifiedError = require('../errors/no-amount-specified-error')
+const InvalidUriParameterError = require('five-bells-shared').InvalidUriParameterError
+const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-error')
 
 /* eslint-disable */
 /**
@@ -109,7 +112,28 @@ const model = require('../models/quote')
 /* eslint-enable */
 
 exports.get = function * () {
+  validateAmounts(this.query.source_amount, this.query.destination_amount)
+
   this.body = yield model.getQuote(
     this.query, this.ledgers, this.config)
 }
 
+function validateAmounts (sourceAmount, destinationAmount) {
+  if (sourceAmount && destinationAmount) {
+    throw new InvalidUriParameterError('Exactly one of source_amount or destination_amount must be specified')
+  }
+  if (!sourceAmount && !destinationAmount) {
+    throw new NoAmountSpecifiedError('Exactly one of source_amount or destination_amount must be specified')
+  }
+  if (sourceAmount) {
+    if (isNaN(sourceAmount) || Number(sourceAmount) === 0 ||
+      Number(sourceAmount) === Number.POSITIVE_INFINITY) {
+      throw new InvalidAmountSpecifiedError('source_amount must be finite and positive')
+    }
+  } else if (destinationAmount) {
+    if (isNaN(destinationAmount) || Number(destinationAmount) === 0 ||
+      Number(destinationAmount) === Number.POSITIVE_INFINITY) {
+      throw new InvalidAmountSpecifiedError('destination_amount must be finite and positive')
+    }
+  }
+}

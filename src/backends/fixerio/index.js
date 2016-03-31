@@ -3,22 +3,13 @@
 const _ = require('lodash')
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
-const AssetsNotTradedError = require('../../errors/assets-not-traded-error')
 const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../common').log('fixerio')
 const config = require('../../services/config')
+const utils = require('../utils')
+const ServerError = require('five-bells-shared/errors/server-error')
 
 const RATES_API = 'https://api.fixer.io/latest'
-
-function lookupCurrencies (source_ledger, destination_ledger) {
-  for (let pair of config.get('tradingPairs')) {
-    if (pair[0].indexOf(source_ledger) === 4 &&
-      pair[1].indexOf(destination_ledger) === 4) {
-      return [pair[0].slice(0, 3), pair[1].slice(0, 3)]
-    }
-  }
-  return null
-}
 
 /**
  * Dummy backend that uses Fixer.io API for FX rates
@@ -40,6 +31,12 @@ class FixerIoBackend {
 
     this.rates = {}
     this.currencies = []
+    const ledgerPairs = config.get('tradingPairs')
+    if (_.isEmpty(ledgerPairs)) {
+      throw new ServerError('No trading pairs found for this connector')
+    }
+    this.currencyPairs = ledgerPairs.map((p) => [p[0].slice(0, 3),
+                                   p[1].slice(0, 3)])
   }
 
   /**
@@ -60,24 +57,10 @@ class FixerIoBackend {
       })
       apiData = result.body
     }
-
     this.rates = apiData.rates
     this.rates[apiData.base] = 1
     this.currencies = _.keys(this.rates)
     this.currencies.sort()
-  }
-
-  /**
-   * Check if we trade the given pair of assets
-   *
-   * @param {String} source The URI of the source ledger
-   * @param {String} destination The URI of the destination ledger
-   * @return {boolean}
-   */
-  * hasPair (source, destination) {
-    const currencyPair = lookupCurrencies(source, destination)
-    return _.includes(this.currencies, currencyPair[0]) &&
-      _.includes(this.currencies, currencyPair[1])
   }
 
   _formatAmount (amount) {
@@ -105,16 +88,8 @@ class FixerIoBackend {
    * @param {String|Integer|BigNumber} params.destination_amount The amount of the destination asset we want to send (either this or the source_amount must be set)
    */
   * getQuote (params) {
-    // Throw an error if the currency pair is not supported
-    const hasPair = yield this.hasPair(params.source_ledger, params.destination_ledger)
-    if (!hasPair) {
-      console.log('doesnt have pair', params)
-      throw new AssetsNotTradedError('This connector does not support the ' +
-        'given asset pair')
-    }
-
     // Get ratio between currencies and apply spread
-    const currencyPair = lookupCurrencies(params.source_ledger, params.destination_ledger)
+    const currencyPair = utils.getCurrencyPair(params.source_ledger, params.destination_ledger)
     const destinationRate = this.rates[currencyPair[1]]
     const sourceRate = this.rates[currencyPair[0]]
 
@@ -145,8 +120,8 @@ class FixerIoBackend {
     return {
       source_ledger: params.source_ledger,
       destination_ledger: params.destination_ledger,
-      source_amount: sourceAmount,
-      destination_amount: destinationAmount
+      source_amount: sourceAmount.toString(),
+      destination_amount: destinationAmount.toString()
     }
   }
 
