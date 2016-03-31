@@ -2,6 +2,7 @@
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
 const ExternalError = require('../errors/external-error')
+const log = require('../common').log('BalanceCache')
 
 function BalanceCache (ledgerCredentials) {
   this.ledgerCredentials = ledgerCredentials
@@ -10,6 +11,7 @@ function BalanceCache (ledgerCredentials) {
 }
 
 BalanceCache.prototype.get = function * (ledger) {
+  log.debug('getBalance', ledger)
   return this.balanceByLedger[ledger] ||
         (this.balanceByLedger[ledger] = (yield this.load(ledger)))
 }

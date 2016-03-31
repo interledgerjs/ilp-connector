@@ -11,6 +11,7 @@ const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const _ = require('lodash')
 const precisionCache = require('five-bells-connector')._test.precisionCache
+const parseUrl = require('url').parse
 
 describe('Quotes', function () {
   logHelper(logger)
@@ -19,7 +20,7 @@ describe('Quotes', function () {
     appHelper.create(this)
 
     const testLedgers = [
-      'http://cad-ledger.example/CAD',
+      'http://cad-ledger.example:1000/CAD',
       'http://usd-ledger.example/USD',
       'http://eur-ledger.example/EUR',
       'http://cny-ledger.example/CNY'
@@ -34,7 +35,7 @@ describe('Quotes', function () {
     })
 
     // Connector queries its balances when getting a quote to ensure it has sufficient funds.
-    _.map(testLedgers, (ledgerUri) => ledgerUri.slice(0, -4) + '/accounts/mark')
+    _.map(testLedgers, (ledgerUri) => 'http://' + parseUrl(ledgerUri).host + '/accounts/mark')
     .forEach((connector_account_uri) => {
       nock(connector_account_uri).get('')
         .reply(200, {
@@ -640,7 +641,7 @@ describe('Quotes', function () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://usd-ledger.example/USD' +
-          '&destination_ledger=http://cad-ledger.example/CAD')
+          '&destination_ledger=http://cad-ledger.example:1000/CAD')
         .expect(200, {
           source_transfers: [{
             ledger: 'http://usd-ledger.example/USD',
@@ -655,10 +656,10 @@ describe('Quotes', function () {
             expiry_duration: '11'
           }],
           destination_transfers: [{
-            ledger: 'http://cad-ledger.example/CAD',
+            ledger: 'http://cad-ledger.example:1000/CAD',
             debits: [{
               amount: '127.9818', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
-              account: 'http://cad-ledger.example/accounts/mark'
+              account: 'http://cad-ledger.example:1000/accounts/mark'
             }],
             credits: [{
               amount: '127.9818', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
@@ -673,18 +674,18 @@ describe('Quotes', function () {
     it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates and the rate must be flipped', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&source_ledger=http://cad-ledger.example:1000/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
           source_transfers: [{
-            ledger: 'http://cad-ledger.example/CAD',
+            ledger: 'http://cad-ledger.example:1000/CAD',
             debits: [{
               amount: '100.0000',
               account: null
             }],
             credits: [{
               amount: '100.0000',
-              account: 'http://cad-ledger.example/accounts/mark'
+              account: 'http://cad-ledger.example:1000/accounts/mark'
             }],
             expiry_duration: '11'
           }],
@@ -707,7 +708,7 @@ describe('Quotes', function () {
     it('should fill in default values if no expiry_durations are specified', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&source_ledger=http://cad-ledger.example:1000/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200)
         .expect(function (res) {
@@ -722,7 +723,7 @@ describe('Quotes', function () {
     it('should return the specified expiry_durations if they are acceptable', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&source_ledger=http://cad-ledger.example:1000/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD' +
           '&source_expiry_duration=6' +
           '&destination_expiry_duration=5')
@@ -739,7 +740,7 @@ describe('Quotes', function () {
     it('should set the source_expiry_duration if only the destination_expiry_duration is specified', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&source_ledger=http://cad-ledger.example:1000/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD' +
           '&destination_expiry_duration=5')
         .expect(200)
@@ -755,7 +756,7 @@ describe('Quotes', function () {
     it('should set the destination_expiry_duration if only the source_expiry_duration is specified', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&source_ledger=http://cad-ledger.example:1000/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD' +
           '&source_expiry_duration=6')
         .expect(200)
@@ -771,7 +772,7 @@ describe('Quotes', function () {
     it('should get the source_ledger if source_account is specified', function * () {
       const mockGet = nock('http://cad-ledger.example/accounts/foo')
         .get('')
-        .reply(200, {ledger: 'http://cad-ledger.example/CAD'})
+        .reply(200, {ledger: 'http://cad-ledger.example:1000/CAD'})
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_account=http://cad-ledger.example/accounts/foo' +
@@ -781,7 +782,7 @@ describe('Quotes', function () {
         .expect(function (res) {
           expect(res.body.source_transfers[0].debits[0].account).to.equal('http://cad-ledger.example/accounts/foo')
           expect(res.body.destination_transfers[0].credits[0].account).to.equal(null)
-          expect(res.body.source_transfers[0].ledger).to.equal('http://cad-ledger.example/CAD')
+          expect(res.body.source_transfers[0].ledger).to.equal('http://cad-ledger.example:1000/CAD')
         })
         .end()
       mockGet.done()
@@ -793,7 +794,7 @@ describe('Quotes', function () {
         .reply(200, {ledger: 'http://usd-ledger.example/USD'})
       yield this.request()
         .get('/quote?source_amount=100' +
-          '&source_ledger=http://cad-ledger.example/CAD' +
+          '&source_ledger=http://cad-ledger.example:1000/CAD' +
           '&destination_account=http://usd-ledger.example/accounts/foo' +
           '&source_expiry_duration=6')
         .expect(200)
@@ -825,7 +826,7 @@ describe('Quotes', function () {
     it('returns 400 if no destination is specified', function * () {
       nock('http://cad-ledger.example/accounts/foo')
         .get('')
-        .reply(200, {ledger: 'http://cad-ledger.example/CAD'})
+        .reply(200, {ledger: 'http://cad-ledger.example:1000/CAD'})
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_account=http://cad-ledger.example/accounts/foo' +
