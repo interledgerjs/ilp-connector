@@ -839,4 +839,109 @@ describe('Quotes', function () {
         .end()
     })
   })
+
+  describe('GET /quote quoteFullPath=true', function () {
+    beforeEach(function () {
+      this.config.features.quoteFullPath = true
+      this.config.server.base_uri = 'http://localhost:' + this.port
+      this.oldPairs = this.config.tradingPairs
+      this.config.tradingPairs = [[
+        'USD@http://usd-ledger.example/USD',
+        'EUR@http://eur-ledger.example/EUR'
+      ]]
+    })
+    afterEach(function () {
+      this.config.features.quoteFullPath = false
+      this.config.tradingPairs = this.oldPairs
+    })
+
+    it('gets the full path', function * () {
+      nock('http://usd-ledger.example')
+        .get('/accounts/alice')
+        .reply(200, {ledger: 'http://usd-ledger.example/USD'})
+      nock('http://random-ledger.example')
+        .get('/accounts/bob')
+        .reply(200, {ledger: 'http://random-ledger.example/'})
+
+      nock('http://usd-ledger.example/USD')
+        .get('/connectors')
+        .reply(200, [{connector: 'http://other-connector.example'}])
+      nock('http://other-connector.example')
+        .get('/pairs')
+        .reply(200, [{
+          source_asset: 'EUR',
+          source_ledger: 'http://eur-ledger.example/EUR',
+          destination_asset: 'FOO',
+          destination_ledger: 'http://random-ledger.example/'
+        }])
+
+      nock('http://usd-ledger.example')
+        .get('/accounts/mark')
+        .reply(200, { balance: '100' })
+      nock('http://other-connector.example')
+        .get('/quote_local')
+        .query({
+          source_account: 'http://eur-ledger.example/accounts/mark',
+          source_amount: '94.2220',
+          source_expiry_duration: '5',
+          source_ledger: 'http://eur-ledger.example/EUR',
+          destination_ledger: 'http://random-ledger.example/'
+        })
+        .reply(200, {
+          source_transfers: [{
+            ledger: 'http://eur-ledger.example/EUR',
+            debits: [{ account: 'http://eur-ledger.example/accounts/mark', amount: '94.2220' }],
+            credits: [{ account: 'http://eur-ledger.example/accounts/mary', amount: '94.2220' }],
+            expiry_duration: '11'
+          }],
+          destination_transfers: [{
+            ledger: 'http://random-ledger.example/',
+            debits: [{ amount: '200', account: 'http://random-ledger.example/accounts/mary' }],
+            credits: [{ amount: '200', account: null }],
+            expiry_duration: '10'
+          }]
+        })
+
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_account=' + encodeURIComponent('http://usd-ledger.example/accounts/alice') +
+          '&destination_account=' + encodeURIComponent('http://random-ledger.example/accounts/bob'))
+        .expect(200)
+        .expect(function (res) {
+          expect(res.body).to.deep.equal([
+            {
+              id: res.body[0].id,
+              source_transfers: [{
+                debits: [{account: null, amount: '100.0000'}],
+                credits: [{account: 'http://usd-ledger.example/accounts/mark', amount: '100.0000'}],
+                expiry_duration: '6',
+                ledger: 'http://usd-ledger.example/USD'
+              }],
+              destination_transfers: [{
+                debits: [{account: 'http://eur-ledger.example/accounts/mark', amount: '94.2220'}],
+                credits: [{account: 'http://random-ledger.example/accounts/bob', amount: '94.2220'}],
+                expiry_duration: '5',
+                ledger: 'http://eur-ledger.example/EUR'
+              }]
+            },
+            {
+              id: res.body[1].id,
+              source_transfers: [{
+                debits: [{account: 'http://eur-ledger.example/accounts/mark', amount: '94.2220'}],
+                credits: [{account: 'http://eur-ledger.example/accounts/mary', amount: '94.2220'}],
+                expiry_duration: '11',
+                ledger: 'http://eur-ledger.example/EUR'
+              }],
+              destination_transfers: [{
+                debits: [{account: 'http://random-ledger.example/accounts/mary', amount: '200'}],
+                credits: [{account: null, amount: '200'}],
+                expiry_duration: '10',
+                ledger: 'http://random-ledger.example/'
+              }]
+            }
+          ])
+        })
+        .end()
+    })
+  })
 })

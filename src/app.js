@@ -87,6 +87,7 @@ function createApp (config, ledgers) {
   koaApp.use(route.get('/pairs', pairs.getCollection))
 
   koaApp.use(route.get('/quote', quote.get))
+  koaApp.use(route.get('/quote_local', quote.getLocal))
 
   koaApp.use(route.post('/notifications', notifications.post))
 

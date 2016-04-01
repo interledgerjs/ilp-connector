@@ -106,6 +106,7 @@ ex.
 * `CONNECTOR_TLS_CERTIFICATE` (default: none) the path to the server certificate file. Required if using HTTPS.
 * `CONNECTOR_TLS_CRL` (default: none) the path to the server certificate revokation list file. Optional if using HTTPS.
 * `CONNECTOR_TLS_CA` (default: none) the path to a trusted certificate to be used in addition to using the [default list](https://github.com/nodejs/node/blob/v4.3.0/src/node_root_certs.h). Optional if using HTTPS.
+* `CONNECTOR_QUOTE_FULL_PATH` (default: `''`) Feature to enable pathfinding for `/quote`.
 
 #### Auto-funding
 
