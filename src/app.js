@@ -16,6 +16,7 @@ const koa = require('koa')
 const path = require('path')
 const logger = require('koa-mag')
 const Passport = require('koa-passport').KoaPassport
+const cors = require('koa-cors')
 const log = require('./common/log')
 const backend = require('./services/backend')
 
@@ -77,7 +78,9 @@ function createApp (config, ledgers) {
   // Logger
   koaApp.use(logger())
   koaApp.use(errorHandler({log: log('error-handler')}))
+
   koaApp.use(passport.initialize())
+  koaApp.use(cors({expose: ['link']}))
 
   koaApp.use(route.get('/', metadata.getResource))
   koaApp.use(route.get('/health', health.getResource))
