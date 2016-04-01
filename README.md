@@ -63,6 +63,7 @@ npm start
     "account_uri": "...",
     "username": "...",
     "password": "..."
+    "ca": "...", // Optional
   },
 
   // Using Client Certificate Auth
