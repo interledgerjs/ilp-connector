@@ -7,7 +7,6 @@ const log = require('../../common').log('ilpquote')
 const ServerError = require('five-bells-shared/errors/server-error')
 const config = require('../../services/config')
 const utils = require('../utils')
-const _ = require('lodash')
 
 /**
  * Example backend that connects to an external component to get
@@ -20,9 +19,6 @@ class ILPQuoter {
   constructor (opts) {
     log.debug('ILPQuoter ctor')
     const ledgerPairs = config.get('tradingPairs')
-    if (_.isEmpty(ledgerPairs)) {
-      throw new ServerError('No trading pairs found for this connector')
-    }
     this.currencyPairs = ledgerPairs.map((p) => [p[0].slice(0, 3),
                                    p[1].slice(0, 3)])
     this.backendUri = config.get('backendUri')
