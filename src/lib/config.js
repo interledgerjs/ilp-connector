@@ -30,21 +30,21 @@ function parseCredentialsEnv () {
 function parseCredentials () {
   const credentialsEnv = parseCredentialsEnv()
 
-  return _.reduce(credentialsEnv, (parsed, credentials, ledger) => {
+  return _.mapValues(credentialsEnv, (credentials) => {
     const isClientCertCredential = credentials.key !== undefined
 
     if (isClientCertCredential) {
-      parsed[ledger] = _.assign(credentials, {
+      return _.omitBy(_.assign(credentials, {
         key: fs.readFileSync(credentials.key),
         cert: fs.readFileSync(credentials.cert),
-        ca: credentials.cert && fs.readFileSync(credentials.ca)
-      })
-    } else {
-      parsed[ledger] = credentials
+        ca: credentials.ca && fs.readFileSync(credentials.ca)
+      }), _.isUndefined)
     }
 
-    return parsed
-  }, {})
+    return _.omitBy(_.assign(credentials, {
+      ca: credentials.ca && fs.readFileSync(credentials.ca)
+    }), _.isUndefined)
+  })
 }
 
 function parseAdminEnv () {
