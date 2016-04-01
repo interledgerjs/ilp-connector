@@ -113,9 +113,19 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
 
 exports.get = function * () {
   validateAmounts(this.query.source_amount, this.query.destination_amount)
+  if (!this.config.features.quoteFullPath) {
+    this.body = yield model.getLocalQuote(this.query, this.ledgers, this.config)
+    return
+  }
 
-  this.body = yield model.getQuote(
-    this.query, this.ledgers, this.config)
+  if (!this.query.source_account) throw new InvalidUriParameterError('Missing required parameter: source_account')
+  if (!this.query.destination_account) throw new InvalidUriParameterError('Missing required parameter: destination_account')
+  this.body = yield model.getFullQuote(this.query, this.ledgers, this.config)
+}
+
+exports.getLocal = function * () {
+  validateAmounts(this.query.source_amount, this.query.destination_amount)
+  this.body = yield model.getLocalQuote(this.query, this.ledgers, this.config)
 }
 
 function validateAmounts (sourceAmount, destinationAmount) {

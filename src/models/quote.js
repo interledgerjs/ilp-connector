@@ -4,6 +4,7 @@ const request = require('co-request')
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const log = require('../common').log('quote')
+const Pathfinder = require('five-bells-pathfind').Pathfinder
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const InvalidURIParameterError = require('five-bells-shared').InvalidUriParameterError
@@ -147,7 +148,7 @@ function * validateBalance (query, quote) {
   }
 }
 
-function * getQuote (params, ledgers, config) {
+function * getLocalQuote (params, ledgers, config) {
   const query = yield makeQuoteQuery(params, config)
   const type = query.source_amount ? 'source' : 'destination'
   const amount = query.source_amount || query.destination_amount
@@ -197,6 +198,42 @@ function * getQuote (params, ledgers, config) {
   return makePaymentTemplate(query, roundedQuote, ledgers)
 }
 
+/**
+ * @param {Object} params
+ * @param {String} params.source_connector
+ * @param {String} params.source_ledger
+ * @param {String} params.source_account
+ * @param {String} params.source_amount
+ * @param {String} params.destination_ledger
+ * @param {String} params.destination_account
+ * @param {String} params.destination_amount
+ * @param {Object} config
+ * @returns {Quote[]}
+ */
+function * getQuotePath (params, config) {
+  // TODO cache pathfinder so that it doesn't have to re-crawl for every payment
+  const pathfinder = new Pathfinder({
+    crawler: { initialTraders: [config.server.base_uri] }
+  })
+  yield pathfinder.crawl()
+  return pathfinder.findPath({
+    sourceConnector: params.source_connector,
+    sourceLedger: params.source_ledger,
+    sourceAmount: params.source_amount,
+    destinationLedger: params.destination_ledger,
+    destinationAmount: params.destination_amount,
+    destinationAccount: params.destination_account
+  })
+}
+
+function * getFullQuote (params, ledgers, config) {
+  params.source_ledger = yield getAccountLedger(params.source_account)
+  params.destination_ledger = yield getAccountLedger(params.destination_account)
+  params.source_connector = config.server.base_uri
+  return yield getQuotePath(params, config)
+}
+
 module.exports = {
-  getQuote: getQuote
+  getFullQuote: getFullQuote,
+  getLocalQuote: getLocalQuote
 }

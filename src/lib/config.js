@@ -174,6 +174,7 @@ function getLocalConfig () {
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
 
   const features = {}
+  features.quoteFullPath = Config.castBool(Config.getEnv(envPrefix, 'QUOTE_FULL_PATH'))
   features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
 
   const adminEnv = parseAdminEnv()

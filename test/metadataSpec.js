@@ -26,6 +26,7 @@ describe('Metadata', function () {
               pairs: '/pairs',
               payment: '/payments/:uuid',
               quote: '/quote',
+              quote_local: '/quote_local',
               notifications: '/notifications'
             }
           })
