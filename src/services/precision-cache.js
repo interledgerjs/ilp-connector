@@ -24,7 +24,6 @@ function * getPrecisionAndScale (ledger) {
   if (!res || res.statusCode !== 200) throwErr()
   if (!res.body.precision || !res.body.scale) throwErr()
 
-  log.debug('getPrecisionAndScale', res.body)
   return {
     precision: res.body.precision,
     scale: res.body.scale
