@@ -7,7 +7,6 @@ const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../common').log('fixerio')
 const config = require('../../services/config')
 const utils = require('../utils')
-const ServerError = require('five-bells-shared/errors/server-error')
 
 const RATES_API = 'https://api.fixer.io/latest'
 
@@ -32,9 +31,6 @@ class FixerIoBackend {
     this.rates = {}
     this.currencies = []
     const ledgerPairs = config.get('tradingPairs')
-    if (_.isEmpty(ledgerPairs)) {
-      throw new ServerError('No trading pairs found for this connector')
-    }
     this.currencyPairs = ledgerPairs.map((p) => [p[0].slice(0, 3),
                                    p[1].slice(0, 3)])
   }
