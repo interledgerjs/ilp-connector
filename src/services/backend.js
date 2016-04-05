@@ -9,5 +9,7 @@ if (!Backend) {
 }
 
 module.exports = new Backend({
+  currencyWithLedgerPairs: config.get('tradingPairs'),
+  backendUri: config.get('backendUri'),
   spread: config.get('fxSpread')
 })

@@ -1,11 +1,13 @@
 'use strict'
 
+const _ = require('lodash')
 const request = require('co-request')
 const NoAmountSpecifiedError =
   require('../../errors/no-amount-specified-error')
-const log = require('../../common').log('ilpquote')
+const UnsupportedPairError =
+  require('../../errors/unsupported-pair-error')
+const log = require('../../common').log('ilpquoter')
 const ServerError = require('five-bells-shared/errors/server-error')
-const config = require('../../services/config')
 const utils = require('../utils')
 
 /**
@@ -18,10 +20,18 @@ const utils = require('../utils')
 class ILPQuoter {
   constructor (opts) {
     log.debug('ILPQuoter ctor')
-    const ledgerPairs = config.get('tradingPairs')
-    this.currencyPairs = ledgerPairs.map((p) => [p[0].slice(0, 3),
-                                   p[1].slice(0, 3)])
-    this.backendUri = config.get('backendUri')
+    this.currencyWithLedgerPairs = opts.currencyWithLedgerPairs
+    this.currencyPairs = this.currencyWithLedgerPairs.map((p) => [p[0].slice(0, 3),
+                                                                  p[1].slice(0, 3)])
+    this.backendUri = opts.backendUri
+  }
+
+  * putPair (uri) {
+    const req = request({ method: 'PUT', uri, json: true })
+    const res = yield req
+    if (res.statusCode >= 400) {
+      throw new UnsupportedPairError(req.uri)
+    }
   }
 
   /**
@@ -29,13 +39,9 @@ class ILPQuoter {
    *   and checks that all the pairs are supported
    */
   * connect () {
-    const requests = this.currencyPairs.map((pair) => {
-      const uri = this.backendUri + '/pair/' + pair[0] + '/' + pair[1]
-      return request({ method: 'PUT', uri, json: true })
-    })
-    const responses = yield requests
-    // TODO: report an error if pairs not supported
-    return responses
+    const uris = _.uniq(this.currencyPairs.map((pair) => this.backendUri + '/pair/' + pair[0] + '/' + pair[1]))
+    yield uris.map((uri) => this.putPair(uri))
+    return
   }
 
   /**
@@ -46,8 +52,9 @@ class ILPQuoter {
    */
   * getQuote (params) {
     log.debug('Connecting to ' + this.backendUri)
-    const currencyPair = utils.getCurrencyPair(params.source_ledger,
-                                          params.destination_ledger)
+    const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs,
+                                               params.source_ledger,
+                                               params.destination_ledger)
     let amount, type
     if (params.source_amount) {
       amount = params.source_amount

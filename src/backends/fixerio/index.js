@@ -5,7 +5,6 @@ const request = require('co-request')
 const BigNumber = require('bignumber.js')
 const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../common').log('fixerio')
-const config = require('../../services/config')
 const utils = require('../utils')
 
 const RATES_API = 'https://api.fixer.io/latest'
@@ -30,9 +29,9 @@ class FixerIoBackend {
 
     this.rates = {}
     this.currencies = []
-    const ledgerPairs = config.get('tradingPairs')
-    this.currencyPairs = ledgerPairs.map((p) => [p[0].slice(0, 3),
-                                   p[1].slice(0, 3)])
+    this.currencyWithLedgerPairs = opts.currencyWithLedgerPairs
+    this.currencyPairs = this.currencyWithLedgerPairs.map((p) => [p[0].slice(0, 3),
+                                                                  p[1].slice(0, 3)])
   }
 
   /**
@@ -85,7 +84,8 @@ class FixerIoBackend {
    */
   * getQuote (params) {
     // Get ratio between currencies and apply spread
-    const currencyPair = utils.getCurrencyPair(params.source_ledger, params.destination_ledger)
+    const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs,
+                                               params.source_ledger, params.destination_ledger)
     const destinationRate = this.rates[currencyPair[1]]
     const sourceRate = this.rates[currencyPair[0]]
 
