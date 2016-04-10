@@ -352,18 +352,17 @@ function * updateDestinationTransfer (updatedTransfer, traderDebit, relatedResou
 }
 
 function * updateTransfer (updatedTransfer, relatedResources, ledgers, config) {
-  // Maybe it's a source transfer:
+  // Maybe it's a destination transfer:
+  const traderDebit = updatedTransfer.debits.find(_.partial(isTraderFunds, config))
+  if (traderDebit) {
+    yield updateDestinationTransfer(updatedTransfer, traderDebit, relatedResources)
+  }
+
+  // Or a source transfer:
   // When the payment's source transfer is "prepared", authorized/submit the payment.
   const traderCredit = updatedTransfer.credits.find(_.partial(isTraderFunds, config))
   if (traderCredit) {
     yield updateSourceTransfer(updatedTransfer, traderCredit, ledgers, config)
-    return
-  }
-
-  // Or a destination transfer:
-  const traderDebit = updatedTransfer.debits.find(_.partial(isTraderFunds, config))
-  if (traderDebit) {
-    yield updateDestinationTransfer(updatedTransfer, traderDebit, relatedResources)
     return
   }
 
