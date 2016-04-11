@@ -37,12 +37,6 @@ TransferTester.prototype.isAtomic = function () {
   return getTransferCases(this.source_transfers[0]).length > 0
 }
 
-TransferTester.prototype.isFinal = function () {
-  return !_.some(this.destination_transfers, function (transfer) {
-    return transfer.hasOwnProperty('execution_condition')
-  })
-}
-
 // /////////////////////////////////////////////////////////////////////////////
 // All
 // /////////////////////////////////////////////////////////////////////////////
