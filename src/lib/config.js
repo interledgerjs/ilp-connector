@@ -172,6 +172,7 @@ function getLocalConfig () {
 
   const features = {}
   features.quoteFullPath = Config.castBool(Config.getEnv(envPrefix, 'QUOTE_FULL_PATH'))
+  features.broadcastRoutes = Config.castBool(Config.getEnv(envPrefix, 'BROADCAST_ROUTES'))
   features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
 
   const adminEnv = parseAdminEnv()
