@@ -1,7 +1,0 @@
-{
-  "message_hash": "CT5knPnJEheIhWSlcncggBfa5hUJOcX12LXWg60tnc9N8wPdrFON6bc3kW7sYw9ls0Vxv7j0zXxe/mFdeVnqlA==",
-  "signer": "http://ledger.example",
-  "type": "ed25519-sha512",
-  "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=",
-  "signature": "Yun7OGHYpprEi0+4119V3s+H+s0gtgrWF0bYCjr4eJfGNhCJ8dFkn3xlMtT3JM14e2T1VsWsPw6DOwGMRYG0AA=="
-}

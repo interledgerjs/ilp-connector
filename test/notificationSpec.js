@@ -109,12 +109,7 @@ describe('Notifications', function () {
         _.cloneDeep(require('./data/paymentManyToOne.json'))
       this.paymentSameExecutionCondition =
         _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
-      this.transferProposedReceipt =
-        _.cloneDeep(require('./data/transferStateProposed.json'))
-      this.transferPreparedReceipt =
-        _.cloneDeep(require('./data/transferStatePrepared.json'))
-      this.transferExecutedReceipt =
-        _.cloneDeep(require('./data/transferStateExecuted.json'))
+      this.transferExecutedReceipt = require('./data/transferExecutedFulfillment.json')
       this.notificationNoConditionFulfillment =
         _.cloneDeep(require('./data/notificationNoConditionFulfillment.json'))
       this.notificationWithConditionFulfillment =
@@ -298,55 +293,6 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should submit the source transfer corresponding to the destination transfer it is notified about if its execution condition is the destination transfer', function * () {
-      const payment = this.formatId(this.paymentOneToOne,
-        '/payments/')
-
-      nock(payment.destination_transfers[0].id)
-        .put('')
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'prepared'
-        }))
-
-      nock(payment.destination_transfers[0].id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-        .get('/state')
-        .reply(200, this.transferExecutedReceipt)
-
-      let sourceTransferExecuted = nock(payment.source_transfers[0].id)
-        .put('/fulfillment', {
-          type: 'ed25519-sha512',
-          signature: this.transferExecutedReceipt.signature
-        })
-        .reply(201, _.assign({}, payment.source_transfers[0], {
-          state: 'executed'
-        }))
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-      yield this.request()
-        .post('/notifications')
-        .send(_.merge({}, this.notificationNoConditionFulfillment, {
-          resource: {
-            debits: [{
-              memo: {
-                source_transfer_ledger: payment.source_transfers[0].ledger,
-                source_transfer_id: payment.source_transfers[0].id
-              }
-            }]
-          }
-        }))
-        .expect(200)
-        .end()
-
-      // Throw an error if this nock hasn't been executed
-      sourceTransferExecuted.done()
-    })
-
     it('should not cause server error if source transfer is missing execution_condition', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
@@ -416,12 +362,12 @@ describe('Notifications', function () {
       sourceTransferExecuted.done()
     })
 
-    it('should return a 422 if the two transfer conditions do not match and the source transfer one does not have the public key of the destination ledger', function * () {
+    it('should return 200 if the two transfer conditions do not match', function * () {
       const payment = this.formatId(this.paymentOneToOne, '/payments/')
 
       this.notificationSourceTransferPrepared
-        .resource.execution_condition.public_key =
-          'Z2FWS1XLz8wNpRRXcXn98tC6yIrglfI87OsmA3JTfMg='
+        .resource.execution_condition =
+          'cc:0:3:tBP0fRPuL-bIRbLuFBr4HehY307FSaWLeXC7lmRbyNI:2'
 
       nock(payment.destination_transfers[0].id)
         .get('/state')
@@ -430,11 +376,13 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableConditionsError')
-          expect(res.body.message).to.equal('Source transfer execution ' +
-            'condition public key must match the destination ledger\'s.')
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {
+            id: 'UnacceptableConditionsError',
+            message: 'Each of the source transfers\' execution conditions must match all of the destination transfers\' conditions'
+          }
         })
         .end()
     })
@@ -443,22 +391,26 @@ describe('Notifications', function () {
       'match and the source transfer one does not have the same algorithm the ' +
       'destination ledger uses')
 
-    it('should return a 422 if the payment does not include the connector in the source transfer credits', function * () {
+    it('should return 200 if the payment is not relevant to the connector', function * () {
       this.notificationSourceTransferPrepared
         .resource.credits[0].account = 'http://usd-ledger.example/accounts/mary'
 
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnrelatedNotificationError')
-          expect(res.body.message).to.equal('Notification does not match a payment we have a record of or the corresponding source transfers may already have been executed')
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {
+            id: 'UnrelatedNotificationError',
+            message: 'Notification does not match a payment we have a record of' +
+              ' or the corresponding source transfers may already have been executed'
+          }
         })
         .end()
     })
 
-    it('should return a 422 if the payment does not include the connector in the destination transfer debits', function * () {
+    it('should return 200 if the payment does not include the connector in the destination transfer debits', function * () {
       this.notificationSourceTransferPrepared
         .resource.credits[0].memo.destination_transfer
         .debits[0].account = 'http://usd-ledger.example/accounts/mary'
@@ -466,32 +418,37 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('NoRelatedDestinationDebitError')
-          expect(res.body.message).to.equal('Connector\'s account must be ' +
-            'debited in all destination transfers to provide payment')
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {
+            id: 'NoRelatedDestinationDebitError',
+            message: 'Connector\'s account must be ' +
+              'debited in all destination transfers to provide payment'
+          }
         })
         .end()
     })
 
-    it('should return a 422 if the rate of the payment is worse than the one currently offered', function * () {
+    it('should return 200 if the rate of the payment is worse than the one currently offered', function * () {
       this.notificationSourceTransferPrepared
         .resource.credits[0].amount = '1.00'
 
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('UnacceptableRateError')
-          expect(res.body.message).to.equal('Payment rate does not match ' +
-            'the rate currently offered')
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {
+            id: 'UnacceptableRateError',
+            message: 'Payment rate does not match the rate currently offered'
+          }
         })
         .end()
     })
 
-    it('should return a 422 if the payment includes assets this connector does not offer rates between', function * () {
+    it('should return 200 if the payment includes assets this connector does not offer rates between', function * () {
       this.notificationSourceTransferPrepared
         .resource.ledger = 'http://abc-ledger.example/ABC'
       this.notificationSourceTransferPrepared
@@ -501,11 +458,13 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('AssetsNotTradedError')
-          expect(res.body.message).to.equal('This connector does not support ' +
-            'the given asset pair')
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {
+            id: 'AssetsNotTradedError',
+            message: 'This connector does not support the given asset pair'
+          }
         })
         .end()
     })
@@ -599,7 +558,8 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
-        .expect(200)
+        .expect({})
+        // .expect(200)
         .end()
     })
 
@@ -630,19 +590,11 @@ describe('Notifications', function () {
         })
         .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
 
-      const fulfillment = {
-        type: this.transferExecutedReceipt.type,
-        signature: this.transferExecutedReceipt.signature
-      }
-
       nock(source_transfer.id)
-        .put('/fulfillment', fulfillment)
-        .reply(201, fulfillment)
+        .put('/fulfillment', this.transferExecutedReceipt)
+        .reply(201, this.transferExecutedReceipt)
       nock(destination_transfer.id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-      nock(destination_transfer.id)
-        .get('/state')
+        .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
@@ -667,11 +619,6 @@ describe('Notifications', function () {
 
       const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
-      const fulfillment = {
-        type: this.transferExecutedReceipt.type,
-        signature: this.transferExecutedReceipt.signature
-      }
-
       nock(destination_transfer.id)
         .put('')
         .basicAuth({
@@ -683,13 +630,10 @@ describe('Notifications', function () {
         }))
 
       nock(source_transfer.id)
-        .put('/fulfillment', fulfillment)
-        .reply(201, fulfillment)
+        .put('/fulfillment', this.transferExecutedReceipt)
+        .reply(201, this.transferExecutedReceipt)
       nock(destination_transfer.id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-      nock(destination_transfer.id)
-        .get('/state')
+        .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
@@ -711,11 +655,6 @@ describe('Notifications', function () {
       const source_transfer = this.notificationSourceTransferPrepared.resource
       const destination_transfer = source_transfer.credits[0].memo.destination_transfer
 
-      const fulfillment = {
-        type: this.transferExecutedReceipt.type,
-        signature: this.transferExecutedReceipt.signature
-      }
-
       const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
       nock(destination_transfer.id)
@@ -727,12 +666,10 @@ describe('Notifications', function () {
         .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
 
       nock(source_transfer.id)
-        .put('/fulfillment', fulfillment)
-        .reply(201, fulfillment)
+        .put('/fulfillment', this.transferExecutedReceipt)
+        .reply(201, this.transferExecutedReceipt)
       nock(destination_transfer.id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-        .get('/state')
+        .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
@@ -745,11 +682,6 @@ describe('Notifications', function () {
     it('should execute a payment where its account is not the only credit in the source transfer', function * () {
       const source_transfer = this.notificationSourceTransferPrepared.resource
       const destination_transfer = source_transfer.credits[0].memo.destination_transfer
-
-      const fulfillment = {
-        type: this.transferExecutedReceipt.type,
-        signature: this.transferExecutedReceipt.signature
-      }
 
       source_transfer.debits[0].amount = '21.07'
       source_transfer.credits.unshift({
@@ -768,12 +700,10 @@ describe('Notifications', function () {
         .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
 
       nock(source_transfer.id)
-        .put('/fulfillment', fulfillment)
-        .reply(201, fulfillment)
+        .put('/fulfillment', this.transferExecutedReceipt)
+        .reply(201, this.transferExecutedReceipt)
       nock(destination_transfer.id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-        .get('/state')
+        .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
@@ -796,11 +726,6 @@ describe('Notifications', function () {
         amount: '0.40'
       })
 
-      const fulfillment = {
-        type: this.transferExecutedReceipt.type,
-        signature: this.transferExecutedReceipt.signature
-      }
-
       const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
       nock(destination_transfer.id)
@@ -812,12 +737,10 @@ describe('Notifications', function () {
         .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
 
       nock(source_transfer.id)
-        .put('/fulfillment', fulfillment)
-        .reply(201, fulfillment)
+        .put('/fulfillment', this.transferExecutedReceipt)
+        .reply(201, this.transferExecutedReceipt)
       nock(destination_transfer.id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-        .get('/state')
+        .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
@@ -837,11 +760,6 @@ describe('Notifications', function () {
         amount: '0.40'
       })
 
-      const fulfillment = {
-        type: this.transferExecutedReceipt.type,
-        signature: this.transferExecutedReceipt.signature
-      }
-
       const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
 
       nock(destination_transfer.id)
@@ -853,13 +771,11 @@ describe('Notifications', function () {
         .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
 
       nock(source_transfer.id)
-        .put('/fulfillment', fulfillment)
-        .reply(201, fulfillment)
+        .put('/fulfillment', this.transferExecutedReceipt)
+        .reply(201, this.transferExecutedReceipt)
 
       nock(destination_transfer.id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-        .get('/state')
+        .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
       yield this.request()
