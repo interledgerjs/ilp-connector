@@ -3,7 +3,13 @@
 const requestUtil = require('five-bells-shared/utils/request')
 const log = require('../common').log('notifications')
 const model = require('../models/notifications')
+const AssetsNotTradedError = require('../errors/assets-not-traded-error')
+const NoRelatedSourceCreditError = require('../errors/no-related-source-credit-error')
+const UnacceptableRateError = require('../errors/unacceptable-rate-error')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
+const UnacceptableConditionsError = require('../errors/unacceptable-conditions-error')
+const UnrelatedNotificationError = require('../errors/unrelated-notification-error')
+const NoRelatedDestinationDebitError = require('../errors/no-related-destination-debit-error')
 const UnprocessableEntityError =
   require('five-bells-shared').UnprocessableEntityError
 
@@ -65,8 +71,6 @@ const UnprocessableEntityError =
  *
  * @apiSuccessExample Notification Accepted:
  *   HTTP/1.1 200 OK
- *
- * @apiUse UnrelatedNotificationError
  */
 /* eslint-enable */
 
@@ -86,16 +90,47 @@ exports.post = function * postNotification () {
   try {
     yield model.processNotification(notification, this.ledgers, this.config)
   } catch (e) {
-    if (!(e instanceof UnacceptableExpiryError)) {
+    if (
+      (e instanceof AssetsNotTradedError) ||
+      (e instanceof NoRelatedDestinationDebitError) ||
+      (e instanceof NoRelatedSourceCreditError) ||
+      (e instanceof UnacceptableConditionsError) ||
+      (e instanceof UnacceptableExpiryError) ||
+      (e instanceof UnacceptableRateError) ||
+      (e instanceof UnrelatedNotificationError)
+    ) {
+      // Certain exceptions indicate an error in the transfer memo, rather than
+      // the transfer itself. Since the client is the ledger and the ledger is
+      // not at fault here, it doesn't make sense to return a 4xx response. In
+      // other words, both the ledger and connector have done everything right,
+      // so the request status between them should be 200.
+      //
+      // However, for testing purposes it would be useful to be able to check
+      // whether the connector has done the right thing. So we informationally
+      // include the processing result in our response.
+      //
+      // In the future we should also provide some feedback mechanism so that
+      // the connector can let the sender know that their payment is not going
+      // to be processed, allowing them to retry immediately.
+
+      log.debug('Notification handling received non-critical error: ' + e)
+      this.status = 200
+      this.body = {
+        result: 'ignored',
+        ignoreReason: {
+          id: e.name,
+          message: e.message
+        }
+      }
+      return
+    } else {
+      // TODO: Currently an invalid destination_transfer memo still triggers a
+      //   400 response. Invalid memos of any kind should be a 200 with result
+      //   "ignored".
       log.error('Notification handling received critical error: ' + e)
       throw e
-    } else {
-      // If this receives UnacceptableExpiryError, do not respond with HTTP error 422.
-      // Doing so would cause Ledger to reply with the same message, creating an infinite loop.
-      // Error handling mechanism for mode.processNotifiation() should be improved in the future.
-      // It should not throw an error in this situation.
-      log.debug('Notification handling received non-critical error: ' + e)
     }
   }
   this.status = 200
+  this.body = { result: 'processed' }
 }
