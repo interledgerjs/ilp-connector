@@ -1,14 +1,15 @@
 'use strict'
 
 function getMetadata (config) {
+  const base = config.getIn(['server', 'base_uri'])
   return {
     urls: {
-      health: '/health',
-      pairs: '/pairs',
-      payment: '/payments/:uuid',
-      quote: '/quote',
-      quote_local: '/quote_local',
-      notifications: '/notifications'
+      health: base + '/health',
+      pairs: base + '/pairs',
+      payment: base + '/payments/:uuid',
+      quote: base + '/quote',
+      quote_local: base + '/quote_local',
+      notifications: base + '/notifications'
     }
   }
 }

@@ -22,12 +22,12 @@ describe('Metadata', function () {
         .expect(function (res) {
           expect(res.body).to.deep.equal({
             urls: {
-              health: '/health',
-              pairs: '/pairs',
-              payment: '/payments/:uuid',
-              quote: '/quote',
-              quote_local: '/quote_local',
-              notifications: '/notifications'
+              health: 'http://localhost/health',
+              pairs: 'http://localhost/pairs',
+              payment: 'http://localhost/payments/:uuid',
+              quote: 'http://localhost/quote',
+              quote_local: 'http://localhost/quote_local',
+              notifications: 'http://localhost/notifications'
             }
           })
         })
