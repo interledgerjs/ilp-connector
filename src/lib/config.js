@@ -1,6 +1,7 @@
 'use strict'
 
 const fs = require('fs')
+const cc = require('five-bells-condition')
 const Config = require('five-bells-shared').Config
 const Utils = require('../lib/utils')
 const _ = require('lodash')
@@ -90,13 +91,6 @@ function parseNotificationSignEnv () {
   }
 }
 
-function parseNotificationSign () {
-  const signEnv = parseNotificationSignEnv()
-  return _.merge(signEnv, {
-    keys: _.mapValues(signEnv.keys, (path) => fs.readFileSync(path, 'utf8'))
-  })
-}
-
 function validateCredentialsEnv () {
   const credentials = parseCredentialsEnv()
 
@@ -150,7 +144,7 @@ function validateNotificationEnv () {
       }
 
       try {
-        fs.accessSync(notifications.keys[uri], fs.R_OK)
+        cc.validateCondition(notifications.keys[uri])
       } catch (e) {
         throw new Error(`Failed to read signing key for ledger ${uri}: ${e.message}`)
       }
@@ -230,7 +224,7 @@ function getLocalConfig () {
     ledgerCredentials = parseCredentials()
   }
 
-  const notifications = parseNotificationSign()
+  const notifications = parseNotificationSignEnv()
 
   return {
     backend,
