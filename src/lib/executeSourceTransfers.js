@@ -33,20 +33,6 @@ function * getConditionFulfillment (destinationTransfers, relatedResources) {
   if (fulfillment) {
     return fulfillment
   }
-
-  // 3) Right now we can use the last ledger's transfer state receipt as the execution_condition_fulfillment
-  // Note that this is a feature that will likely be deprecated
-  if (destinationTransfers.length === 1) {
-    const stateReceipt = yield ledgers.getState(destinationTransfers[0])
-    if (stateReceipt.type && stateReceipt.signature) {
-      return {
-        type: stateReceipt.type,
-        signature: stateReceipt.signature
-      }
-    } else {
-      log.error('Got invalid state receipt: ' + JSON.stringify(stateReceipt))
-    }
-  }
 }
 
 // Add the execution_condition_fulfillment to the source transfer

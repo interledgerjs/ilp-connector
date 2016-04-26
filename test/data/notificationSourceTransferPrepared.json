@@ -27,17 +27,14 @@
             "amount":"1.00",
             "account":"http://eur-ledger.example/accounts/bob"
           }],
+          "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
+          "expires_at": "2015-06-16T00:00:02.000Z",
           "state": "proposed"
         }
       }
     }],
-    "execution_condition": {
-      "message_hash": "9EXcGgJa0zTIUxEQXaMKpvoGsNmYSxv8J6C12LBNA5hRMfmbwDCzAU4O14UKnqcIaQqMGULHLI+T6Nk3+qYd3Q==",
-      "signer": "http://eur-ledger.example/EUR",
-      "type": "ed25519-sha512",
-      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
-    },
-    "expires_at": "2015-06-16T00:00:02.000Z",
+    "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
+    "expires_at": "2015-06-16T00:00:04.000Z",
     "state": "prepared"
   }
 }

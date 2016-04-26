@@ -1,7 +1,0 @@
-{
-  "message_hash": "KA/8Pdjzwwkkd8/NqbwNHZ+XS84vhao861Z+AGUihFMPSInnIaJC3iAUXId+YZgYH3Pxjo2x82evS+jZZdElfA==",
-  "type": "ed25519-sha512",
-  "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c=",
-  "signer": "http://eur-ledger.example",
-  "signature": "0IkjoVa7ZpH/sX6ZDQjalv0sB9UvOXP851fpqfVntSr5sPK/lNzoxb7CEujC/7C7Q5Ku6/IrudAFyrk5hpXSCg=="
-}

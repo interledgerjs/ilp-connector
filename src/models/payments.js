@@ -15,37 +15,7 @@ const NoRelatedDestinationDebitError =
 const UnrelatedNotificationError =
   require('../errors/unrelated-notification-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
-const hashJSON = require('five-bells-shared/utils/hashJson')
 const backend = require('../services/backend')
-
-// TODO this should handle the different types of execution_condition's.
-function sourceConditionIsDestinationTransfer (source, destination) {
-  // Check the message or message_hash
-  const expectedMessage = {
-    id: destination.id,
-    state: 'executed'
-  }
-
-  if (!source.execution_condition) {
-    return false
-  }
-
-  if (source.execution_condition.message_hash &&
-    source.execution_condition.message_hash !== hashJSON(expectedMessage)) {
-    return false
-  }
-
-  // Check the signer
-  if (source.execution_condition.signer &&
-    source.execution_condition.signer !== destination.ledger) {
-    return false
-  }
-
-  // TODO: once we have the ledger public keys cached locally
-  // validate that the public_key is the one we expect
-
-  return true
-}
 
 function sourceConditionSameAsAllDestinationConditions (
   sourceTransfer, destination_transfers) {
@@ -59,8 +29,7 @@ function sourceConditionSameAsAllDestinationConditions (
 function validateExecutionConditions (payment) {
   log.debug('validating execution conditions')
   // We need to have confidence that the source transfers will actually happen.
-  // So each one has to depend on something we control, namely the destination
-  // transfer or the condition of all of the destination transfers.
+  // So each one has to match the condition of all of the destination transfers.
   // (So we can just copy the condition's fulfillment.)
 
   // Note that implementing this correctly is VERY IMPORTANT for the connector
@@ -70,24 +39,14 @@ function validateExecutionConditions (payment) {
   // validateExpiry as well
 
   const valid = _.every(payment.source_transfers, function (sourceTransfer) {
-    const conditionIsDestTransfer =
-    payment.destination_transfers.length === 1 &&
-      sourceConditionIsDestinationTransfer(sourceTransfer,
-        payment.destination_transfers[0])
-
-    const conditionsAreEqual =
-    sourceConditionSameAsAllDestinationConditions(
+    return sourceConditionSameAsAllDestinationConditions(
       sourceTransfer, payment.destination_transfers)
-
-    return conditionIsDestTransfer || conditionsAreEqual
   })
 
   if (!valid) {
     throw new UnacceptableConditionsError("Each of the source transfers' " +
-      'execution conditions must either match all of the destination ' +
-      "transfers' conditions or if there is only one destination transfer " +
-      "the source transfers' conditions can be the execution of the " +
-      'destination transfer')
+      'execution conditions must match all of the destination ' +
+      "transfers' conditions")
   }
 }
 
@@ -127,8 +86,6 @@ function * validateExpiry (payment, config) {
   yield tester.validateNotExpired()
   if (tester.isAtomic()) {
     yield tester.validateMaxHoldTime()
-  } else if (tester.isFinal()) {
-    yield tester.validateMinExecutionWindow()
   } else {
     yield tester.validateMaxHoldTime()
     yield tester.validateMinMessageWindow()
@@ -352,18 +309,17 @@ function * updateDestinationTransfer (updatedTransfer, traderDebit, relatedResou
 }
 
 function * updateTransfer (updatedTransfer, relatedResources, ledgers, config) {
-  // Maybe it's a source transfer:
+  // Maybe it's a destination transfer:
+  const traderDebit = updatedTransfer.debits.find(_.partial(isTraderFunds, config))
+  if (traderDebit) {
+    yield updateDestinationTransfer(updatedTransfer, traderDebit, relatedResources)
+  }
+
+  // Or a source transfer:
   // When the payment's source transfer is "prepared", authorized/submit the payment.
   const traderCredit = updatedTransfer.credits.find(_.partial(isTraderFunds, config))
   if (traderCredit) {
     yield updateSourceTransfer(updatedTransfer, traderCredit, ledgers, config)
-    return
-  }
-
-  // Or a destination transfer:
-  const traderDebit = updatedTransfer.debits.find(_.partial(isTraderFunds, config))
-  if (traderDebit) {
-    yield updateDestinationTransfer(updatedTransfer, traderDebit, relatedResources)
     return
   }
 

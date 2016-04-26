@@ -11,12 +11,7 @@
       "amount":"1.07",
       "account":"http://usd-ledger.example/accounts/mark"
     }],
-    "execution_condition": {
-      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
-      "signer": "http://ledger.example",
-      "type": "ed25519-sha512",
-      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
-    },
+    "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
     "expires_at": "2015-06-16T00:00:11.000Z",
     "state": "prepared"
   }, {
@@ -30,12 +25,7 @@
       "amount":"1.07",
       "account":"http://cad-ledger.example:1000/accounts/mark"
     }],
-    "execution_condition": {
-      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
-      "signer": "http://ledger.example",
-      "type": "ed25519-sha512",
-      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
-    },
+    "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
     "expires_at": "2015-06-16T00:00:11.000Z",
     "state": "prepared"
   }],
@@ -50,12 +40,7 @@
       "amount":"1.00",
       "account":"http://eur-ledger.example/accounts/bob"
     }],
-    "execution_condition": {
-      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
-      "signer": "http://ledger.example",
-      "type": "ed25519-sha512",
-      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
-    },
+    "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
     "expires_at": "2015-06-16T00:00:10.000Z",
     "state": "proposed"
   }, {
@@ -69,12 +54,7 @@
       "amount":"1.00",
       "account":"http://cny-ledger.example/accounts/danielle"
     }],
-    "execution_condition": {
-      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
-      "signer": "http://ledger.example",
-      "type": "ed25519-sha512",
-      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
-    },
+    "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
     "expires_at": "2015-06-16T00:00:10.000Z",
     "state": "proposed"
   }]

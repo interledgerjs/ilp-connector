@@ -50,7 +50,8 @@ FiveBellsLedger.prototype.putTransferFulfillment = function * (transferID, execu
   const fulfillmentRes = yield this._request({
     method: 'put',
     uri: transferID + '/fulfillment',
-    body: execution_condition_fulfillment
+    body: execution_condition_fulfillment,
+    json: false
   })
   // TODO check the timestamp the ledger sends back
   // See https://github.com/interledger/five-bells-ledger/issues/149

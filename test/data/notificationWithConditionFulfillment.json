@@ -12,18 +12,10 @@
       "amount":"1.00",
       "account":"http://eur-ledger.example/accounts/bob"
     }],
-    "execution_condition": {
-      "message_hash": "claZQU7qkFz7smkAVtQp9ekUCc5LgoeN9W3RItIzykNEDbGSvzeHvOk9v/vrPpm+XWx5VFjd/sVbM2SLnCpxLw==",
-      "signer": "http://ledger.example",
-      "type": "ed25519-sha512",
-      "public_key": "Lvf3YtnHLMER+VHT0aaeEJF+7WQcvp4iKZAdvMVto7c="
-    },
+    "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
     "state": "executed"
   },
   "related_resources": {
-    "execution_condition_fulfillment": {
-      "type": "ed25519-sha512",
-      "signature": "sd0RahwuJJgeNfg8HvWHtYf4uqNgCOqIbseERacqs8G0kXNQQnhfV6gWAnMb+0RIlY3e0mqbrQiUwbRYJvRBAw=="
-    }
+    "execution_condition_fulfillment": "cf:0:ZXhlY3V0ZQ"
   }
 }
