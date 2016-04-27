@@ -48,9 +48,9 @@ TransferTester.prototype.validateNotExpired = function * () {
 }
 
 TransferTester.prototype.validateTransferNotExpired = function (transfer) {
-  const expires_at = this.getExpiry(transfer)
-  if (expires_at && transfer.state !== 'executed' &&
-    moment(expires_at, moment.ISO_8601).isBefore(moment())) {
+  const expiresAt = this.getExpiry(transfer)
+  if (expiresAt && transfer.state !== 'executed' &&
+    moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
     throw new UnacceptableExpiryError('Transfer has already expired')
   }
 }
@@ -64,9 +64,9 @@ TransferTester.prototype.validateTransferNotExpired = function (transfer) {
 // to hold money for too long
 TransferTester.prototype.validateMaxHoldTime = function * () {
   for (const transfer of this.destination_transfers) {
-    const expires_at = this.getExpiry(transfer)
-    if (expires_at) {
-      this.validateExpiryHoldTime(expires_at)
+    const expiresAt = this.getExpiry(transfer)
+    if (expiresAt) {
+      this.validateExpiryHoldTime(expiresAt)
     } else {
       throw new UnacceptableExpiryError('Destination transfers with ' +
         'execution conditions must have an expires_at field for connector ' +
@@ -75,8 +75,8 @@ TransferTester.prototype.validateMaxHoldTime = function * () {
   }
 }
 
-TransferTester.prototype.validateExpiryHoldTime = function (expires_at) {
-  if (moment(expires_at, moment.ISO_8601).diff(moment()) > this.maxHoldTime) {
+TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
+  if (moment(expiresAt, moment.ISO_8601).diff(moment()) > this.maxHoldTime) {
     throw new UnacceptableExpiryError('Destination transfer expiry is ' +
       "too far in the future. The connector's money would need to be " +
       'held for too long')

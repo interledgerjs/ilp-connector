@@ -76,7 +76,7 @@ function parseLedgers () {
 function parseNotificationSignEnv () {
   // On by default in prod
   const isProduction = process.env.NODE_ENV === 'production'
-  const must_verify = Config.castBool(Config.getEnv(envPrefix, 'NOTIFICATION_VERIFY'), isProduction)
+  const mustVerify = Config.castBool(Config.getEnv(envPrefix, 'NOTIFICATION_VERIFY'), isProduction)
 
   let keys
   try {
@@ -86,7 +86,7 @@ function parseNotificationSignEnv () {
   }
 
   return {
-    must_verify,
+    must_verify: mustVerify,
     keys
   }
 }
