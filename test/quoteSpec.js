@@ -36,11 +36,11 @@ describe('Quotes', function () {
 
     // Connector queries its balances when getting a quote to ensure it has sufficient funds.
     _.map(testLedgers, (ledgerUri) => 'http://' + parseUrl(ledgerUri).host + '/accounts/mark')
-    .forEach((connector_account_uri) => {
-      nock(connector_account_uri).get('')
+    .forEach((connectorAccountUri) => {
+      nock(connectorAccountUri).get('')
         .reply(200, {
           name: 'mark',
-          ledger: 'http://' + parseURL(connector_account_uri).host,
+          ledger: 'http://' + parseURL(connectorAccountUri).host,
           balance: 150000
         })
     })

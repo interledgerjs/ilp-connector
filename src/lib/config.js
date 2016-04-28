@@ -1,6 +1,7 @@
 'use strict'
 
 const fs = require('fs')
+const cc = require('five-bells-condition')
 const Config = require('five-bells-shared').Config
 const Utils = require('../lib/utils')
 const _ = require('lodash')
@@ -75,7 +76,7 @@ function parseLedgers () {
 function parseNotificationSignEnv () {
   // On by default in prod
   const isProduction = process.env.NODE_ENV === 'production'
-  const must_verify = Config.castBool(Config.getEnv(envPrefix, 'NOTIFICATION_VERIFY'), isProduction)
+  const mustVerify = Config.castBool(Config.getEnv(envPrefix, 'NOTIFICATION_VERIFY'), isProduction)
 
   let keys
   try {
@@ -85,16 +86,9 @@ function parseNotificationSignEnv () {
   }
 
   return {
-    must_verify,
+    must_verify: mustVerify,
     keys
   }
-}
-
-function parseNotificationSign () {
-  const signEnv = parseNotificationSignEnv()
-  return _.merge(signEnv, {
-    keys: _.mapValues(signEnv.keys, (path) => fs.readFileSync(path, 'utf8'))
-  })
 }
 
 function validateCredentialsEnv () {
@@ -150,7 +144,7 @@ function validateNotificationEnv () {
       }
 
       try {
-        fs.accessSync(notifications.keys[uri], fs.R_OK)
+        cc.validateCondition(notifications.keys[uri])
       } catch (e) {
         throw new Error(`Failed to read signing key for ledger ${uri}: ${e.message}`)
       }
@@ -230,7 +224,7 @@ function getLocalConfig () {
     ledgerCredentials = parseCredentials()
   }
 
-  const notifications = parseNotificationSign()
+  const notifications = parseNotificationSignEnv()
 
   return {
     backend,

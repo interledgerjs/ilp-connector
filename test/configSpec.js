@@ -16,9 +16,9 @@ describe('ConnectorConfig', function () {
       ])
       process.env.CONNECTOR_PAIRS = ''
       process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-        'https://usd-ledger.example': 'test/data/ledger1public.pem',
-        'https://eur-ledger.example': 'test/data/ledger2public.pem',
-        'https://aud-ledger.example': 'test/data/ledger3public.pem'
+        'https://usd-ledger.example': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518',
+        'https://eur-ledger.example': 'cc:3:11:Mjmrcm06fOo-3WOEZu9YDSNfqmn0lj4iOsTVEurtCdI:518',
+        'https://aud-ledger.example': 'cc:3:11:xnTtXKlRuFnFFDTgnSxFn9mYMeimdhbWaZXPAp5Pbs0:518'
       })
     })
 
@@ -336,9 +336,9 @@ describe('ConnectorConfig', function () {
         it('parses keys', () => {
           const config = loadConnectorConfig()
           expect(config.get('notifications.keys')).to.deep.equal({
-            'https://aud-ledger.example': fs.readFileSync('test/data/ledger3public.pem', 'utf8'),
-            'https://eur-ledger.example': fs.readFileSync('test/data/ledger2public.pem', 'utf8'),
-            'https://usd-ledger.example': fs.readFileSync('test/data/ledger1public.pem', 'utf8')
+            'https://usd-ledger.example': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518',
+            'https://eur-ledger.example': 'cc:3:11:Mjmrcm06fOo-3WOEZu9YDSNfqmn0lj4iOsTVEurtCdI:518',
+            'https://aud-ledger.example': 'cc:3:11:xnTtXKlRuFnFFDTgnSxFn9mYMeimdhbWaZXPAp5Pbs0:518'
           })
         })
       })

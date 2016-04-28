@@ -13,24 +13,24 @@ Multiledger.prototype.addLedger = function (Ledger) {
   this.ledger_types[Ledger.TYPE] = Ledger
 }
 
-Multiledger.prototype.getLedger = function (ledger_id) {
-  return this.ledgers[ledger_id] ||
-        (this.ledgers[ledger_id] = this.buildLedger(ledger_id))
+Multiledger.prototype.getLedger = function (ledgerId) {
+  return this.ledgers[ledgerId] ||
+        (this.ledgers[ledgerId] = this.buildLedger(ledgerId))
 }
 
-Multiledger.prototype.buildLedger = function (ledger_id) {
-  let creds = this.config.getIn(['ledgerCredentials', ledger_id])
+Multiledger.prototype.buildLedger = function (ledgerId) {
+  let creds = this.config.getIn(['ledgerCredentials', ledgerId])
   let Ledger = this.ledger_types[creds.type]
   return new Ledger({
-    ledger_id: ledger_id,
+    ledger_id: ledgerId,
     credentials: creds,
     log: this.log(Ledger.name),
     config: this.config
   })
 }
 
-Multiledger.prototype.getType = function (ledger_id) {
-  return this.getLedger(ledger_id).constructor.TYPE
+Multiledger.prototype.getType = function (ledgerId) {
+  return this.getLedger(ledgerId).constructor.TYPE
 }
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -62,8 +62,8 @@ Multiledger.prototype.getTransferFulfillment = function (transfer) {
 }
 
 // target - {uri, transfer}
-Multiledger.prototype.subscribe = function (ledger_id, target) {
-  let ledger = this.getLedger(ledger_id)
+Multiledger.prototype.subscribe = function (ledgerId, target) {
+  let ledger = this.getLedger(ledgerId)
   if (ledger instanceof FiveBellsLedger) {
     return ledger.subscribe(target.uri)
   } else {

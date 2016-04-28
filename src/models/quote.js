@@ -48,15 +48,15 @@ function * makeQuoteQuery (params, config) {
     sourceExpiryDuration = destinationExpiryDuration + config.getIn(['expiry', 'minMessageWindow'])
   }
 
-  let source_ledger = params.source_ledger
-  if (!source_ledger) {
-    if (params.source_account) source_ledger = yield getAccountLedger(params.source_account)
+  let sourceLedger = params.source_ledger
+  if (!sourceLedger) {
+    if (params.source_account) sourceLedger = yield getAccountLedger(params.source_account)
     else throw new InvalidURIParameterError('Missing required parameter: source_ledger or source_account')
   }
 
-  let destination_ledger = params.destination_ledger
-  if (!destination_ledger) {
-    if (params.destination_account) destination_ledger = yield getAccountLedger(params.destination_account)
+  let destinationLedger = params.destination_ledger
+  if (!destinationLedger) {
+    if (params.destination_account) destinationLedger = yield getAccountLedger(params.destination_account)
     else throw new InvalidURIParameterError('Missing required parameter: destination_ledger or destination_account')
   }
 
@@ -65,8 +65,8 @@ function * makeQuoteQuery (params, config) {
     sourceExpiryDuration: sourceExpiryDuration,
     source_amount: params.source_amount,
     destination_amount: params.destination_amount,
-    source_ledger: source_ledger,
-    destination_ledger: destination_ledger,
+    source_ledger: sourceLedger,
+    destination_ledger: destinationLedger,
     source_account: params.source_account || null,
     destination_account: params.destination_account || null
   }
@@ -82,18 +82,18 @@ function makeQuoteArgs (query) {
 }
 
 function makePaymentTemplate (query, quote, ledgers) {
-  const source_amount = quote.source_amount
-  const destination_amount = quote.destination_amount
+  const sourceAmount = quote.source_amount
+  const destinationAmount = quote.destination_amount
   const payment = {
     source_transfers: [{
       type: ledgers.getType(query.source_ledger),
       ledger: query.source_ledger,
       debits: [{
         account: query.source_account,
-        amount: source_amount
+        amount: sourceAmount
       }],
       credits: [
-        ledgers.makeFundTemplate(query.source_ledger, {amount: source_amount})
+        ledgers.makeFundTemplate(query.source_ledger, {amount: sourceAmount})
       ],
       expiry_duration: String(query.sourceExpiryDuration)
     }],
@@ -101,11 +101,11 @@ function makePaymentTemplate (query, quote, ledgers) {
       type: ledgers.getType(query.destination_ledger),
       ledger: query.destination_ledger,
       debits: [
-        ledgers.makeFundTemplate(query.destination_ledger, {amount: destination_amount})
+        ledgers.makeFundTemplate(query.destination_ledger, {amount: destinationAmount})
       ],
       credits: [{
         account: query.destination_account,
-        amount: destination_amount
+        amount: destinationAmount
       }],
       expiry_duration: String(query.destinationExpiryDuration)
     }]

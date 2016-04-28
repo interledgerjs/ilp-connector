@@ -46,11 +46,11 @@ FiveBellsLedger.prototype.putTransfer = function * (transfer) {
   updateTransfer(transfer, updatedTransfer)
 }
 
-FiveBellsLedger.prototype.putTransferFulfillment = function * (transferID, execution_condition_fulfillment) {
+FiveBellsLedger.prototype.putTransferFulfillment = function * (transferID, executionConditionFulfillment) {
   const fulfillmentRes = yield this._request({
     method: 'put',
     uri: transferID + '/fulfillment',
-    body: execution_condition_fulfillment,
+    body: executionConditionFulfillment,
     json: false
   })
   // TODO check the timestamp the ledger sends back
@@ -101,17 +101,17 @@ function updateTransfer (transfer, updatedTransfer) {
   }
 }
 
-FiveBellsLedger.prototype.subscribe = function * (target_uri) {
-  let account_uri = this.credentials.account_uri
+FiveBellsLedger.prototype.subscribe = function * (targetUri) {
+  let accountUri = this.credentials.account_uri
   if (this.config.getIn(['features', 'debugAutoFund'])) yield this._autofund()
-  let subscribeRes = yield request_retry({
+  let subscribeRes = yield requestRetry({
     method: 'put',
     url: this.id + '/subscriptions/' + notificationUuid,
     body: {
-      owner: account_uri,
+      owner: accountUri,
       event: 'transfer.update',
-      target: target_uri,
-      subject: account_uri
+      target: targetUri,
+      subject: accountUri
     }
   }, 'could not subscribe to ledger ' + this.id, this.credentials)
   if (subscribeRes.statusCode >= 400) {
@@ -122,7 +122,7 @@ FiveBellsLedger.prototype.subscribe = function * (target_uri) {
 FiveBellsLedger.prototype._autofund = function * () {
   log.info('autofunded account at ' + this.id)
   const admin = this.config.get('admin')
-  yield request_retry({
+  yield requestRetry({
     method: 'put',
     url: this.credentials.account_uri,
     json: true,
@@ -136,7 +136,7 @@ FiveBellsLedger.prototype._autofund = function * () {
   }, 'could not create account at ledger ' + this.id, admin)
 }
 
-function * request_retry (opts, error_msg, credentials) {
+function * requestRetry (opts, errorMessage, credentials) {
   let delay = backoffMin
   while (true) {
     try {
@@ -152,7 +152,7 @@ function * request_retry (opts, error_msg, credentials) {
       }, lodash.isUndefined)))
       return res
     } catch (err) {
-      log.warn(error_msg)
+      log.warn(errorMessage)
       delay = Math.min(Math.floor(1.5 * delay), backoffMax)
       yield wait(delay)
     }
@@ -160,7 +160,7 @@ function * request_retry (opts, error_msg, credentials) {
 }
 
 FiveBellsLedger.prototype.unsubscribe = function * () {
-  yield request_retry({
+  yield requestRetry({
     method: 'delete',
     url: this.id + '/subscriptions/' + notificationUuid
   }, 'could not unsubscribe from ledger ' + this.id, this.credentials)

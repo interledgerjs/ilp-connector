@@ -13,18 +13,17 @@ const jsonSigning = require('five-bells-shared').JSONSigning
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
-const path = require('path')
 const fs = require('fs')
 const ledgerPrivateKey = fs.readFileSync('./test/data/ledger1private.pem', 'utf8')
 
 function signNotification (notification) {
-  const algorithm = 'PS256'
+  const algorithm = 'CC'
   return jsonSigning.sign(notification, algorithm, ledgerPrivateKey)
 }
 
 function invalidlySignNotification (notification) {
   const key = fs.readFileSync('./test/data/ledger2private.pem', 'utf8')
-  const algorithm = 'PS256'
+  const algorithm = 'CC'
   return jsonSigning.sign(notification, algorithm, key)
 }
 
@@ -51,8 +50,8 @@ describe('Notifications', function () {
     beforeEach(function * () {
       process.env.CONNECTOR_NOTIFICATION_VERIFY = 'true'
       process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-        'http://eur-ledger.example': path.resolve(__dirname, './data/ledger1public.pem'),
-        'http://example.com': path.resolve(__dirname, './data/ledger1public.pem')
+        'http://eur-ledger.example': 'cc:3:11:Jd1P5DR8KKOp3OfcTfKdolh2IREIdG3LP2WU8gg6pCc:518',
+        'http://example.com': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518'
       })
       process.env.CONNECTOR_LEDGERS = JSON.stringify([
         'EUR@http://eur-ledger.example',
@@ -509,10 +508,10 @@ describe('Notifications', function () {
     })
 
     it('should return a 200 if a destination transfer has an execution_condition but no expiry', function * () {
-      const destination_transfer = this.notificationSourceTransferPrepared
+      const destinationTransfer = this.notificationSourceTransferPrepared
         .resource.credits[0].memo.destination_transfer
-      delete destination_transfer.expires_at
-      destination_transfer.execution_condition =
+      delete destinationTransfer.expires_at
+      destinationTransfer.execution_condition =
         this.notificationSourceTransferPrepared.resource.execution_condition
 
       yield this.request()
@@ -523,10 +522,10 @@ describe('Notifications', function () {
     })
 
     it('should return a 200 if any of the destination transfers expires too far in the future (causing the connector to hold money for too long)', function * () {
-      const destination_transfer = this.notificationSourceTransferPrepared
+      const destinationTransfer = this.notificationSourceTransferPrepared
         .resource.credits[0].memo.destination_transfer
-      destination_transfer.expires_at = moment(START_DATE + 10001).toISOString()
-      destination_transfer.execution_condition =
+      destinationTransfer.expires_at = moment(START_DATE + 10001).toISOString()
+      destinationTransfer.execution_condition =
         this.notificationSourceTransferPrepared.resource.execution_condition
 
       yield this.request()
@@ -537,11 +536,11 @@ describe('Notifications', function () {
     })
 
     it('should return a 200 if the source transfer expires too soon after the destination transfer (we may not be able to execute the source transfer in time)', function * () {
-      const destination_transfer = this.notificationSourceTransferPrepared
+      const destinationTransfer = this.notificationSourceTransferPrepared
         .resource.credits[0].memo.destination_transfer
-      destination_transfer.expires_at =
+      destinationTransfer.expires_at =
         this.notificationSourceTransferPrepared.resource.expires_at
-      destination_transfer.execution_condition =
+      destinationTransfer.execution_condition =
         this.notificationSourceTransferPrepared.resource.execution_condition
 
       yield this.request()
@@ -575,25 +574,25 @@ describe('Notifications', function () {
     })
 
     it('should return a 200 for a new payment even if the connector is also the payee of the destination transfer', function * () {
-      const source_transfer = this.notificationSourceTransferPrepared.resource
-      const destination_transfer = source_transfer.credits[0].memo.destination_transfer
-      destination_transfer.credits = destination_transfer.debits
+      const sourceTransfer = this.notificationSourceTransferPrepared.resource
+      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
+      destinationTransfer.credits = destinationTransfer.debits
 
       const connectorCredentials =
-        this.config.ledgerCredentials[destination_transfer.ledger]
+        this.config.ledgerCredentials[destinationTransfer.ledger]
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .put('')
         .basicAuth({
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
+        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
 
-      nock(source_transfer.id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', this.transferExecutedReceipt)
         .reply(201, this.transferExecutedReceipt)
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
@@ -607,32 +606,32 @@ describe('Notifications', function () {
         .send({
           id: 'http://eur-ledger.example/EUR/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d',
           event: 'transfer.update',
-          resource: destination_transfer
+          resource: destinationTransfer
         })
         .expect(200)
     })
 
     it('should return a 200 for a new payment even if the connector is also the payer of the source transfer', function * () {
-      const source_transfer = this.notificationSourceTransferPrepared.resource
-      const destination_transfer = source_transfer.credits[0].memo.destination_transfer
-      source_transfer.debits = source_transfer.credits
+      const sourceTransfer = this.notificationSourceTransferPrepared.resource
+      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
+      sourceTransfer.debits = sourceTransfer.credits
 
-      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .put('')
         .basicAuth({
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.assign({}, destination_transfer, {
+        .reply(201, _.assign({}, destinationTransfer, {
           state: 'executed'
         }))
 
-      nock(source_transfer.id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', this.transferExecutedReceipt)
         .reply(201, this.transferExecutedReceipt)
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
@@ -646,29 +645,29 @@ describe('Notifications', function () {
         .send({
           id: 'http://eur-ledger.example/EUR/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d',
           event: 'transfer.update',
-          resource: destination_transfer
+          resource: destinationTransfer
         })
         .expect(200)
     })
 
     it('should get the fulfillment and execute the source transfers when the destination transfer response indicates that it has already been executed', function * () {
-      const source_transfer = this.notificationSourceTransferPrepared.resource
-      const destination_transfer = source_transfer.credits[0].memo.destination_transfer
+      const sourceTransfer = this.notificationSourceTransferPrepared.resource
+      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
 
-      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .put('')
         .basicAuth({
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
+        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
 
-      nock(source_transfer.id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', this.transferExecutedReceipt)
         .reply(201, this.transferExecutedReceipt)
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
@@ -680,29 +679,29 @@ describe('Notifications', function () {
     })
 
     it('should execute a payment where its account is not the only credit in the source transfer', function * () {
-      const source_transfer = this.notificationSourceTransferPrepared.resource
-      const destination_transfer = source_transfer.credits[0].memo.destination_transfer
+      const sourceTransfer = this.notificationSourceTransferPrepared.resource
+      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
 
-      source_transfer.debits[0].amount = '21.07'
-      source_transfer.credits.unshift({
+      sourceTransfer.debits[0].amount = '21.07'
+      sourceTransfer.credits.unshift({
         account: 'http://usd-ledger.example/accounts/mary',
         amount: '20'
       })
 
-      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .put('')
         .basicAuth({
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
+        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
 
-      nock(source_transfer.id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', this.transferExecutedReceipt)
         .reply(201, this.transferExecutedReceipt)
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
@@ -717,29 +716,29 @@ describe('Notifications', function () {
       // Note there is no good reason why this should happen but we should
       // be able to handle it appropriately anyway
 
-      const source_transfer = this.notificationSourceTransferPrepared.resource
-      const destination_transfer = source_transfer.credits[0].memo.destination_transfer
+      const sourceTransfer = this.notificationSourceTransferPrepared.resource
+      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
 
-      destination_transfer.debits[0].amount = '0.60'
-      destination_transfer.debits.push({
+      destinationTransfer.debits[0].amount = '0.60'
+      destinationTransfer.debits.push({
         account: 'http://eur-ledger.example/accounts/mark',
         amount: '0.40'
       })
 
-      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .put('')
         .basicAuth({
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
+        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
 
-      nock(source_transfer.id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', this.transferExecutedReceipt)
         .reply(201, this.transferExecutedReceipt)
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
@@ -751,30 +750,30 @@ describe('Notifications', function () {
     })
 
     it('should execute a payment where there are multiple credits in the destination transfer', function * () {
-      const source_transfer = this.notificationSourceTransferPrepared.resource
-      const destination_transfer = source_transfer.credits[0].memo.destination_transfer
+      const sourceTransfer = this.notificationSourceTransferPrepared.resource
+      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
 
-      destination_transfer.credits[0].amount = '0.60'
-      destination_transfer.credits.push({
+      destinationTransfer.credits[0].amount = '0.60'
+      destinationTransfer.credits.push({
         account: 'http://usd-ledger.example/accounts/timothy',
         amount: '0.40'
       })
 
-      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .put('')
         .basicAuth({
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
+        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
 
-      nock(source_transfer.id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', this.transferExecutedReceipt)
         .reply(201, this.transferExecutedReceipt)
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .get('/fulfillment')
         .reply(200, this.transferExecutedReceipt)
 
@@ -786,34 +785,34 @@ describe('Notifications', function () {
     })
 
     it('should only add authorization to the destination transfer debits from the connector\'s account', function * () {
-      const source_transfer = this.notificationSourceTransferPrepared.resource
-      const destination_transfer = source_transfer.credits[0].memo.destination_transfer
+      const sourceTransfer = this.notificationSourceTransferPrepared.resource
+      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
 
-      destination_transfer.debits.unshift({
+      destinationTransfer.debits.unshift({
         amount: '10',
         account: 'http://eur-ledger.example/accounts/other'
       })
-      destination_transfer.credits.unshift({
+      destinationTransfer.credits.unshift({
         amount: '10',
         account: 'http://eur-ledger.example/accounts/jane'
       })
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .get('/state')
         .reply(200, this.transferProposedReceipt)
 
-      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
       const debitMemo = {
-        source_transfer_ledger: source_transfer.ledger,
-        source_transfer_id: source_transfer.id
+        source_transfer_ledger: sourceTransfer.ledger,
+        source_transfer_id: sourceTransfer.id
       }
-      const authorizedDestinationTransfer = _.merge({}, destination_transfer, {
+      const authorizedDestinationTransfer = _.merge({}, destinationTransfer, {
         debits: [
           {memo: debitMemo},
           {memo: debitMemo, authorized: true}
         ]
       })
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .put('', authorizedDestinationTransfer)
         .basicAuth({
           user: connectorCredentials.username,
@@ -829,31 +828,31 @@ describe('Notifications', function () {
     })
 
     it('should execute a payment where the source transfer\'s expires_at date has passed if the transfer was executed before it expired', function * () {
-      const source_transfer = this.notificationSourceTransferPrepared.resource
-      const destination_transfer = source_transfer.credits[0].memo.destination_transfer
+      const sourceTransfer = this.notificationSourceTransferPrepared.resource
+      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
 
-      source_transfer.expires_at = moment(START_DATE - 1).toISOString()
-      source_transfer.state = 'executed'
+      sourceTransfer.expires_at = moment(START_DATE - 1).toISOString()
+      sourceTransfer.state = 'executed'
 
-      const connectorCredentials = this.config.ledgerCredentials[destination_transfer.ledger]
+      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
       const fulfillment = {
         type: this.transferExecutedReceipt.type,
         signature: this.transferExecutedReceipt.signature
       }
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .put('')
         .basicAuth({
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.assign({}, destination_transfer, {state: 'executed'}))
+        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
 
-      nock(source_transfer.id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', fulfillment)
         .reply(200, fulfillment)
 
-      nock(destination_transfer.id)
+      nock(destinationTransfer.id)
         .get('/state')
         .reply(200, this.transferProposedReceipt)
         .get('/state')
@@ -937,9 +936,9 @@ describe('Notifications', function () {
         const authorizedDestinationTransfer = _.merge({}, this.destination_transfer, {
           debits: [{authorized: true}]
         })
-        const expires_at = future(5000)
-        nock(caseID1).get('').reply(200, {expires_at: expires_at})
-        nock(caseID2).get('').reply(200, {expires_at: expires_at})
+        const expiresAt = future(5000)
+        nock(caseID1).get('').reply(200, {expires_at: expiresAt})
+        nock(caseID2).get('').reply(200, {expires_at: expiresAt})
 
         nock(this.destination_transfer.id)
           .put('', authorizedDestinationTransfer)

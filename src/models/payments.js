@@ -18,8 +18,8 @@ const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const backend = require('../services/backend')
 
 function sourceConditionSameAsAllDestinationConditions (
-  sourceTransfer, destination_transfers) {
-  return _.every(destination_transfers,
+  sourceTransfer, destinationTransfers) {
+  return _.every(destinationTransfers,
     function (destinationTransfer) {
       return _.isEqual(sourceTransfer.execution_condition,
         destinationTransfer.execution_condition)
