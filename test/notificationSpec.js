@@ -13,18 +13,17 @@ const jsonSigning = require('five-bells-shared').JSONSigning
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
-const path = require('path')
 const fs = require('fs')
 const ledgerPrivateKey = fs.readFileSync('./test/data/ledger1private.pem', 'utf8')
 
 function signNotification (notification) {
-  const algorithm = 'PS256'
+  const algorithm = 'CC'
   return jsonSigning.sign(notification, algorithm, ledgerPrivateKey)
 }
 
 function invalidlySignNotification (notification) {
   const key = fs.readFileSync('./test/data/ledger2private.pem', 'utf8')
-  const algorithm = 'PS256'
+  const algorithm = 'CC'
   return jsonSigning.sign(notification, algorithm, key)
 }
 
@@ -51,8 +50,8 @@ describe('Notifications', function () {
     beforeEach(function * () {
       process.env.CONNECTOR_NOTIFICATION_VERIFY = 'true'
       process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-        'http://eur-ledger.example': path.resolve(__dirname, './data/ledger1public.pem'),
-        'http://example.com': path.resolve(__dirname, './data/ledger1public.pem')
+        'http://eur-ledger.example': 'cc:3:11:Jd1P5DR8KKOp3OfcTfKdolh2IREIdG3LP2WU8gg6pCc:518',
+        'http://example.com': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518'
       })
       process.env.CONNECTOR_LEDGERS = JSON.stringify([
         'EUR@http://eur-ledger.example',
