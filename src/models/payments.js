@@ -50,45 +50,16 @@ function validateExecutionConditions (payment) {
   }
 }
 
-function * validateExecutionConditionPublicKey (payment, ledgers) {
-  // TODO: use a cache of ledgers' public keys and move this functionality
-  // into the synchronous validateExecutionConditions function
-  for (const sourceTransfer of payment.source_transfers) {
-    const conditionsAreEqual =
-    sourceConditionSameAsAllDestinationConditions(
-      sourceTransfer, payment.destination_transfers)
-
-    if (!conditionsAreEqual) {
-      // Check the public_key and algorithm
-      // TODO: what do we do if the transfer hasn't been submitted
-      // to the destination ledger yet?
-      const destinationTransferState = yield ledgers.getState(
-        payment.destination_transfers[0])
-
-      if (sourceTransfer.execution_condition.type !==
-        destinationTransferState.type) {
-        throw new UnacceptableConditionsError('Source transfer execution ' +
-          "condition type must match the destination ledger's.")
-      }
-      if (sourceTransfer.execution_condition.public_key !==
-        destinationTransferState.public_key) {
-        throw new UnacceptableConditionsError('Source transfer execution ' +
-          "condition public key must match the destination ledger's.")
-      }
-    }
-  }
-}
-
 function * validateExpiry (payment, config) {
   // TODO tie the maxHoldTime to the fx rate
   // TODO bring all these loops into one to speed this up
   const tester = yield testPaymentExpiry(config, payment)
-  yield tester.validateNotExpired()
+  tester.validateNotExpired()
   if (tester.isAtomic()) {
-    yield tester.validateMaxHoldTime()
+    tester.validateMaxHoldTime()
   } else {
-    yield tester.validateMaxHoldTime()
-    yield tester.validateMinMessageWindow()
+    tester.validateMaxHoldTime()
+    tester.validateMinMessageWindow()
   }
 }
 
@@ -243,14 +214,12 @@ function * submitTransfer (destinationTransfer, sourceTransfer, ledgers) {
 }
 
 function * validate (payment, ledgers, config) {
-  // TODO: Check expiry settings
   // TODO: Check ledger signature on source payment
   // TODO: Check ledger signature on destination payment
 
   yield validateExpiry(payment, config)
   yield validateRate(payment, config)
   validateExecutionConditions(payment)
-  yield validateExecutionConditionPublicKey(payment, ledgers)
 }
 
 function * settle (payment, config, ledgers) {

@@ -1,13 +1,15 @@
+'use strict'
+
 module.exports = function (wallaby) {
+  const path = require('path')
+  process.env.NODE_PATH += path.delimiter + path.join(wallaby.localProjectDir, '..')
+
   return {
     files: [
-      'backends/*/*.js',
-      'controllers/*.js',
-      'lib/*.js',
-      'services/*.js',
-      'utils/*.js',
-      'errors/*.js',
-      'test/data/*.json',
+      'src/**/*.js',
+      'schemas/*.json',
+      'test/node_modules',
+      'test/data/*',
       'test/helpers/*.js',
       'app.js'
     ],
@@ -20,15 +22,12 @@ module.exports = function (wallaby) {
 
     env: {
       type: 'node',
+      runner: 'node',
       params: {
-        env: 'NODE_ENV=unit'
+        env: 'NODE_ENV=unit UNIT_TEST_OVERRIDE=true'
       }
     },
 
-    debug: true,
-    bootstrap: function () {
-      var path = require('path')
-      require('co-mocha')(require(path.join(path.dirname(process.argv[1]), 'runners/node/mocha@2.1.0/framework/')))
-    }
+    debug: true
   }
 }

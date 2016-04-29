@@ -42,7 +42,7 @@ TransferTester.prototype.isAtomic = function () {
 // /////////////////////////////////////////////////////////////////////////////
 
 // Verify that none of the transfers have already expired
-TransferTester.prototype.validateNotExpired = function * () {
+TransferTester.prototype.validateNotExpired = function () {
   this.source_transfers.forEach(this.validateTransferNotExpired, this)
   this.destination_transfers.forEach(this.validateTransferNotExpired, this)
 }
@@ -56,13 +56,13 @@ TransferTester.prototype.validateTransferNotExpired = function (transfer) {
 }
 
 // /////////////////////////////////////////////////////////////////////////////
-// Non-Atomic + Non-Final
+// Non-Atomic
 // /////////////////////////////////////////////////////////////////////////////
 
 // If the destination transfer(s) have execution condition(s)
 // we need to make sure we're not being asked
 // to hold money for too long
-TransferTester.prototype.validateMaxHoldTime = function * () {
+TransferTester.prototype.validateMaxHoldTime = function () {
   for (const transfer of this.destination_transfers) {
     const expiresAt = this.getExpiry(transfer)
     if (expiresAt) {
@@ -90,7 +90,7 @@ TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
 // This is done to ensure that we have enough time after the last
 // moment one of the destination transfers could happen (taking money out
 // of our account) to execute all of the source transfers
-TransferTester.prototype.validateMinMessageWindow = function * () {
+TransferTester.prototype.validateMinMessageWindow = function () {
   const earliestSourceTransferExpiry =
     _.min(_.map(this.source_transfers, function (transfer) {
       return (transfer.expires_at && transfer.state !== 'executed'
@@ -108,42 +108,6 @@ TransferTester.prototype.validateMinMessageWindow = function * () {
       'destination transfer expiry and the earliest source transfer expiry ' +
       'is insufficient to ensure that we can execute the source transfers')
   }
-}
-
-// /////////////////////////////////////////////////////////////////////////////
-// Final transfer
-// /////////////////////////////////////////////////////////////////////////////
-
-// If we are the last connector we're not going to put money on hold
-// so we don't care about the maxHoldTime
-// We only care that we have enough time to execute the destination
-// transfer(s) before the source transfers expire
-TransferTester.prototype.validateMinExecutionWindow = function * () {
-  const minExecutionWindow = this.minExecutionWindow
-  const minMessageWindow = this.minMessageWindow
-  // Check that we have enough time to execute the destination transfer
-  this.destination_transfers.forEach(function (transfer) {
-    if (transfer.expires_at &&
-      moment(transfer.expires_at, moment.ISO_8601).diff(moment()) <
-      minExecutionWindow) {
-      throw new UnacceptableExpiryError('There is insufficient time for ' +
-        'the connector to execute the destination transfer before it expires')
-    }
-  })
-
-  // Check that we can execute the destination transfer and
-  // have enough time to execute the source transfers before
-  // they expire
-  this.source_transfers.forEach(function (transfer) {
-    if (transfer.expires_at &&
-      transfer.state !== 'executed' &&
-      moment(transfer.expires_at, moment.ISO_8601).diff(moment()) <
-      minExecutionWindow + minMessageWindow) {
-      throw new UnacceptableExpiryError('There is insufficient time for ' +
-        'the connector to execute the destination transfer before the source ' +
-        'transfer(s) expire(s)')
-    }
-  })
 }
 
 // /////////////////////////////////////////////////////////////////////////////
