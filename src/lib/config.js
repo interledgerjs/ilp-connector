@@ -9,9 +9,12 @@ const _ = require('lodash')
 const envPrefix = 'CONNECTOR'
 
 function isRunningTests () {
-  return process.argv[0].endsWith('mocha') ||
+  return (
+    process.env.NODE_ENV === 'unit' ||
+    process.argv[0].endsWith('mocha') ||
     (process.argv.length > 1 && process.argv[0].endsWith('node') &&
      process.argv[1].endsWith('mocha'))
+   )
 }
 
 function useTestConfig () {
