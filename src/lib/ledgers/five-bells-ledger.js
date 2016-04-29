@@ -2,6 +2,7 @@
 const lodash = require('lodash')
 const request = require('co-request')
 const uuid = require('uuid4')
+const WebSocket = require('ws')
 const validator = require('../validate')
 const log = require('../../common').log('fiveBellsLedger')
 const ExternalError = require('../../errors/external-error')
@@ -101,22 +102,40 @@ function updateTransfer (transfer, updatedTransfer) {
   }
 }
 
-FiveBellsLedger.prototype.subscribe = function * (targetUri) {
-  let accountUri = this.credentials.account_uri
+FiveBellsLedger.prototype.subscribe = function * (listener) {
+  const accountUri = this.credentials.account_uri
   if (this.config.getIn(['features', 'debugAutoFund'])) yield this._autofund()
-  let subscribeRes = yield requestRetry({
-    method: 'put',
-    url: this.id + '/subscriptions/' + notificationUuid,
-    body: {
-      owner: accountUri,
-      event: 'transfer.update',
-      target: targetUri,
-      subject: accountUri
+
+  const streamUri = accountUri.replace('http', 'ws') + '/transfers'
+  log.debug('subscribing to ' + streamUri)
+  const auth = this.credentials.username + ':' + this.credentials.password
+  const ws = new WebSocket(streamUri, {
+    headers: {
+      Authorization: 'Basic ' + new Buffer(auth, 'utf8').toString('base64')
+    },
+    cert: this.credentials.cert,
+    key: this.credentials.key,
+    ca: this.credentials.ca
+  })
+
+  ws.on('message', (msg) => {
+    const notification = JSON.parse(msg)
+    log.debug('notify', notification.resource.id)
+    try {
+      listener(notification.resource, notification.related_resources)
+    } catch (err) {
+      log.warn('failure while processing notification: ' + err)
     }
-  }, 'could not subscribe to ledger ' + this.id, this.credentials)
-  if (subscribeRes.statusCode >= 400) {
-    throw new Error('subscribe unexpected status code: ' + subscribeRes.statusCode)
-  }
+  })
+
+  ws.on('error', (err) => {
+    log.warn('ws error on ' + streamUri + ': ' + err)
+  })
+
+  ws.on('close', () => {
+    log.info('ws disconnected from ' + streamUri)
+    setTimeout()
+  })
 }
 
 FiveBellsLedger.prototype._autofund = function * () {

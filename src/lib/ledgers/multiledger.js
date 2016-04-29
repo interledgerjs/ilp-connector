@@ -62,13 +62,9 @@ Multiledger.prototype.getTransferFulfillment = function (transfer) {
 }
 
 // target - {uri, transfer}
-Multiledger.prototype.subscribe = function (ledgerId, target) {
+Multiledger.prototype.subscribe = function (ledgerId, listener) {
   let ledger = this.getLedger(ledgerId)
-  if (ledger instanceof FiveBellsLedger) {
-    return ledger.subscribe(target.uri)
-  } else {
-    return ledger.subscribe(target.transfer)
-  }
+  return ledger.subscribe(listener)
 }
 
 module.exports = Multiledger
