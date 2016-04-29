@@ -45,10 +45,6 @@ Multiledger.prototype.makeFundTemplate = function (ledger, template) {
   return this.getLedger(ledger).makeFundTemplate(template)
 }
 
-Multiledger.prototype.getState = function (transfer) {
-  return this.getLedger(transfer.ledger).getState(transfer)
-}
-
 Multiledger.prototype.putTransfer = function (transfer) {
   return this.getLedger(transfer.ledger).putTransfer(transfer)
 }

@@ -28,15 +28,6 @@ FiveBellsLedger.prototype.makeFundTemplate = function (template) {
   return template
 }
 
-FiveBellsLedger.prototype.getState = function * (transfer) {
-  const stateRes = yield this._request({
-    method: 'get',
-    uri: transfer.id + '/state',
-    json: true
-  })
-  return stateRes.body
-}
-
 FiveBellsLedger.prototype.putTransfer = function * (transfer) {
   const transferRes = yield this._request({
     method: 'put',
