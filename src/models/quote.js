@@ -61,8 +61,8 @@ function * makeQuoteQuery (params, config) {
   }
 
   return {
-    destinationExpiryDuration: destinationExpiryDuration,
-    sourceExpiryDuration: sourceExpiryDuration,
+    destination_expiry_duration: destinationExpiryDuration,
+    source_expiry_duration: sourceExpiryDuration,
     source_amount: params.source_amount,
     destination_amount: params.destination_amount,
     source_ledger: sourceLedger,
@@ -95,7 +95,7 @@ function makePaymentTemplate (query, quote, ledgers) {
       credits: [
         ledgers.makeFundTemplate(query.source_ledger, {amount: sourceAmount})
       ],
-      expiry_duration: String(query.sourceExpiryDuration)
+      expiry_duration: String(query.source_expiry_duration)
     }],
     destination_transfers: [{
       type: ledgers.getType(query.destination_ledger),
@@ -107,7 +107,7 @@ function makePaymentTemplate (query, quote, ledgers) {
         account: query.destination_account,
         amount: destinationAmount
       }],
-      expiry_duration: String(query.destinationExpiryDuration)
+      expiry_duration: String(query.destination_expiry_duration)
     }]
   }
   return payment
