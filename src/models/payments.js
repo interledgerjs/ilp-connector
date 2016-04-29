@@ -54,12 +54,12 @@ function * validateExpiry (payment, config) {
   // TODO tie the maxHoldTime to the fx rate
   // TODO bring all these loops into one to speed this up
   const tester = yield testPaymentExpiry(config, payment)
-  yield tester.validateNotExpired()
+  tester.validateNotExpired()
   if (tester.isAtomic()) {
-    yield tester.validateMaxHoldTime()
+    tester.validateMaxHoldTime()
   } else {
-    yield tester.validateMaxHoldTime()
-    yield tester.validateMinMessageWindow()
+    tester.validateMaxHoldTime()
+    tester.validateMinMessageWindow()
   }
 }
 

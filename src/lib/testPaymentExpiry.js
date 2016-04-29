@@ -42,7 +42,7 @@ TransferTester.prototype.isAtomic = function () {
 // /////////////////////////////////////////////////////////////////////////////
 
 // Verify that none of the transfers have already expired
-TransferTester.prototype.validateNotExpired = function * () {
+TransferTester.prototype.validateNotExpired = function () {
   this.source_transfers.forEach(this.validateTransferNotExpired, this)
   this.destination_transfers.forEach(this.validateTransferNotExpired, this)
 }
@@ -62,7 +62,7 @@ TransferTester.prototype.validateTransferNotExpired = function (transfer) {
 // If the destination transfer(s) have execution condition(s)
 // we need to make sure we're not being asked
 // to hold money for too long
-TransferTester.prototype.validateMaxHoldTime = function * () {
+TransferTester.prototype.validateMaxHoldTime = function () {
   for (const transfer of this.destination_transfers) {
     const expiresAt = this.getExpiry(transfer)
     if (expiresAt) {
@@ -90,7 +90,7 @@ TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
 // This is done to ensure that we have enough time after the last
 // moment one of the destination transfers could happen (taking money out
 // of our account) to execute all of the source transfers
-TransferTester.prototype.validateMinMessageWindow = function * () {
+TransferTester.prototype.validateMinMessageWindow = function () {
   const earliestSourceTransferExpiry =
     _.min(_.map(this.source_transfers, function (transfer) {
       return (transfer.expires_at && transfer.state !== 'executed'
