@@ -17,6 +17,7 @@ module.exports = {
     balanceCache: balanceCache,
     RoutingTables: require('./lib/routing-tables'),
     RouteBroadcaster: require('./lib/route-broadcaster'),
+    RouteBuilder: require('./lib/route-builder'),
     loadConnectorConfig: require('./lib/config'),
     config: require('./services/config'),
     logger: require('./common').log,

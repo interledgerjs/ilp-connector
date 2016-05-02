@@ -171,8 +171,6 @@ function getLocalConfig () {
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
 
   const features = {}
-  features.quoteFullPath = Config.castBool(Config.getEnv(envPrefix, 'QUOTE_FULL_PATH'))
-  features.broadcastRoutes = Config.castBool(Config.getEnv(envPrefix, 'BROADCAST_ROUTES'))
   features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
 
   const adminEnv = parseAdminEnv()
@@ -196,11 +194,13 @@ function getLocalConfig () {
 
   const expiry = {}
   expiry.minMessageWindow =
-    Config.getEnv(envPrefix, 'MIN_MESSAGE_WINDOW') || 1 // seconds
-  expiry.maxHoldTime = Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || 10 // seconds
+    +Config.getEnv(envPrefix, 'MIN_MESSAGE_WINDOW') || 1 // seconds
+  expiry.maxHoldTime = +Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || 10 // seconds
 
   // The spread is added to every quoted rate
   const fxSpread = Number(Config.getEnv(envPrefix, 'FX_SPREAD')) || 0.002 // = .2%
+
+  const slippage = +Config.getEnv(envPrefix, 'SLIPPAGE') || 0.001 // = 0.1%
 
   // BACKEND_URI must be defined for backends that connect to an external
   // component to retrieve the rate or amounts (it is therefore required
@@ -234,6 +234,7 @@ function getLocalConfig () {
     backend,
     ledgerCredentials,
     fxSpread,
+    slippage,
     expiry,
     features,
     admin,

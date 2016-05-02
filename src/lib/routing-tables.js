@@ -1,96 +1,219 @@
 'use strict'
 
+const _ = require('lodash')
 const routing = require('five-bells-routing')
 const ROUTE_EXPIRY = 45 * 1000 // milliseconds
+const SIMPLIFY_POINTS = 10
 
 class RoutingTables {
-  constructor (baseURI, pairs, localRoutes) {
+  constructor (baseURI, localRoutes) {
     this.baseURI = baseURI
-    this.sources = {}
-    this.expiries = {} // { "sourceLedger;destinationLedger;nextHop" => expires_at }
-    for (const pair of pairs) {
-      let table = this.sources[pair[0]]
-      if (!table) {
-        table = this.sources[pair[0]] = new routing.RoutingTable()
-      }
-      table.addRoute(pair[1], baseURI,
-        new routing.Route(localRoutes[pair.join(';')]))
-    }
+    this.sources = {} // { "sourceLedger" => routing.RoutingTable }
+    this.accounts = {} // { "connector;ledger" => accountURI }
+    this.addLocalRoutes(localRoutes)
   }
 
-  addRoute (ledgerB, ledgerC, connectorFromBToC, routeFromBToC) {
-    this.expiries[ledgerB + ';' + ledgerC + ';' + connectorFromBToC] = Date.now() + ROUTE_EXPIRY
-
-    // Override local pairs.
-    if (this.sources[ledgerB]) {
-      this.sources[ledgerB].addRoute(ledgerC, connectorFromBToC, routeFromBToC)
+  /**
+   * @param {Routes} localRoutes - Each local route should include the optional
+   *   `destination_account` parameter. `connector` should always be `baseURI`.
+   */
+  addLocalRoutes (localRoutes) {
+    for (const localRoute of localRoutes) {
+      const table = this.sources[localRoute.source_ledger] ||
+        (this.sources[localRoute.source_ledger] = new routing.RoutingTable())
+      const route = new routing.Route(localRoute.points, {
+        minMessageWindow: localRoute.min_message_window,
+        nextLedger: localRoute.destination_ledger
+      })
+      table.addRoute(localRoute.destination_ledger, this.baseURI, route)
     }
-
-    for (const ledgerA in this.sources) {
-      const tableFromA = this.sources[ledgerA]
-      const routesFromAToB = tableFromA.destinations.get(ledgerB)
-      if (!routesFromAToB) continue
-      tableFromA.addRoute(ledgerC, connectorFromBToC,
-        combineRoutesByConnector(routesFromAToB).join(routeFromBToC))
-    }
+    localRoutes.forEach(this.addRoute, this)
   }
 
-  removeRoute (ledgerB, ledgerC, connectorFromBToC) {
-    if (this.sources[ledgerB]) {
-      this.sources[ledgerB].removeRoute(ledgerC, connectorFromBToC)
+  /**
+   * @param {Route} route
+   */
+  addRoute (route) {
+    const ledgerB = route.source_ledger
+    const ledgerC = route.destination_ledger
+    const connectorFromBToC = route.connector
+    const routeFromBToC = new routing.Route(route.points)
+
+    this.accounts[connectorFromBToC + ';' + ledgerB] = route.source_account
+    if (route.destination_account) {
+      this.accounts[connectorFromBToC + ';' + ledgerC] = route.destination_account
     }
 
-    for (const ledgerA in this.sources) {
-      const tableFromA = this.sources[ledgerA]
+    this.eachSource((tableFromA, ledgerA) => {
+      // Don't create A→B→A.
+      if (ledgerA === ledgerC) return
       const routesFromAToB = tableFromA.destinations.get(ledgerB)
-      if (!routesFromAToB) continue
+      if (!routesFromAToB) return
+      // Don't create local route A→B→C if local route A→C already exists.
+      if (this.baseURI === connectorFromBToC && this._getLocalRoute(ledgerA, ledgerC)) return
+      const routeFromAToB = routesFromAToB.get(this.baseURI)
+      // Don't create A→C→B when there is no local A→C.
+      if (!routeFromAToB) return
+      const routeFromAToC = routeFromAToB.join(routeFromBToC)
+      routeFromAToC.info = makeRouteInfo(route, routeFromAToB.info.minMessageWindow)
+      tableFromA.addRoute(ledgerC, connectorFromBToC, routeFromAToC)
+    })
+  }
+
+  _removeRoute (ledgerB, ledgerC, connectorFromBToC) {
+    this.eachSource((tableFromA, ledgerA) => {
       tableFromA.removeRoute(ledgerC, connectorFromBToC)
-    }
-  }
-
-  findBestHopForSourceAmount (source, destination, sourceAmount) {
-    return this.sources[source].findBestHopForSourceAmount(destination, sourceAmount)
-  }
-
-  findBestHopForDestinationAmount (source, destination, destinationAmount) {
-    return this.sources[source].findBestHopForDestinationAmount(destination, destinationAmount)
+    })
   }
 
   removeExpiredRoutes () {
     const now = Date.now()
-    for (const key in this.expiries) {
-      if (this.expiries[key] < now) {
-        const keyParts = key.split(';')
-        this.removeRoute(keyParts[0], keyParts[1], keyParts[2])
-        delete this.expiries[key]
+    this.eachRoute((routeFromAToB, ledgerA, ledgerB, nextHop) => {
+      if (routeFromAToB.info.expiresAt && routeFromAToB.info.expiresAt < now) {
+        this._removeRoute(ledgerA, ledgerB, nextHop)
       }
-    }
+    })
   }
 
+  /**
+   * @param {function(tableFromA, ledgerA)} fn
+   */
+  eachSource (fn) { _.forEach(this.sources, fn) }
+
+  /**
+   * @param {function(routeFromAToB, ledgerA, ledgerB, nextHop)} fn
+   */
+  eachRoute (fn) {
+    this.eachSource((tableFromA, ledgerA) => {
+      for (const ledgerB of tableFromA.destinations.keys()) {
+        const routesFromAToB = tableFromA.destinations.get(ledgerB)
+        for (const nextHop of routesFromAToB.keys()) {
+          const routeFromAToB = routesFromAToB.get(nextHop)
+          fn(routeFromAToB, ledgerA, ledgerB, nextHop)
+        }
+      }
+    })
+  }
+
+  /**
+   * @returns {Routes}
+   */
   toJSON () {
     const routes = []
-    for (const sourceLedger in this.sources) {
-      const table = this.sources[sourceLedger]
+    this.eachSource((table, sourceLedger) => {
       for (const destinationLedger of table.destinations.keys()) {
         const routesByConnector = table.destinations.get(destinationLedger)
+        const combinedRoute = combineRoutesByConnector(routesByConnector)
         routes.push({
           source_ledger: sourceLedger,
           destination_ledger: destinationLedger,
           connector: this.baseURI,
-          points: combineRoutesByConnector(routesByConnector).getPoints()
+          points: combinedRoute.getPoints(),
+          min_message_window: combinedRoute.info.minMessageWindow,
+          source_account: this._getAccount(this.baseURI, sourceLedger)
         })
       }
-    }
+    })
     return routes
+  }
+
+  _getAccount (connector, ledger) {
+    return this.accounts[connector + ';' + ledger]
+  }
+
+  _getLocalRoute (ledgerA, ledgerB) {
+    const routesFromAToB = this.sources[ledgerA].destinations.get(ledgerB)
+    if (!routesFromAToB) return
+    return routesFromAToB.get(this.baseURI)
+  }
+
+  /**
+   * Find the best intermediate ledger (`ledgerB`) to use after `ledgerA` on
+   * the way to `ledgerC`.
+   * This connector must have `[ledgerA, ledgerB]` as a pair.
+   *
+   * @param {URI} ledgerA
+   * @param {URI} ledgerC
+   * @param {String} finalAmount
+   * @returns {Object}
+   */
+  findBestHopForDestinationAmount (ledgerA, ledgerC, finalAmount) {
+    const nextHop = this._findBestHopForDestinationAmount(ledgerA, ledgerC, +finalAmount)
+    if (!nextHop) return
+    const ledgerB = nextHop.info.nextLedger
+    const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
+    const isLocal = this.baseURI === nextHop.bestHop
+    return {
+      connector: nextHop.bestHop,
+      sourceLedger: ledgerA,
+      // Prevent 'BigNumber Error: new BigNumber() number type has more than 15 significant digits'
+      sourceAmount: nextHop.bestCost.toFixed(15),
+      destinationLedger: ledgerB,
+      destinationAmount: routeFromAToB.amountAt(nextHop.bestCost).toFixed(15),
+      destinationDebitAccount: this._getAccount(this.baseURI, ledgerB),
+      destinationCreditAccount: isLocal ? null : this._getAccount(nextHop.bestHop, ledgerB),
+      finalLedger: ledgerC,
+      finalAmount: finalAmount,
+      minMessageWindow: nextHop.info.minMessageWindow
+    }
+  }
+
+  /**
+   * @param {URI} ledgerA
+   * @param {URI} ledgerC
+   * @param {String} sourceAmount
+   * @returns {Object}
+   */
+  findBestHopForSourceAmount (ledgerA, ledgerC, sourceAmount) {
+    const nextHop = this._findBestHopForSourceAmount(ledgerA, ledgerC, +sourceAmount)
+    if (!nextHop) return
+    const ledgerB = nextHop.info.nextLedger
+    const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
+    const isLocal = this.baseURI === nextHop.bestHop
+    return {
+      connector: nextHop.bestHop,
+      sourceLedger: ledgerA,
+      sourceAmount: sourceAmount,
+      destinationLedger: ledgerB,
+      destinationAmount: routeFromAToB.amountAt(sourceAmount).toFixed(15),
+      destinationDebitAccount: this._getAccount(this.baseURI, ledgerB),
+      destinationCreditAccount: isLocal ? null : this._getAccount(nextHop.bestHop, ledgerB),
+      finalLedger: ledgerC,
+      finalAmount: nextHop.bestValue.toFixed(15),
+      minMessageWindow: nextHop.info.minMessageWindow
+    }
   }
 }
 
+;[
+  'findBestHopForSourceAmount',
+  'findBestHopForDestinationAmount'
+].forEach(function (fn) {
+  RoutingTables.prototype['_' + fn] = function (source, destination, amount) {
+    if (!this.sources[source]) return
+    return this.sources[source][fn](destination, amount)
+  }
+})
+
 function combineRoutesByConnector (routesByConnector) {
   let totalRoute = new routing.Route([])
+  const info = {minMessageWindow: 0}
   for (const subRoute of routesByConnector.values()) {
     totalRoute = totalRoute.combine(subRoute)
+    if (info.minMessageWindow < subRoute.info.minMessageWindow) {
+      info.minMessageWindow = subRoute.info.minMessageWindow
+    }
   }
-  return totalRoute.simplify(10)
+  totalRoute.info = info
+  return totalRoute.simplify(SIMPLIFY_POINTS)
+}
+
+function makeRouteInfo (route, minMessageWindow) {
+  return {
+    minMessageWindow: route.min_message_window + minMessageWindow,
+    expiresAt: Date.now() + ROUTE_EXPIRY,
+    nextLedger: route.source_ledger
+  }
 }
 
 module.exports = RoutingTables

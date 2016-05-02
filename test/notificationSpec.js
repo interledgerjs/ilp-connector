@@ -32,7 +32,7 @@ const env = _.cloneDeep(process.env)
 describe('Notifications', function () {
   logHelper(logger)
 
-  beforeEach(() => {
+  beforeEach(function * () {
     nock('http://usd-ledger.example/USD').get('')
       .reply(200, {
         precision: 10,
@@ -44,6 +44,9 @@ describe('Notifications', function () {
         precision: 10,
         scale: 4
       })
+
+    yield this.backend.connect(ratesResponse)
+    yield this.routeBroadcaster.reloadLocalRoutes()
   })
 
   describe('POST /notifications -- signed', function () {

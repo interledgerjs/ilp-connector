@@ -8,7 +8,6 @@ function getMetadata (config) {
       pairs: base + '/pairs',
       payment: base + '/payments/:uuid',
       quote: base + '/quote',
-      quote_local: base + '/quote_local',
       notifications: base + '/notifications'
     }
   }

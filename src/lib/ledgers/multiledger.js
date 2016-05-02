@@ -38,7 +38,7 @@ Multiledger.prototype.getType = function (ledgerId) {
 // /////////////////////////////////////////////////////////////////////////////
 
 Multiledger.prototype.validateTransfer = function (transfer) {
-  return this.ledger_types[transfer.type].validateTransfer(transfer)
+  return this.getLedger(transfer.ledger).validateTransfer(transfer)
 }
 
 Multiledger.prototype.makeFundTemplate = function (ledger, template) {

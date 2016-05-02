@@ -1,9 +1,12 @@
 'use strict'
 
-const RouteBroadcaster = require('../lib/route-broadcaster')
 const config = require('./config')
-
+const RouteBroadcaster = require('../lib/route-broadcaster')
 module.exports = new RouteBroadcaster(
-  config.server.base_uri,
-  config.tradingPairs,
-  require('./routing-tables'))
+  require('./routing-tables'),
+  require('./backend'),
+  {
+    ledgerCredentials: config.ledgerCredentials,
+    tradingPairs: config.tradingPairs,
+    minMessageWindow: config.expiry.minMessageWindow
+  })

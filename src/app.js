@@ -60,9 +60,7 @@ function listen (koaApp, config, ledgers) {
   // subscribes to all the ledgers in the background
   co(function * () {
     yield backend.connect()
-    if (config.features.broadcastRoutes) {
-      yield routeBroadcaster.start()
-    }
+    yield routeBroadcaster.start()
     yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgers, config)
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)
@@ -91,7 +89,6 @@ function createApp (config, ledgers) {
   koaApp.use(route.get('/pairs', pairs.getCollection))
 
   koaApp.use(route.get('/quote', quote.get))
-  koaApp.use(route.get('/quote_local', quote.getLocal))
   koaApp.use(route.post('/routes', routes.post))
 
   koaApp.use(route.post('/notifications', notifications.post))
