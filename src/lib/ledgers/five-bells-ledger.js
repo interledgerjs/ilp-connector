@@ -99,15 +99,17 @@ FiveBellsLedger.prototype.subscribe = function * (listener) {
 
   const streamUri = accountUri.replace('http', 'ws') + '/transfers'
   log.debug('subscribing to ' + streamUri)
-  const auth = this.credentials.username + ':' + this.credentials.password
-  const ws = new WebSocket(streamUri, {
-    headers: {
+  const auth = this.credentials.password && this.credentials.username &&
+                 this.credentials.username + ':' + this.credentials.password
+  const options = {
+    headers: auth && {
       Authorization: 'Basic ' + new Buffer(auth, 'utf8').toString('base64')
     },
     cert: this.credentials.cert,
     key: this.credentials.key,
     ca: this.credentials.ca
-  })
+  }
+  const ws = new WebSocket(streamUri, lodash.omitBy(options, lodash.isUndefined))
 
   ws.on('message', (msg) => {
     const notification = JSON.parse(msg)
