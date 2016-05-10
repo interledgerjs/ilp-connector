@@ -5,6 +5,7 @@ const defer = require('co-defer')
 const _ = require('lodash')
 const request = require('co-request')
 const BROADCAST_INTERVAL = 30 * 1000 // milliseconds
+const CLEANUP_INTERVAL = 1000 // milliseconds
 
 class RouteBroadcaster {
   /**
@@ -34,7 +35,7 @@ class RouteBroadcaster {
     yield this.crawlLedgers()
     yield this.reloadLocalRoutes()
     yield this.broadcast()
-    setInterval(() => this.routingTables.removeExpiredRoutes(), 1000)
+    setInterval(() => this.routingTables.removeExpiredRoutes(), CLEANUP_INTERVAL)
     defer.setInterval(() => {
       return this.reloadLocalRoutes().then(this.broadcast.bind(this))
     }, BROADCAST_INTERVAL)

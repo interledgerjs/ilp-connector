@@ -31,7 +31,10 @@ class RoutingTables {
   }
 
   /**
-   * @param {Route} route
+   * Given a `route` B→C, create a route A→C for each source ledger A with a
+   * local route to B.
+   *
+   * @param {Route} route from ledger B→C
    */
   addRoute (route) {
     const ledgerB = route.source_ledger
@@ -47,12 +50,10 @@ class RoutingTables {
     this.eachSource((tableFromA, ledgerA) => {
       // Don't create A→B→A.
       if (ledgerA === ledgerC) return
-      const routesFromAToB = tableFromA.destinations.get(ledgerB)
-      if (!routesFromAToB) return
       // Don't create local route A→B→C if local route A→C already exists.
       if (this.baseURI === connectorFromBToC && this._getLocalRoute(ledgerA, ledgerC)) return
-      const routeFromAToB = routesFromAToB.get(this.baseURI)
-      // Don't create A→C→B when there is no local A→C.
+      // Don't create A→B→C when A→B is not a local pair.
+      const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
       if (!routeFromAToB) return
       const routeFromAToC = routeFromAToB.join(routeFromBToC)
       routeFromAToC.info = makeRouteInfo(route, routeFromAToB.info.minMessageWindow)
@@ -147,9 +148,9 @@ class RoutingTables {
       connector: nextHop.bestHop,
       sourceLedger: ledgerA,
       // Prevent 'BigNumber Error: new BigNumber() number type has more than 15 significant digits'
-      sourceAmount: nextHop.bestCost.toFixed(15),
+      sourceAmount: nextHop.bestCost.toString(),
       destinationLedger: ledgerB,
-      destinationAmount: routeFromAToB.amountAt(nextHop.bestCost).toFixed(15),
+      destinationAmount: routeFromAToB.amountAt(nextHop.bestCost).toString(),
       destinationDebitAccount: this._getAccount(this.baseURI, ledgerB),
       destinationCreditAccount: isLocal ? null : this._getAccount(nextHop.bestHop, ledgerB),
       finalLedger: ledgerC,
@@ -175,25 +176,25 @@ class RoutingTables {
       sourceLedger: ledgerA,
       sourceAmount: sourceAmount,
       destinationLedger: ledgerB,
-      destinationAmount: routeFromAToB.amountAt(sourceAmount).toFixed(15),
+      destinationAmount: routeFromAToB.amountAt(sourceAmount).toString(),
       destinationDebitAccount: this._getAccount(this.baseURI, ledgerB),
       destinationCreditAccount: isLocal ? null : this._getAccount(nextHop.bestHop, ledgerB),
       finalLedger: ledgerC,
-      finalAmount: nextHop.bestValue.toFixed(15),
+      finalAmount: nextHop.bestValue.toString(),
       minMessageWindow: nextHop.info.minMessageWindow
     }
   }
-}
 
-;[
-  'findBestHopForSourceAmount',
-  'findBestHopForDestinationAmount'
-].forEach(function (fn) {
-  RoutingTables.prototype['_' + fn] = function (source, destination, amount) {
+  _findBestHopForSourceAmount (source, destination, amount) {
     if (!this.sources[source]) return
-    return this.sources[source][fn](destination, amount)
+    return this.sources[source].findBestHopForSourceAmount(destination, amount)
   }
-})
+
+  _findBestHopForDestinationAmount (source, destination, amount) {
+    if (!this.sources[source]) return
+    return this.sources[source].findBestHopForDestinationAmount(destination, amount)
+  }
+}
 
 function combineRoutesByConnector (routesByConnector) {
   let totalRoute = new routing.Route([])

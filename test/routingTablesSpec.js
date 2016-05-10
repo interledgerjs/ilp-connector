@@ -317,9 +317,9 @@ describe('RoutingTables', function () {
         {
           connector: 'http://mary.example',
           sourceLedger: ledgerA,
-          sourceAmount: (100).toFixed(15),
+          sourceAmount: (100).toString(),
           destinationLedger: ledgerB,
-          destinationAmount: (50).toFixed(15),
+          destinationAmount: (50).toString(),
           destinationDebitAccount: ledgerB + '/accounts/mark',
           destinationCreditAccount: ledgerB + '/accounts/mary',
           finalLedger: ledgerC,
@@ -334,9 +334,9 @@ describe('RoutingTables', function () {
         {
           connector: 'http://mark.example',
           sourceLedger: ledgerA,
-          sourceAmount: (100).toFixed(15),
+          sourceAmount: (100).toString(),
           destinationLedger: ledgerB,
-          destinationAmount: (50).toFixed(15),
+          destinationAmount: (50).toString(),
           destinationDebitAccount: markB,
           destinationCreditAccount: null,
           finalLedger: ledgerB,
@@ -355,11 +355,11 @@ describe('RoutingTables', function () {
           sourceLedger: ledgerA,
           sourceAmount: '100',
           destinationLedger: ledgerB,
-          destinationAmount: (50).toFixed(15),
+          destinationAmount: (50).toString(),
           destinationDebitAccount: markB,
           destinationCreditAccount: null,
           finalLedger: ledgerB,
-          finalAmount: (50).toFixed(15),
+          finalAmount: (50).toString(),
           minMessageWindow: 1
         })
     })

@@ -37,9 +37,9 @@ class RouteBuilder {
     const _nextHop = this._findNextHop(query)
     if (!_nextHop) throwAssetsNotTradedError()
     if (query.sourceAmount) {
-      _nextHop.finalAmount = (+_nextHop.finalAmount * (1 - this.slippage)).toFixed(15)
+      _nextHop.finalAmount = (new BigNumber(_nextHop.finalAmount)).times(1 - this.slippage).toString()
     } else { // fixed destinationAmount
-      _nextHop.sourceAmount = (+_nextHop.sourceAmount * (1 + this.slippage)).toFixed(15)
+      _nextHop.sourceAmount = (new BigNumber(_nextHop.sourceAmount)).times(1 + this.slippage).toString()
     }
     const nextHop = yield this._roundHop(_nextHop)
 
@@ -62,6 +62,14 @@ class RouteBuilder {
   }
 
   /**
+   * Given a source transfer with an embedded final transfer, get the next
+   * transfer in the chain.
+   *
+   * It works as follows:
+   * Given `sourceTransfer` A→C, find the next hop B on the route from A to C.
+   * If the next hop is the final one (B == C), return the final transfer.
+   * Otherwise, return a transfer at B, with the final transfer C embedded.
+   *
    * @param {Transfer} sourceTransfer
    * @returns {Transfer} destinationTransfer
    */
@@ -121,6 +129,9 @@ class RouteBuilder {
     return (new Date(sourceExpiryTime - minMessageWindow)).toISOString()
   }
 
+  /**
+   * Round the hop's amounts according to the corresponding ledgers' scales/precisions.
+   */
   * _roundHop (hop) {
     hop.sourceAmount = yield this._roundAmount('source', hop.sourceLedger, hop.sourceAmount)
     hop.destinationAmount = yield this._roundAmount('destination', hop.destinationLedger, hop.destinationAmount)

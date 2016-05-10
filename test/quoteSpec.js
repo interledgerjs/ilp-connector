@@ -3,6 +3,7 @@ const parseURL = require('url').parse
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
+const validate = require('five-bells-shared/services/validate')
 const appHelper = require('./helpers/app')
 const logger = require('five-bells-connector')._test.logger
 const balanceCache = require('five-bells-connector')._test.balanceCache
@@ -340,6 +341,21 @@ describe('Quotes', function () {
         .expect(function (res) {
           expect(res.body.id).to.equal('ExternalError')
           expect(res.body.message).to.equal('Unable to determine current balance')
+        })
+        .end()
+    })
+
+    it('should return a valid Transfer Template object', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'source_amount=100' +
+          '&source_ledger=http://eur-ledger.example/EUR' +
+          '&destination_ledger=http://usd-ledger.example/USD')
+        .expect(function (res) {
+          let validation = validate('TransferTemplate', res.body)
+          if (!validation.valid) {
+            throw new Error('Not a valid transfer template')
+          }
         })
         .end()
     })

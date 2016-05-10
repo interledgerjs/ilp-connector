@@ -105,7 +105,7 @@ function getLocalTransfer (query) {
  * @param {Object} config
  * @returns {Transfer}
  */
-function * getFullQuote (params, config) {
+function * getQuote (params, config) {
   const query = yield makeQuoteQuery(params)
   if (query.sourceLedger === query.destinationLedger) {
     return getLocalTransfer(query)
@@ -129,4 +129,4 @@ function * getFullQuote (params, config) {
   return quote
 }
 
-module.exports = {getFullQuote}
+module.exports = {getQuote}
