@@ -1,6 +1,6 @@
 {
   "name": "five-bells-connector",
-  "version": "5.0.1",
+  "version": "6.0.0",
   "description": "Five Bells connector reference implementation",
   "repository": {
     "type": "git",
