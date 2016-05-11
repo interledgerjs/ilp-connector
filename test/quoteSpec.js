@@ -48,6 +48,7 @@ describe('Quotes', function () {
     precisionCache.reset()
 
     yield this.backend.connect(ratesResponse)
+    yield this.routeBroadcaster.reloadLocalRoutes()
   })
 
   afterEach(function () {
@@ -274,7 +275,7 @@ describe('Quotes', function () {
     it('should return a 422 for insufficient liquidity', function * () {
       yield this.request()
         .get('/quote?' +
-          'source_amount=150001' +
+          'destination_amount=150001' +
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD' +
           '&destination_expiry_duration=10')
@@ -344,16 +345,16 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a valid Payment Template object', function * () {
+    it('should return a valid Transfer Template object', function * () {
       yield this.request()
         .get('/quote?' +
           'source_amount=100' +
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(function (res) {
-          let validation = validate('PaymentTemplate', res.body)
+          let validation = validate('TransferTemplate', res.body)
           if (!validation.valid) {
-            throw new Error('Not a valid payment template')
+            throw new Error('Not a valid transfer template')
           }
         })
         .end()
@@ -382,30 +383,30 @@ describe('Quotes', function () {
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfers: [{
-            ledger: 'http://eur-ledger.example/EUR',
-            debits: [{
-              account: null,
-              amount: '100.00'
-            }],
-            credits: [{
-              account: 'http://eur-ledger.example/accounts/mark',
-              amount: '100.00'
-            }],
-            expiry_duration: '11'
+          ledger: 'http://eur-ledger.example/EUR',
+          debits: [{
+            account: null,
+            amount: '100.00'
           }],
-          destination_transfers: [{
-            ledger: 'http://usd-ledger.example/USD',
-            debits: [{
-              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
-              account: 'http://usd-ledger.example/accounts/mark'
-            }],
-            credits: [{
-              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
-              account: null
-            }],
-            expiry_duration: '10'
-          }]
+          credits: [{
+            account: 'http://eur-ledger.example/accounts/mark',
+            amount: '100.00',
+            memo: {
+              destination_transfer: {
+                ledger: 'http://usd-ledger.example/USD',
+                debits: [{
+                  amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+                  account: null
+                }],
+                credits: [{
+                  amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+                  account: null
+                }],
+                expiry_duration: '5'
+              }
+            }
+          }],
+          expiry_duration: '6'
         })
         .end()
     })
@@ -433,30 +434,30 @@ describe('Quotes', function () {
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfers: [{
-            ledger: 'http://eur-ledger.example/EUR',
-            debits: [{
-              account: null,
-              amount: '100.0000'
-            }],
-            credits: [{
-              account: 'http://eur-ledger.example/accounts/mark',
-              amount: '100.0000'
-            }],
-            expiry_duration: '11'
+          ledger: 'http://eur-ledger.example/EUR',
+          debits: [{
+            account: null,
+            amount: '100.0000'
           }],
-          destination_transfers: [{
-            ledger: 'http://usd-ledger.example/USD',
-            debits: [{
-              amount: '105.70', // EUR/USD Rate of 1.0592 - .2% spread
-              account: 'http://usd-ledger.example/accounts/mark'
-            }],
-            credits: [{
-              amount: '105.70', // EUR/USD Rate of 1.0592 - .2% spread
-              account: null
-            }],
-            expiry_duration: '10'
-          }]
+          credits: [{
+            account: 'http://eur-ledger.example/accounts/mark',
+            amount: '100.0000',
+            memo: {
+              destination_transfer: {
+                ledger: 'http://usd-ledger.example/USD',
+                debits: [{
+                  amount: '105.60', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+                  account: null
+                }],
+                credits: [{
+                  amount: '105.60', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+                  account: null
+                }],
+                expiry_duration: '5'
+              }
+            }
+          }],
+          expiry_duration: '6'
         })
         .end()
     })
@@ -505,30 +506,30 @@ describe('Quotes', function () {
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfers: [{
-            ledger: 'http://eur-ledger.example/EUR',
-            debits: [{
-              account: null,
-              amount: '100.0000'
-            }],
-            credits: [{
-              account: 'http://eur-ledger.example/accounts/mark',
-              amount: '100.0000'
-            }],
-            expiry_duration: '11'
+          ledger: 'http://eur-ledger.example/EUR',
+          debits: [{
+            account: null,
+            amount: '100.0000'
           }],
-          destination_transfers: [{
-            ledger: 'http://usd-ledger.example/USD',
-            debits: [{
-              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
-              account: 'http://usd-ledger.example/accounts/mark'
-            }],
-            credits: [{
-              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
-              account: null
-            }],
-            expiry_duration: '10'
-          }]
+          credits: [{
+            account: 'http://eur-ledger.example/accounts/mark',
+            amount: '100.0000',
+            memo: {
+              destination_transfer: {
+                ledger: 'http://usd-ledger.example/USD',
+                debits: [{
+                  amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+                  account: null
+                }],
+                credits: [{
+                  amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+                  account: null
+                }],
+                expiry_duration: '5'
+              }
+            }
+          }],
+          expiry_duration: '6'
         })
         .end()
     })
@@ -541,30 +542,30 @@ describe('Quotes', function () {
           '&destination_amount=100' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfers: [{
-            ledger: 'http://eur-ledger.example/EUR',
-            debits: [{
-              account: null,
-              amount: '94.6001' // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate
-            }],
-            credits: [{
-              account: 'http://eur-ledger.example/accounts/mark',
-              amount: '94.6001' // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate
-            }],
-            expiry_duration: '11'
+          ledger: 'http://eur-ledger.example/EUR',
+          debits: [{
+            account: null,
+            amount: '94.6947' // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
           }],
-          destination_transfers: [{
-            ledger: 'http://usd-ledger.example/USD',
-            debits: [{
-              amount: '100.0000',
-              account: 'http://usd-ledger.example/accounts/mark'
-            }],
-            credits: [{
-              amount: '100.0000',
-              account: null
-            }],
-            expiry_duration: '10'
-          }]
+          credits: [{
+            account: 'http://eur-ledger.example/accounts/mark',
+            amount: '94.6947', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
+            memo: {
+              destination_transfer: {
+                ledger: 'http://usd-ledger.example/USD',
+                debits: [{
+                  amount: '100.0000',
+                  account: null
+                }],
+                credits: [{
+                  amount: '100.0000',
+                  account: null
+                }],
+                expiry_duration: '5'
+              }
+            }
+          }],
+          expiry_duration: '6'
         })
         .end()
     })
@@ -575,30 +576,30 @@ describe('Quotes', function () {
           '&source_ledger=http://eur-ledger.example/EUR' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfers: [{
-            ledger: 'http://eur-ledger.example/EUR',
-            debits: [{
-              account: null,
-              amount: '100.0000'
-            }],
-            credits: [{
-              account: 'http://eur-ledger.example/accounts/mark',
-              amount: '100.0000'
-            }],
-            expiry_duration: '11'
+          ledger: 'http://eur-ledger.example/EUR',
+          debits: [{
+            account: null,
+            amount: '100.0000'
           }],
-          destination_transfers: [{
-            ledger: 'http://usd-ledger.example/USD',
-            debits: [{
-              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
-              account: 'http://usd-ledger.example/accounts/mark'
-            }],
-            credits: [{
-              amount: '105.7081', // EUR/USD Rate of 1.0592 - .2% spread
-              account: null
-            }],
-            expiry_duration: '10'
-          }]
+          credits: [{
+            account: 'http://eur-ledger.example/accounts/mark',
+            amount: '100.0000',
+            memo: {
+              destination_transfer: {
+                ledger: 'http://usd-ledger.example/USD',
+                debits: [{
+                  amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+                  account: null
+                }],
+                credits: [{
+                  amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+                  account: null
+                }],
+                expiry_duration: '5'
+              }
+            }
+          }],
+          expiry_duration: '6'
         })
         .end()
     })
@@ -609,30 +610,30 @@ describe('Quotes', function () {
           '&source_ledger=http://usd-ledger.example/USD' +
           '&destination_ledger=http://eur-ledger.example/EUR')
         .expect(200, {
-          source_transfers: [{
-            ledger: 'http://usd-ledger.example/USD',
-            debits: [{
-              account: null,
-              amount: '100.0000'
-            }],
-            credits: [{
-              account: 'http://usd-ledger.example/accounts/mark',
-              amount: '100.0000'
-            }],
-            expiry_duration: '11'
+          ledger: 'http://usd-ledger.example/USD',
+          debits: [{
+            account: null,
+            amount: '100.0000'
           }],
-          destination_transfers: [{
-            ledger: 'http://eur-ledger.example/EUR',
-            debits: [{
-              amount: '94.2220', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
-              account: 'http://eur-ledger.example/accounts/mark'
-            }],
-            credits: [{
-              amount: '94.2220', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
-              account: null
-            }],
-            expiry_duration: '10'
-          }]
+          credits: [{
+            account: 'http://usd-ledger.example/accounts/mark',
+            amount: '100.0000',
+            memo: {
+              destination_transfer: {
+                ledger: 'http://eur-ledger.example/EUR',
+                debits: [{
+                  amount: '94.1278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
+                  account: null
+                }],
+                credits: [{
+                  amount: '94.1278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
+                  account: null
+                }],
+                expiry_duration: '5'
+              }
+            }
+          }],
+          expiry_duration: '6'
         })
         .end()
     })
@@ -643,30 +644,30 @@ describe('Quotes', function () {
           '&source_ledger=http://usd-ledger.example/USD' +
           '&destination_ledger=http://cad-ledger.example:1000/CAD')
         .expect(200, {
-          source_transfers: [{
-            ledger: 'http://usd-ledger.example/USD',
-            debits: [{
-              account: null,
-              amount: '100.0000'
-            }],
-            credits: [{
-              account: 'http://usd-ledger.example/accounts/mark',
-              amount: '100.0000'
-            }],
-            expiry_duration: '11'
+          ledger: 'http://usd-ledger.example/USD',
+          debits: [{
+            account: null,
+            amount: '100.0000'
           }],
-          destination_transfers: [{
-            ledger: 'http://cad-ledger.example:1000/CAD',
-            debits: [{
-              amount: '127.9818', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
-              account: 'http://cad-ledger.example:1000/accounts/mark'
-            }],
-            credits: [{
-              amount: '127.9818', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
-              account: null
-            }],
-            expiry_duration: '10'
-          }]
+          credits: [{
+            account: 'http://usd-ledger.example/accounts/mark',
+            amount: '100.0000',
+            memo: {
+              destination_transfer: {
+                ledger: 'http://cad-ledger.example:1000/CAD',
+                debits: [{
+                  amount: '127.8538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
+                  account: null
+                }],
+                credits: [{
+                  amount: '127.8538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
+                  account: null
+                }],
+                expiry_duration: '5'
+              }
+            }
+          }],
+          expiry_duration: '6'
         })
         .end()
     })
@@ -677,30 +678,30 @@ describe('Quotes', function () {
           '&source_ledger=http://cad-ledger.example:1000/CAD' +
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200, {
-          source_transfers: [{
-            ledger: 'http://cad-ledger.example:1000/CAD',
-            debits: [{
-              amount: '100.0000',
-              account: null
-            }],
-            credits: [{
-              amount: '100.0000',
-              account: 'http://cad-ledger.example:1000/accounts/mark'
-            }],
-            expiry_duration: '11'
+          ledger: 'http://cad-ledger.example:1000/CAD',
+          debits: [{
+            amount: '100.0000',
+            account: null
           }],
-          destination_transfers: [{
-            ledger: 'http://usd-ledger.example/USD',
-            debits: [{
-              account: 'http://usd-ledger.example/accounts/mark',
-              amount: '77.8238' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
-            }],
-            credits: [{
-              account: null,
-              amount: '77.8238' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
-            }],
-            expiry_duration: '10'
-          }]
+          credits: [{
+            amount: '100.0000',
+            account: 'http://cad-ledger.example:1000/accounts/mark',
+            memo: {
+              destination_transfer: {
+                ledger: 'http://usd-ledger.example/USD',
+                debits: [{
+                  account: null,
+                  amount: '77.7460' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
+                }],
+                credits: [{
+                  account: null,
+                  amount: '77.7460' // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
+                }],
+                expiry_duration: '5'
+              }
+            }
+          }],
+          expiry_duration: '6'
         })
         .end()
     })
@@ -712,10 +713,10 @@ describe('Quotes', function () {
           '&destination_ledger=http://usd-ledger.example/USD')
         .expect(200)
         .expect(function (res) {
-          expect(res.body.source_transfers[0].expiry_duration)
-            .to.equal('11')
-          expect(res.body.destination_transfers[0].expiry_duration)
-            .to.equal('10')
+          expect(res.body.expiry_duration)
+            .to.equal('6')
+          expect(res.body.credits[0].memo.destination_transfer.expiry_duration)
+            .to.equal('5')
         })
         .end()
     })
@@ -729,9 +730,9 @@ describe('Quotes', function () {
           '&destination_expiry_duration=5')
         .expect(200)
         .expect(function (res) {
-          expect(res.body.source_transfers[0].expiry_duration)
+          expect(res.body.expiry_duration)
             .to.equal('6')
-          expect(res.body.destination_transfers[0].expiry_duration)
+          expect(res.body.credits[0].memo.destination_transfer.expiry_duration)
             .to.equal('5')
         })
         .end()
@@ -745,9 +746,9 @@ describe('Quotes', function () {
           '&destination_expiry_duration=5')
         .expect(200)
         .expect(function (res) {
-          expect(res.body.source_transfers[0].expiry_duration)
+          expect(res.body.expiry_duration)
             .to.equal('6')
-          expect(res.body.destination_transfers[0].expiry_duration)
+          expect(res.body.credits[0].memo.destination_transfer.expiry_duration)
             .to.equal('5')
         })
         .end()
@@ -761,9 +762,9 @@ describe('Quotes', function () {
           '&source_expiry_duration=6')
         .expect(200)
         .expect(function (res) {
-          expect(res.body.source_transfers[0].expiry_duration)
+          expect(res.body.expiry_duration)
             .to.equal('6')
-          expect(res.body.destination_transfers[0].expiry_duration)
+          expect(res.body.credits[0].memo.destination_transfer.expiry_duration)
             .to.equal('5')
         })
         .end()
@@ -780,9 +781,10 @@ describe('Quotes', function () {
           '&source_expiry_duration=6')
         .expect(200)
         .expect(function (res) {
-          expect(res.body.source_transfers[0].debits[0].account).to.equal('http://cad-ledger.example/accounts/foo')
-          expect(res.body.destination_transfers[0].credits[0].account).to.equal(null)
-          expect(res.body.source_transfers[0].ledger).to.equal('http://cad-ledger.example:1000/CAD')
+          expect(res.body.debits[0].account).to.equal('http://cad-ledger.example/accounts/foo')
+          const destinationTransfer = res.body.credits[0].memo.destination_transfer
+          expect(destinationTransfer.credits[0].account).to.equal(null)
+          expect(res.body.ledger).to.equal('http://cad-ledger.example:1000/CAD')
         })
         .end()
       mockGet.done()
@@ -799,9 +801,10 @@ describe('Quotes', function () {
           '&source_expiry_duration=6')
         .expect(200)
         .expect(function (res) {
-          expect(res.body.source_transfers[0].debits[0].account).to.equal(null)
-          expect(res.body.destination_transfers[0].credits[0].account).to.equal('http://usd-ledger.example/accounts/foo')
-          expect(res.body.destination_transfers[0].ledger).to.equal('http://usd-ledger.example/USD')
+          expect(res.body.debits[0].account).to.equal(null)
+          const destinationTransfer = res.body.credits[0].memo.destination_transfer
+          expect(destinationTransfer.credits[0].account).to.equal('http://usd-ledger.example/accounts/foo')
+          expect(destinationTransfer.ledger).to.equal('http://usd-ledger.example/USD')
         })
         .end()
       mockGet.done()
@@ -838,69 +841,29 @@ describe('Quotes', function () {
         })
         .end()
     })
-  })
 
-  describe('GET /quote quoteFullPath=true', function () {
-    beforeEach(function () {
-      this.config.features.quoteFullPath = true
-      this.config.server.base_uri = 'http://localhost:' + this.port
-      this.oldPairs = this.config.tradingPairs
-      this.config.tradingPairs = [[
-        'USD@http://usd-ledger.example/USD',
-        'EUR@http://eur-ledger.example/EUR'
-      ]]
-    })
-    afterEach(function () {
-      this.config.features.quoteFullPath = false
-      this.config.tradingPairs = this.oldPairs
-    })
-
-    it('gets the full path', function * () {
+    it('quotes a multi-hop route', function * () {
       nock('http://usd-ledger.example')
         .get('/accounts/alice')
         .reply(200, {ledger: 'http://usd-ledger.example/USD'})
       nock('http://random-ledger.example')
         .get('/accounts/bob')
         .reply(200, {ledger: 'http://random-ledger.example/'})
+        .get('/')
+        .reply(200, { precision: 10, scale: 4 })
 
-      nock('http://usd-ledger.example/USD')
-        .get('/connectors')
-        .reply(200, [{connector: 'http://other-connector.example'}])
-      nock('http://other-connector.example')
-        .get('/pairs')
-        .reply(200, [{
-          source_asset: 'EUR',
+      yield this.request()
+        .post('/routes')
+        .send([{
           source_ledger: 'http://eur-ledger.example/EUR',
-          destination_asset: 'FOO',
-          destination_ledger: 'http://random-ledger.example/'
+          destination_ledger: 'http://random-ledger.example/',
+          connector: 'http://mary.example',
+          min_message_window: 1,
+          source_account: 'http://eur-ledger.example/EUR/accounts/mary',
+          points: [ [0, 0], [10000, 20000] ]
         }])
-
-      nock('http://usd-ledger.example')
-        .get('/accounts/mark')
-        .reply(200, { balance: '100' })
-      nock('http://other-connector.example')
-        .get('/quote_local')
-        .query({
-          source_account: 'http://eur-ledger.example/accounts/mark',
-          source_amount: '94.2220',
-          source_expiry_duration: '5',
-          source_ledger: 'http://eur-ledger.example/EUR',
-          destination_ledger: 'http://random-ledger.example/'
-        })
-        .reply(200, {
-          source_transfers: [{
-            ledger: 'http://eur-ledger.example/EUR',
-            debits: [{ account: 'http://eur-ledger.example/accounts/mark', amount: '94.2220' }],
-            credits: [{ account: 'http://eur-ledger.example/accounts/mary', amount: '94.2220' }],
-            expiry_duration: '11'
-          }],
-          destination_transfers: [{
-            ledger: 'http://random-ledger.example/',
-            debits: [{ amount: '200', account: 'http://random-ledger.example/accounts/mary' }],
-            credits: [{ amount: '200', account: null }],
-            expiry_duration: '10'
-          }]
-        })
+        .expect(200)
+        .end()
 
       yield this.request()
         .get('/quote?source_amount=100' +
@@ -908,40 +871,42 @@ describe('Quotes', function () {
           '&destination_account=' + encodeURIComponent('http://random-ledger.example/accounts/bob'))
         .expect(200)
         .expect(function (res) {
-          expect(res.body).to.deep.equal([
-            {
-              id: res.body[0].id,
-              source_transfers: [{
-                debits: [{account: null, amount: '100.0000'}],
-                credits: [{account: 'http://usd-ledger.example/accounts/mark', amount: '100.0000'}],
-                expiry_duration: '6',
-                ledger: 'http://usd-ledger.example/USD'
-              }],
-              destination_transfers: [{
-                debits: [{account: 'http://eur-ledger.example/accounts/mark', amount: '94.2220'}],
-                credits: [{account: 'http://random-ledger.example/accounts/bob', amount: '94.2220'}],
-                expiry_duration: '5',
-                ledger: 'http://eur-ledger.example/EUR'
-              }]
-            },
-            {
-              id: res.body[1].id,
-              source_transfers: [{
-                debits: [{account: 'http://eur-ledger.example/accounts/mark', amount: '94.2220'}],
-                credits: [{account: 'http://eur-ledger.example/accounts/mary', amount: '94.2220'}],
-                expiry_duration: '11',
-                ledger: 'http://eur-ledger.example/EUR'
-              }],
-              destination_transfers: [{
-                debits: [{account: 'http://random-ledger.example/accounts/mary', amount: '200'}],
-                credits: [{account: null, amount: '200'}],
-                expiry_duration: '10',
-                ledger: 'http://random-ledger.example/'
-              }]
-            }
-          ])
+          expect(res.body).to.deep.equal({
+            ledger: 'http://usd-ledger.example/USD',
+            debits: [{account: 'http://usd-ledger.example/accounts/alice', amount: '100.0000'}],
+            credits: [{
+              account: 'http://usd-ledger.example/accounts/mark',
+              amount: '100.0000',
+              memo: {
+                destination_transfer: {
+                  ledger: 'http://random-ledger.example/',
+                  debits: [{account: null, amount: '188.2556'}],
+                  credits: [{account: 'http://random-ledger.example/accounts/bob', amount: '188.2556'}],
+                  expiry_duration: '5'
+                }
+              }
+            }],
+            expiry_duration: '7'
+          })
         })
         .end()
+    })
+
+    it('quotes a same-ledger payment', function * () {
+      yield this.request()
+        .get('/quote?source_amount=100' +
+          '&source_ledger=' + encodeURIComponent('http://usd-ledger.example/USD') +
+          '&source_account=' + encodeURIComponent('http://usd-ledger.example/accounts/alice') +
+          '&destination_ledger=' + encodeURIComponent('http://usd-ledger.example/USD') +
+          '&destination_account=' + encodeURIComponent('http://usd-ledger.example/accounts/bob'))
+        .expect(200)
+        .expect(function (res) {
+          expect(res.body).to.deep.equal({
+            ledger: 'http://usd-ledger.example/USD',
+            debits: [{account: 'http://usd-ledger.example/accounts/alice', amount: '100'}],
+            credits: [{account: 'http://usd-ledger.example/accounts/bob', amount: '100'}]
+          })
+        })
     })
   })
 })

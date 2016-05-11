@@ -16,6 +16,7 @@ const UnrelatedNotificationError =
   require('../errors/unrelated-notification-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const backend = require('../services/backend')
+const routeBuilder = require('../services/route-builder')
 
 function sourceConditionSameAsAllDestinationConditions (
   sourceTransfer, destinationTransfers) {
@@ -64,14 +65,7 @@ function * validateExpiry (payment, config) {
 }
 
 function amountFinder (ledger, creditOrDebit, config) {
-  // TODO: we need a more elegant way of handling assets that we don't trade
-  if (!config.getIn(['ledgerCredentials', ledger])) {
-    throw new AssetsNotTradedError('This connector does not support ' +
-      'the given asset pair')
-  }
-
   const accountUri = config.getIn(['ledgerCredentials', ledger, 'account_uri'])
-
   return (creditOrDebit.account === accountUri
     ? new BigNumber(creditOrDebit.amount)
     : new BigNumber(0))
@@ -251,12 +245,20 @@ function isTraderFunds (config, funds) {
 }
 
 function * updateSourceTransfer (updatedTransfer, traderCredit, ledgers, config) {
-  const destinationTransfer = traderCredit.memo && traderCredit.memo.destination_transfer
-  if (!destinationTransfer) return
-  ledgers.validateTransfer(destinationTransfer)
-
-  const isTransferReady = updatedTransfer.state === 'prepared' || updatedTransfer.state === 'executed'
+  const isTransferReady = updatedTransfer.state === 'prepared' ||
+    (updatedTransfer.state === 'executed' && !updatedTransfer.execution_condition)
   if (!isTransferReady) return
+
+  if (!config.ledgerCredentials[updatedTransfer.ledger]) {
+    throw new AssetsNotTradedError('This connector does not support the given asset pair')
+  }
+
+  // TODO this is cheating, but how do we know the type of the final transfer's ledger?
+  ledgers.getLedger(updatedTransfer.ledger)
+    .validateTransfer(traderCredit.memo.destination_transfer)
+  const destinationTransfer = traderCredit.memo.destination_transfer =
+    yield routeBuilder.getDestinationTransfer(updatedTransfer)
+  ledgers.validateTransfer(destinationTransfer)
 
   const payment = {
     source_transfers: [updatedTransfer],

@@ -1,116 +1,26 @@
 'use strict'
 
 const request = require('co-request')
-const _ = require('lodash')
-const BigNumber = require('bignumber.js')
-const log = require('../common').log('quote')
-const Pathfinder = require('five-bells-pathfind').Pathfinder
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
-const InvalidURIParameterError = require('five-bells-shared').InvalidUriParameterError
 const ExternalError = require('../errors/external-error')
 const balanceCache = require('../services/balance-cache.js')
-const backend = require('../services/backend')
-const precisionCache = require('../services/precision-cache.js')
-const UnacceptableQuoterAmountError = require('../errors/unacceptable-quoter-amount-error')
-const ServerError = require('five-bells-shared/errors/server-error')
-const validator = require('../lib/validate')
+const routeBuilder = require('../services/route-builder')
+const DEFAULT_DESTINATION_EXPIRY = 5 // seconds
 
-function * makeQuoteQuery (params, config) {
-  // TODO: include the expiry duration in the quote logic
-  let destinationExpiryDuration = parseFloat(params.destination_expiry_duration)
-  let sourceExpiryDuration = parseFloat(params.source_expiry_duration)
-
-  // Check destination_expiry_duration
-  if (destinationExpiryDuration) {
-    if (destinationExpiryDuration > config.getIn(['expiry', 'maxHoldTime'])) {
-      throw new UnacceptableExpiryError('Destination expiry duration ' +
-        'is too long, destinationExpiryDuration: ' + destinationExpiryDuration +
-        ', maxHoldTime: ' + config.getIn(['expiry', 'maxHoldTime']))
-    }
-  } else if (sourceExpiryDuration) {
-    destinationExpiryDuration = sourceExpiryDuration - config.getIn(['expiry', 'minMessageWindow'])
-  } else {
-    destinationExpiryDuration = config.getIn(['expiry', 'maxHoldTime'])
-  }
-
-  // Check difference between destination_expiry_duration
-  // and source_expiry_duration
-  if (sourceExpiryDuration) {
-    if (sourceExpiryDuration - destinationExpiryDuration <
-      config.getIn(['expiry', 'minMessageWindow'])) {
-      throw new UnacceptableExpiryError('The difference between the ' +
-        'destination expiry duration and the source expiry duration ' +
-        'is insufficient to ensure that we can execute the ' +
-        'source transfers')
-    }
-  } else {
-    sourceExpiryDuration = destinationExpiryDuration + config.getIn(['expiry', 'minMessageWindow'])
-  }
-
-  let sourceLedger = params.source_ledger
-  if (!sourceLedger) {
-    if (params.source_account) sourceLedger = yield getAccountLedger(params.source_account)
-    else throw new InvalidURIParameterError('Missing required parameter: source_ledger or source_account')
-  }
-
-  let destinationLedger = params.destination_ledger
-  if (!destinationLedger) {
-    if (params.destination_account) destinationLedger = yield getAccountLedger(params.destination_account)
-    else throw new InvalidURIParameterError('Missing required parameter: destination_ledger or destination_account')
-  }
-
+function * makeQuoteQuery (params) {
+  const sourceAccount = params.source_account || null
+  const destinationAccount = params.destination_account || null
+  const sourceLedger = params.source_ledger || (yield getAccountLedger(sourceAccount))
+  const destinationLedger = params.destination_ledger || (yield getAccountLedger(destinationAccount))
   return {
-    destination_expiry_duration: destinationExpiryDuration,
-    source_expiry_duration: sourceExpiryDuration,
-    source_amount: params.source_amount,
-    destination_amount: params.destination_amount,
-    source_ledger: sourceLedger,
-    destination_ledger: destinationLedger,
-    source_account: params.source_account || null,
-    destination_account: params.destination_account || null
+    sourceLedger,
+    destinationLedger,
+    sourceAccount,
+    destinationAccount,
+    sourceAmount: params.source_amount,
+    destinationAmount: params.destination_amount
   }
-}
-
-function makeQuoteArgs (query) {
-  return {
-    source_ledger: query.source_ledger,
-    destination_ledger: query.destination_ledger,
-    source_amount: query.source_amount,
-    destination_amount: query.destination_amount
-  }
-}
-
-function makePaymentTemplate (query, quote, ledgers) {
-  const sourceAmount = quote.source_amount
-  const destinationAmount = quote.destination_amount
-  const payment = {
-    source_transfers: [{
-      type: ledgers.getType(query.source_ledger),
-      ledger: query.source_ledger,
-      debits: [{
-        account: query.source_account,
-        amount: sourceAmount
-      }],
-      credits: [
-        ledgers.makeFundTemplate(query.source_ledger, {amount: sourceAmount})
-      ],
-      expiry_duration: String(query.source_expiry_duration)
-    }],
-    destination_transfers: [{
-      type: ledgers.getType(query.destination_ledger),
-      ledger: query.destination_ledger,
-      debits: [
-        ledgers.makeFundTemplate(query.destination_ledger, {amount: destinationAmount})
-      ],
-      credits: [{
-        account: query.destination_account,
-        amount: destinationAmount
-      }],
-      expiry_duration: String(query.destination_expiry_duration)
-    }]
-  }
-  return payment
 }
 
 function * getAccountLedger (account) {
@@ -126,114 +36,97 @@ function * getAccountLedger (account) {
   return ledger
 }
 
-function validatePrecision (amount, precision, ledger) {
-  log.debug('validatePrecision', {amount, precision, ledger})
-  const bnAmount = new BigNumber(amount)
+/**
+ * @param {String} _sourceExpiryDuration
+ * @param {String} _destinationExpiryDuration
+ * @param {Number} minMessageWindow
+ * @param {Config} config
+ * @returns {Object} {sourceExpiryDuration: Number, destinationExpiryDuration: Number}
+ */
+function getQuoteExpiryDurations (_sourceExpiryDuration, _destinationExpiryDuration, minMessageWindow, config) {
+  // TODO: include the expiry duration in the quote logic
+  let destinationExpiryDuration = parseFloat(_destinationExpiryDuration)
+  let sourceExpiryDuration = parseFloat(_sourceExpiryDuration)
 
-  if (bnAmount.precision() > precision) {
-    throw new UnacceptableAmountError(
-      `Amount (${amount}) exceeds ledger precision on ${ledger} ledger`)
+  // Check destination_expiry_duration
+  if (destinationExpiryDuration) {
+    if (destinationExpiryDuration > config.getIn(['expiry', 'maxHoldTime'])) {
+      throw new UnacceptableExpiryError('Destination expiry duration ' +
+        'is too long, destinationExpiryDuration: ' + destinationExpiryDuration +
+        ', maxHoldTime: ' + config.getIn(['expiry', 'maxHoldTime']))
+    }
+  } else if (sourceExpiryDuration) {
+    destinationExpiryDuration = sourceExpiryDuration - minMessageWindow
+  } else {
+    destinationExpiryDuration = DEFAULT_DESTINATION_EXPIRY
   }
-  if (bnAmount.lte(0)) {
-    throw new UnacceptableAmountError(
-      `Quoted ${ledger} is lower than minimum amount allowed`)
+
+  // Check difference between destination_expiry_duration
+  // and source_expiry_duration
+  if (sourceExpiryDuration) {
+    if (sourceExpiryDuration - destinationExpiryDuration < minMessageWindow) {
+      throw new UnacceptableExpiryError('The difference between the ' +
+        'destination expiry duration and the source expiry duration ' +
+        'is insufficient to ensure that we can execute the ' +
+        'source transfers')
+    }
+  } else {
+    sourceExpiryDuration = destinationExpiryDuration + minMessageWindow
   }
+  return {sourceExpiryDuration, destinationExpiryDuration}
 }
 
-function * validateBalance (query, quote) {
-  const sourceBalance = yield balanceCache.get(query.source_ledger)
-  const sourceAmount = new BigNumber(quote.source_amount)
-  if (sourceBalance.lessThan(sourceAmount)) {
+function * validateBalance (ledger, amount) {
+  const balance = yield balanceCache.get(ledger)
+  if (balance.lessThan(amount)) {
     throw new UnacceptableAmountError('Insufficient liquidity in market maker account')
   }
 }
 
-function * getLocalQuote (params, ledgers, config) {
-  const query = yield makeQuoteQuery(params, config)
-  const type = query.source_amount ? 'source' : 'destination'
-  const amount = query.source_amount || query.destination_amount
-  const quote = yield backend.getQuote((yield makeQuoteArgs(query)))
-
-  const validationResult = validator.isValid('Quote', quote)
-  if (!validationResult.valid) {
-    log.error('Quote failed to validate against schema. Quote: ', JSON.stringify(quote))
-    log.error(JSON.stringify(_.omit(validationResult.errors[0], 'stack')))
-    throw new ServerError('Error getting quote from backend')
+function getLocalTransfer (query) {
+  const amount = query.sourceAmount || query.destinationAmount
+  return {
+    ledger: query.sourceLedger,
+    debits: [{account: query.sourceAccount, amount: amount}],
+    credits: [{account: query.destinationAccount, amount: amount}]
   }
-
-  const fixedAmount = type === 'source' ? quote.source_amount
-                                          : quote.destination_amount
-
-  if (fixedAmount !== amount.toString()) {
-    if (!(new BigNumber(fixedAmount).equals(new BigNumber(amount)))) {
-      throw new UnacceptableQuoterAmountError('Backend returned an invalid ' +
-                type + ' amount: ' + fixedAmount + ' (expected: ' + amount + ')')
-    }
-  }
-
-  const sourcePrecisionAndScale = yield precisionCache.get(query.source_ledger)
-  const dstPrecisionAndScale = yield precisionCache.get(query.destination_ledger)
-  const roundedSourceAmount = new BigNumber(quote.source_amount).toFixed(
-    sourcePrecisionAndScale.scale, BigNumber.ROUND_UP)
-
-  const roundedDestinationAmount = new BigNumber(quote.destination_amount).toFixed(
-    dstPrecisionAndScale.scale, BigNumber.ROUND_DOWN)
-
-  validatePrecision(roundedSourceAmount, sourcePrecisionAndScale.precision, 'source')
-  validatePrecision(roundedDestinationAmount, dstPrecisionAndScale.precision, 'destination')
-
-  const roundedQuote = _.assign(_.clone(quote), {
-    source_amount: roundedSourceAmount,
-    destination_amount: roundedDestinationAmount
-  })
-
-  yield validateBalance(query, roundedQuote)
-
-  log.debug('' +
-    roundedQuote.source_amount + ' ' +
-    query.source_ledger + ' => ' +
-    roundedQuote.destination_amount + ' ' +
-    query.destination_ledger)
-
-  return makePaymentTemplate(query, roundedQuote, ledgers)
 }
 
 /**
  * @param {Object} params
- * @param {String} params.source_connector
  * @param {String} params.source_ledger
  * @param {String} params.source_account
  * @param {String} params.source_amount
+ * @param {String} params.source_expiry_duration
  * @param {String} params.destination_ledger
  * @param {String} params.destination_account
  * @param {String} params.destination_amount
+ * @param {String} params.destination_expiry_duration
  * @param {Object} config
- * @returns {Quote[]}
+ * @returns {Transfer}
  */
-function * getQuotePath (params, config) {
-  // TODO cache pathfinder so that it doesn't have to re-crawl for every payment
-  const pathfinder = new Pathfinder({
-    crawler: { initialTraders: [config.server.base_uri] }
-  })
-  yield pathfinder.crawl()
-  return pathfinder.findPath({
-    sourceConnector: params.source_connector,
-    sourceLedger: params.source_ledger,
-    sourceAmount: params.source_amount,
-    destinationLedger: params.destination_ledger,
-    destinationAmount: params.destination_amount,
-    destinationAccount: params.destination_account
-  })
+function * getQuote (params, config) {
+  const query = yield makeQuoteQuery(params)
+  if (query.sourceLedger === query.destinationLedger) {
+    return getLocalTransfer(query)
+  }
+
+  const quote = yield routeBuilder.getQuote(query)
+  const nextHop = quote._hop
+  delete quote._hop
+
+  const expiryDurations = getQuoteExpiryDurations(
+    params.source_expiry_duration,
+    params.destination_expiry_duration,
+    nextHop.minMessageWindow, config)
+  quote.expiry_duration =
+    String(expiryDurations.sourceExpiryDuration)
+  quote.credits[0].memo.destination_transfer.expiry_duration =
+    String(expiryDurations.destinationExpiryDuration)
+
+  // Check the balance of the next ledger (_not_ query.destinationLedger, which is the final ledger).
+  yield validateBalance(nextHop.destinationLedger, nextHop.destinationAmount)
+  return quote
 }
 
-function * getFullQuote (params, ledgers, config) {
-  params.source_ledger = yield getAccountLedger(params.source_account)
-  params.destination_ledger = yield getAccountLedger(params.destination_account)
-  params.source_connector = config.server.base_uri
-  return yield getQuotePath(params, config)
-}
-
-module.exports = {
-  getFullQuote: getFullQuote,
-  getLocalQuote: getLocalQuote
-}
+module.exports = {getQuote}

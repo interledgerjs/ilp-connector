@@ -6,6 +6,7 @@ const metadata = require('./controllers/metadata')
 const health = require('./controllers/health')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
+const routes = require('./controllers/routes')
 const notifications = require('./controllers/notifications')
 const subscriptions = require('./models/subscriptions')
 const compress = require('koa-compress')
@@ -19,6 +20,7 @@ const Passport = require('koa-passport').KoaPassport
 const cors = require('koa-cors')
 const log = require('./common/log')
 const backend = require('./services/backend')
+const routeBroadcaster = require('./services/route-broadcaster')
 
 function listen (koaApp, config, ledgers) {
   if (config.getIn(['server', 'secure'])) {
@@ -58,7 +60,7 @@ function listen (koaApp, config, ledgers) {
   // subscribes to all the ledgers in the background
   co(function * () {
     yield backend.connect()
-
+    yield routeBroadcaster.start()
     yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgers, config)
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)
@@ -87,7 +89,7 @@ function createApp (config, ledgers) {
   koaApp.use(route.get('/pairs', pairs.getCollection))
 
   koaApp.use(route.get('/quote', quote.get))
-  koaApp.use(route.get('/quote_local', quote.getLocal))
+  koaApp.use(route.post('/routes', routes.post))
 
   koaApp.use(route.post('/notifications', notifications.post))
 

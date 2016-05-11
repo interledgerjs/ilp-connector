@@ -20,7 +20,9 @@ function FiveBellsLedger (options) {
   this.config = options.config
 }
 
-FiveBellsLedger.validateTransfer = function (transfer) { validator.validate('TransferTemplate', transfer) }
+FiveBellsLedger.prototype.validateTransfer = function (transfer) {
+  validator.validate('TransferTemplate', transfer)
+}
 
 // template - {amount}
 FiveBellsLedger.prototype.makeFundTemplate = function (template) {

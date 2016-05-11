@@ -8,6 +8,11 @@ const _ = require('lodash')
 
 const envPrefix = 'CONNECTOR'
 
+const DEFAULT_MIN_MESSAGE_WINDOW = 1 // seconds
+const DEFAULT_MAX_HOLD_TIME = 10 // seconds
+const DEFAULT_FX_SPREAD = 0.002 // 0.2%
+const DEFAULT_SLIPPAGE = 0.001 // 0.1%
+
 function isRunningTests () {
   return (
     process.env.NODE_ENV === 'unit' ||
@@ -171,7 +176,6 @@ function getLocalConfig () {
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
 
   const features = {}
-  features.quoteFullPath = Config.castBool(Config.getEnv(envPrefix, 'QUOTE_FULL_PATH'))
   features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
 
   const adminEnv = parseAdminEnv()
@@ -195,11 +199,13 @@ function getLocalConfig () {
 
   const expiry = {}
   expiry.minMessageWindow =
-    Config.getEnv(envPrefix, 'MIN_MESSAGE_WINDOW') || 1 // seconds
-  expiry.maxHoldTime = Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || 10 // seconds
+    +Config.getEnv(envPrefix, 'MIN_MESSAGE_WINDOW') || DEFAULT_MIN_MESSAGE_WINDOW
+  expiry.maxHoldTime = +Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || DEFAULT_MAX_HOLD_TIME
 
   // The spread is added to every quoted rate
-  const fxSpread = Number(Config.getEnv(envPrefix, 'FX_SPREAD')) || 0.002 // = .2%
+  const fxSpread = Number(Config.getEnv(envPrefix, 'FX_SPREAD')) || DEFAULT_FX_SPREAD
+
+  const slippage = +Config.getEnv(envPrefix, 'SLIPPAGE') || DEFAULT_SLIPPAGE
 
   // BACKEND_URI must be defined for backends that connect to an external
   // component to retrieve the rate or amounts (it is therefore required
@@ -233,6 +239,7 @@ function getLocalConfig () {
     backend,
     ledgerCredentials,
     fxSpread,
+    slippage,
     expiry,
     features,
     admin,

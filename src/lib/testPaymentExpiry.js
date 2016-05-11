@@ -4,6 +4,23 @@ const moment = require('moment')
 const request = require('co-request')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 
+/**
+ * In atomic mode, transfers shouldn't have an `expires_at` property.
+ * The notary Case has one, which guarantees that either all of the payment's
+ * transfers expire or none do.
+ *
+ * In universal mode, each transfer has an `expires_at`.
+ * Successive transfers' expiries should decrease. The first transfer in a
+ * payment has the latest expiry; the final transfer in the payment should
+ * expire first.
+ *
+ * `minMessageWindow` is the minimum time that the connector needs to execute
+ *   a transfer. The difference in expiries of successive transfers must be
+ *   greater than or equal to this value.
+ * `maxHoldTime` is the maximum duration that the connector is willing to place
+ *   funds on hold while waiting for the outcome of a transaction. No expiry can
+ *   exceed this value.
+ */
 module.exports = function * (config, payment) {
   const tester = new TransferTester(config, payment)
   yield tester.loadCaseExpiries()
@@ -19,8 +36,6 @@ function TransferTester (config, payment) {
 
   // TODO use a more intelligent value for the minMessageWindow
   this.minMessageWindow = config.getIn(['expiry', 'minMessageWindow']) * 1000
-  // TODO use a better value for the minExecutionWindow
-  this.minExecutionWindow = this.minMessageWindow
   this.maxHoldTime = config.getIn(['expiry', 'maxHoldTime']) * 1000
 }
 

@@ -7,6 +7,7 @@ const log = require('../../src/common').log
 
 const loadConfig = require('../../src/lib/config')
 const backend = require('../../src/services/backend')
+const routeBroadcaster = require('../../src/services/route-broadcaster')
 const Multiledger = require('../../src/lib/ledgers/multiledger')
 
 const createApp = require('five-bells-connector').createApp
@@ -20,6 +21,7 @@ exports.create = function (context) {
   const app = createApp(config, ledgers)
   context.app = app
   context.backend = backend
+  context.routeBroadcaster = routeBroadcaster
   context.ledgers = ledgers
   context.config = config
 

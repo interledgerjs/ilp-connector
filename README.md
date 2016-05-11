@@ -99,6 +99,7 @@ ex.
 ```
 
 * `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.
+* `CONNECTOR_SLIPPAGE` (default: `0.001` = 0.1%) The ratio for overestimating exchange rates to prevent payment failure if the rate changes.
 * `CONNECTOR_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the connector wants to budget for getting a message to the ledgers its trading on. In seconds.
 * `CONNECTOR_MAX_HOLD_TIME` (default: `10`) Maximum duration (seconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.
 * `CONNECTOR_AUTH_CLIENT_CERT_ENABLED` (default `0`) whether or not to enable TLS Client Certificate authentication (requires HTTPS).
@@ -107,7 +108,6 @@ ex.
 * `CONNECTOR_TLS_CERTIFICATE` (default: none) the path to the server certificate file. Required if using HTTPS.
 * `CONNECTOR_TLS_CRL` (default: none) the path to the server certificate revokation list file. Optional if using HTTPS.
 * `CONNECTOR_TLS_CA` (default: none) the path to a trusted certificate to be used in addition to using the [default list](https://github.com/nodejs/node/blob/v4.3.0/src/node_root_certs.h). Optional if using HTTPS.
-* `CONNECTOR_QUOTE_FULL_PATH` (default: `''`) Feature to enable pathfinding for `/quote`.
 
 #### Auto-funding
 

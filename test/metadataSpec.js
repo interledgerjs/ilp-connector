@@ -26,7 +26,6 @@ describe('Metadata', function () {
               pairs: 'http://localhost/pairs',
               payment: 'http://localhost/payments/:uuid',
               quote: 'http://localhost/quote',
-              quote_local: 'http://localhost/quote_local',
               notifications: 'http://localhost/notifications'
             }
           })
