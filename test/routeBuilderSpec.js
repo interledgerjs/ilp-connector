@@ -68,19 +68,11 @@ describe('RouteBuilder', function () {
           sourceAmount: '100'
         })
         assert.deepStrictEqual(quoteTransfer, {
-          ledger: ledgerA,
-          debits: [{ account: aliceA, amount: '100.00' }],
-          credits: [{
-            account: markA,
-            amount: '100.00',
-            memo: {
-              destination_transfer: {
-                ledger: ledgerC,
-                debits: [{ account: null, amount: '24.75' }],
-                credits: [{ account: carlC, amount: '24.75' }]
-              }
-            }
-          }],
+          source_connector_account: markA,
+          source_ledger: ledgerA,
+          source_amount: '100.00',
+          destination_ledger: ledgerC,
+          destination_amount: '24.75',
           _hop: quoteTransfer._hop
         })
       })
@@ -96,19 +88,11 @@ describe('RouteBuilder', function () {
           destinationAmount: '25'
         })
         assert.deepStrictEqual(quoteTransfer, {
-          ledger: ledgerA,
-          debits: [{ account: aliceA, amount: '101.00' }],
-          credits: [{
-            account: markA,
-            amount: '101.00',
-            memo: {
-              destination_transfer: {
-                ledger: ledgerC,
-                debits: [{ account: null, amount: '25.00' }],
-                credits: [{ account: carlC, amount: '25.00' }]
-              }
-            }
-          }],
+          source_connector_account: markA,
+          source_ledger: ledgerA,
+          source_amount: '101.00',
+          destination_ledger: ledgerC,
+          destination_amount: '25.00',
           _hop: quoteTransfer._hop
         })
       })

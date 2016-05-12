@@ -26,12 +26,10 @@ class RouteBuilder {
   /**
    * @param {Object} query
    * @param {String} query.sourceLedger
-   * @param {String} query.sourceAccount
    * @param {String} query.sourceAmount
    * @param {String} query.destinationLedger
-   * @param {String} query.destinationAccount
    * @param {String} query.destinationAmount
-   * @returns {Transfer}
+   * @returns {Quote}
    */
   * getQuote (query) {
     const _nextHop = this._findNextHop(query)
@@ -44,19 +42,11 @@ class RouteBuilder {
     const nextHop = yield this._roundHop(_nextHop)
 
     return {
-      ledger: nextHop.sourceLedger,
-      debits: [{ account: query.sourceAccount, amount: nextHop.sourceAmount }],
-      credits: [{
-        account: this.ledgerCredentials[nextHop.sourceLedger].account_uri,
-        amount: nextHop.sourceAmount,
-        memo: {
-          destination_transfer: {
-            ledger: nextHop.finalLedger,
-            debits: [{ account: null, amount: nextHop.finalAmount }],
-            credits: [{ account: query.destinationAccount, amount: nextHop.finalAmount }]
-          }
-        }
-      }],
+      source_connector_account: this.ledgerCredentials[nextHop.sourceLedger].account_uri,
+      source_ledger: nextHop.sourceLedger,
+      source_amount: nextHop.sourceAmount,
+      destination_ledger: nextHop.finalLedger,
+      destination_amount: nextHop.finalAmount,
       _hop: nextHop
     }
   }
