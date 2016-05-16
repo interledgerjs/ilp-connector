@@ -180,6 +180,14 @@ FiveBellsLedger.prototype.unsubscribe = function * () {
   }, 'could not unsubscribe from ledger ' + this.id, this.credentials)
 }
 
+FiveBellsLedger.prototype.checkHealth = function * () {
+  log.info('checking health for ' + this.id)
+  yield requestRetry({
+    method: 'get',
+    url: this.id + '/health'
+  }, 'could not check health for ledger ' + this.id, this.credentials)
+}
+
 function wait (ms) {
   return function (done) {
     setTimeout(done, ms)

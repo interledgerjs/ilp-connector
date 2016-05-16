@@ -6,6 +6,7 @@ const BigNumber = require('bignumber.js')
 const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../common').log('fixerio')
 const utils = require('../utils')
+const healthStatus = require('../../common/health.js')
 
 const RATES_API = 'https://api.fixer.io/latest'
 
@@ -56,6 +57,15 @@ class FixerIoBackend {
     this.rates[apiData.base] = 1
     this.currencies = _.keys(this.rates)
     this.currencies.sort()
+  }
+
+  /**
+   * Get backend status
+   */
+  * getStatus () {
+    return {
+      backendStatus: healthStatus.statusOk
+    }
   }
 
   _formatAmount (amount) {
