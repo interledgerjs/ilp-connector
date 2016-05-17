@@ -39,7 +39,8 @@ class RouteBroadcaster {
       yield this.reloadLocalRoutes()
       yield this.broadcast()
     } catch (e) {
-      if (e.name === 'SystemError') {
+      if (e.name === 'SystemError' ||
+          e.name === 'ServerError') {
         // System error, in that context that is a network error
         // This will be retried later, so do nothing
       } else {
