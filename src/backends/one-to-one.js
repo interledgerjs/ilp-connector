@@ -3,6 +3,7 @@
 const BigNumber = require('bignumber.js')
 const NoAmountSpecifiedError = require('../errors/no-amount-specified-error')
 const log = require('../common').log('one-to-one')
+const healthStatus = require('../common/health.js')
 
 /**
  * Backend which charges no spread and trades everything one-to-one.
@@ -25,6 +26,15 @@ class OneToOneBackend {
    * Nothing to do since this backend is totally static.
    */
   * connect (mockData) {
+  }
+
+  /**
+   * Get backend status
+   */
+  * getStatus () {
+    return {
+      backendStatus: healthStatus.statusOk
+    }
   }
 
   /**

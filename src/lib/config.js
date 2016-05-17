@@ -13,6 +13,9 @@ const DEFAULT_MAX_HOLD_TIME = 10 // seconds
 const DEFAULT_FX_SPREAD = 0.002 // 0.2%
 const DEFAULT_SLIPPAGE = 0.001 // 0.1%
 
+const DEFAULT_ROUTE_BROADCAST_INTERVAL = 30 * 1000 // milliseconds
+const DEFAULT_ROUTE_CLEANUP_INTERVAL = 1000 // milliseconds
+
 function isRunningTests () {
   return (
     process.env.NODE_ENV === 'unit' ||
@@ -212,6 +215,11 @@ function getLocalConfig () {
   // when using the ilp-quote backend)
   const backendUri = Config.getEnv(envPrefix, 'BACKEND_URI')
 
+  const routeBroadcastInterval =
+    Number(Config.getEnv(envPrefix, 'ROUTE_BROADCAST_INTERVAL')) || DEFAULT_ROUTE_BROADCAST_INTERVAL
+  const routeCleanupInterval =
+    Number(Config.getEnv(envPrefix, 'ROUTE_CLEANUP_INTERVAL')) || DEFAULT_ROUTE_CLEANUP_INTERVAL
+
   // Credentials should be specified as a map of the form
   // {
   //    "<ledger_uri>": {
@@ -246,7 +254,9 @@ function getLocalConfig () {
     tradingPairs,
     server,
     backendUri,
-    notifications
+    notifications,
+    routeBroadcastInterval,
+    routeCleanupInterval
   }
 }
 

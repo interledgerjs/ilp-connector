@@ -8,5 +8,7 @@ module.exports = new RouteBroadcaster(
   {
     ledgerCredentials: config.ledgerCredentials,
     tradingPairs: config.tradingPairs,
-    minMessageWindow: config.expiry.minMessageWindow
+    minMessageWindow: config.expiry.minMessageWindow,
+    routeCleanupInterval: config.routeCleanupInterval,
+    routeBroadcastInterval: config.routeBroadcastInterval
   })

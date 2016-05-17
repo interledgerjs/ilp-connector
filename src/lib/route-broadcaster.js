@@ -4,8 +4,6 @@ const co = require('co')
 const defer = require('co-defer')
 const _ = require('lodash')
 const request = require('co-request')
-const BROADCAST_INTERVAL = 30 * 1000 // milliseconds
-const CLEANUP_INTERVAL = 1000 // milliseconds
 
 class RouteBroadcaster {
   /**
@@ -15,8 +13,12 @@ class RouteBroadcaster {
    * @param {Object} config.ledgerCredentials
    * @param {Object} config.tradingPairs
    * @param {Number} config.minMessageWindow
+   * @param {Number} config.routeCleanupInterval
+   * @param {Number} config.routeBroadcastInterval
    */
   constructor (routingTables, backend, config) {
+    this.routeCleanupInterval = config.routeCleanupInterval
+    this.routeBroadcastInterval = config.routeBroadcastInterval
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.backend = backend
@@ -33,12 +35,21 @@ class RouteBroadcaster {
 
   * start () {
     yield this.crawlLedgers()
-    yield this.reloadLocalRoutes()
-    yield this.broadcast()
-    setInterval(() => this.routingTables.removeExpiredRoutes(), CLEANUP_INTERVAL)
+    try {
+      yield this.reloadLocalRoutes()
+      yield this.broadcast()
+    } catch (e) {
+      if (e.name === 'SystemError') {
+        // System error, in that context that is a network error
+        // This will be retried later, so do nothing
+      } else {
+        throw e
+      }
+    }
+    setInterval(() => this.routingTables.removeExpiredRoutes(), this.routeCleanupInterval)
     defer.setInterval(() => {
       return this.reloadLocalRoutes().then(this.broadcast.bind(this))
-    }, BROADCAST_INTERVAL)
+    }, this.routeBroadcastInterval)
   }
 
   broadcast () {

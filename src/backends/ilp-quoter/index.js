@@ -9,6 +9,7 @@ const UnsupportedPairError =
 const log = require('../../common').log('ilpquoter')
 const ServerError = require('five-bells-shared/errors/server-error')
 const utils = require('../utils')
+const healthStatus = require('../../common/health.js')
 
 /**
  * Example backend that connects to an external component to get
@@ -24,6 +25,7 @@ class ILPQuoter {
     this.currencyPairs = this.currencyWithLedgerPairs.map((p) => [p[0].slice(0, 3),
                                                                   p[1].slice(0, 3)])
     this.backendUri = opts.backendUri
+    this.backendStatus = healthStatus.statusNotOk
   }
 
   * putPair (uri) {
@@ -41,7 +43,18 @@ class ILPQuoter {
   * connect () {
     const uris = _.uniq(this.currencyPairs.map((pair) => this.backendUri + '/pair/' + pair[0] + '/' + pair[1]))
     yield uris.map((uri) => this.putPair(uri))
+    this.backendStatus = healthStatus.statusOk
     return
+  }
+
+  /**
+   * Get backend status
+   */
+  * getStatus () {
+    const status = {
+      backendStatus: this.backendStatus
+    }
+    return status
   }
 
   /**

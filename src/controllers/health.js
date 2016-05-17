@@ -1,5 +1,8 @@
 'use strict'
 
+const _ = require('lodash')
+const healthStatus = require('../common/health.js')
+
 /**
  * @api {get} /health Get server health status
  * @apiName GetHealth
@@ -14,6 +17,12 @@
  * @returns {void}
  */
 exports.getResource = function * health () {
-  // TODO: Add some checks, e.g. database status
-  this.body = {'status': 'OK'}
+  const backendStatus = yield this.backend.getStatus()
+  const ledgersStatus = yield this.ledgers.getStatus()
+  const body = _.extend({}, backendStatus, ledgersStatus)
+  body.status = (backendStatus.backendStatus === healthStatus.statusOk &&
+                 ledgersStatus.ledgersStatus === healthStatus.statusOk) ? healthStatus.statusOk
+                                                                        : healthStatus.statusNotOk
+  // TODO: add more status, ledger connection, quoter connection,...
+  this.body = body
 }
