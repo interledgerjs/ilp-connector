@@ -5,3 +5,4 @@ node_modules/
 /coverage
 /apidoc-out
 /integration-test
+*v8.log
