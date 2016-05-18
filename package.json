@@ -19,6 +19,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} src/index.js",
     "start:watch": "nodemon src/index.js",
     "lint": "eslint .",
     "test": "istanbul test -- _mocha",
