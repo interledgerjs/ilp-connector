@@ -3,6 +3,7 @@ const lodash = require('lodash')
 const request = require('co-request')
 const uuid = require('uuid4')
 const WebSocket = require('ws')
+const reconnectCore = require('reconnect-core')
 const validator = require('../validate')
 const log = require('../../common').log('fiveBellsLedger')
 const ExternalError = require('../../errors/external-error')
@@ -111,26 +112,32 @@ FiveBellsLedger.prototype.subscribe = function * (listener) {
     key: this.credentials.key,
     ca: this.credentials.ca
   }
-  const ws = new WebSocket(streamUri, lodash.omitBy(options, lodash.isUndefined))
 
-  ws.on('message', (msg) => {
-    const notification = JSON.parse(msg)
-    log.debug('notify', notification.resource.id)
-    try {
-      listener(notification.resource, notification.related_resources)
-    } catch (err) {
-      log.warn('failure while processing notification: ' + err)
-    }
+  var reconnect = reconnectCore(function () {
+    return new WebSocket(streamUri, lodash.omitBy(options, lodash.isUndefined))
   })
 
-  ws.on('error', (err) => {
+  reconnect({immediate: true}, (ws) => {
+    ws.on('open', () => {
+      log.info('ws connected to ' + streamUri)
+    })
+    ws.on('message', (msg) => {
+      const notification = JSON.parse(msg)
+      log.debug('notify', notification.resource.id)
+      try {
+        listener(notification.resource, notification.related_resources)
+      } catch (err) {
+        log.warn('failure while processing notification: ' + err)
+      }
+    })
+    ws.on('close', () => {
+      log.info('ws disconnected from ' + streamUri)
+    })
+  })
+  .on('error', function (err) {
     log.warn('ws error on ' + streamUri + ': ' + err)
   })
-
-  ws.on('close', () => {
-    log.info('ws disconnected from ' + streamUri)
-    setTimeout()
-  })
+  .connect()
 }
 
 FiveBellsLedger.prototype._autofund = function * () {

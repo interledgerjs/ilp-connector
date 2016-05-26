@@ -53,6 +53,7 @@
     "moment": "^2.10.2",
     "node-uuid": "^1.4.2",
     "passport-client-certificate": "^0.1.1",
+    "reconnect-core": "^1.2.0",
     "spdy": "^3.2.3",
     "uuid4": "^1.0.0",
     "ws": "^1.1.0"
