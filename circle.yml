@@ -12,6 +12,11 @@ deployment:
   production:
     branch: master
     commands:
+      # Necessary git config to run website deployment on CircleCI
+      - git config --global user.email "info@circleci.com"
+      - git config --global user.name "CircleCI"
+      - git config --global push.default simple
+      - node scripts/publish_web.js
       # ST: Coverage reporting is broken - disable for now
       #- npm run coveralls
       - mv npmrc-env .npmrc
