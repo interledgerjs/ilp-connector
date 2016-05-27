@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>types/ed25519.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,200,600,700|Droid+Sans+Mono|Titillium+Web:400,300,600' rel='stylesheet' type='text/css'>
+    <link href="assets/favicon-new.ico" rel="icon" type="image/x-icon">
+     <!-- Bootstrap core CSS -->
+    <link href="styles/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link type="text/css" rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/"><img class="logo" alt="interledger" src="assets/ilp_icon.png"/></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/overview.html">Docs</a></li>
+        <li><a href="/community.html">Community</a></li>
+        <li><a href="/news.html">News</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <div class="onoffswitch">
+            <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch">
+            <label class="onoffswitch-label" for="myonoffswitch"></label>
+          </div>
+        </li>
+        <li><a target="_blank" href="https://github.com/interledger">Github</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="container main-wrapper">
+<nav class="col-sm-4 hidden-xs sidebar-wrapper">
+    <div id="sidebar" class="sidebar">
+        <div class="overview-back"><a href="/overview.html"><i class="fa fa-angle-double-left" aria-hidden="true"></i> Back to Overview</a></div>
+        <h2><a href="index.html">Five Bells Shared</a></h2><h3>Classes</h3><ul><li><a href="module-types-Condition.html">Condition</a><ul class='methods'><li data-type='method'><a href="module-types-Condition.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Condition.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Condition.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#getHash">getHash</a></li><li data-type='method'><a href="module-types-Condition.html#getMaxFulfillmentLength">getMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Condition.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Condition.html#setBitmask">setBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#setHash">setHash</a></li><li data-type='method'><a href="module-types-Condition.html#setMaxFulfillmentLength">setMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#setTypeId">setTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#validate">validate</a></li></ul></li><li><a href="module-types-Ed25519.html">Ed25519</a><ul class='methods'><li data-type='method'><a href="module-types-Ed25519.html#generateHash">generateHash</a></li><li data-type='method'><a href="module-types-Ed25519.html#setPublicKey">setPublicKey</a></li><li data-type='method'><a href="module-types-Ed25519.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-Ed25519.html#sign">sign</a></li><li data-type='method'><a href="module-types-Ed25519.html#validate">validate</a></li></ul></li><li><a href="module-types-Fulfillment.html">Fulfillment</a><ul class='methods'><li data-type='method'><a href="module-types-Fulfillment.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getCondition">getCondition</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionBinary">getConditionBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionUri">getConditionUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#validate">validate</a></li></ul></li><li><a href="module-types-PrefixSha256.html">PrefixSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PrefixSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setPrefix">setPrefix</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubcondition">setSubcondition</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubconditionUri">setSubconditionUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillment">setSubfulfillment</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillmentUri">setSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-PreimageSha256.html">PreimageSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PreimageSha256.html#setPreimage">setPreimage</a></li><li data-type='method'><a href="module-types-PreimageSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-RsaSha256.html">RsaSha256</a><ul class='methods'><li data-type='method'><a href="module-types-RsaSha256.html#setPublicModulus">setPublicModulus</a></li><li data-type='method'><a href="module-types-RsaSha256.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-RsaSha256.html#sign">sign</a></li><li data-type='method'><a href="module-types-RsaSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-ThresholdSha256.html">ThresholdSha256</a><ul class='methods'><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubcondition">addSubcondition</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubconditionUri">addSubconditionUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillment">addSubfulfillment</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillmentUri">addSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#setThreshold">setThreshold</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#validate">validate</a></li></ul></li><li><a href="module-util-Base64Url.html">Base64Url</a><ul class='methods'><li data-type='method'><a href="module-util-Base64Url.html#.decode">decode</a></li><li data-type='method'><a href="module-util-Base64Url.html#.encode">encode</a></li></ul></li><li><a href="module-util-BaseError.html">BaseError</a></li><li><a href="module-util-Pem.html">Pem</a><ul class='methods'><li data-type='method'><a href="module-util-Pem.html#.modulusFromPrivateKey">modulusFromPrivateKey</a></li><li data-type='method'><a href="module-util-Pem.html#.modulusToPem">modulusToPem</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-types.html">types</a></li><li><a href="module-util.html">util</a></li></ul>
+    </div>
+</nav>
+
+<div id="main" class="col-sm-8 col-xs-12">
+    
+    <h1 class="page-title">types/ed25519.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict'
+
+/**
+ * @module types
+ */
+
+const nacl = require('tweetnacl')
+const Fulfillment = require('../lib/fulfillment')
+const MissingDataError = require('../errors/missing-data-error')
+const ValidationError = require('../errors/validation-error')
+
+let ed25519
+try {
+  ed25519 = require('ed25519')
+} catch (err) { }
+
+/**
+ * ED25519: Ed25519 signature condition.
+ *
+ * This condition implements Ed25519 signatures.
+ *
+ * ED25519 is assigned the type ID 4. It relies only on the ED25519 feature
+ * suite which corresponds to a bitmask of 0x20.
+ */
+class Ed25519 extends Fulfillment {
+  constructor () {
+    super()
+    this.publicKey = null
+    this.signature = null
+  }
+
+  /**
+   * Write static header fields.
+   *
+   * Some fields are common between the hash and the fulfillment payload. This
+   * method writes those field to anything implementing the Writer interface.
+   * It is used internally when generating the hash of the condition, when
+   * generating the fulfillment payload and when calculating the maximum
+   * fulfillment size.
+   *
+   * @param {Writer|Hasher|Predictor} Target for outputting the header.
+   *
+   * @private
+   */
+  writeCommonHeader (writer) {
+    writer.writeVarOctetString(this.publicKey)
+  }
+
+  /**
+   * Set the public publicKey.
+   *
+   * This is the Ed25519 public key. It has to be provided as a buffer.
+   *
+   * @param {Buffer} publicKey Public Ed25519 publicKey
+   */
+  setPublicKey (publicKey) {
+    if (!Buffer.isBuffer(publicKey)) {
+      throw new TypeError('Public key must be a Buffer, was: ' + publicKey)
+    }
+
+    if (publicKey.length !== 32) {
+      throw new Error('Public key must be 32 bytes, was: ' + publicKey.length)
+    }
+
+    // TODO Validate public key
+
+    this.publicKey = publicKey
+  }
+
+  /**
+   * Set the signature.
+   *
+   * Instead of using the private key to sign using the sign() method, we can
+   * also generate the signature elsewhere and pass it in.
+   *
+   * @param {Buffer} signature 64-byte signature.
+   */
+  setSignature (signature) {
+    if (!Buffer.isBuffer(signature)) {
+      throw new TypeError('Signature must be a Buffer, was: ' + signature)
+    }
+
+    if (signature.length !== 64) {
+      throw new Error('Signature must be 64 bytes, was: ' + signature.length)
+    }
+
+    this.signature = signature
+  }
+
+  /**
+   * Sign a message.
+   *
+   * This method will take a message and an Ed25519 private key and store a
+   * corresponding signature in this fulfillment.
+   *
+   * @param {Buffer} message Message to sign.
+   * @param {String} privateKey Ed25519 private key.
+   */
+  sign (message, privateKey) {
+    if (!Buffer.isBuffer(message)) {
+      throw new MissingDataError('Message must be a Buffer')
+    }
+    if (!Buffer.isBuffer(privateKey)) {
+      throw new TypeError('Private key must be a Buffer, was: ' + privateKey)
+    }
+    if (privateKey.length !== 32) {
+      throw new Error('Private key must be 32 bytes, was: ' + privateKey.length)
+    }
+
+    // This would be the Ed25519ph version:
+    // message = crypto.createHash('sha512')
+    //   .update(message)
+    //   .digest()
+
+    // Use native library if available (~65x faster)
+    if (ed25519) {
+      const keyPair = ed25519.MakeKeypair(privateKey)
+      this.setPublicKey(keyPair.publicKey)
+      this.signature = ed25519.Sign(message, keyPair)
+    } else {
+      const keyPair = nacl.sign.keyPair.fromSeed(privateKey)
+      this.setPublicKey(new Buffer(keyPair.publicKey))
+      this.signature = new Buffer(nacl.sign.detached(message, keyPair.secretKey))
+    }
+  }
+
+  /**
+   * Generate the condition hash.
+   *
+   * Since the public key is the same size as the hash we'd be putting out here,
+   * we just return the public key.
+   *
+   * @param {Hasher} hasher Destination where the hash payload will be written.
+   */
+  generateHash () {
+    if (!this.publicKey) {
+      throw new MissingDataError('Requires a public publicKey')
+    }
+
+    return this.publicKey
+  }
+
+  /**
+   * Parse the payload of an Ed25519 fulfillment.
+   *
+   * Read a fulfillment payload from a Reader and populate this object with that
+   * fulfillment.
+   *
+   * @param {Reader} reader Source to read the fulfillment payload from.
+   *
+   * @private
+   */
+  parsePayload (reader) {
+    this.setPublicKey(reader.readOctetString(Ed25519.PUBKEY_LENGTH))
+    this.setSignature(reader.readOctetString(Ed25519.SIGNATURE_LENGTH))
+  }
+
+  /**
+   * Generate the fulfillment payload.
+   *
+   * This writes the fulfillment payload to a Writer.
+   *
+   * @param {Writer} writer Subject for writing the fulfillment payload.
+   *
+   * @private
+   */
+  writePayload (writer) {
+    writer.writeOctetString(this.publicKey, Ed25519.PUBKEY_LENGTH)
+    writer.writeOctetString(this.signature, Ed25519.SIGNATURE_LENGTH)
+  }
+
+  /**
+   * Calculates the fulfillment length.
+   *
+   * Ed25519 signatures are constant size. Consequently fulfillments for this
+   * type of condition are also constant size.
+   *
+   * @return {Number} Length of the fulfillment payload.
+   *
+   * @private
+   */
+  calculateMaxFulfillmentLength () {
+    return Ed25519.FULFILLMENT_LENGTH
+  }
+
+  /**
+   * Verify the signature of this Ed25519 fulfillment.
+   *
+   * The signature of this Ed25519 fulfillment is verified against the provided
+   * message and public key.
+   *
+   * @param {Buffer} message Message to validate against.
+   * @return {Boolean} Whether this fulfillment is valid.
+   */
+  validate (message) {
+    // Use native library if available (~60x faster)
+    let result
+    if (ed25519) {
+      result = ed25519.Verify(message, this.signature, this.publicKey)
+    } else {
+      result = nacl.sign.detached.verify(message, this.signature, this.publicKey)
+    }
+
+    if (result !== true) {
+      throw new ValidationError('Invalid ed25519 signature')
+    }
+
+    return true
+  }
+}
+
+Ed25519.TYPE_ID = 4
+Ed25519.FEATURE_BITMASK = 0x20
+Ed25519.PUBKEY_LENGTH = 32
+Ed25519.SIGNATURE_LENGTH = 64
+Ed25519.FULFILLMENT_LENGTH =
+  Ed25519.PUBKEY_LENGTH +
+  Ed25519.SIGNATURE_LENGTH
+
+module.exports = Ed25519
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+</div>
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 26 2016 18:17:12 GMT-0700 (PDT)
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<script src="scripts/custom.js"></script>
+</body>
+</html>

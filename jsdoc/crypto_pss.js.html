@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>crypto/pss.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,200,600,700|Droid+Sans+Mono|Titillium+Web:400,300,600' rel='stylesheet' type='text/css'>
+    <link href="assets/favicon-new.ico" rel="icon" type="image/x-icon">
+     <!-- Bootstrap core CSS -->
+    <link href="styles/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link type="text/css" rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/"><img class="logo" alt="interledger" src="assets/ilp_icon.png"/></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/overview.html">Docs</a></li>
+        <li><a href="/community.html">Community</a></li>
+        <li><a href="/news.html">News</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <div class="onoffswitch">
+            <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch">
+            <label class="onoffswitch-label" for="myonoffswitch"></label>
+          </div>
+        </li>
+        <li><a target="_blank" href="https://github.com/interledger">Github</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="container main-wrapper">
+<nav class="col-sm-4 hidden-xs sidebar-wrapper">
+    <div id="sidebar" class="sidebar">
+        <div class="overview-back"><a href="/overview.html"><i class="fa fa-angle-double-left" aria-hidden="true"></i> Back to Overview</a></div>
+        <h2><a href="index.html">Five Bells Shared</a></h2><h3>Classes</h3><ul><li><a href="module-types-Condition.html">Condition</a><ul class='methods'><li data-type='method'><a href="module-types-Condition.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Condition.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Condition.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#getHash">getHash</a></li><li data-type='method'><a href="module-types-Condition.html#getMaxFulfillmentLength">getMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Condition.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Condition.html#setBitmask">setBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#setHash">setHash</a></li><li data-type='method'><a href="module-types-Condition.html#setMaxFulfillmentLength">setMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#setTypeId">setTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#validate">validate</a></li></ul></li><li><a href="module-types-Ed25519.html">Ed25519</a><ul class='methods'><li data-type='method'><a href="module-types-Ed25519.html#generateHash">generateHash</a></li><li data-type='method'><a href="module-types-Ed25519.html#setPublicKey">setPublicKey</a></li><li data-type='method'><a href="module-types-Ed25519.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-Ed25519.html#sign">sign</a></li><li data-type='method'><a href="module-types-Ed25519.html#validate">validate</a></li></ul></li><li><a href="module-types-Fulfillment.html">Fulfillment</a><ul class='methods'><li data-type='method'><a href="module-types-Fulfillment.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getCondition">getCondition</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionBinary">getConditionBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionUri">getConditionUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#validate">validate</a></li></ul></li><li><a href="module-types-PrefixSha256.html">PrefixSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PrefixSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setPrefix">setPrefix</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubcondition">setSubcondition</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubconditionUri">setSubconditionUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillment">setSubfulfillment</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillmentUri">setSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-PreimageSha256.html">PreimageSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PreimageSha256.html#setPreimage">setPreimage</a></li><li data-type='method'><a href="module-types-PreimageSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-RsaSha256.html">RsaSha256</a><ul class='methods'><li data-type='method'><a href="module-types-RsaSha256.html#setPublicModulus">setPublicModulus</a></li><li data-type='method'><a href="module-types-RsaSha256.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-RsaSha256.html#sign">sign</a></li><li data-type='method'><a href="module-types-RsaSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-ThresholdSha256.html">ThresholdSha256</a><ul class='methods'><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubcondition">addSubcondition</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubconditionUri">addSubconditionUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillment">addSubfulfillment</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillmentUri">addSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#setThreshold">setThreshold</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#validate">validate</a></li></ul></li><li><a href="module-util-Base64Url.html">Base64Url</a><ul class='methods'><li data-type='method'><a href="module-util-Base64Url.html#.decode">decode</a></li><li data-type='method'><a href="module-util-Base64Url.html#.encode">encode</a></li></ul></li><li><a href="module-util-BaseError.html">BaseError</a></li><li><a href="module-util-Pem.html">Pem</a><ul class='methods'><li data-type='method'><a href="module-util-Pem.html#.modulusFromPrivateKey">modulusFromPrivateKey</a></li><li data-type='method'><a href="module-util-Pem.html#.modulusToPem">modulusToPem</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-types.html">types</a></li><li><a href="module-util.html">util</a></li></ul>
+    </div>
+</nav>
+
+<div id="main" class="col-sm-8 col-xs-12">
+    
+    <h1 class="page-title">crypto/pss.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict'
+
+const crypto = require('crypto')
+const Mgf1 = require('./mgf1')
+const xor = require('../util/xor')
+
+const Hasher = require('../lib/hasher')
+
+class Pss {
+  constructor (opts) {
+    opts = opts || {}
+
+    this.hashAlgorithm = opts.hashAlgorithm || 'sha256'
+    this.hashLength = Hasher.getLength(this.hashAlgorithm)
+    this.saltLength = this.hashLength
+
+    // Used for testing
+    this.forceSalt = null
+  }
+
+  /**
+  * Create padded message for signing.
+  *
+  * This is an implementation of EMSA-PSS-ENCODE from RFC3447, section 9.1.1.
+  *
+  * @param {Buffer} message Message to sign.
+  * @param {Number} encodedMessageBits Number of bits of the resulting padded
+  *   message.
+  * @return {Buffer} Padded message of length encodedMessageBits bits
+  */
+  encode (message, encodedMessageBits) {
+    // Calculate emLen
+    const encodedMessageBytes = Math.ceil(encodedMessageBits / 8)
+    // Step 2. mHash = Hash(M)
+    const messageHash = crypto.createHash(this.hashAlgorithm).update(message).digest()
+    // Step 3. If emLen &lt; hLen + sLen + 2, output "encoding error" and stop.
+    if (encodedMessageBytes &lt; this.hashLength + this.saltLength + 2) {
+      throw new Error('Encoding error: RSA modulus is too small for ' + this.hashAlgorithm)
+    }
+    // Step 4. Generate a random salt
+    const salt = this.forceSalt || crypto.randomBytes(this.saltLength)
+
+    // Step 5. M' = (0x)00 00 00 00 00 00 00 00 || mHash || salt
+    // Step 6. H = Hash(M')
+    const hash = crypto.createHash(this.hashAlgorithm)
+      .update(new Buffer(8).fill(0))
+      .update(messageHash)
+      .update(salt)
+      .digest()
+
+    // Step 7. Generate an octet string PS consisting of emLen - sLen - hLen - 2
+    //         zero octets.
+    // Step 8. Let DB = PS || 0x01 || salt
+    const dataBlock = Buffer.concat([
+      new Buffer(encodedMessageBytes - this.saltLength - this.hashLength - 2).fill(0),
+      new Buffer([1]),
+      salt
+    ])
+
+    // Step 9. Let dbMask = MGF(H, emLen - hLen - 1)
+    const mgf1 = new Mgf1({ hashAlgorithm: this.hashAlgorithm })
+    const dataBlockMask = mgf1.generate(hash, encodedMessageBytes - this.hashLength - 1)
+
+    // Step 10. Let maskedDB = DB \xor dbMask
+    const maskedDataBlock = xor(dataBlock, dataBlockMask)
+
+    // Step 11. Set the leftmost 8emLen - emBits bits of the leftmost octet in
+    //          maskedDB to zero.
+    maskedDataBlock[0] &amp;= 0xff >>> (encodedMessageBytes * 8 - encodedMessageBits)
+
+    // Step 12. Let EM = maskedDB || H || 0xbc.
+    // Step 13. Output EM.
+    return Buffer.concat([
+      maskedDataBlock,
+      hash,
+      new Buffer([0xbc])
+    ])
+  }
+
+  /**
+   * Verify that a padded message matches a specimen message.
+   *
+   * Used for RSA signature verification.
+   *
+   * This is an implementation of EMSA-PSS-VERIFY from RFC3447, section 9.1.2.
+   *
+   * @param {Buffer} message Message to be verified.
+   * @param {Buffer} encodedMessage Padded message to be compared.
+   * @param {Number} encodedMessageBits Number of bits in the padded message.
+   * @return {Boolean} Verification result.
+   */
+  verify (message, encodedMessage, encodedMessageBits) {
+    // Calculate emLen
+    const encodedMessageBytes = Math.ceil(encodedMessageBits / 8)
+    // Step 2. mHash = Hash(M)
+    const messageHash = crypto.createHash(this.hashAlgorithm).update(message).digest()
+    // Step 3. If emLen &lt; hLen + sLen + 2, output "inconsistent" and stop.
+    if (encodedMessageBytes &lt; this.hashLength + this.saltLength + 2) {
+      return false
+    }
+    // Step 4. If the rightmost octet of EM does not have hexadecimal value
+    //         0xbc, output "inconsistent" and stop.
+    if (encodedMessage[encodedMessage.length - 1] !== 0xbc) {
+      return false
+    }
+    // Step 5. Let maskedDB be the leftmost emLen - hLen - 1 octets of EM, and
+    //         let H be the next hLen octets.
+    const dataBlockLength = encodedMessageBytes - this.hashLength - 1
+    const maskedDataBlock = encodedMessage.slice(0, dataBlockLength)
+    const hash = encodedMessage.slice(dataBlockLength, dataBlockLength + this.hashLength)
+    // Step 6. If the leftmost 8emLen - emBits bits of the leftmost octet in
+    //         maskedDB are not all equal to zero, output "inconsistent" and
+    //          stop.
+    const expectedMask = 0xff >>> (encodedMessageBytes * 8 - encodedMessageBits)
+    if (maskedDataBlock[0] &amp; ~expectedMask) {
+      return false
+    }
+    // Step 7. Let dbMask = MGF(H, emLen - hLen - 1).
+    const mgf1 = new Mgf1({ hashAlgorithm: this.hashAlgorithm })
+    const dataBlockMask = mgf1.generate(hash, encodedMessageBytes - this.hashLength - 1)
+    // Step 8. Let DB = maskedDB \xor dbMask.
+    const dataBlock = xor(maskedDataBlock, dataBlockMask)
+    // Step 9. Set the leftmost 8emLen - emBits bits of the leftmost octet in DB
+    //         to zero.
+    dataBlock[0] &amp;= expectedMask
+    // Step 10. If the emLen - hLen - sLen - 2 leftmost octets of DB are not zero
+    //          or if the octet at position emLen - hLen - sLen - 1 (the leftmost
+    //          position is "position 1") does not have hexadecimal value 0x01,
+    //          output "inconsistent" and stop.
+    const prefixLength = encodedMessageBytes - this.hashLength - this.saltLength - 2
+    for (let i = 0; i &lt; prefixLength; i++) {
+      if (dataBlock[i] !== 0) {
+        return false
+      }
+    }
+    if (dataBlock[prefixLength] !== 0x01) {
+      return false
+    }
+    // Step 11. Let salt be the last sLen octets of DB.
+    const salt = dataBlock.slice(dataBlock.length - this.saltLength)
+    // Step 12. Let M' = (0x)00 00 00 00 00 00 00 00 || mHash || salt
+    // Step 13. Let H' = Hash(M'), an octet string of length hLen.
+    const reconstructedHash = crypto.createHash(this.hashAlgorithm)
+      .update(new Buffer(8).fill(0))
+      .update(messageHash)
+      .update(salt)
+      .digest()
+    // Step 14. If H = H', output "consistent." Otherwise, output "inconsistent."
+    return Buffer.compare(hash, reconstructedHash) === 0
+  }
+}
+
+module.exports = Pss
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+</div>
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 26 2016 18:17:12 GMT-0700 (PDT)
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<script src="scripts/custom.js"></script>
+</body>
+</html>

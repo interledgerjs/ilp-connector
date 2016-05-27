@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>lib/fulfillment.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,200,600,700|Droid+Sans+Mono|Titillium+Web:400,300,600' rel='stylesheet' type='text/css'>
+    <link href="assets/favicon-new.ico" rel="icon" type="image/x-icon">
+     <!-- Bootstrap core CSS -->
+    <link href="styles/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link type="text/css" rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/"><img class="logo" alt="interledger" src="assets/ilp_icon.png"/></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/overview.html">Docs</a></li>
+        <li><a href="/community.html">Community</a></li>
+        <li><a href="/news.html">News</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <div class="onoffswitch">
+            <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch">
+            <label class="onoffswitch-label" for="myonoffswitch"></label>
+          </div>
+        </li>
+        <li><a target="_blank" href="https://github.com/interledger">Github</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="container main-wrapper">
+<nav class="col-sm-4 hidden-xs sidebar-wrapper">
+    <div id="sidebar" class="sidebar">
+        <div class="overview-back"><a href="/overview.html"><i class="fa fa-angle-double-left" aria-hidden="true"></i> Back to Overview</a></div>
+        <h2><a href="index.html">Five Bells Shared</a></h2><h3>Classes</h3><ul><li><a href="module-types-Condition.html">Condition</a><ul class='methods'><li data-type='method'><a href="module-types-Condition.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Condition.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Condition.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#getHash">getHash</a></li><li data-type='method'><a href="module-types-Condition.html#getMaxFulfillmentLength">getMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Condition.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Condition.html#setBitmask">setBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#setHash">setHash</a></li><li data-type='method'><a href="module-types-Condition.html#setMaxFulfillmentLength">setMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#setTypeId">setTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#validate">validate</a></li></ul></li><li><a href="module-types-Ed25519.html">Ed25519</a><ul class='methods'><li data-type='method'><a href="module-types-Ed25519.html#generateHash">generateHash</a></li><li data-type='method'><a href="module-types-Ed25519.html#setPublicKey">setPublicKey</a></li><li data-type='method'><a href="module-types-Ed25519.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-Ed25519.html#sign">sign</a></li><li data-type='method'><a href="module-types-Ed25519.html#validate">validate</a></li></ul></li><li><a href="module-types-Fulfillment.html">Fulfillment</a><ul class='methods'><li data-type='method'><a href="module-types-Fulfillment.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getCondition">getCondition</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionBinary">getConditionBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionUri">getConditionUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#validate">validate</a></li></ul></li><li><a href="module-types-PrefixSha256.html">PrefixSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PrefixSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setPrefix">setPrefix</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubcondition">setSubcondition</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubconditionUri">setSubconditionUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillment">setSubfulfillment</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillmentUri">setSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-PreimageSha256.html">PreimageSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PreimageSha256.html#setPreimage">setPreimage</a></li><li data-type='method'><a href="module-types-PreimageSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-RsaSha256.html">RsaSha256</a><ul class='methods'><li data-type='method'><a href="module-types-RsaSha256.html#setPublicModulus">setPublicModulus</a></li><li data-type='method'><a href="module-types-RsaSha256.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-RsaSha256.html#sign">sign</a></li><li data-type='method'><a href="module-types-RsaSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-ThresholdSha256.html">ThresholdSha256</a><ul class='methods'><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubcondition">addSubcondition</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubconditionUri">addSubconditionUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillment">addSubfulfillment</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillmentUri">addSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#setThreshold">setThreshold</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#validate">validate</a></li></ul></li><li><a href="module-util-Base64Url.html">Base64Url</a><ul class='methods'><li data-type='method'><a href="module-util-Base64Url.html#.decode">decode</a></li><li data-type='method'><a href="module-util-Base64Url.html#.encode">encode</a></li></ul></li><li><a href="module-util-BaseError.html">BaseError</a></li><li><a href="module-util-Pem.html">Pem</a><ul class='methods'><li data-type='method'><a href="module-util-Pem.html#.modulusFromPrivateKey">modulusFromPrivateKey</a></li><li data-type='method'><a href="module-util-Pem.html#.modulusToPem">modulusToPem</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-types.html">types</a></li><li><a href="module-util.html">util</a></li></ul>
+    </div>
+</nav>
+
+<div id="main" class="col-sm-8 col-xs-12">
+    
+    <h1 class="page-title">lib/fulfillment.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict'
+
+/**
+ * @module types
+ */
+
+const TypeRegistry = require('./type-registry')
+const Condition = require('./condition')
+const Predictor = require('./predictor')
+const Writer = require('./writer')
+const Reader = require('./reader')
+const base64url = require('../util/base64url')
+const PrefixError = require('../errors/prefix-error')
+const ParseError = require('../errors/parse-error')
+
+// Regex for validating fulfillments
+//
+// This is a generic, future-proof version of the fulfillment regular
+// expression.
+const FULFILLMENT_REGEX = /^cf:([1-9a-f][0-9a-f]{0,3}|0):[a-zA-Z0-9_-]*$/
+
+/**
+ * Base class for fulfillment types.
+ */
+class Fulfillment {
+  /**
+   * Create a Fulfillment object from a URI.
+   *
+   * This method will parse a fulfillment URI and construct a corresponding
+   * Fulfillment object.
+   *
+   * @param {String} serializedFulfillment URI representing the fulfillment
+   * @return {Fulfillment} Resulting object
+   */
+  static fromUri (serializedFulfillment) {
+    if (serializedFulfillment instanceof Fulfillment) {
+      return serializedFulfillment
+    } else if (typeof serializedFulfillment !== 'string') {
+      throw new Error('Serialized fulfillment must be a string')
+    }
+
+    const pieces = serializedFulfillment.split(':')
+    if (pieces[0] !== 'cf') {
+      throw new PrefixError('Serialized fulfillment must start with "cf:"')
+    }
+
+    if (!Fulfillment.REGEX.exec(serializedFulfillment)) {
+      throw new ParseError('Invalid fulfillment format')
+    }
+
+    const typeId = parseInt(pieces[1], 16)
+    const payload = base64url.decode(pieces[2])
+
+    const ConditionClass = TypeRegistry.getClassFromTypeId(typeId)
+    const fulfillment = new ConditionClass()
+    fulfillment.parsePayload(Reader.from(payload), payload.length)
+
+    return fulfillment
+  }
+
+  /**
+   * Create a Fulfillment object from a binary blob.
+   *
+   * This method will parse a stream of binary data and construct a
+   * corresponding Fulfillment object.
+   *
+   * @param {Reader} reader Binary stream implementing the Reader interface
+   * @return {Fulfillment} Resulting object
+   */
+  static fromBinary (reader) {
+    reader = Reader.from(reader)
+
+    const ConditionClass = TypeRegistry.getClassFromTypeId(reader.readUInt16())
+
+    const condition = new ConditionClass()
+    const payloadLength = reader.readLengthPrefix()
+    condition.parsePayload(reader, payloadLength)
+
+    return condition
+  }
+
+  /**
+   * Return the type ID of this fulfillment.
+   *
+   * @return {Number} Type ID as an integer.
+   */
+  getTypeId () {
+    return this.constructor.TYPE_ID
+  }
+
+  /**
+   * Return the bitmask of this fulfillment.
+   *
+   * For simple fulfillment types this is simply the bit representing this type.
+   *
+   * For meta-fulfillments, these are the bits representing the types of the
+   * subconditions.
+   *
+   * @return {Number} Bitmask corresponding to this fulfillment.
+   */
+  getBitmask () {
+    return this.constructor.FEATURE_BITMASK
+  }
+
+  /**
+   * Generate condition corresponding to this fulfillment.
+   *
+   * An important property of crypto-conditions is that the condition can always
+   * be derived from the fulfillment. This makes it very easy to post
+   * fulfillments to a system without having to specify which condition the
+   * relate to. The system can keep an index of conditions and look up any
+   * matching events related to that condition.
+   *
+   * @return {Condition} Condition corresponding to this fulfillment.
+   */
+  getCondition () {
+    const condition = new Condition()
+    condition.setTypeId(this.getTypeId())
+    condition.setBitmask(this.getBitmask())
+    condition.setHash(this.generateHash())
+    condition.setMaxFulfillmentLength(this.calculateMaxFulfillmentLength())
+    return condition
+  }
+
+  /**
+   * Shorthand for getting condition URI.
+   *
+   * Stands for getCondition().serializeUri().
+   *
+   * @return {String} Condition URI.
+   */
+  getConditionUri () {
+    return this.getCondition().serializeUri()
+  }
+
+  /**
+   * Shorthand for getting condition encoded as binary.
+   *
+   * Stands for getCondition().serializeBinary().
+   *
+   * @return {Buffer} Binary encoded condition.
+   */
+  getConditionBinary () {
+    return this.getCondition().serializeBinary()
+  }
+
+  /**
+   * Generate the hash of the fulfillment.
+   *
+   * This method is a stub and will be overridden by subclasses.
+   *
+   * @return {Buffer} Fingerprint of the condition.
+   *
+   * @private
+   */
+  generateHash () {
+    throw new Error('This method should be implemented by a subclass')
+  }
+
+  /**
+   * Calculate the maximum length of the fulfillment payload.
+   *
+   * This implementation works by measuring the length of the fulfillment.
+   * Condition types that do not have a constant length will override this
+   * method with one that calculates the maximum possible length.
+   *
+   * @return {Number} Maximum fulfillment length
+   *
+   * @private
+   */
+  calculateMaxFulfillmentLength () {
+    const predictor = new Predictor()
+    this.writePayload(predictor)
+    return predictor.getSize()
+  }
+
+  /**
+   * Generate the URI form encoding of this fulfillment.
+   *
+   * Turns the fulfillment into a URI containing only URL-safe characters. This
+   * format is convenient for passing around fulfillments in URLs, JSON and
+   * other text-based formats.
+   *
+   * @return {String} Fulfillment as a URI
+   */
+  serializeUri () {
+    return 'cf' +
+      ':' + this.getTypeId().toString(16) +
+      ':' + base64url.encode(this.serializePayload())
+  }
+
+  /**
+   * Serialize fulfillment to a buffer.
+   *
+   * Encodes the fulfillment as a string of bytes. This is used internally for
+   * encoding subfulfillments, but can also be used to passing around
+   * fulfillments in a binary protocol for instance.
+   *
+   * @return {Buffer} Serialized fulfillment
+   */
+  serializeBinary () {
+    const writer = new Writer()
+    writer.writeUInt16(this.getTypeId())
+    writer.writeVarOctetString(this.serializePayload())
+    return writer.getBuffer()
+  }
+
+  /**
+   * Return the fulfillment payload as a buffer.
+   *
+   * Note that the fulfillment payload is not the standard format for passing
+   * fulfillments in binary protocols. Use `serializeBinary` for that. The
+   * fulfillment payload is purely the type-specific data and does not include
+   * the bitmask.
+   *
+   * @return {Buffer} Fulfillment payload
+   *
+   * @private
+   */
+  serializePayload () {
+    const writer = new Writer()
+    this.writePayload(writer)
+    return writer.getBuffer()
+  }
+
+  /**
+   * Validate this fulfillment.
+   *
+   * This implementation is a stub and will be overridden by the subclasses.
+   *
+   * @return {Boolean} Validation result
+   */
+  validate () {
+    throw new Error('Not implemented')
+  }
+}
+
+Fulfillment.REGEX = FULFILLMENT_REGEX
+
+module.exports = Fulfillment
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+</div>
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 26 2016 18:17:12 GMT-0700 (PDT)
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<script src="scripts/custom.js"></script>
+</body>
+</html>

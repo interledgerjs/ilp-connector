@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>lib/reader.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,200,600,700|Droid+Sans+Mono|Titillium+Web:400,300,600' rel='stylesheet' type='text/css'>
+    <link href="assets/favicon-new.ico" rel="icon" type="image/x-icon">
+     <!-- Bootstrap core CSS -->
+    <link href="styles/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link type="text/css" rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/"><img class="logo" alt="interledger" src="assets/ilp_icon.png"/></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/overview.html">Docs</a></li>
+        <li><a href="/community.html">Community</a></li>
+        <li><a href="/news.html">News</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <div class="onoffswitch">
+            <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch">
+            <label class="onoffswitch-label" for="myonoffswitch"></label>
+          </div>
+        </li>
+        <li><a target="_blank" href="https://github.com/interledger">Github</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="container main-wrapper">
+<nav class="col-sm-4 hidden-xs sidebar-wrapper">
+    <div id="sidebar" class="sidebar">
+        <div class="overview-back"><a href="/overview.html"><i class="fa fa-angle-double-left" aria-hidden="true"></i> Back to Overview</a></div>
+        <h2><a href="index.html">Five Bells Shared</a></h2><h3>Classes</h3><ul><li><a href="module-types-Condition.html">Condition</a><ul class='methods'><li data-type='method'><a href="module-types-Condition.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Condition.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Condition.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#getHash">getHash</a></li><li data-type='method'><a href="module-types-Condition.html#getMaxFulfillmentLength">getMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Condition.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Condition.html#setBitmask">setBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#setHash">setHash</a></li><li data-type='method'><a href="module-types-Condition.html#setMaxFulfillmentLength">setMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#setTypeId">setTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#validate">validate</a></li></ul></li><li><a href="module-types-Ed25519.html">Ed25519</a><ul class='methods'><li data-type='method'><a href="module-types-Ed25519.html#generateHash">generateHash</a></li><li data-type='method'><a href="module-types-Ed25519.html#setPublicKey">setPublicKey</a></li><li data-type='method'><a href="module-types-Ed25519.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-Ed25519.html#sign">sign</a></li><li data-type='method'><a href="module-types-Ed25519.html#validate">validate</a></li></ul></li><li><a href="module-types-Fulfillment.html">Fulfillment</a><ul class='methods'><li data-type='method'><a href="module-types-Fulfillment.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getCondition">getCondition</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionBinary">getConditionBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionUri">getConditionUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#validate">validate</a></li></ul></li><li><a href="module-types-PrefixSha256.html">PrefixSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PrefixSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setPrefix">setPrefix</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubcondition">setSubcondition</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubconditionUri">setSubconditionUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillment">setSubfulfillment</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillmentUri">setSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-PreimageSha256.html">PreimageSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PreimageSha256.html#setPreimage">setPreimage</a></li><li data-type='method'><a href="module-types-PreimageSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-RsaSha256.html">RsaSha256</a><ul class='methods'><li data-type='method'><a href="module-types-RsaSha256.html#setPublicModulus">setPublicModulus</a></li><li data-type='method'><a href="module-types-RsaSha256.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-RsaSha256.html#sign">sign</a></li><li data-type='method'><a href="module-types-RsaSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-ThresholdSha256.html">ThresholdSha256</a><ul class='methods'><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubcondition">addSubcondition</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubconditionUri">addSubconditionUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillment">addSubfulfillment</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillmentUri">addSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#setThreshold">setThreshold</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#validate">validate</a></li></ul></li><li><a href="module-util-Base64Url.html">Base64Url</a><ul class='methods'><li data-type='method'><a href="module-util-Base64Url.html#.decode">decode</a></li><li data-type='method'><a href="module-util-Base64Url.html#.encode">encode</a></li></ul></li><li><a href="module-util-BaseError.html">BaseError</a></li><li><a href="module-util-Pem.html">Pem</a><ul class='methods'><li data-type='method'><a href="module-util-Pem.html#.modulusFromPrivateKey">modulusFromPrivateKey</a></li><li data-type='method'><a href="module-util-Pem.html#.modulusToPem">modulusToPem</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-types.html">types</a></li><li><a href="module-util.html">util</a></li></ul>
+    </div>
+</nav>
+
+<div id="main" class="col-sm-8 col-xs-12">
+    
+    <h1 class="page-title">lib/reader.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict'
+
+const UnderflowError = require('../errors/underflow-error')
+const ParseError = require('../errors/parse-error')
+
+class Reader {
+  constructor (buffer) {
+    this.buffer = buffer
+    this.cursor = 0
+    this.bookmarks = []
+  }
+
+  /**
+   * Create a Reader from a source of bytes.
+   *
+   * Currently, this method only allows the creation of a Reader from a Buffer.
+   *
+   * If the object provided is already a Reader, that reader is returned as is.
+   *
+   * @param {Reader|Buffer} source Source of binary data.
+   * @return {Reader} Instance of Reader
+   */
+  static from (source) {
+    if (Buffer.isBuffer(source)) {
+      return new Reader(source)
+    } else if (source instanceof Reader) {
+      return source
+    } else {
+      throw new Error('Reader must be given a Buffer')
+    }
+  }
+
+  /**
+   * Store the current cursor position on a stack.
+   */
+  bookmark () {
+    this.bookmarks.push(this.cursor)
+  }
+
+  /**
+   * Pop the most recently bookmarked cursor position off the stack.
+   */
+  restore () {
+    this.cursor = this.bookmarks.pop()
+  }
+
+  /**
+   * Ensure this number of bytes is buffered.
+   *
+   * This method checks that the given number of bytes is buffered and available
+   * for reading. If insufficient bytes are available, the method throws an
+   * `UnderflowError`.
+   *
+   * @param {Number} bytes Number of bytes that should be available.
+   */
+  ensureAvailable (bytes) {
+    if (this.buffer.length &lt; (this.cursor + bytes)) {
+      throw new UnderflowError('Tried to read ' + bytes + ' bytes, but only ' +
+        (this.buffer.length - this.cursor) + ' bytes available')
+    }
+  }
+
+  /**
+   * Read a fixed-length big-endian integer.
+   *
+   * @param {Number} length Length of the integer in bytes.
+   * @return {Number} Contents of next byte.
+   */
+  readUInt (length) {
+    if (length > Reader.MAX_INT_BYTES) {
+      throw new Error('Tried too read too large integer (requested: ' +
+        length + ', max: ' + Reader.MAX_INT_BYTES + ')')
+    }
+    this.ensureAvailable(length)
+    const value = this.buffer.readUIntBE(this.cursor, length)
+    this.cursor += length
+    return value
+  }
+
+  /**
+   * Look at a fixed-length integer, but don't advance the cursor.
+   *
+   * @param {Number} length Length of the integer in bytes.
+   * @return {Number} Contents of the next byte.
+   */
+  peekUInt (length) {
+    if (length > Reader.MAX_INT_BYTES) {
+      throw new Error('Tried too read too large integer (requested: ' +
+        length + ', max: ' + Reader.MAX_INT_BYTES + ')')
+    }
+    this.ensureAvailable(length)
+    const value = this.buffer.readUIntBE(this.cursor, length)
+    return value
+  }
+
+  /**
+   * Advance cursor by length bytes.
+   */
+  skipUInt (length) {
+    this.skip(length)
+  }
+
+  /**
+   * Read a variable-length integer at the cursor position.
+   *
+   * Return the integer as a number and advance the cursor accordingly.
+   *
+   * @return {Number} Value of the integer.
+   */
+  readVarUInt () {
+    const buffer = this.readVarOctetString()
+    if (buffer.length > Reader.MAX_INT_BYTES) {
+      throw new ParseError('UInt of length ' + buffer.length +
+        'too large to parse as integer (max: ' + Reader.MAX_INT_BYTES + ')')
+    }
+
+    return buffer.readUIntBE(0, buffer.length)
+  }
+
+  /**
+   * Read the next variable-length integer, but don't advance the cursor.
+   *
+   * @return {Number} Integer at the cursor position.
+   */
+  peekVarUInt () {
+    this.bookmark()
+    const value = this.readVarUInt()
+    this.restore()
+
+    return value
+  }
+
+  /**
+   * Skip past the variable-length integer at the cursor position.
+   *
+   * Since variable integers are encoded the same way as octet strings, this
+   * method is equivalent to skipVarOctetString.
+   */
+  skipVarUInt () {
+    this.skipVarOctetString()
+  }
+
+  /**
+   * Read a fixed-length octet string.
+   *
+   * @param {Number} length Length of the octet string.
+   */
+  readOctetString (length) {
+    return this.read(length)
+  }
+
+  /**
+   * Peek at a fixed length octet string.
+   *
+   * @param {Number} length Length of the octet string.
+   */
+  peekOctetString (length) {
+    return this.peek(length)
+  }
+
+  /**
+   * Skip a fixed length octet string.
+   *
+   * @param {Number} length Length of the octet string.
+   */
+  skipOctetString (length) {
+    return this.skip(length)
+  }
+
+  /**
+   * Read a length prefix.
+   *
+   * You shouldn't need this. Length prefixes are used internally by
+   * variable-length octet strings and integers.
+   *
+   * @return {Number} Length value.
+   */
+  readLengthPrefix () {
+    const length = this.readUInt8()
+
+    if (length &amp; Reader.HIGH_BIT) {
+      return this.readUInt(length &amp; Reader.LOWER_SEVEN_BITS)
+    }
+
+    return length
+  }
+
+  /**
+   * Read a variable-length octet string.
+   *
+   * A variable-length octet string is a length-prefixed set of arbitrary bytes.
+   *
+   * @return {Buffer} Contents of the octet string.
+   */
+  readVarOctetString () {
+    const length = this.readLengthPrefix()
+
+    return this.read(length)
+  }
+
+  /**
+   * Read a variable-length buffer, but do not advance cursor position.
+   *
+   * @return {Buffer} Contents of the buffer.
+   */
+  peekVarOctetString () {
+    this.bookmark()
+    const value = this.readVarOctetString()
+    this.restore()
+
+    return value
+  }
+
+  /**
+   * Skip a variable-length buffer.
+   */
+  skipVarOctetString () {
+    const length = this.readLengthPrefix()
+
+    return this.skip(length)
+  }
+
+  /**
+   * Read a given number of bytes.
+   *
+   * Returns this many bytes starting at the cursor position and advances the
+   * cursor.
+   *
+   * @param {Number} bytes Number of bytes to read.
+   * @return {Buffer} Contents of bytes read.
+   */
+  read (bytes) {
+    this.ensureAvailable(bytes)
+
+    const value = this.buffer.slice(this.cursor, this.cursor + bytes)
+    this.cursor += bytes
+
+    return value
+  }
+
+  /**
+   * Read bytes, but do not advance cursor.
+   *
+   * @param {Number} bytes Number of bytes to read.
+   * @return {Buffer} Contents of bytes read.
+   */
+  peek (bytes) {
+    this.ensureAvailable(bytes)
+
+    return this.buffer.slice(this.cursor, this.cursor + bytes)
+  }
+
+  /**
+   * Skip a number of bytes.
+   *
+   * Advances the cursor by this many bytes.
+   *
+   * @param {Number} bytes Number of bytes to advance the cursor by.
+   */
+  skip (bytes) {
+    this.ensureAvailable(bytes)
+
+    this.cursor += bytes
+  }
+}
+
+// Most significant bit in a byte
+Reader.HIGH_BIT = 0x80
+
+// Other bits in a byte
+Reader.LOWER_SEVEN_BITS = 0x7F
+
+// Largest integer (in bytes) that is safely representable in JavaScript
+// => Math.floor(Number.MAX_SAFE_INTEGER.toString(2).length / 8)
+Reader.MAX_INT_BYTES = 6
+
+// Create {read,peek,skip}UInt{8,16,32,64} shortcuts
+;['read', 'peek', 'skip'].forEach((verb) => {
+  ;[1, 2, 4, 8].forEach((bytes) => {
+    Reader.prototype[verb + 'UInt' + bytes * 8] = function () {
+      return this[verb + 'UInt'](bytes)
+    }
+  })
+})
+
+module.exports = Reader
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+</div>
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 26 2016 18:17:12 GMT-0700 (PDT)
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<script src="scripts/custom.js"></script>
+</body>
+</html>

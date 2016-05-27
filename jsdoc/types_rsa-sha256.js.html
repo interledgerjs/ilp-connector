@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>types/rsa-sha256.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,200,600,700|Droid+Sans+Mono|Titillium+Web:400,300,600' rel='stylesheet' type='text/css'>
+    <link href="assets/favicon-new.ico" rel="icon" type="image/x-icon">
+     <!-- Bootstrap core CSS -->
+    <link href="styles/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link type="text/css" rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/"><img class="logo" alt="interledger" src="assets/ilp_icon.png"/></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/overview.html">Docs</a></li>
+        <li><a href="/community.html">Community</a></li>
+        <li><a href="/news.html">News</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <div class="onoffswitch">
+            <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch">
+            <label class="onoffswitch-label" for="myonoffswitch"></label>
+          </div>
+        </li>
+        <li><a target="_blank" href="https://github.com/interledger">Github</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="container main-wrapper">
+<nav class="col-sm-4 hidden-xs sidebar-wrapper">
+    <div id="sidebar" class="sidebar">
+        <div class="overview-back"><a href="/overview.html"><i class="fa fa-angle-double-left" aria-hidden="true"></i> Back to Overview</a></div>
+        <h2><a href="index.html">Five Bells Shared</a></h2><h3>Classes</h3><ul><li><a href="module-types-Condition.html">Condition</a><ul class='methods'><li data-type='method'><a href="module-types-Condition.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Condition.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Condition.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#getHash">getHash</a></li><li data-type='method'><a href="module-types-Condition.html#getMaxFulfillmentLength">getMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Condition.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Condition.html#setBitmask">setBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#setHash">setHash</a></li><li data-type='method'><a href="module-types-Condition.html#setMaxFulfillmentLength">setMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#setTypeId">setTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#validate">validate</a></li></ul></li><li><a href="module-types-Ed25519.html">Ed25519</a><ul class='methods'><li data-type='method'><a href="module-types-Ed25519.html#generateHash">generateHash</a></li><li data-type='method'><a href="module-types-Ed25519.html#setPublicKey">setPublicKey</a></li><li data-type='method'><a href="module-types-Ed25519.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-Ed25519.html#sign">sign</a></li><li data-type='method'><a href="module-types-Ed25519.html#validate">validate</a></li></ul></li><li><a href="module-types-Fulfillment.html">Fulfillment</a><ul class='methods'><li data-type='method'><a href="module-types-Fulfillment.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getCondition">getCondition</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionBinary">getConditionBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionUri">getConditionUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#validate">validate</a></li></ul></li><li><a href="module-types-PrefixSha256.html">PrefixSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PrefixSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setPrefix">setPrefix</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubcondition">setSubcondition</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubconditionUri">setSubconditionUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillment">setSubfulfillment</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillmentUri">setSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-PreimageSha256.html">PreimageSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PreimageSha256.html#setPreimage">setPreimage</a></li><li data-type='method'><a href="module-types-PreimageSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-RsaSha256.html">RsaSha256</a><ul class='methods'><li data-type='method'><a href="module-types-RsaSha256.html#setPublicModulus">setPublicModulus</a></li><li data-type='method'><a href="module-types-RsaSha256.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-RsaSha256.html#sign">sign</a></li><li data-type='method'><a href="module-types-RsaSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-ThresholdSha256.html">ThresholdSha256</a><ul class='methods'><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubcondition">addSubcondition</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubconditionUri">addSubconditionUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillment">addSubfulfillment</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillmentUri">addSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#setThreshold">setThreshold</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#validate">validate</a></li></ul></li><li><a href="module-util-Base64Url.html">Base64Url</a><ul class='methods'><li data-type='method'><a href="module-util-Base64Url.html#.decode">decode</a></li><li data-type='method'><a href="module-util-Base64Url.html#.encode">encode</a></li></ul></li><li><a href="module-util-BaseError.html">BaseError</a></li><li><a href="module-util-Pem.html">Pem</a><ul class='methods'><li data-type='method'><a href="module-util-Pem.html#.modulusFromPrivateKey">modulusFromPrivateKey</a></li><li data-type='method'><a href="module-util-Pem.html#.modulusToPem">modulusToPem</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-types.html">types</a></li><li><a href="module-util.html">util</a></li></ul>
+    </div>
+</nav>
+
+<div id="main" class="col-sm-8 col-xs-12">
+    
+    <h1 class="page-title">types/rsa-sha256.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict'
+
+/**
+ * @module types
+ */
+
+const crypto = require('crypto')
+const constants = require('constants')
+const Pss = require('../crypto/pss')
+const pem = require('../util/pem')
+const BaseSha256 = require('./base-sha256')
+const Predictor = require('../lib/predictor')
+const MissingDataError = require('../errors/missing-data-error')
+const ValidationError = require('../errors/validation-error')
+
+/**
+ * RSA-SHA-256: RSA signature condition using SHA-256.
+ *
+ * This RSA condition uses RSA-PSS padding with SHA-256. The salt length is set
+ * equal the digest length of 32 bytes.
+ *
+ * The public exponent is fixed at 65537 and the public modulus must be between
+ * 128 (1017 bits) and 512 bytes (4096 bits) long.
+ *
+ * RSA-SHA-256 is assigned the type ID 3. It relies on the SHA-256 and RSA-PSS
+ * feature suites which corresponds to a feature bitmask of 0x11.
+ */
+class RsaSha256 extends BaseSha256 {
+  constructor () {
+    super()
+    this.modulus = null
+    this.signature = null
+  }
+
+  /**
+   * Write static header fields.
+   *
+   * Some fields are common between the hash and the fulfillment payload. This
+   * method writes those field to anything implementing the Writer interface.
+   * It is used internally when generating the hash of the condition, when
+   * generating the fulfillment payload and when calculating the maximum
+   * fulfillment size.
+   *
+   * @param {Writer|Hasher|Predictor} Target for outputting the header.
+   *
+   * @private
+   */
+  writeCommonHeader (writer) {
+    if (!this.modulus) {
+      throw new MissingDataError('Requires a public modulus')
+    }
+
+    writer.writeVarOctetString(this.modulus)
+  }
+
+  /**
+   * Set the public modulus.
+   *
+   * This is the modulus of the RSA public key. It has to be provided as a raw
+   * buffer with no leading zeros.
+   *
+   * @param {Buffer} modulus Public RSA modulus
+   */
+  setPublicModulus (modulus) {
+    if (!Buffer.isBuffer(modulus)) {
+      throw new TypeError('Modulus must be a buffer, was: ' + modulus)
+    }
+
+    if (modulus[0] === 0) {
+      throw new Error('Modulus may not contain leading zeros')
+    }
+
+    if (modulus.length > 512 || modulus.length &lt; 128) {
+      throw new Error('Modulus must be between 128 bytes (1017 bits) and ' +
+        '512 bytes (4096 bits), was: ' + modulus.length + ' bytes')
+    }
+
+    this.modulus = modulus
+  }
+
+  /**
+   * Set the signature manually.
+   *
+   * The signature must be a valid RSA-PSS siganture.
+   *
+   * @param {Buffer} signature RSA signature.
+   */
+  setSignature (signature) {
+    if (!Buffer.isBuffer(signature)) {
+      throw new TypeError('Signature must be a buffer, was: ' + signature)
+    }
+
+    this.signature = signature
+  }
+
+  /**
+   * Sign the message.
+   *
+   * This method will take the provided message and create a signature using the
+   * provided RSA private key. The resulting signature is stored in the
+   * fulfillment.
+   *
+   * The key should be provided as a PEM encoded private key string.
+   *
+   * The message is padded using RSA-PSS with SHA256.
+   *
+   * @param {Buffer} message Message to sign.
+   * @param {String} privateKey RSA private key
+   */
+  sign (message, privateKey) {
+    if (!this.modulus) {
+      this.setPublicModulus(pem.modulusFromPrivateKey(privateKey))
+    }
+    const pss = new Pss()
+    const modulusHighByteBitLength = this.modulus[0].toString(2).length
+    const modulusBitLength = (this.modulus.length - 1) * 8 + modulusHighByteBitLength
+    const paddedMessage = pss.encode(message, modulusBitLength - 1)
+    this.signature = crypto.privateEncrypt({
+      key: privateKey,
+      padding: constants.RSA_NO_PADDING
+    }, paddedMessage)
+  }
+
+  /**
+   * Generate the contents of the condition hash.
+   *
+   * Writes the contents of the condition hash to a Hasher. Used internally by
+   * `getCondition`.
+   *
+   * @param {Hasher} hasher Destination where the hash payload will be written.
+   *
+   * @private
+   */
+  writeHashPayload (hasher) {
+    this.writeCommonHeader(hasher)
+  }
+
+  /**
+   * Parse the payload of an RSA fulfillment.
+   *
+   * Read a fulfillment payload from a Reader and populate this object with that
+   * fulfillment.
+   *
+   * @param {Reader} reader Source to read the fulfillment payload from.
+   *
+   * @private
+   */
+  parsePayload (reader) {
+    this.setPublicModulus(reader.readVarOctetString())
+    this.setSignature(reader.readVarOctetString())
+  }
+
+  /**
+   * Generate the fulfillment payload.
+   *
+   * This writes the fulfillment payload to a Writer.
+   *
+   * @param {Writer} writer Subject for writing the fulfillment payload.
+   *
+   * @private
+   */
+  writePayload (writer) {
+    if (!this.signature) {
+      throw new MissingDataError('Requires a signature')
+    }
+
+    this.writeCommonHeader(writer)
+    writer.writeVarOctetString(this.signature)
+  }
+
+  /**
+   * Calculates the longest possible fulfillment length.
+   *
+   * The longest fulfillment for an RSA condition is the length of a fulfillment
+   * where the dynamic message length equals its maximum length.
+   *
+   * @return {Number} Maximum length of the fulfillment payload
+   *
+   * @private
+   */
+  calculateMaxFulfillmentLength () {
+    const predictor = new Predictor()
+
+    if (!this.modulus) {
+      throw new MissingDataError('Requires a public modulus')
+    }
+
+    // Calculate the length that the common header would have
+    this.writeCommonHeader(predictor)
+
+    // Signature
+    predictor.writeVarOctetString(this.modulus)
+
+    return predictor.getSize()
+  }
+
+  /**
+   * Verify the signature of this RSA fulfillment.
+   *
+   * The signature of this RSA fulfillment is verified against the provided
+   * message and the condition's public modulus.
+   *
+   * @param {Buffer} message Message to verify.
+   * @return {Boolean} Whether this fulfillment is valid.
+   */
+  validate (message) {
+    if (!Buffer.isBuffer(message)) {
+      throw new Error('Message must be provided as a Buffer, was: ' + message)
+    }
+
+    // Verify signature
+    const publicKey = pem.modulusToPem(this.modulus)
+    const encodedMessage = crypto.publicDecrypt({
+      key: publicKey,
+      padding: constants.RSA_NO_PADDING
+    }, this.signature)
+    const pss = new Pss()
+    const modulusHighByteBitLength = this.modulus[0].toString(2).length
+    const modulusBitLength = (this.modulus.length - 1) * 8 + modulusHighByteBitLength
+    const pssResult = pss.verify(message, encodedMessage, modulusBitLength - 1)
+
+    if (!pssResult) {
+      throw new ValidationError('Invalid RSA signature')
+    }
+
+    return true
+  }
+}
+
+RsaSha256.TYPE_ID = 3
+RsaSha256.FEATURE_BITMASK = 0x11
+
+module.exports = RsaSha256
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+</div>
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 26 2016 18:17:12 GMT-0700 (PDT)
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<script src="scripts/custom.js"></script>
+</body>
+</html>

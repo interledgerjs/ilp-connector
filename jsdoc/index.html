@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Home - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300,200,600,700|Droid+Sans+Mono|Titillium+Web:400,300,600' rel='stylesheet' type='text/css'>
+    <link href="assets/favicon-new.ico" rel="icon" type="image/x-icon">
+     <!-- Bootstrap core CSS -->
+    <link href="styles/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link type="text/css" rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/"><img class="logo" alt="interledger" src="assets/ilp_icon.png"/></a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/overview.html">Docs</a></li>
+        <li><a href="/community.html">Community</a></li>
+        <li><a href="/news.html">News</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <div class="onoffswitch">
+            <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch">
+            <label class="onoffswitch-label" for="myonoffswitch"></label>
+          </div>
+        </li>
+        <li><a target="_blank" href="https://github.com/interledger">Github</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="container main-wrapper">
+<nav class="col-sm-4 hidden-xs sidebar-wrapper">
+    <div id="sidebar" class="sidebar">
+        <div class="overview-back"><a href="/overview.html"><i class="fa fa-angle-double-left" aria-hidden="true"></i> Back to Overview</a></div>
+        <h2><a href="index.html">Five Bells Shared</a></h2><h3>Classes</h3><ul><li><a href="module-types-Condition.html">Condition</a><ul class='methods'><li data-type='method'><a href="module-types-Condition.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Condition.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Condition.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#getHash">getHash</a></li><li data-type='method'><a href="module-types-Condition.html#getMaxFulfillmentLength">getMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Condition.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Condition.html#setBitmask">setBitmask</a></li><li data-type='method'><a href="module-types-Condition.html#setHash">setHash</a></li><li data-type='method'><a href="module-types-Condition.html#setMaxFulfillmentLength">setMaxFulfillmentLength</a></li><li data-type='method'><a href="module-types-Condition.html#setTypeId">setTypeId</a></li><li data-type='method'><a href="module-types-Condition.html#validate">validate</a></li></ul></li><li><a href="module-types-Ed25519.html">Ed25519</a><ul class='methods'><li data-type='method'><a href="module-types-Ed25519.html#generateHash">generateHash</a></li><li data-type='method'><a href="module-types-Ed25519.html#setPublicKey">setPublicKey</a></li><li data-type='method'><a href="module-types-Ed25519.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-Ed25519.html#sign">sign</a></li><li data-type='method'><a href="module-types-Ed25519.html#validate">validate</a></li></ul></li><li><a href="module-types-Fulfillment.html">Fulfillment</a><ul class='methods'><li data-type='method'><a href="module-types-Fulfillment.html#.fromBinary">fromBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#.fromUri">fromUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getCondition">getCondition</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionBinary">getConditionBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getConditionUri">getConditionUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#getTypeId">getTypeId</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeBinary">serializeBinary</a></li><li data-type='method'><a href="module-types-Fulfillment.html#serializeUri">serializeUri</a></li><li data-type='method'><a href="module-types-Fulfillment.html#validate">validate</a></li></ul></li><li><a href="module-types-PrefixSha256.html">PrefixSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PrefixSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setPrefix">setPrefix</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubcondition">setSubcondition</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubconditionUri">setSubconditionUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillment">setSubfulfillment</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#setSubfulfillmentUri">setSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-PrefixSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-PreimageSha256.html">PreimageSha256</a><ul class='methods'><li data-type='method'><a href="module-types-PreimageSha256.html#setPreimage">setPreimage</a></li><li data-type='method'><a href="module-types-PreimageSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-RsaSha256.html">RsaSha256</a><ul class='methods'><li data-type='method'><a href="module-types-RsaSha256.html#setPublicModulus">setPublicModulus</a></li><li data-type='method'><a href="module-types-RsaSha256.html#setSignature">setSignature</a></li><li data-type='method'><a href="module-types-RsaSha256.html#sign">sign</a></li><li data-type='method'><a href="module-types-RsaSha256.html#validate">validate</a></li></ul></li><li><a href="module-types-ThresholdSha256.html">ThresholdSha256</a><ul class='methods'><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubcondition">addSubcondition</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubconditionUri">addSubconditionUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillment">addSubfulfillment</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#addSubfulfillmentUri">addSubfulfillmentUri</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#getBitmask">getBitmask</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#setThreshold">setThreshold</a></li><li data-type='method'><a href="module-types-ThresholdSha256.html#validate">validate</a></li></ul></li><li><a href="module-util-Base64Url.html">Base64Url</a><ul class='methods'><li data-type='method'><a href="module-util-Base64Url.html#.decode">decode</a></li><li data-type='method'><a href="module-util-Base64Url.html#.encode">encode</a></li></ul></li><li><a href="module-util-BaseError.html">BaseError</a></li><li><a href="module-util-Pem.html">Pem</a><ul class='methods'><li data-type='method'><a href="module-util-Pem.html#.modulusFromPrivateKey">modulusFromPrivateKey</a></li><li data-type='method'><a href="module-util-Pem.html#.modulusToPem">modulusToPem</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-types.html">types</a></li><li><a href="module-util.html">util</a></li></ul>
+    </div>
+</nav>
+
+<div id="main" class="col-sm-8 col-xs-12">
+    
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    
+
+
+    <section class="readme">
+        <article><h1>Crypto Conditions</h1><blockquote>
+<p>Implementation of crypto-conditions</p>
+</blockquote>
+<h2>Specification</h2><p>Editor's Draft: <a href="https://interledger.org/five-bells-condition/spec.html"><strong>draft-thomas-crypto-conditions-01</strong></a></p>
+<p>This specification is only a draft at this stage and has not been submitted.</p>
+<h2>Table of Contents</h2><ul>
+<li><a href="#crypto-conditions">Crypto Conditions</a><ul>
+<li><a href="#specification">Specification</a></li>
+<li><a href="#table-of-contents">Table of Contents</a></li>
+<li><a href="#usage">Usage</a><ul>
+<li><a href="#validate-a-condition">Validate a Condition</a></li>
+<li><a href="#validate-a-fulfillment-no-message">Validate a Fulfillment (No Message)</a></li>
+<li><a href="#get-condition-from-fulfillment-and-validate">Get Condition from Fulfillment And Validate</a></li>
+<li><a href="#create-a-preimage-sha-256-condition-hashlock">Create a PREIMAGE-SHA-256 Condition (Hashlock)</a></li>
+<li><a href="#create-a-preimage-sha-256-fullfillment-hashlock">Create a PREIMAGE-SHA-256 Fullfillment (Hashlock)</a></li>
+<li><a href="#parse-a-fulfillment">Parse a Fulfillment</a></li>
+<li><a href="#create-an-ed25519-condition">Create an ED25519 Condition</a></li>
+<li><a href="#fulfill-an-ed25519-condition">Fulfill an ED25519 Condition</a></li>
+<li><a href="#verify-a-fulfillment-with-message">Verify a Fulfillment (with Message)</a></li>
+<li><a href="#create-a-threshold-sha-256-condition">Create a THRESHOLD-SHA-256 Condition</a></li>
+<li><a href="#create-a-threshold-sha-256-fulfillment">Create a THRESHOLD-SHA-256 Fulfillment</a></li>
+<li><a href="#create-a-prefix-sha-256-condition">Create a PREFIX-SHA-256 Condition</a></li>
+<li><a href="#create-a-prefix-sha-256-fulfillment">Create a PREFIX-SHA-256 Fulfillment</a></li>
+<li><a href="#create-an-rsa-sha-256-condition">Create an RSA-SHA-256 Condition</a></li>
+<li><a href="#create-an-rsa-sha-256-fulfillment">Create an RSA-SHA-256 Fulfillment</a></li>
+<li><a href="#advanced-parse-a-condition">Advanced: Parse a Condition</a></li>
+<li><a href="#advanced-parse-and-reserialize-a-threshold-sha-256-fulfillment">Advanced: Parse and Reserialize a THRESHOLD-SHA-256 Fulfillment</a></li>
+<li><a href="#advanced-manually-create-a-condition">Advanced: Manually Create a Condition</a></li>
+</ul>
+</li>
+<li><a href="#api-reference">API Reference</a><ul>
+<li><a href="#typescondition">types~Condition</a><ul>
+<li><a href="#conditiongettypeid--codenumbercode">condition.getTypeId() ⇒ <code>Number</code></a></li>
+<li><a href="#conditionsettypeidtype">condition.setTypeId(type)</a></li>
+<li><a href="#conditiongetbitmask--codenumbercode">condition.getBitmask() ⇒ <code>Number</code></a></li>
+<li><a href="#conditionsetbitmaskbitmask">condition.setBitmask(bitmask)</a></li>
+<li><a href="#conditiongethash--codebuffercode">condition.getHash() ⇒ <code>Buffer</code></a></li>
+<li><a href="#conditionsethashhash">condition.setHash(hash)</a></li>
+<li><a href="#conditiongetmaxfulfillmentlength--codenumbercode">condition.getMaxFulfillmentLength() ⇒ <code>Number</code></a></li>
+<li><a href="#conditionsetmaxfulfillmentlengthmaximum">condition.setMaxFulfillmentLength(Maximum)</a></li>
+<li><a href="#conditionserializeuri--codestringcode">condition.serializeUri() ⇒ <code>String</code></a></li>
+<li><a href="#conditionserializebinary--codebuffercode">condition.serializeBinary() ⇒ <code>Buffer</code></a></li>
+<li><a href="#conditionvalidate--codebooleancode">condition.validate() ⇒ <code>Boolean</code></a></li>
+<li><a href="#conditionfromuriserializedcondition--codeconditioncode">Condition.fromUri(serializedCondition) ⇒ <code>Condition</code></a></li>
+<li><a href="#conditionfrombinaryreader--codeconditioncode">Condition.fromBinary(reader) ⇒ <code>Condition</code></a></li>
+</ul>
+</li>
+<li><a href="#typesfulfillment">types~Fulfillment</a><ul>
+<li><a href="#fulfillmentgettypeid--codenumbercode">fulfillment.getTypeId() ⇒ <code>Number</code></a></li>
+<li><a href="#fulfillmentgetbitmask--codenumbercode">fulfillment.getBitmask() ⇒ <code>Number</code></a></li>
+<li><a href="#fulfillmentgetcondition--codeconditioncode">fulfillment.getCondition() ⇒ <code>Condition</code></a></li>
+<li><a href="#fulfillmentgetconditionuri--codestringcode">fulfillment.getConditionUri() ⇒ <code>String</code></a></li>
+<li><a href="#fulfillmentgetconditionbinary--codebuffercode">fulfillment.getConditionBinary() ⇒ <code>Buffer</code></a></li>
+<li><a href="#fulfillmentserializeuri--codestringcode">fulfillment.serializeUri() ⇒ <code>String</code></a></li>
+<li><a href="#fulfillmentserializebinary--codebuffercode">fulfillment.serializeBinary() ⇒ <code>Buffer</code></a></li>
+<li><a href="#fulfillmentvalidate--codebooleancode">fulfillment.validate() ⇒ <code>Boolean</code></a></li>
+<li><a href="#fulfillmentfromuriserializedfulfillment--codefulfillmentcode">Fulfillment.fromUri(serializedFulfillment) ⇒ <code>Fulfillment</code></a></li>
+<li><a href="#fulfillmentfrombinaryreader--codefulfillmentcode">Fulfillment.fromBinary(reader) ⇒ <code>Fulfillment</code></a></li>
+</ul>
+</li>
+<li><a href="#typesed25519">types~Ed25519</a><ul>
+<li><a href="#ed25519setpublickeypublickey">ed25519.setPublicKey(publicKey)</a></li>
+<li><a href="#ed25519setsignaturesignature">ed25519.setSignature(signature)</a></li>
+<li><a href="#ed25519signmessage-privatekey">ed25519.sign(message, privateKey)</a></li>
+<li><a href="#ed25519generatehashhasher">ed25519.generateHash(hasher)</a></li>
+<li><a href="#ed25519validatemessage--codebooleancode">ed25519.validate(message) ⇒ <code>Boolean</code></a></li>
+</ul>
+</li>
+<li><a href="#typesprefixsha256">types~PrefixSha256</a><ul>
+<li><a href="#prefixsha256setsubconditionsubcondition">prefixSha256.setSubcondition(subcondition)</a></li>
+<li><a href="#prefixsha256setsubconditionurisubcondition">prefixSha256.setSubconditionUri(Subcondition)</a></li>
+<li><a href="#prefixsha256setsubfulfillmentfulfillment">prefixSha256.setSubfulfillment(fulfillment)</a></li>
+<li><a href="#prefixsha256setsubfulfillmenturisubfulfillment">prefixSha256.setSubfulfillmentUri(Subfulfillment)</a></li>
+<li><a href="#prefixsha256setprefixprefix">prefixSha256.setPrefix(prefix)</a></li>
+<li><a href="#prefixsha256getbitmask--codenumbercode">prefixSha256.getBitmask() ⇒ <code>Number</code></a></li>
+<li><a href="#prefixsha256validatemessage--codebooleancode">prefixSha256.validate(message) ⇒ <code>Boolean</code></a></li>
+</ul>
+</li>
+<li><a href="#typespreimagesha256">types~PreimageSha256</a><ul>
+<li><a href="#preimagesha256setpreimagepreimage">preimageSha256.setPreimage(preimage)</a></li>
+<li><a href="#preimagesha256validate--codebooleancode">preimageSha256.validate() ⇒ <code>Boolean</code></a></li>
+</ul>
+</li>
+<li><a href="#typesrsasha256">types~RsaSha256</a><ul>
+<li><a href="#rsasha256setpublicmodulusmodulus">rsaSha256.setPublicModulus(modulus)</a></li>
+<li><a href="#rsasha256setsignaturesignature">rsaSha256.setSignature(signature)</a></li>
+<li><a href="#rsasha256signmessage-privatekey">rsaSha256.sign(message, privateKey)</a></li>
+<li><a href="#rsasha256validatemessage--codebooleancode">rsaSha256.validate(message) ⇒ <code>Boolean</code></a></li>
+</ul>
+</li>
+<li><a href="#typesthresholdsha256">types~ThresholdSha256</a><ul>
+<li><a href="#thresholdsha256addsubconditionsubcondition-weight">thresholdSha256.addSubcondition(subcondition, [weight])</a></li>
+<li><a href="#thresholdsha256addsubconditionurisubcondition">thresholdSha256.addSubconditionUri(Subcondition)</a></li>
+<li><a href="#thresholdsha256addsubfulfillmentfulfillment-weight">thresholdSha256.addSubfulfillment(Fulfillment, [weight])</a></li>
+<li><a href="#thresholdsha256addsubfulfillmenturisubfulfillment">thresholdSha256.addSubfulfillmentUri(Subfulfillment)</a></li>
+<li><a href="#thresholdsha256setthresholdthreshold">thresholdSha256.setThreshold(threshold)</a></li>
+<li><a href="#thresholdsha256getbitmask--codenumbercode">thresholdSha256.getBitmask() ⇒ <code>Number</code></a></li>
+<li><a href="#thresholdsha256validatemessage--codebooleancode">thresholdSha256.validate(message) ⇒ <code>Boolean</code></a></li>
+</ul>
+</li>
+<li><a href="#utilbaseerror">util~BaseError</a></li>
+<li><a href="#utilbase64url">util~Base64Url</a><ul>
+<li><a href="#base64urldecodebase64urlstring--codebuffercode">Base64Url.decode(base64urlString) ⇒ <code>Buffer</code></a></li>
+<li><a href="#base64urlencodebuffer--codestringcode">Base64Url.encode(buffer) ⇒ <code>String</code></a></li>
+</ul>
+</li>
+<li><a href="#utilpem">util~Pem</a><ul>
+<li><a href="#pemmodulustopemmodulus--codestringcode">Pem.modulusToPem(modulus) ⇒ <code>String</code></a></li>
+<li><a href="#pemmodulusfromprivatekeyprivatekey--codebuffercode">Pem.modulusFromPrivateKey(privateKey) ⇒ <code>Buffer</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Usage</h2><h3>Validate a Condition</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+// Check a condition for validity
+const condition = 'cc:0:3:47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU:0'
+const validationResult = cc.validateCondition(condition)
+// validationResult === true</code></pre><p>This will ensure that the requested type, features and fulfillment length are
+all accepted by the current implementation.</p>
+<h3>Validate a Fulfillment (No Message)</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const condition = 'cc:0:3:47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU:0'
+const fulfillment = 'cf:0:'
+const validationResult = cc.validateFulfillment(fulfillment, condition)
+// validationResult === true</code></pre><p>This validates the fulfillment and ensures that it matches the given condition.</p>
+<h3>Get Condition from Fulfillment And Validate</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const fulfillment = 'cf:0:'
+const condition = cc.fulfillmentToCondition(fulfillment)
+
+// You could now look up this condition in your database etc.
+
+const validationResult = cc.validateFulfillment(fulfillment, condition)
+// validationResult === true</code></pre><h3>Create a PREIMAGE-SHA-256 Condition (Hashlock)</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const myFulfillment = new cc.PreimageSha256()
+myFulfillment.setPreimage(new Buffer(''))
+console.log(myFulfillment.getConditionUri())
+// prints 'cc:0:3:47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU:0'</code></pre><h3>Create a PREIMAGE-SHA-256 Fullfillment (Hashlock)</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const myFulfillment = new cc.PreimageSha256()
+myFulfillment.setPreimage(new Buffer(''))
+console.log(myFulfillment.serializeUri())
+// prints 'cf:0:'</code></pre><h3>Parse a Fulfillment</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const parsedFulfillment = cc.fromFulfillmentUri('cf:0:')
+// parsedFulfillment instanceof cc.PreimageSha256 === true
+// Note: Merely parsing a fulfillment DOES NOT validate it.
+
+// Validate a fulfillment
+parsedFulfillment.validate()</code></pre><h3>Create an ED25519 Condition</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const ed25519Fulfillment = new cc.Ed25519()
+ed25519Fulfillment.setPublicKey(new Buffer('ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf', 'hex'))
+console.log(ed25519Fulfillment.getConditionUri())
+// prints 'cc:4:20:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r8:96'</code></pre><h3>Fulfill an ED25519 Condition</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const edPrivateKey = new Buffer('833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42', 'hex')
+
+const ed25519Fulfillment = new cc.Ed25519()
+// ed25519Fulfillment.setPublicKey(new Buffer('...'))
+// ed25519Fulfillment.setSignature(new Buffer('...'))
+// -- or --
+ed25519Fulfillment.sign(new Buffer('Hello World! Conditions are here!'), edPrivateKey)
+console.log(ed25519Fulfillment.getConditionUri())
+// prints 'cc:4:20:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r8:96'
+console.log(ed25519Fulfillment.serializeUri())
+// prints 'cf:4:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r-2IpH62UMvjymLnEpIldvik_b_2hpo2t8Mze9fR6DHISpf6jzal6P0wD6p8uisHOyGpR1FISer26CdG28zHAcK'</code></pre><h3>Verify a Fulfillment (with Message)</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const fulfillment = 'cf:4:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r-2IpH62UMvjymLnEpIldvik_b_2hpo2t8Mze9fR6DHISpf6jzal6P0wD6p8uisHOyGpR1FISer26CdG28zHAcK'
+const condition = 'cc:4:20:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r8:96'
+const message = new Buffer('Hello World! Conditions are here!')
+
+const result = cc.validateFulfillment(fulfillment, condition, message)
+// result === true</code></pre><h3>Create a THRESHOLD-SHA-256 Condition</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const thresholdFulfillment = new cc.ThresholdSha256()
+thresholdFulfillment.addSubconditionUri('cc:4:20:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r8:96')
+thresholdFulfillment.addSubfulfillmentUri('cf:0:')
+thresholdFulfillment.setThreshold(1) // defaults to subconditions.length
+console.log(thresholdFulfillment.getConditionUri())
+// prints 'cc:2:2b:mJUaGKCuF5n-3tfXM2U81VYtHbX-N8MP6kz8R-ASwNQ:146'</code></pre><h3>Create a THRESHOLD-SHA-256 Fulfillment</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const thresholdFulfillment = new cc.ThresholdSha256()
+thresholdFulfillment.addSubfulfillmentUri('cf:4:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r-2IpH62UMvjymLnEpIldvik_b_2hpo2t8Mze9fR6DHISpf6jzal6P0wD6p8uisHOyGpR1FISer26CdG28zHAcK')
+thresholdFulfillment.addSubfulfillmentUri('cf:0:')
+thresholdFulfillment.setThreshold(1) // defaults to subconditions.length
+console.log(thresholdFulfillment.getConditionUri())
+// prints 'cc:2:2b:mJUaGKCuF5n-3tfXM2U81VYtHbX-N8MP6kz8R-ASwNQ:146'
+const thresholdFulfillmentUri = thresholdFulfillment.serializeUri()
+// Note: If there are more than enough fulfilled subconditions, shorter
+// fulfillments will be chosen over longer ones.
+// thresholdFulfillmentUri.length === 77
+console.log(thresholdFulfillmentUri)
+// prints 'cf:2:AQEBAgEBAwAAAAABAQAnAAQBICDsFyuTrV5WO_STLHDhJFA0w1Rn7y79TWTr-BloNGfivwFg'</code></pre><h3>Create a PREFIX-SHA-256 Condition</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const prefix = new cc.PrefixSha256()
+prefix.setPrefix(new Buffer('2016:'))
+prefix.setSubconditionUri('cc:4:20:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r8:96')
+console.log(prefix.getConditionUri())
+// prints 'cc:1:25:7myveZs3EaZMMuez-3kq6u69BDNYMYRMi_VF9yIuFLc:102'</code></pre><h3>Create a PREFIX-SHA-256 Fulfillment</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const prefix = new cc.PrefixSha256()
+prefix.setPrefix(new Buffer('Hello World! '))
+prefix.setSubfulfillmentUri('cf:4:7Bcrk61eVjv0kyxw4SRQNMNUZ-8u_U1k6_gZaDRn4r-2IpH62UMvjymLnEpIldvik_b_2hpo2t8Mze9fR6DHISpf6jzal6P0wD6p8uisHOyGpR1FISer26CdG28zHAcK')
+const fulfillmentUri = prefix.serializeUri()
+console.log(fulfillmentUri)
+// prints 'cf:1:DUhlbGxvIFdvcmxkISAABGDsFyuTrV5WO_STLHDhJFA0w1Rn7y79TWTr-BloNGfiv7YikfrZQy-PKYucSkiV2-KT9v_aGmja3wzN719HoMchKl_qPNqXo_TAPqny6Kwc7IalHUUhJ6vboJ0bbzMcBwo'
+
+const conditionUri = prefix.getConditionUri()
+const message = new Buffer('Conditions are here!')
+cc.validateFulfillment(fulfillmentUri, conditionUri, message)</code></pre><h3>Create an RSA-SHA-256 Condition</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const rsaFulfillment = new cc.RsaSha256()
+rsaFulfillment.setPublicModulus(new Buffer('b30e7a938783babf836850ff49e14f87e3f92d5c46e33feca3e4f0b22358580b11765995f4b8eea7fb4712c2e1e316f7f775a953d232216a169d9a64ddc007120a400b37f2afc077b62fe304de74de6a119ec4076b529c4f6096b0baad4f533df0173b9b822fd85d65fa4befa92d8f524f69cbca0136bd80d095c169aec0e095', 'hex'))
+console.log(rsaFulfillment.getConditionUri())
+// prints 'cc:3:11:Bw-r77AGqSCL0huuMQYj3KW0Jh67Fpayeq9h_4UJctg:260'</code></pre><h3>Create an RSA-SHA-256 Fulfillment</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const exampleMessage = new Buffer('Hello World! Conditions are here!')
+const privateKey =
+'-----BEGIN RSA PRIVATE KEY-----\n' +
+'MIICXAIBAAKBgQCzDnqTh4O6v4NoUP9J4U+H4/ktXEbjP+yj5PCyI1hYCxF2WZX0\n' +
+'uO6n+0cSwuHjFvf3dalT0jIhahadmmTdwAcSCkALN/KvwHe2L+ME3nTeahGexAdr\n' +
+'UpxPYJawuq1PUz3wFzubgi/YXWX6S++pLY9ST2nLygE2vYDQlcFprsDglQIDAQAB\n' +
+'AoGAB7Rjyd1W6b475U027vLm/S3uFumVk0m44QSE5uVmc8NmKPWJ4lHi0w+Y61G/\n' +
+'booaeWdytcyho5ZxCq8OEAynQSkJiBNtzBg+xCGcO6GPOf+dFBYZFQsXiG/EbwrA\n' +
+'pT0cv+AqiGzLIAh2WtNI6cr5/ZEMScNhMcQ4AZ1kRyUdpIECQQDbRtFz0dSMMvS/\n' +
+'1KtDZxej9HqC5xOEuCDEZuLvk4bW4mC02OP/H/VV5qqclz0LIvMWK6TDtoFRpkvD\n' +
+'UYiYoc85AkEA0QtH1zQlGGlliLcWoPeqjkbtf3ocmYy2exBSCwnOf87xV//k9pNC\n' +
+'7jmoIzRgKVef8kQR/mXWszo3WbWMt0aAPQJBAMtoRD/GM/7h/fw9Uamy5lEnJsZr\n' +
+'iMWi8HKAZp+LIJgRY1gfolA12yWWVknwWaYNA6ZbUfpjQE73jmxfI/FCmLECQBmF\n' +
+'WAr06cZ2L5gmShPyyJbAIASdItq4LBsQHgQM+XHvENXeftR/m/87eMR7g3XopbVN\n' +
+'DClTw4d0Bwfjuz8w0z0CQFG7RmgPqsTEGfojpRgLZnec87R6XhuUY5ZoGgpnx7r9\n' +
+'/zGekAwjBZDKpc+H0jC14JjMzRRKeWVEpDU3k2cfBH0=\n' +
+'-----END RSA PRIVATE KEY-----\n'
+
+const rsaFulfillment = new cc.RsaSha256()
+// rsaFulfillment.setPublicModulus(new Buffer('...'))
+// rsaFulfillment.setSignature(new Buffer('...'))
+// -- or --
+rsaFulfillment.sign(exampleMessage, privateKey)
+console.log(rsaFulfillment.serializeUri().length)
+// prints '352'
+
+// Verify RSA-SHA256 condition
+const rsaFulfillmentUri = rsaFulfillment.serializeUri()
+const rsaConditionUri = rsaFulfillment.getConditionUri()
+cc.validateFulfillment(rsaFulfillmentUri, rsaConditionUri, exampleMessage)</code></pre><h3>Advanced: Parse a Condition</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+// Parse a condition
+const condition = 'cc:0:3:47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU:0'
+const parsedCondition = cc.fromConditionUri(condition)
+console.log(parsedCondition.constructor.name)
+// prints 'Condition'
+
+// Compile to a condition
+console.log(parsedCondition.serializeUri())
+// prints condition</code></pre><h3>Advanced: Parse and Reserialize a THRESHOLD-SHA-256 Fulfillment</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const thresholdFulfillmentUri = 'cf:2:AQEBAgEBAwAAAAABAQAnAAQBICDsFyuTrV5WO_STLHDhJFA0w1Rn7y79TWTr-BloNGfivwFg'
+const reparsedFulfillment = cc.fromFulfillmentUri(thresholdFulfillmentUri)
+
+const reserializedFulfillment = reparsedFulfillment.serializeUri()
+console.log(reserializedFulfillment)
+// prints thresholdFulfillmentUri</code></pre><h3>Advanced: Manually Create a Condition</h3><pre class="prettyprint source lang-js"><code>const cc = require('five-bells-condition')
+
+const myCondition = new cc.Condition()
+myCondition.setTypeId(cc.PreimageSha256.TYPE_ID)
+myCondition.setBitmask(cc.PreimageSha256.FEATURE_BITMASK)
+myCondition.setHash(new Buffer('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'hex'))
+myCondition.setMaxFulfillmentLength(0)
+console.log(myCondition.serializeUri())
+// prints 'cc:0:3:47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU:0'</code></pre><h2>API Reference</h2><ul>
+<li><a href="#module_types">types</a><ul>
+<li><a href="#module_types..Condition">~Condition</a><ul>
+<li><em>instance</em><ul>
+<li><a href="#module_types..Condition+getTypeId">.getTypeId()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Condition+setTypeId">.setTypeId(type)</a></li>
+<li><a href="#module_types..Condition+getBitmask">.getBitmask()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Condition+setBitmask">.setBitmask(bitmask)</a></li>
+<li><a href="#module_types..Condition+getHash">.getHash()</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_types..Condition+setHash">.setHash(hash)</a></li>
+<li><a href="#module_types..Condition+getMaxFulfillmentLength">.getMaxFulfillmentLength()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Condition+setMaxFulfillmentLength">.setMaxFulfillmentLength(Maximum)</a></li>
+<li><a href="#module_types..Condition+serializeUri">.serializeUri()</a> ⇒ <code>String</code></li>
+<li><a href="#module_types..Condition+serializeBinary">.serializeBinary()</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_types..Condition+validate">.validate()</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+<li><em>static</em><ul>
+<li><a href="#module_types..Condition.fromUri">.fromUri(serializedCondition)</a> ⇒ <code>Condition</code></li>
+<li><a href="#module_types..Condition.fromBinary">.fromBinary(reader)</a> ⇒ <code>Condition</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#module_types..Fulfillment">~Fulfillment</a><ul>
+<li><em>instance</em><ul>
+<li><a href="#module_types..Fulfillment+getTypeId">.getTypeId()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Fulfillment+getBitmask">.getBitmask()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Fulfillment+getCondition">.getCondition()</a> ⇒ <code>Condition</code></li>
+<li><a href="#module_types..Fulfillment+getConditionUri">.getConditionUri()</a> ⇒ <code>String</code></li>
+<li><a href="#module_types..Fulfillment+getConditionBinary">.getConditionBinary()</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_types..Fulfillment+serializeUri">.serializeUri()</a> ⇒ <code>String</code></li>
+<li><a href="#module_types..Fulfillment+serializeBinary">.serializeBinary()</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_types..Fulfillment+validate">.validate()</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+<li><em>static</em><ul>
+<li><a href="#module_types..Fulfillment.fromUri">.fromUri(serializedFulfillment)</a> ⇒ <code>Fulfillment</code></li>
+<li><a href="#module_types..Fulfillment.fromBinary">.fromBinary(reader)</a> ⇒ <code>Fulfillment</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#module_types..Ed25519">~Ed25519</a><ul>
+<li><a href="#module_types..Ed25519+setPublicKey">.setPublicKey(publicKey)</a></li>
+<li><a href="#module_types..Ed25519+setSignature">.setSignature(signature)</a></li>
+<li><a href="#module_types..Ed25519+sign">.sign(message, privateKey)</a></li>
+<li><a href="#module_types..Ed25519+generateHash">.generateHash(hasher)</a></li>
+<li><a href="#module_types..Ed25519+validate">.validate(message)</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+<li><a href="#module_types..PrefixSha256">~PrefixSha256</a><ul>
+<li><a href="#module_types..PrefixSha256+setSubcondition">.setSubcondition(subcondition)</a></li>
+<li><a href="#module_types..PrefixSha256+setSubconditionUri">.setSubconditionUri(Subcondition)</a></li>
+<li><a href="#module_types..PrefixSha256+setSubfulfillment">.setSubfulfillment(fulfillment)</a></li>
+<li><a href="#module_types..PrefixSha256+setSubfulfillmentUri">.setSubfulfillmentUri(Subfulfillment)</a></li>
+<li><a href="#module_types..PrefixSha256+setPrefix">.setPrefix(prefix)</a></li>
+<li><a href="#module_types..PrefixSha256+getBitmask">.getBitmask()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..PrefixSha256+validate">.validate(message)</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+<li><a href="#module_types..PreimageSha256">~PreimageSha256</a><ul>
+<li><a href="#module_types..PreimageSha256+setPreimage">.setPreimage(preimage)</a></li>
+<li><a href="#module_types..PreimageSha256+validate">.validate()</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+<li><a href="#module_types..RsaSha256">~RsaSha256</a><ul>
+<li><a href="#module_types..RsaSha256+setPublicModulus">.setPublicModulus(modulus)</a></li>
+<li><a href="#module_types..RsaSha256+setSignature">.setSignature(signature)</a></li>
+<li><a href="#module_types..RsaSha256+sign">.sign(message, privateKey)</a></li>
+<li><a href="#module_types..RsaSha256+validate">.validate(message)</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+<li><a href="#module_types..ThresholdSha256">~ThresholdSha256</a><ul>
+<li><a href="#module_types..ThresholdSha256+addSubcondition">.addSubcondition(subcondition, [weight])</a></li>
+<li><a href="#module_types..ThresholdSha256+addSubconditionUri">.addSubconditionUri(Subcondition)</a></li>
+<li><a href="#module_types..ThresholdSha256+addSubfulfillment">.addSubfulfillment(Fulfillment, [weight])</a></li>
+<li><a href="#module_types..ThresholdSha256+addSubfulfillmentUri">.addSubfulfillmentUri(Subfulfillment)</a></li>
+<li><a href="#module_types..ThresholdSha256+setThreshold">.setThreshold(threshold)</a></li>
+<li><a href="#module_types..ThresholdSha256+getBitmask">.getBitmask()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..ThresholdSha256+validate">.validate(message)</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><a href="#module_util">util</a><ul>
+<li><a href="#module_util..BaseError">~BaseError</a></li>
+<li><a href="#module_util..Base64Url">~Base64Url</a><ul>
+<li><a href="#module_util..Base64Url.decode">.decode(base64urlString)</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_util..Base64Url.encode">.encode(buffer)</a> ⇒ <code>String</code></li>
+</ul>
+</li>
+<li><a href="#module_util..Pem">~Pem</a><ul>
+<li><a href="#module_util..Pem.modulusToPem">.modulusToPem(modulus)</a> ⇒ <code>String</code></li>
+<li><a href="#module_util..Pem.modulusFromPrivateKey">.modulusFromPrivateKey(privateKey)</a> ⇒ <code>Buffer</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="module_types..Condition"></a></p>
+<h3>types~Condition</h3><p>Crypto-condition.</p>
+<p>A primary design goal of crypto-conditions was to keep the size of conditions
+constant. Even a complex multi-signature can be represented by the same size
+condition as a simple hashlock.</p>
+<p>However, this means that a condition only carries the absolute minimum
+information required. It does not tell you anything about its structure.</p>
+<p>All that is included with a condition is the fingerprint (usually a hash of
+the parts of the fulfillment that are known up-front, e.g. public keys), the
+maximum fulfillment size, the set of features used and the condition type.</p>
+<p>This information is just enough that an implementation can tell with
+certainty whether it would be able to process the corresponding fulfillment.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_types">types</a></code>  </p>
+<ul>
+<li><a href="#module_types..Condition">~Condition</a><ul>
+<li><em>instance</em><ul>
+<li><a href="#module_types..Condition+getTypeId">.getTypeId()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Condition+setTypeId">.setTypeId(type)</a></li>
+<li><a href="#module_types..Condition+getBitmask">.getBitmask()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Condition+setBitmask">.setBitmask(bitmask)</a></li>
+<li><a href="#module_types..Condition+getHash">.getHash()</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_types..Condition+setHash">.setHash(hash)</a></li>
+<li><a href="#module_types..Condition+getMaxFulfillmentLength">.getMaxFulfillmentLength()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Condition+setMaxFulfillmentLength">.setMaxFulfillmentLength(Maximum)</a></li>
+<li><a href="#module_types..Condition+serializeUri">.serializeUri()</a> ⇒ <code>String</code></li>
+<li><a href="#module_types..Condition+serializeBinary">.serializeBinary()</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_types..Condition+validate">.validate()</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+<li><em>static</em><ul>
+<li><a href="#module_types..Condition.fromUri">.fromUri(serializedCondition)</a> ⇒ <code>Condition</code></li>
+<li><a href="#module_types..Condition.fromBinary">.fromBinary(reader)</a> ⇒ <code>Condition</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="module_types..Condition+getTypeId"></a></p>
+<h4>condition.getTypeId() ⇒ <code>Number</code></h4><p>Return the type of this condition.</p>
+<p>The type is a unique integer ID assigned to each type of condition.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>Number</code> - Type corresponding to this condition.<br><a name="module_types..Condition+setTypeId"></a></p>
+<h4>condition.setTypeId(type)</h4><p>Set the type.</p>
+<p>Sets the type ID for this condition.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td><code>Number</code></td>
+<td>Integer representation of type.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Condition+getBitmask"></a></p>
+<h4>condition.getBitmask() ⇒ <code>Number</code></h4><p>Return the bitmask of this condition.</p>
+<p>For simple condition types this is simply the set of bits representing the
+features required by the condition type.</p>
+<p>For structural conditions, this is the bitwise OR of the bitmasks of the
+condition and all its subconditions, recursively.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>Number</code> - Bitmask required to verify this condition.<br><a name="module_types..Condition+setBitmask"></a></p>
+<h4>condition.setBitmask(bitmask)</h4><p>Set the bitmask.</p>
+<p>Sets the required bitmask to validate a fulfillment for this condition.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bitmask</td>
+<td><code>Number</code></td>
+<td>Integer representation of bitmask.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Condition+getHash"></a></p>
+<h4>condition.getHash() ⇒ <code>Buffer</code></h4><p>Return the hash of the condition.</p>
+<p>A primary component of all conditions is the hash. It encodes the static
+properties of the condition. This method enables the conditions to be
+constant size, no matter how complex they actually are. The data used to
+generate the hash consists of all the static properties of the condition
+and is provided later as part of the fulfillment.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>Buffer</code> - Hash of the condition<br><a name="module_types..Condition+setHash"></a></p>
+<h4>condition.setHash(hash)</h4><p>Validate and set the hash of this condition.</p>
+<p>Typically conditions are generated from fulfillments and the hash is
+calculated automatically. However, sometimes it may be necessary to
+construct a condition URI from a known hash. This method enables that case.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hash</td>
+<td><code>Buffer</code></td>
+<td>Hash as binary.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Condition+getMaxFulfillmentLength"></a></p>
+<h4>condition.getMaxFulfillmentLength() ⇒ <code>Number</code></h4><p>Return the maximum fulfillment length.</p>
+<p>The maximum fulfillment length is the maximum allowed length for any
+fulfillment payload to fulfill this condition.</p>
+<p>The condition defines a maximum fulfillment length which all
+implementations will enforce. This allows implementations to verify that
+their local maximum fulfillment size is guaranteed to accomodate any
+possible fulfillment for this condition.</p>
+<p>Otherwise an attacker could craft a fulfillment which exceeds the maximum
+size of one implementation, but meets the maximum size of another, thereby
+violating the fundamental property that fulfillments are either valid
+everywhere or nowhere.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>Number</code> - Maximum length (in bytes) of any fulfillment payload that
+  fulfills this condition..<br><a name="module_types..Condition+setMaxFulfillmentLength"></a></p>
+<h4>condition.setMaxFulfillmentLength(Maximum)</h4><p>Set the maximum fulfillment length.</p>
+<p>The maximum fulfillment length is normally calculated automatically, when
+calling <code>Fulfillment#getCondition</code>. However, when</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Maximum</td>
+<td><code>Number</code></td>
+<td>fulfillment payload length in bytes.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Condition+serializeUri"></a></p>
+<h4>condition.serializeUri() ⇒ <code>String</code></h4><p>Generate the URI form encoding of this condition.</p>
+<p>Turns the condition into a URI containing only URL-safe characters. This
+format is convenient for passing around conditions in URLs, JSON and other
+text-based formats.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>String</code> - Condition as a URI<br><a name="module_types..Condition+serializeBinary"></a></p>
+<h4>condition.serializeBinary() ⇒ <code>Buffer</code></h4><p>Serialize condition to a buffer.</p>
+<p>Encodes the condition as a string of bytes. This is used internally for
+encoding subconditions, but can also be used to passing around conditions
+in a binary protocol for instance.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>Buffer</code> - Serialized condition<br><a name="module_types..Condition+validate"></a></p>
+<h4>condition.validate() ⇒ <code>Boolean</code></h4><p>Ensure the condition is valid according the local rules.</p>
+<p>Checks the condition against the local bitmask (supported condition types)
+and the local maximum fulfillment size.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>Boolean</code> - Whether the condition is valid according to local rules.<br><a name="module_types..Condition.fromUri"></a></p>
+<h4>Condition.fromUri(serializedCondition) ⇒ <code>Condition</code></h4><p>Create a Condition object from a URI.</p>
+<p>This method will parse a condition URI and construct a corresponding
+Condition object.</p>
+<p><strong>Kind</strong>: static method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>Condition</code> - Resulting object  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>serializedCondition</td>
+<td><code>String</code></td>
+<td>URI representing the condition</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Condition.fromBinary"></a></p>
+<h4>Condition.fromBinary(reader) ⇒ <code>Condition</code></h4><p>Create a Condition object from a binary blob.</p>
+<p>This method will parse a stream of binary data and construct a
+corresponding Condition object.</p>
+<p><strong>Kind</strong>: static method of <code><a href="#module_types..Condition">Condition</a></code><br><strong>Returns</strong>: <code>Condition</code> - Resulting object  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>reader</td>
+<td><code>Reader</code></td>
+<td>Binary stream implementing the Reader interface</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Fulfillment"></a></p>
+<h3>types~Fulfillment</h3><p>Base class for fulfillment types.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_types">types</a></code>  </p>
+<ul>
+<li><a href="#module_types..Fulfillment">~Fulfillment</a><ul>
+<li><em>instance</em><ul>
+<li><a href="#module_types..Fulfillment+getTypeId">.getTypeId()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Fulfillment+getBitmask">.getBitmask()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..Fulfillment+getCondition">.getCondition()</a> ⇒ <code>Condition</code></li>
+<li><a href="#module_types..Fulfillment+getConditionUri">.getConditionUri()</a> ⇒ <code>String</code></li>
+<li><a href="#module_types..Fulfillment+getConditionBinary">.getConditionBinary()</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_types..Fulfillment+serializeUri">.serializeUri()</a> ⇒ <code>String</code></li>
+<li><a href="#module_types..Fulfillment+serializeBinary">.serializeBinary()</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_types..Fulfillment+validate">.validate()</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+<li><em>static</em><ul>
+<li><a href="#module_types..Fulfillment.fromUri">.fromUri(serializedFulfillment)</a> ⇒ <code>Fulfillment</code></li>
+<li><a href="#module_types..Fulfillment.fromBinary">.fromBinary(reader)</a> ⇒ <code>Fulfillment</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><a name="module_types..Fulfillment+getTypeId"></a></p>
+<h4>fulfillment.getTypeId() ⇒ <code>Number</code></h4><p>Return the type ID of this fulfillment.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>Number</code> - Type ID as an integer.<br><a name="module_types..Fulfillment+getBitmask"></a></p>
+<h4>fulfillment.getBitmask() ⇒ <code>Number</code></h4><p>Return the bitmask of this fulfillment.</p>
+<p>For simple fulfillment types this is simply the bit representing this type.</p>
+<p>For meta-fulfillments, these are the bits representing the types of the
+subconditions.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>Number</code> - Bitmask corresponding to this fulfillment.<br><a name="module_types..Fulfillment+getCondition"></a></p>
+<h4>fulfillment.getCondition() ⇒ <code>Condition</code></h4><p>Generate condition corresponding to this fulfillment.</p>
+<p>An important property of crypto-conditions is that the condition can always
+be derived from the fulfillment. This makes it very easy to post
+fulfillments to a system without having to specify which condition the
+relate to. The system can keep an index of conditions and look up any
+matching events related to that condition.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>Condition</code> - Condition corresponding to this fulfillment.<br><a name="module_types..Fulfillment+getConditionUri"></a></p>
+<h4>fulfillment.getConditionUri() ⇒ <code>String</code></h4><p>Shorthand for getting condition URI.</p>
+<p>Stands for getCondition().serializeUri().</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>String</code> - Condition URI.<br><a name="module_types..Fulfillment+getConditionBinary"></a></p>
+<h4>fulfillment.getConditionBinary() ⇒ <code>Buffer</code></h4><p>Shorthand for getting condition encoded as binary.</p>
+<p>Stands for getCondition().serializeBinary().</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>Buffer</code> - Binary encoded condition.<br><a name="module_types..Fulfillment+serializeUri"></a></p>
+<h4>fulfillment.serializeUri() ⇒ <code>String</code></h4><p>Generate the URI form encoding of this fulfillment.</p>
+<p>Turns the fulfillment into a URI containing only URL-safe characters. This
+format is convenient for passing around fulfillments in URLs, JSON and
+other text-based formats.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>String</code> - Fulfillment as a URI<br><a name="module_types..Fulfillment+serializeBinary"></a></p>
+<h4>fulfillment.serializeBinary() ⇒ <code>Buffer</code></h4><p>Serialize fulfillment to a buffer.</p>
+<p>Encodes the fulfillment as a string of bytes. This is used internally for
+encoding subfulfillments, but can also be used to passing around
+fulfillments in a binary protocol for instance.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>Buffer</code> - Serialized fulfillment<br><a name="module_types..Fulfillment+validate"></a></p>
+<h4>fulfillment.validate() ⇒ <code>Boolean</code></h4><p>Validate this fulfillment.</p>
+<p>This implementation is a stub and will be overridden by the subclasses.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>Boolean</code> - Validation result<br><a name="module_types..Fulfillment.fromUri"></a></p>
+<h4>Fulfillment.fromUri(serializedFulfillment) ⇒ <code>Fulfillment</code></h4><p>Create a Fulfillment object from a URI.</p>
+<p>This method will parse a fulfillment URI and construct a corresponding
+Fulfillment object.</p>
+<p><strong>Kind</strong>: static method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>Fulfillment</code> - Resulting object  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>serializedFulfillment</td>
+<td><code>String</code></td>
+<td>URI representing the fulfillment</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Fulfillment.fromBinary"></a></p>
+<h4>Fulfillment.fromBinary(reader) ⇒ <code>Fulfillment</code></h4><p>Create a Fulfillment object from a binary blob.</p>
+<p>This method will parse a stream of binary data and construct a
+corresponding Fulfillment object.</p>
+<p><strong>Kind</strong>: static method of <code><a href="#module_types..Fulfillment">Fulfillment</a></code><br><strong>Returns</strong>: <code>Fulfillment</code> - Resulting object  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>reader</td>
+<td><code>Reader</code></td>
+<td>Binary stream implementing the Reader interface</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Ed25519"></a></p>
+<h3>types~Ed25519</h3><p>ED25519: Ed25519 signature condition.</p>
+<p>This condition implements Ed25519 signatures.</p>
+<p>ED25519 is assigned the type ID 4. It relies only on the ED25519 feature
+suite which corresponds to a bitmask of 0x20.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_types">types</a></code>  </p>
+<ul>
+<li><a href="#module_types..Ed25519">~Ed25519</a><ul>
+<li><a href="#module_types..Ed25519+setPublicKey">.setPublicKey(publicKey)</a></li>
+<li><a href="#module_types..Ed25519+setSignature">.setSignature(signature)</a></li>
+<li><a href="#module_types..Ed25519+sign">.sign(message, privateKey)</a></li>
+<li><a href="#module_types..Ed25519+generateHash">.generateHash(hasher)</a></li>
+<li><a href="#module_types..Ed25519+validate">.validate(message)</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_types..Ed25519+setPublicKey"></a></p>
+<h4>ed25519.setPublicKey(publicKey)</h4><p>Set the public publicKey.</p>
+<p>This is the Ed25519 public key. It has to be provided as a buffer.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Ed25519">Ed25519</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>publicKey</td>
+<td><code>Buffer</code></td>
+<td>Public Ed25519 publicKey</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Ed25519+setSignature"></a></p>
+<h4>ed25519.setSignature(signature)</h4><p>Set the signature.</p>
+<p>Instead of using the private key to sign using the sign() method, we can
+also generate the signature elsewhere and pass it in.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Ed25519">Ed25519</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>signature</td>
+<td><code>Buffer</code></td>
+<td>64-byte signature.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Ed25519+sign"></a></p>
+<h4>ed25519.sign(message, privateKey)</h4><p>Sign a message.</p>
+<p>This method will take a message and an Ed25519 private key and store a
+corresponding signature in this fulfillment.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Ed25519">Ed25519</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>message</td>
+<td><code>Buffer</code></td>
+<td>Message to sign.</td>
+</tr>
+<tr>
+<td>privateKey</td>
+<td><code>String</code></td>
+<td>Ed25519 private key.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Ed25519+generateHash"></a></p>
+<h4>ed25519.generateHash(hasher)</h4><p>Generate the condition hash.</p>
+<p>Since the public key is the same size as the hash we'd be putting out here,
+we just return the public key.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Ed25519">Ed25519</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hasher</td>
+<td><code>Hasher</code></td>
+<td>Destination where the hash payload will be written.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..Ed25519+validate"></a></p>
+<h4>ed25519.validate(message) ⇒ <code>Boolean</code></h4><p>Verify the signature of this Ed25519 fulfillment.</p>
+<p>The signature of this Ed25519 fulfillment is verified against the provided
+message and public key.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..Ed25519">Ed25519</a></code><br><strong>Returns</strong>: <code>Boolean</code> - Whether this fulfillment is valid.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>message</td>
+<td><code>Buffer</code></td>
+<td>Message to validate against.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..PrefixSha256"></a></p>
+<h3>types~PrefixSha256</h3><p>PREFIX-SHA-256: Prefix condition using SHA-256.</p>
+<p>A prefix condition will prepend a static prefix to the message before passing
+the prefixed message on to a single subcondition.</p>
+<p>You can use prefix conditions to effectively narrow the scope of a public key
+or set of public keys. Simply take the condition representing the public key
+and place it as a subcondition in a prefix condition. Now any message passed
+to the subcondition will be prepended with a prefix.</p>
+<p>Prefix conditions are especially useful in conjunction with threshold
+conditions. You could have a group of signers, each using a different prefix
+to sign a common message.</p>
+<p>PREFIX-SHA-256 is assigned the type ID 1. It relies on the SHA-256 and PREFIX
+feature suites which corresponds to a feature bitmask of 0x05.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_types">types</a></code>  </p>
+<ul>
+<li><a href="#module_types..PrefixSha256">~PrefixSha256</a><ul>
+<li><a href="#module_types..PrefixSha256+setSubcondition">.setSubcondition(subcondition)</a></li>
+<li><a href="#module_types..PrefixSha256+setSubconditionUri">.setSubconditionUri(Subcondition)</a></li>
+<li><a href="#module_types..PrefixSha256+setSubfulfillment">.setSubfulfillment(fulfillment)</a></li>
+<li><a href="#module_types..PrefixSha256+setSubfulfillmentUri">.setSubfulfillmentUri(Subfulfillment)</a></li>
+<li><a href="#module_types..PrefixSha256+setPrefix">.setPrefix(prefix)</a></li>
+<li><a href="#module_types..PrefixSha256+getBitmask">.getBitmask()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..PrefixSha256+validate">.validate(message)</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_types..PrefixSha256+setSubcondition"></a></p>
+<h4>prefixSha256.setSubcondition(subcondition)</h4><p>Set the (unfulfilled) subcondition.</p>
+<p>Each prefix condition builds on an existing condition which is provided via
+this method.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PrefixSha256">PrefixSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>subcondition</td>
+<td><code>Condition</code></td>
+<td>Condition that will receive the prefixed   message.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..PrefixSha256+setSubconditionUri"></a></p>
+<h4>prefixSha256.setSubconditionUri(Subcondition)</h4><p>Set the (unfulfilled) subcondition.</p>
+<p>This will automatically parse the URI and call setSubcondition.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PrefixSha256">PrefixSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Subcondition</td>
+<td><code>String</code></td>
+<td>URI.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..PrefixSha256+setSubfulfillment"></a></p>
+<h4>prefixSha256.setSubfulfillment(fulfillment)</h4><p>Set the (fulfilled) subcondition.</p>
+<p>When constructing a prefix fulfillment, this method allows you to pass in
+a fulfillment for the condition that will receive the prefixed message.</p>
+<p>Note that you only have to add either the subcondition or a subfulfillment,
+but not both.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PrefixSha256">PrefixSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fulfillment</td>
+<td><code>Fulfillment</code></td>
+<td>Fulfillment to use for the subcondition.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..PrefixSha256+setSubfulfillmentUri"></a></p>
+<h4>prefixSha256.setSubfulfillmentUri(Subfulfillment)</h4><p>Set the (fulfilled) subcondition.</p>
+<p>This will automatically parse the URI and call setSubfulfillment.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PrefixSha256">PrefixSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Subfulfillment</td>
+<td><code>String</code></td>
+<td>URI.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..PrefixSha256+setPrefix"></a></p>
+<h4>prefixSha256.setPrefix(prefix)</h4><p>Set the prefix.</p>
+<p>The prefix will be prepended to the message during validation before the
+message is passed on to the subcondition.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PrefixSha256">PrefixSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>prefix</td>
+<td><code>Buffer</code></td>
+<td>Prefix to apply to the message.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..PrefixSha256+getBitmask"></a></p>
+<h4>prefixSha256.getBitmask() ⇒ <code>Number</code></h4><p>Get full bitmask.</p>
+<p>This is a type of condition that contains a subcondition. A complete
+bitmask must contain the set of types that must be supported in order to
+validate this fulfillment. Therefore, we need to calculate the bitwise OR
+of this condition's TYPE_BIT and the subcondition's bitmask.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PrefixSha256">PrefixSha256</a></code><br><strong>Returns</strong>: <code>Number</code> - Complete bitmask for this fulfillment.<br><a name="module_types..PrefixSha256+validate"></a></p>
+<h4>prefixSha256.validate(message) ⇒ <code>Boolean</code></h4><p>Check whether this fulfillment meets all validation criteria.</p>
+<p>This will validate the subfulfillment. The message will be prepended with
+the prefix before being passed to the subfulfillment's validation routine.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PrefixSha256">PrefixSha256</a></code><br><strong>Returns</strong>: <code>Boolean</code> - Whether this fulfillment is valid.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>message</td>
+<td><code>Buffer</code></td>
+<td>Message to validate against.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..PreimageSha256"></a></p>
+<h3>types~PreimageSha256</h3><p>PREIMAGE-SHA-256: Hashlock condition using SHA-256.</p>
+<p>This type of condition is also called a hashlock. By creating a hash
+of a difficult-to-guess 256-bit random or pseudo-random integer it
+is possible to create a condition which the creator can trivially
+fulfill by publishing the random value. However, for anyone else,
+the condition is cryptgraphically hard to fulfill, because they
+would have to find a preimage for the given condition hash.</p>
+<p>PREIMAGE-SHA-256 is assigned the type ID 0. It relies on the SHA-256
+and PREIMAGE feature suites which corresponds to a feature bitmask
+of 0x03.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_types">types</a></code>  </p>
+<ul>
+<li><a href="#module_types..PreimageSha256">~PreimageSha256</a><ul>
+<li><a href="#module_types..PreimageSha256+setPreimage">.setPreimage(preimage)</a></li>
+<li><a href="#module_types..PreimageSha256+validate">.validate()</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_types..PreimageSha256+setPreimage"></a></p>
+<h4>preimageSha256.setPreimage(preimage)</h4><p>Provide a preimage.</p>
+<p>The preimage is the only input to a SHA256 hashlock condition.</p>
+<p>Note that the preimage should contain enough (pseudo-random) data in order
+to be difficult to guess. A sufficiently large secret seed and a
+cryptographically secure pseudo-random number generator (CSPRNG) can be
+used to avoid having to store each individual preimage.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PreimageSha256">PreimageSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>preimage</td>
+<td><code>Buffer</code></td>
+<td>Secret data that will be hashed to form the condition.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..PreimageSha256+validate"></a></p>
+<h4>preimageSha256.validate() ⇒ <code>Boolean</code></h4><p>Validate this fulfillment.</p>
+<p>For a SHA256 hashlock fulfillment, successful parsing implies that the
+fulfillment is valid, so this method is a no-op.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..PreimageSha256">PreimageSha256</a></code><br><strong>Returns</strong>: <code>Boolean</code> - Validation result<br><a name="module_types..RsaSha256"></a></p>
+<h3>types~RsaSha256</h3><p>RSA-SHA-256: RSA signature condition using SHA-256.</p>
+<p>This RSA condition uses RSA-PSS padding with SHA-256. The salt length is set
+equal the digest length of 32 bytes.</p>
+<p>The public exponent is fixed at 65537 and the public modulus must be between
+128 (1017 bits) and 512 bytes (4096 bits) long.</p>
+<p>RSA-SHA-256 is assigned the type ID 3. It relies on the SHA-256 and RSA-PSS
+feature suites which corresponds to a feature bitmask of 0x11.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_types">types</a></code>  </p>
+<ul>
+<li><a href="#module_types..RsaSha256">~RsaSha256</a><ul>
+<li><a href="#module_types..RsaSha256+setPublicModulus">.setPublicModulus(modulus)</a></li>
+<li><a href="#module_types..RsaSha256+setSignature">.setSignature(signature)</a></li>
+<li><a href="#module_types..RsaSha256+sign">.sign(message, privateKey)</a></li>
+<li><a href="#module_types..RsaSha256+validate">.validate(message)</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_types..RsaSha256+setPublicModulus"></a></p>
+<h4>rsaSha256.setPublicModulus(modulus)</h4><p>Set the public modulus.</p>
+<p>This is the modulus of the RSA public key. It has to be provided as a raw
+buffer with no leading zeros.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..RsaSha256">RsaSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>modulus</td>
+<td><code>Buffer</code></td>
+<td>Public RSA modulus</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..RsaSha256+setSignature"></a></p>
+<h4>rsaSha256.setSignature(signature)</h4><p>Set the signature manually.</p>
+<p>The signature must be a valid RSA-PSS siganture.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..RsaSha256">RsaSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>signature</td>
+<td><code>Buffer</code></td>
+<td>RSA signature.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..RsaSha256+sign"></a></p>
+<h4>rsaSha256.sign(message, privateKey)</h4><p>Sign the message.</p>
+<p>This method will take the provided message and create a signature using the
+provided RSA private key. The resulting signature is stored in the
+fulfillment.</p>
+<p>The key should be provided as a PEM encoded private key string.</p>
+<p>The message is padded using RSA-PSS with SHA256.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..RsaSha256">RsaSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>message</td>
+<td><code>Buffer</code></td>
+<td>Message to sign.</td>
+</tr>
+<tr>
+<td>privateKey</td>
+<td><code>String</code></td>
+<td>RSA private key</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..RsaSha256+validate"></a></p>
+<h4>rsaSha256.validate(message) ⇒ <code>Boolean</code></h4><p>Verify the signature of this RSA fulfillment.</p>
+<p>The signature of this RSA fulfillment is verified against the provided
+message and the condition's public modulus.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..RsaSha256">RsaSha256</a></code><br><strong>Returns</strong>: <code>Boolean</code> - Whether this fulfillment is valid.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>message</td>
+<td><code>Buffer</code></td>
+<td>Message to verify.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..ThresholdSha256"></a></p>
+<h3>types~ThresholdSha256</h3><p>THRESHOLD-SHA-256: Threshold gate condition using SHA-256.</p>
+<p>Threshold conditions can be used to create m-of-n multi-signature groups.</p>
+<p>Threshold conditions can represent the AND operator by setting the threshold
+to equal the number of subconditions (n-of-n) or the OR operator by setting
+the thresold to one (1-of-n).</p>
+<p>Threshold conditions allows each subcondition to carry an integer weight.</p>
+<p>Since threshold conditions operate on conditions, they can be nested as well
+which allows the creation of deep threshold trees of public keys.</p>
+<p>By using Merkle trees, threshold fulfillments do not need to to provide the
+structure of unfulfilled subtrees. That means only the public keys that are
+actually used in a fulfillment, will actually appear in the fulfillment,
+saving space.</p>
+<p>One way to formally interpret threshold conditions is as a boolean weighted
+threshold gate. A tree of threshold conditions forms a boolean weighted
+threhsold circuit.</p>
+<p>THRESHOLD-SHA-256 is assigned the type ID 2. It relies on the SHA-256 and
+THRESHOLD feature suites which corresponds to a feature bitmask of 0x09.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_types">types</a></code>  </p>
+<ul>
+<li><a href="#module_types..ThresholdSha256">~ThresholdSha256</a><ul>
+<li><a href="#module_types..ThresholdSha256+addSubcondition">.addSubcondition(subcondition, [weight])</a></li>
+<li><a href="#module_types..ThresholdSha256+addSubconditionUri">.addSubconditionUri(Subcondition)</a></li>
+<li><a href="#module_types..ThresholdSha256+addSubfulfillment">.addSubfulfillment(Fulfillment, [weight])</a></li>
+<li><a href="#module_types..ThresholdSha256+addSubfulfillmentUri">.addSubfulfillmentUri(Subfulfillment)</a></li>
+<li><a href="#module_types..ThresholdSha256+setThreshold">.setThreshold(threshold)</a></li>
+<li><a href="#module_types..ThresholdSha256+getBitmask">.getBitmask()</a> ⇒ <code>Number</code></li>
+<li><a href="#module_types..ThresholdSha256+validate">.validate(message)</a> ⇒ <code>Boolean</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_types..ThresholdSha256+addSubcondition"></a></p>
+<h4>thresholdSha256.addSubcondition(subcondition, [weight])</h4><p>Add a subcondition (unfulfilled).</p>
+<p>This can be used to generate a new threshold condition from a set of
+subconditions or to provide a non-fulfilled subcondition when creating a
+threshold fulfillment.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..ThresholdSha256">ThresholdSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>subcondition</td>
+<td><code>Condition</code></td>
+<td></td>
+<td>Condition to add</td>
+</tr>
+<tr>
+<td>[weight]</td>
+<td><code>Number</code></td>
+<td><code>1</code></td>
+<td>Integer weight of the subcondition.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..ThresholdSha256+addSubconditionUri"></a></p>
+<h4>thresholdSha256.addSubconditionUri(Subcondition)</h4><p>Add a subcondition (unfulfilled).</p>
+<p>This will automatically parse the URI and call addSubcondition.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..ThresholdSha256">ThresholdSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Subcondition</td>
+<td><code>String</code></td>
+<td>URI.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..ThresholdSha256+addSubfulfillment"></a></p>
+<h4>thresholdSha256.addSubfulfillment(Fulfillment, [weight])</h4><p>Add a fulfilled subcondition.</p>
+<p>When constructing a threshold fulfillment, this method allows you to
+provide a fulfillment for one of the subconditions.</p>
+<p>Note that you do <strong>not</strong> have to add the subcondition if you're adding the
+fulfillment. The condition can be calculated from the fulfillment and will
+be added automatically.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..ThresholdSha256">ThresholdSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fulfillment</td>
+<td><code>Fulfillment</code></td>
+<td></td>
+<td>to add</td>
+</tr>
+<tr>
+<td>[weight]</td>
+<td><code>Number</code></td>
+<td><code>1</code></td>
+<td>Integer weight of the subcondition.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..ThresholdSha256+addSubfulfillmentUri"></a></p>
+<h4>thresholdSha256.addSubfulfillmentUri(Subfulfillment)</h4><p>Add a fulfilled subcondition.</p>
+<p>This will automatically parse the URI and call addSubfulfillment.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..ThresholdSha256">ThresholdSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Subfulfillment</td>
+<td><code>String</code></td>
+<td>URI.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..ThresholdSha256+setThreshold"></a></p>
+<h4>thresholdSha256.setThreshold(threshold)</h4><p>Set the threshold.</p>
+<p>Determines the weighted threshold that is used to consider this condition
+fulfilled. If the added weight of all valid subfulfillments is greater or
+equal to this number, the threshold condition is considered to be
+fulfilled.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..ThresholdSha256">ThresholdSha256</a></code>  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>threshold</td>
+<td><code>Number</code></td>
+<td>Integer threshold</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_types..ThresholdSha256+getBitmask"></a></p>
+<h4>thresholdSha256.getBitmask() ⇒ <code>Number</code></h4><p>Get full bitmask.</p>
+<p>This is a type of condition that can contain subconditions. A complete
+bitmask must contain the set of types that must be supported in order to
+validate this fulfillment. Therefore, we need to calculate the bitwise OR
+of this condition's FEATURE_BITMASK and all subcondition's and
+subfulfillment's bitmasks.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..ThresholdSha256">ThresholdSha256</a></code><br><strong>Returns</strong>: <code>Number</code> - Complete bitmask for this fulfillment.<br><a name="module_types..ThresholdSha256+validate"></a></p>
+<h4>thresholdSha256.validate(message) ⇒ <code>Boolean</code></h4><p>Check whether this fulfillment meets all validation criteria.</p>
+<p>This will validate the subfulfillments and verify that there are enough
+subfulfillments to meet the threshold.</p>
+<p><strong>Kind</strong>: instance method of <code><a href="#module_types..ThresholdSha256">ThresholdSha256</a></code><br><strong>Returns</strong>: <code>Boolean</code> - Whether this fulfillment is valid.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>message</td>
+<td><code>Buffer</code></td>
+<td>Message to validate against.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_util..BaseError"></a></p>
+<h3>util~BaseError</h3><p>Extensible error class.</p>
+<p>The built-in Error class is not actually a constructor, but a factory. It
+doesn't operate on <code>this</code>, so if we call it as <code>super()</code> it doesn't do
+anything useful.</p>
+<p>Nonetheless it does create objects that are instanceof Error. In order to
+easily subclass error we need our own base class which mimics that behavior
+but with a true constructor.</p>
+<p>Note that this code is specific to V8 (due to <code>Error.captureStackTrace</code>).</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_util">util</a></code><br><a name="module_util..Base64Url"></a></p>
+<h3>util~Base64Url</h3><p>Utility class for encoding and decoding Base64Url.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_util">util</a></code>  </p>
+<ul>
+<li><a href="#module_util..Base64Url">~Base64Url</a><ul>
+<li><a href="#module_util..Base64Url.decode">.decode(base64urlString)</a> ⇒ <code>Buffer</code></li>
+<li><a href="#module_util..Base64Url.encode">.encode(buffer)</a> ⇒ <code>String</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_util..Base64Url.decode"></a></p>
+<h4>Base64Url.decode(base64urlString) ⇒ <code>Buffer</code></h4><p>Convert a base64url encoded string to a Buffer.</p>
+<p><strong>Kind</strong>: static method of <code><a href="#module_util..Base64Url">Base64Url</a></code><br><strong>Returns</strong>: <code>Buffer</code> - Decoded data.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>base64urlString</td>
+<td><code>String</code></td>
+<td>base64url-encoded string</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_util..Base64Url.encode"></a></p>
+<h4>Base64Url.encode(buffer) ⇒ <code>String</code></h4><p>Encode a buffer as base64url.</p>
+<p><strong>Kind</strong>: static method of <code><a href="#module_util..Base64Url">Base64Url</a></code><br><strong>Returns</strong>: <code>String</code> - base64url-encoded data.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>buffer</td>
+<td><code>Buffer</code></td>
+<td>Data to encode.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_util..Pem"></a></p>
+<h3>util~Pem</h3><p>Utilities for RSA-related DER/PEM encoding.</p>
+<p><strong>Kind</strong>: inner class of <code><a href="#module_util">util</a></code>  </p>
+<ul>
+<li><a href="#module_util..Pem">~Pem</a><ul>
+<li><a href="#module_util..Pem.modulusToPem">.modulusToPem(modulus)</a> ⇒ <code>String</code></li>
+<li><a href="#module_util..Pem.modulusFromPrivateKey">.modulusFromPrivateKey(privateKey)</a> ⇒ <code>Buffer</code></li>
+</ul>
+</li>
+</ul>
+<p><a name="module_util..Pem.modulusToPem"></a></p>
+<h4>Pem.modulusToPem(modulus) ⇒ <code>String</code></h4><p>Convert an RSA modulus to a PEM-encoded RSAPublicKey.</p>
+<p>Encodes the public using the RSAPublicKey format given in
+RFC 3447, appendix C.</p>
+<p>This function assumes that the exponent is 65537.</p>
+<p><strong>Kind</strong>: static method of <code><a href="#module_util..Pem">Pem</a></code><br><strong>Returns</strong>: <code>String</code> - PEM-encoded RSA public key.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>modulus</td>
+<td><code>Buffer</code></td>
+<td>RSA public modulus.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="module_util..Pem.modulusFromPrivateKey"></a></p>
+<h4>Pem.modulusFromPrivateKey(privateKey) ⇒ <code>Buffer</code></h4><p>Retrieve a modulus from a PEM-encoded private key.</p>
+<p><strong>Kind</strong>: static method of <code><a href="#module_util..Pem">Pem</a></code><br><strong>Returns</strong>: <code>Buffer</code> - modulus RSA public modulus.  </p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>privateKey</td>
+<td><code>String</code></td>
+<td>PEM-encoded RSA private key.</td>
+</tr>
+</tbody>
+</table></article>
+    </section>
+
+
+
+
+
+
+</div>
+</div>
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 26 2016 18:17:12 GMT-0700 (PDT)
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="scripts/bootstrap.min.js"></script>
+<script src="scripts/custom.js"></script>
+</body>
+</html>
