@@ -1,21 +1,21 @@
 {
-  "name": "five-bells-wallet",
-  "version": "1.0.0",
-  "description": "Five Bells Wallet",
-  "title": "Five Bells Wallet",
-  "url": "https://wallet.example",
+  "name": "five-bells-connector",
+  "version": "6.1.0",
+  "description": "Five Bells connector reference implementation",
+  "title": "Five Bells Connector API",
+  "url": "https://acme-connector.example",
   "order": [
-    "User",
-    "Payment",
-    "Misc",
-    "Auth"
+    "Quote",
+    "Payments",
+    "Pairs",
+    "Notification"
   ],
   "sampleUrl": false,
   "apidoc": "0.2.0",
   "generator": {
     "name": "apidoc",
-    "time": "2016-05-27T00:43:38.853Z",
+    "time": "2016-05-27T00:47:13.611Z",
     "url": "http://apidocjs.com",
-    "version": "0.12.1"
+    "version": "0.13.2"
   }
 }
