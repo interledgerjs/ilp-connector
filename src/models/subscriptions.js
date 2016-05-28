@@ -18,15 +18,18 @@ function * subscribePairs (pairs, ledgersService, config) {
   yield ledgers.map((l) => subscribeLedger(l, ledgersService, config))
 }
 
-function * subscribeLedger (ledger, ledgersService, config) {
-  log.info('subscribing to ' + ledger)
-  yield ledgersService.getLedger(ledger).subscribe((resource, relatedResources) => {
+function * subscribeLedger (ledgerUri, ledgersService, config) {
+  log.info('subscribing to ' + ledgerUri)
+  const ledger = ledgersService.getLedger(ledgerUri)
+
+  ledger.on('incoming', (resource, relatedResources) => {
     co(function * () {
       yield payments.updateTransfer(resource, relatedResources, ledgersService, config)
     }).catch((err) => {
       log.warn('error processing notification: ' + err)
     })
   })
+  ledger.connect()
 }
 
 module.exports = {
