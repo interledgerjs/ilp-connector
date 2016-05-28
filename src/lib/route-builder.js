@@ -1,9 +1,10 @@
 'use strict'
 const _ = require('lodash')
-const uuid = require('uuid4')
 const BigNumber = require('bignumber.js')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
+const UnacceptableRateError = require('../errors/unacceptable-rate-error')
+const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 
 class RouteBuilder {
   /**
@@ -83,24 +84,42 @@ class RouteBuilder {
       if (traderDebit) {
         traderDebit.account = nextHop.destinationDebitAccount
       }
-      return finalTransfer
+
+      // Verify finalTransfer.credits[0].amount <= nextHop.destinationAmount
+      const finalAmount = new BigNumber(finalTransfer.credits[0].amount)
+      if (finalAmount.greaterThan(nextHop.destinationAmount)) {
+        throw new UnacceptableRateError('Payment rate does not match the rate currently offered')
+      }
+      // TODO: Verify atomic mode notaries are trusted
+      // TODO: Verify expiry is acceptable
+
+      nextHop.destinationCreditAccount = finalTransfer.credits[0].account
+      nextHop.destinationAmount = finalTransfer.credits[0].amount
+    }
+
+    const noteToSelf = {
+      source_transfer_ledger: sourceTransfer.ledger,
+      source_transfer_id: sourceTransfer.id
     }
 
     return _.omitBy({
-      id: nextHop.destinationLedger + '/transfers/' + uuid(),
+      // TODO: Use a real secret
+      id: nextHop.destinationLedger !== finalLedger
+        ? getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id)
+        : finalTransfer.id.substring(finalTransfer.id.length - 36),
       ledger: nextHop.destinationLedger,
-      debits: [{
-        account: nextHop.destinationDebitAccount,
-        amount: nextHop.destinationAmount
-      }],
-      credits: [{
-        account: nextHop.destinationCreditAccount,
-        amount: nextHop.destinationAmount,
-        memo: {destination_transfer: finalTransfer}
-      }],
-      execution_condition: sourceTransfer.execution_condition,
-      cancellation_condition: sourceTransfer.cancellation_condition,
-      expires_at: this._getDestinationExpiry(sourceTransfer.expires_at)
+      account: nextHop.destinationCreditAccount,
+      amount: nextHop.destinationAmount,
+      data: nextHop.destinationLedger !== finalLedger
+        ? { destination_transfer: finalTransfer }
+        : finalTransfer.credits[0].memo,
+      noteToSelf: noteToSelf,
+      executionCondition: sourceTransfer.execution_condition,
+      cancellationCondition: sourceTransfer.cancellation_condition,
+      expiresAt: this._getDestinationExpiry(sourceTransfer.expires_at),
+      cases: sourceTransfer.additional_info && sourceTransfer.additional_info.cases
+        ? sourceTransfer.additional_info.cases
+        : undefined
     }, _.isUndefined)
   }
 

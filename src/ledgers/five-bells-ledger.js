@@ -36,16 +36,6 @@ function * requestRetry (opts, errorMessage, credentials) {
   }
 }
 
-// Update destination_transfer state from the ledger's response
-function updateTransfer (transfer, updatedTransfer) {
-  transfer.state = updatedTransfer.state
-  if (transfer.state === 'executed' &&
-  !transfer.execution_condition_fulfillment) {
-    transfer.execution_condition_fulfillment =
-      updatedTransfer.execution_condition_fulfillment
-  }
-}
-
 class FiveBellsLedger extends EventEmitter {
   constructor (options) {
     super()
@@ -125,14 +115,37 @@ class FiveBellsLedger extends EventEmitter {
     validator.validate('TransferTemplate', transfer)
   }
 
-  * putTransfer (transfer) {
-    const transferRes = yield this._request({
+  send (transfer) {
+    return co.wrap(this._send).call(this, transfer)
+  }
+
+  * _send (transfer) {
+    const fiveBellsTransfer = {
+      id: this.id + '/transfers/' + transfer.id,
+      ledger: transfer.ledger,
+      debits: [{
+        account: this.credentials.account_uri,
+        amount: transfer.amount,
+        authorized: true,
+        memo: transfer.noteToSelf
+      }],
+      credits: [{
+        account: transfer.account,
+        amount: transfer.amount,
+        memo: transfer.data
+      }],
+      execution_condition: transfer.executionCondition,
+      cancellation_condition: transfer.cancellationCondition,
+      expires_at: transfer.expiresAt,
+      additional_info: transfer.cases ? { cases: transfer.cases } : undefined
+    }
+    yield this._request({
       method: 'put',
-      uri: transfer.id,
-      body: transfer
+      uri: fiveBellsTransfer.id,
+      body: fiveBellsTransfer
     })
-    const updatedTransfer = transferRes.body
-    updateTransfer(transfer, updatedTransfer)
+
+    return null
   }
 
   * putTransferFulfillment (transferID, executionConditionFulfillment) {

@@ -34,8 +34,7 @@
               "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a086",
               "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a087"
             ]
-          },
-          "state": "proposed"
+          }
         }
       }
     }],

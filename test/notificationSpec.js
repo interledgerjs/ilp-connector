@@ -8,6 +8,7 @@ const appHelper = require('./helpers/app')
 const logger = require('five-bells-connector')._test.logger
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
+const assert = require('chai').assert
 const sinon = require('sinon')
 const jsonSigning = require('five-bells-shared').JSONSigning
 
@@ -364,31 +365,6 @@ describe('Notifications', function () {
       sourceTransferExecuted.done()
     })
 
-    it('should return 200 if the two transfer conditions do not match', function * () {
-      const payment = this.formatId(this.paymentOneToOne, '/payments/')
-
-      this.notificationSourceTransferPrepared
-        .resource.execution_condition =
-          'cc:0:3:tBP0fRPuL-bIRbLuFBr4HehY307FSaWLeXC7lmRbyNI:2'
-
-      nock(payment.destination_transfers[0].id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .expect({
-          result: 'ignored',
-          ignoreReason: {
-            id: 'UnacceptableConditionsError',
-            message: 'Each of the source transfers\' execution conditions must match all of the destination transfers\' conditions'
-          }
-        })
-        .end()
-    })
-
     it.skip('should return a 422 if the two transfer conditions do not ' +
       'match and the source transfer one does not have the same algorithm the ' +
       'destination ledger uses')
@@ -407,26 +383,6 @@ describe('Notifications', function () {
             id: 'UnrelatedNotificationError',
             message: 'Notification does not match a payment we have a record of' +
               ' or the corresponding source transfers may already have been executed'
-          }
-        })
-        .end()
-    })
-
-    it('should return 200 if the payment does not include the connector in the destination transfer debits', function * () {
-      this.notificationSourceTransferPrepared
-        .resource.credits[0].memo.destination_transfer
-        .debits[0].account = 'http://usd-ledger.example/accounts/mary'
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .expect({
-          result: 'ignored',
-          ignoreReason: {
-            id: 'NoRelatedDestinationDebitError',
-            message: 'Connector\'s account must be ' +
-              'debited in all destination transfers to provide payment'
           }
         })
         .end()
@@ -495,84 +451,31 @@ describe('Notifications', function () {
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
         .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {
+            id: 'UnacceptableExpiryError',
+            message: 'Transfer has already expired'
+          }
+        })
         .end()
     })
 
-    it('should return a 200 if any of the destination transfers is expired', function * () {
-      this.notificationSourceTransferPrepared
-        .resource.credits[0].memo
-        .destination_transfer.expires_at = moment(START_DATE - 1).toISOString()
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-    })
-
-    it('should return a 200 if a destination transfer has an execution_condition but no expiry', function * () {
-      const destinationTransfer = this.notificationSourceTransferPrepared
-        .resource.credits[0].memo.destination_transfer
-      delete destinationTransfer.expires_at
-      destinationTransfer.execution_condition =
-        this.notificationSourceTransferPrepared.resource.execution_condition
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-    })
-
-    it('should return a 200 if any of the destination transfers expires too far in the future (causing the connector to hold money for too long)', function * () {
-      const destinationTransfer = this.notificationSourceTransferPrepared
-        .resource.credits[0].memo.destination_transfer
-      destinationTransfer.expires_at = moment(START_DATE + 10001).toISOString()
-      destinationTransfer.execution_condition =
-        this.notificationSourceTransferPrepared.resource.execution_condition
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-    })
-
-    it('should return a 200 if the source transfer expires too soon after the destination transfer (we may not be able to execute the source transfer in time)', function * () {
-      const destinationTransfer = this.notificationSourceTransferPrepared
-        .resource.credits[0].memo.destination_transfer
-      destinationTransfer.expires_at =
-        this.notificationSourceTransferPrepared.resource.expires_at
-      destinationTransfer.execution_condition =
-        this.notificationSourceTransferPrepared.resource.execution_condition
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-    })
-
-    it('should return a 200 if the source transfer\'s execution condition is the execution of the destination transfer but the destination transfer expires too soon', function * () {
-      this.notificationSourceTransferPrepared.resource.credits[0].memo
-        .destination_transfer.expires_at = moment(START_DATE + 999).toISOString()
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect({})
-        // .expect(200)
-        .end()
-    })
-
-    it('should return a 200 if the source transfer\'s execution condition is the execution of the destination transfer but the source transfer expires too soon (we may not be able to execute the source transfer in time)', function * () {
+    it('should return a 200 if the source transfer expires so soon we cannot create a destination transfer with a sufficient large expiry difference', function * () {
       this.notificationSourceTransferPrepared.resource.expires_at =
-        moment(START_DATE + 1999).toISOString()
+        moment(START_DATE + 999).toISOString()
 
       yield this.request()
         .post('/notifications')
         .send(this.notificationSourceTransferPrepared)
         .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {
+            id: 'UnacceptableExpiryError',
+            message: 'Not enough time to send payment'
+          }
+        })
         .end()
     })
 
@@ -943,8 +846,11 @@ describe('Notifications', function () {
         nock(caseID1).get('').reply(200, {expires_at: expiresAt})
         nock(caseID2).get('').reply(200, {expires_at: expiresAt})
 
-        nock(this.destination_transfer.id)
-          .put('', authorizedDestinationTransfer)
+        nock(authorizedDestinationTransfer.id)
+          .put('', (body) => {
+            assert.deepEqual(body, authorizedDestinationTransfer)
+            return true
+          })
           .reply(201, authorizedDestinationTransfer)
 
         yield this.request()

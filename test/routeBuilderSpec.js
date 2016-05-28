@@ -115,7 +115,7 @@ describe('RouteBuilder', function () {
   describe('getDestinationTransfer', function () {
     it('returns the original destination transfer when the connector can settle it', function * () {
       const destinationTransfer = yield this.builder.getDestinationTransfer({
-        id: '123',
+        id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
         debits: [{account: aliceA, amount: '100'}],
         credits: [{
@@ -123,7 +123,7 @@ describe('RouteBuilder', function () {
           amount: '100',
           memo: {
             destination_transfer: {
-              id: '456',
+              id: 'e901de57-0c9e-44f7-877a-ce98c84d3e0c',
               ledger: ledgerB,
               debits: [{account: null, amount: '50'}],
               credits: [{account: bobB, amount: '50'}]
@@ -132,16 +132,20 @@ describe('RouteBuilder', function () {
         }]
       })
       assert.deepEqual(destinationTransfer, {
-        id: '456',
+        id: 'e901de57-0c9e-44f7-877a-ce98c84d3e0c',
         ledger: ledgerB,
-        debits: [{account: markB, amount: '50'}],
-        credits: [{account: bobB, amount: '50'}]
+        account: bobB,
+        amount: '50',
+        noteToSelf: {
+          source_transfer_id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
+          source_transfer_ledger: ledgerA
+        }
       })
     })
 
     it('only overrides the trader debit account when it isnt already set', function * () {
       const destinationTransfer = yield this.builder.getDestinationTransfer({
-        id: '123',
+        id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
         ledger: ledgerA,
         debits: [{account: aliceA, amount: '100'}],
         credits: [{
@@ -149,7 +153,7 @@ describe('RouteBuilder', function () {
           amount: '100',
           memo: {
             destination_transfer: {
-              id: '456',
+              id: '219d7e92-d99b-4022-8e52-6f8510f671e6',
               ledger: ledgerB,
               debits: [{account: ledgerB + '/accounts/bogus', amount: '50'}],
               credits: [{account: bobB, amount: '50'}]
@@ -158,10 +162,14 @@ describe('RouteBuilder', function () {
         }]
       })
       assert.deepEqual(destinationTransfer, {
-        id: '456',
+        id: '219d7e92-d99b-4022-8e52-6f8510f671e6',
         ledger: ledgerB,
-        debits: [{account: ledgerB + '/accounts/bogus', amount: '50'}],
-        credits: [{account: bobB, amount: '50'}]
+        account: bobB,
+        amount: '50',
+        noteToSelf: {
+          source_transfer_id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
+          source_transfer_ledger: ledgerA
+        }
       })
     })
 
@@ -201,22 +209,23 @@ describe('RouteBuilder', function () {
         assert.deepEqual(destinationTransfer, {
           id: destinationTransfer.id,
           ledger: ledgerB,
-          debits: [{account: markB, amount: '50.00'}],
-          credits: [{
-            account: maryB,
-            amount: '50.00',
-            memo: {
-              destination_transfer: {
-                id: '456',
-                ledger: ledgerC,
-                debits: [{account: null, amount: '25'}],
-                credits: [{account: carlC, amount: '25'}]
-              }
+          account: maryB,
+          amount: '50.00',
+          data: {
+            destination_transfer: {
+              id: '456',
+              ledger: ledgerC,
+              debits: [{account: null, amount: '25'}],
+              credits: [{account: carlC, amount: '25'}]
             }
-          }],
-          execution_condition: 'yes',
-          cancellation_condition: 'no',
-          expires_at: '2015-06-16T00:00:00.000Z'
+          },
+          noteToSelf: {
+            source_transfer_id: '123',
+            source_transfer_ledger: ledgerA
+          },
+          executionCondition: 'yes',
+          cancellationCondition: 'no',
+          expiresAt: '2015-06-16T00:00:00.000Z'
         })
       })
     })
