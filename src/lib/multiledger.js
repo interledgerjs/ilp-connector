@@ -1,7 +1,7 @@
 'use strict'
 
-const FiveBellsLedger = require('./five-bells-ledger')
-const healthStatus = require('../../common/health.js')
+const FiveBellsLedger = require('../ledgers/five-bells-ledger')
+const healthStatus = require('../common/health.js')
 
 function Multiledger (options) {
   this.config = options.config

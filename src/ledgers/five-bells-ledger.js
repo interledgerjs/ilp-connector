@@ -4,9 +4,9 @@ const request = require('co-request')
 const uuid = require('uuid4')
 const WebSocket = require('ws')
 const reconnectCore = require('reconnect-core')
-const validator = require('../validate')
-const log = require('../../common').log('fiveBellsLedger')
-const ExternalError = require('../../errors/external-error')
+const validator = require('../lib/validate')
+const log = require('../common').log('fiveBellsLedger')
+const ExternalError = require('../errors/external-error')
 
 const backoffMin = 1000
 const backoffMax = 30000

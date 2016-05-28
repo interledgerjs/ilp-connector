@@ -8,7 +8,7 @@ const log = require('../../src/common').log
 const loadConfig = require('../../src/lib/config')
 const backend = require('../../src/services/backend')
 const routeBroadcaster = require('../../src/services/route-broadcaster')
-const Multiledger = require('../../src/lib/ledgers/multiledger')
+const Multiledger = require('../../src/lib/multiledger')
 
 const createApp = require('five-bells-connector').createApp
 
