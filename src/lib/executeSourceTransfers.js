@@ -21,7 +21,7 @@ function * getConditionFulfillment (destinationTransfers, relatedResources) {
   })
   let fulfillment
   for (let transfer of executedTransfers) {
-    const transferFulfillment = yield ledgers.getTransferFulfillment(transfer)
+    const transferFulfillment = yield ledgers.getLedger(transfer.ledger).getTransferFulfillment(transfer)
     // TODO do we need to check if this fulfills the specific source transfers we're
     // interested in or should we assume that we'll ensure all the conditions are the
     // same when we agree to facilitate a payment?
@@ -56,7 +56,7 @@ function * executeSourceTransfers (destinationTransfers, relatedResources) {
     // TODO check the timestamp on the response from the ledger against
     // the transfer's expiry date
     // See https://github.com/interledger/five-bells-ledger/issues/149
-    const sourceTransferState = yield ledgers.putTransferFulfillment(sourceTransferLedger, sourceTransferID, conditionFulfillment)
+    const sourceTransferState = yield ledgers.getLedger(sourceTransferLedger).putTransferFulfillment(sourceTransferID, conditionFulfillment)
     if (sourceTransferState !== 'executed') {
       log.error('Attempted to execute source transfer but it was unsucessful: we have not been fully repaid')
     }

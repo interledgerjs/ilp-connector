@@ -48,34 +48,4 @@ Multiledger.prototype.getStatus = function () {
   return this.ledgersHealth
 }
 
-// /////////////////////////////////////////////////////////////////////////////
-// Forward to the appropriate ledger
-// /////////////////////////////////////////////////////////////////////////////
-
-Multiledger.prototype.validateTransfer = function (transfer) {
-  return this.getLedger(transfer.ledger).validateTransfer(transfer)
-}
-
-Multiledger.prototype.makeFundTemplate = function (ledger, template) {
-  return this.getLedger(ledger).makeFundTemplate(template)
-}
-
-Multiledger.prototype.putTransfer = function (transfer) {
-  return this.getLedger(transfer.ledger).putTransfer(transfer)
-}
-
-Multiledger.prototype.putTransferFulfillment = function (ledgerID, transferID, fulfillment) {
-  return this.getLedger(ledgerID).putTransferFulfillment(transferID, fulfillment)
-}
-
-Multiledger.prototype.getTransferFulfillment = function (transfer) {
-  return this.getLedger(transfer.ledger).getTransferFulfillment(transfer)
-}
-
-// target - {uri, transfer}
-Multiledger.prototype.subscribe = function (ledgerId, listener) {
-  let ledger = this.getLedger(ledgerId)
-  return ledger.subscribe(listener)
-}
-
 module.exports = Multiledger

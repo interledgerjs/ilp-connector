@@ -20,7 +20,7 @@ function * subscribePairs (pairs, ledgersService, config) {
 
 function * subscribeLedger (ledger, ledgersService, config) {
   log.info('subscribing to ' + ledger)
-  yield ledgersService.subscribe(ledger, (resource, relatedResources) => {
+  yield ledgersService.getLedger(ledger).subscribe((resource, relatedResources) => {
     co(function * () {
       yield payments.updateTransfer(resource, relatedResources, ledgersService, config)
     }).catch((err) => {

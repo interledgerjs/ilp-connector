@@ -25,12 +25,6 @@ FiveBellsLedger.prototype.validateTransfer = function (transfer) {
   validator.validate('TransferTemplate', transfer)
 }
 
-// template - {amount}
-FiveBellsLedger.prototype.makeFundTemplate = function (template) {
-  template.account = this.credentials.account_uri
-  return template
-}
-
 FiveBellsLedger.prototype.putTransfer = function * (transfer) {
   const transferRes = yield this._request({
     method: 'put',

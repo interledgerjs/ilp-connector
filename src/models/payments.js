@@ -204,7 +204,7 @@ function * submitTransfer (destinationTransfer, sourceTransfer, ledgers) {
       source_transfer_id: sourceTransfer.id
     })
   }
-  yield ledgers.putTransfer(destinationTransfer)
+  yield ledgers.getLedger(destinationTransfer.ledger).putTransfer(destinationTransfer)
 }
 
 function * validate (payment, ledgers, config) {
@@ -258,7 +258,7 @@ function * updateSourceTransfer (updatedTransfer, traderCredit, ledgers, config)
     .validateTransfer(traderCredit.memo.destination_transfer)
   const destinationTransfer = traderCredit.memo.destination_transfer =
     yield routeBuilder.getDestinationTransfer(updatedTransfer)
-  ledgers.validateTransfer(destinationTransfer)
+  ledgers.getLedger(destinationTransfer.ledger).validateTransfer(destinationTransfer)
 
   const payment = {
     source_transfers: [updatedTransfer],
