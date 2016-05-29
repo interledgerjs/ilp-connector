@@ -15,7 +15,8 @@ function isValid (schema, obj) {
 function validate (schema, obj) {
   const validatorResult = validator.create(schema)(obj)
   if (!validatorResult.valid) {
-    throw new InvalidBodyError(schema + ' schema validation error: ' + validatorResult.errors[0].message)
+    throw new InvalidBodyError(schema + ' schema validation error: ' +
+      validatorResult.errors[0].message, validatorResult.errors)
   }
 }
 
