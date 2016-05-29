@@ -71,6 +71,7 @@
     "five-bells-integration-test": "^2.0.0",
     "istanbul": "^0.4.1",
     "mocha": "^2.3.2",
+    "mock-socket": "^2.0.0",
     "nock": "^2.10.0",
     "nodemon": "^1.8.1",
     "sinon": "^1.14.1",

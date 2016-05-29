@@ -3,7 +3,7 @@
 const co = require('co')
 const lodash = require('lodash')
 const request = require('co-request')
-const WebSocket = require('ws')
+const ws = require('../services/ws')
 const reconnectCore = require('reconnect-core')
 const validator = require('../lib/validate')
 const log = require('../common').log('fiveBellsLedger')
@@ -73,7 +73,7 @@ class FiveBellsLedger extends EventEmitter {
     }
 
     const reconnect = reconnectCore(function () {
-      return new WebSocket(streamUri, lodash.omitBy(options, lodash.isUndefined))
+      return new ws.WebSocket(streamUri, lodash.omitBy(options, lodash.isUndefined))
     })
 
     return new Promise((resolve, reject) => {

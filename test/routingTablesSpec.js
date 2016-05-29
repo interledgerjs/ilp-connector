@@ -35,6 +35,10 @@ describe('RoutingTables', function () {
     }])
   })
 
+  afterEach(function * () {
+    this.clock.restore()
+  })
+
   describe('addRoute', function () {
     it('doesn\'t create a route from A→B→A', function * () {
       assert.strictEqual(
