@@ -1,9 +1,9 @@
 'use strict'
 
-const payments = require('./payments')
 const jsonSigning = require('five-bells-shared').JSONSigning
 const url = require('url')
 const log = require('../common/log')('notifications')
+const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 
 function parseLedger (notificationId) {
   const parsedUrl = url.parse(notificationId)
@@ -32,7 +32,12 @@ function verifySignature (notification, config) {
 
 function * processNotification (notification, ledgers, config) {
   if (notification.event === 'transfer.update') {
-    yield payments.updateTransfer(
+    const ledger = ledgers.getLedger(notification.resource.ledger)
+    if (!ledger) {
+      throw new AssetsNotTradedError('Unexpected fulfillment from unknown source ledger: ' +
+        notification.resource.ledger)
+    }
+    yield ledger._handleNotification(
       notification.resource, notification.related_resources, ledgers, config)
   }
 }

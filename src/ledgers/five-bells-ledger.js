@@ -8,7 +8,8 @@ const reconnectCore = require('reconnect-core')
 const validator = require('../lib/validate')
 const log = require('../common').log('fiveBellsLedger')
 const ExternalError = require('../errors/external-error')
-const EventEmitter = require('events').EventEmitter
+const UnrelatedNotificationError = require('../errors/unrelated-notification-error')
+const EventEmitter2 = require('eventemitter2').EventEmitter2
 
 const backoffMin = 1000
 const backoffMax = 30000
@@ -36,7 +37,7 @@ function * requestRetry (opts, errorMessage, credentials) {
   }
 }
 
-class FiveBellsLedger extends EventEmitter {
+class FiveBellsLedger extends EventEmitter2 {
   constructor (options) {
     super()
 
@@ -84,12 +85,11 @@ class FiveBellsLedger extends EventEmitter {
         ws.on('message', (msg) => {
           const notification = JSON.parse(msg)
           log.debug('notify', notification.resource.id)
-          try {
-            // TODO: Should only emit for inbound transfers
-            this.emit('incoming', notification.resource, notification.related_resources)
-          } catch (err) {
-            log.warn('failure while processing notification: ' + err)
-          }
+          co.wrap(this._handleNotification)
+            .call(this, notification.resource, notification.related_resources)
+            .catch((err) => {
+              log.warn('failure while processing notification: ' + err)
+            })
         })
         ws.on('close', () => {
           log.info('ws disconnected from ' + streamUri)
@@ -120,6 +120,11 @@ class FiveBellsLedger extends EventEmitter {
   }
 
   * _send (transfer) {
+    if (transfer.ledger !== this.id) {
+      throw new Error('Transfer was sent to the wrong plugin (expected: ' +
+        this.id + ', actual: ' + transfer.ledger + ')')
+    }
+
     const fiveBellsTransfer = {
       id: this.id + '/transfers/' + transfer.id,
       ledger: transfer.ledger,
@@ -145,14 +150,16 @@ class FiveBellsLedger extends EventEmitter {
       body: fiveBellsTransfer
     })
 
+    // TODO: If already executed, fetch fulfillment and forward to source
+
     return null
   }
 
-  * putTransferFulfillment (transferID, executionConditionFulfillment) {
+  * fulfillCondition (transferID, conditionFulfillment) {
     const fulfillmentRes = yield this._request({
       method: 'put',
-      uri: transferID + '/fulfillment',
-      body: executionConditionFulfillment,
+      uri: this.id + '/transfers/' + transferID + '/fulfillment',
+      body: conditionFulfillment,
       json: false
     })
     // TODO check the timestamp the ledger sends back
@@ -170,6 +177,96 @@ class FiveBellsLedger extends EventEmitter {
       uri: transfer.id + '/fulfillment'
     })
     return fulfillmentRes.body
+  }
+
+  * _handleNotification (fiveBellsTransfer, relatedResources) {
+    if (fiveBellsTransfer.ledger !== this.id) {
+      throw new Error('Transfer was received by the wrong plugin (plugin: ' +
+        this.id + ', transfer: ' + fiveBellsTransfer.ledger + ')')
+    }
+
+    let handled = false
+    for (let credit of fiveBellsTransfer.credits) {
+      if (credit.account === this.credentials.account_uri) {
+        handled = true
+
+        const transfer = lodash.omitBy({
+          id: fiveBellsTransfer.id.substring(fiveBellsTransfer.id.length - 36),
+          direction: 'incoming',
+          ledger: this.id,
+          // TODO: What if there are multiple debits?
+          account: fiveBellsTransfer.debits[0].account,
+          amount: credit.amount,
+          data: credit.memo,
+          executionCondition: fiveBellsTransfer.execution_condition,
+          cancellationCondition: fiveBellsTransfer.cancellation_condition,
+          expiresAt: fiveBellsTransfer.expires_at,
+          cases: fiveBellsTransfer.additional_info && fiveBellsTransfer.additional_info.cases
+            ? fiveBellsTransfer.additional_info.cases
+            : undefined
+        }, lodash.isUndefined)
+
+        if (fiveBellsTransfer.state === 'prepared' ||
+            (fiveBellsTransfer.state === 'executed' && !transfer.executionCondition)) {
+          this.validateTransfer(credit.memo.destination_transfer)
+          yield this.emitAsync('incoming', transfer)
+        }
+
+        if (fiveBellsTransfer.state === 'executed' && relatedResources &&
+            relatedResources.execution_condition_fulfillment) {
+          yield this.emitAsync('fulfill_execution_condition', transfer,
+            relatedResources.execution_condition_fulfillment)
+        }
+
+        if (fiveBellsTransfer.state === 'rejected' && relatedResources &&
+            relatedResources.cancellation_condition_fulfillment) {
+          yield this.emitAsync('fulfill_cancellation_condition', transfer,
+            relatedResources.cancellation_condition_fulfillment)
+        }
+      }
+    }
+
+    for (let debit of fiveBellsTransfer.debits) {
+      if (debit.account === this.credentials.account_uri) {
+        handled = true
+
+        // This connector only launches transfers with one credit, so there
+        // should never be more than one credit.
+        const credit = fiveBellsTransfer.credits[0]
+
+        const transfer = lodash.omitBy({
+          id: fiveBellsTransfer.id.substring(fiveBellsTransfer.id.length - 36),
+          direction: 'outgoing',
+          ledger: this.id,
+          account: credit.account,
+          amount: debit.amount,
+          data: credit.memo,
+          noteToSelf: debit.memo,
+          executionCondition: fiveBellsTransfer.execution_condition,
+          cancellationCondition: fiveBellsTransfer.cancellation_condition,
+          expiresAt: fiveBellsTransfer.expires_at,
+          cases: fiveBellsTransfer.additional_info && fiveBellsTransfer.additional_info.cases
+            ? fiveBellsTransfer.additional_info.cases
+            : undefined
+        }, lodash.isUndefined)
+
+        if (fiveBellsTransfer.state === 'executed' &&
+            relatedResources.execution_condition_fulfillment) {
+          yield this.emitAsync('fulfill_execution_condition', transfer,
+            relatedResources.execution_condition_fulfillment)
+        }
+
+        if (fiveBellsTransfer.state === 'rejected' &&
+            relatedResources.cancellation_condition_fulfillment) {
+          yield this.emitAsync('fulfill_cancellation_condition', transfer,
+            relatedResources.cancellation_condition_fulfillment)
+        }
+      }
+
+      if (!handled) {
+        throw new UnrelatedNotificationError('Notification does not seem related to connector')
+      }
+    }
   }
 
   * _request (opts) {

@@ -20,7 +20,7 @@
             "account":"http://eur-ledger.example/accounts/mark",
             "memo": {
               "source_transfer_ledger": "http://usd-ledger.example/USD",
-              "source_transfer_id": "http://usd-ledger.example/USD/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c"
+              "source_transfer_id": "6851929f-5a91-4d02-b9f4-4ae6b7f1768c"
             }
           }],
           "credits":[{

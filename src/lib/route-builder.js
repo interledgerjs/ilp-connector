@@ -65,8 +65,7 @@ class RouteBuilder {
    * @returns {Transfer} destinationTransfer
    */
   * getDestinationTransfer (sourceTransfer) {
-    const traderCredit = sourceTransfer.credits.find(this._isTraderFunds, this)
-    const finalTransfer = traderCredit.memo && traderCredit.memo.destination_transfer
+    const finalTransfer = sourceTransfer.data && sourceTransfer.data.destination_transfer
     if (!finalTransfer) {
       throw new Error('source transfer is missing destination_transfer in memo')
     }
@@ -74,7 +73,7 @@ class RouteBuilder {
     const sourceLedger = sourceTransfer.ledger
     const finalLedger = finalTransfer.ledger
     const _nextHop = this.routingTables.findBestHopForSourceAmount(
-      sourceLedger, finalLedger, traderCredit.amount)
+      sourceLedger, finalLedger, sourceTransfer.amount)
     if (!_nextHop) throwAssetsNotTradedError()
     const nextHop = yield this._roundHop(_nextHop)
 
@@ -108,18 +107,17 @@ class RouteBuilder {
         ? getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id)
         : finalTransfer.id.substring(finalTransfer.id.length - 36),
       ledger: nextHop.destinationLedger,
+      direction: 'outgoing',
       account: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
       data: nextHop.destinationLedger !== finalLedger
         ? { destination_transfer: finalTransfer }
         : finalTransfer.credits[0].memo,
       noteToSelf: noteToSelf,
-      executionCondition: sourceTransfer.execution_condition,
-      cancellationCondition: sourceTransfer.cancellation_condition,
-      expiresAt: this._getDestinationExpiry(sourceTransfer.expires_at),
-      cases: sourceTransfer.additional_info && sourceTransfer.additional_info.cases
-        ? sourceTransfer.additional_info.cases
-        : undefined
+      executionCondition: sourceTransfer.executionCondition,
+      cancellationCondition: sourceTransfer.cancellationCondition,
+      expiresAt: this._getDestinationExpiry(sourceTransfer.expiresAt),
+      cases: sourceTransfer.cases
     }, _.isUndefined)
   }
 

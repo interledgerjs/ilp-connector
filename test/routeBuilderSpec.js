@@ -117,23 +117,22 @@ describe('RouteBuilder', function () {
       const destinationTransfer = yield this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
-        debits: [{account: aliceA, amount: '100'}],
-        credits: [{
-          account: markA,
-          amount: '100',
-          memo: {
-            destination_transfer: {
-              id: 'e901de57-0c9e-44f7-877a-ce98c84d3e0c',
-              ledger: ledgerB,
-              debits: [{account: null, amount: '50'}],
-              credits: [{account: bobB, amount: '50'}]
-            }
+        direction: 'incoming',
+        account: aliceA,
+        amount: '100',
+        data: {
+          destination_transfer: {
+            id: 'e901de57-0c9e-44f7-877a-ce98c84d3e0c',
+            ledger: ledgerB,
+            debits: [{account: null, amount: '50'}],
+            credits: [{account: bobB, amount: '50'}]
           }
-        }]
+        }
       })
       assert.deepEqual(destinationTransfer, {
         id: 'e901de57-0c9e-44f7-877a-ce98c84d3e0c',
         ledger: ledgerB,
+        direction: 'outgoing',
         account: bobB,
         amount: '50',
         noteToSelf: {
@@ -147,23 +146,22 @@ describe('RouteBuilder', function () {
       const destinationTransfer = yield this.builder.getDestinationTransfer({
         id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
         ledger: ledgerA,
-        debits: [{account: aliceA, amount: '100'}],
-        credits: [{
-          account: markA,
-          amount: '100',
-          memo: {
-            destination_transfer: {
-              id: '219d7e92-d99b-4022-8e52-6f8510f671e6',
-              ledger: ledgerB,
-              debits: [{account: ledgerB + '/accounts/bogus', amount: '50'}],
-              credits: [{account: bobB, amount: '50'}]
-            }
+        direction: 'incoming',
+        account: aliceA,
+        amount: '100',
+        data: {
+          destination_transfer: {
+            id: '219d7e92-d99b-4022-8e52-6f8510f671e6',
+            ledger: ledgerB,
+            debits: [{account: ledgerB + '/accounts/bogus', amount: '50'}],
+            credits: [{account: bobB, amount: '50'}]
           }
-        }]
+        }
       })
       assert.deepEqual(destinationTransfer, {
         id: '219d7e92-d99b-4022-8e52-6f8510f671e6',
         ledger: ledgerB,
+        direction: 'outgoing',
         account: bobB,
         amount: '50',
         noteToSelf: {
@@ -189,26 +187,25 @@ describe('RouteBuilder', function () {
         const destinationTransfer = yield this.builder.getDestinationTransfer({
           id: '123',
           ledger: ledgerA,
-          debits: [{account: aliceA, amount: '100'}],
-          credits: [{
-            account: markA,
-            amount: '100',
-            memo: {
-              destination_transfer: {
-                id: '456',
-                ledger: ledgerC,
-                debits: [{account: null, amount: '25'}],
-                credits: [{account: carlC, amount: '25'}]
-              }
+          direction: 'incoming',
+          account: aliceA,
+          amount: '100',
+          data: {
+            destination_transfer: {
+              id: '456',
+              ledger: ledgerC,
+              debits: [{account: null, amount: '25'}],
+              credits: [{account: carlC, amount: '25'}]
             }
-          }],
-          execution_condition: 'yes',
-          cancellation_condition: 'no',
-          expires_at: '2015-06-16T00:00:01.000Z'
+          },
+          executionCondition: 'yes',
+          cancellationCondition: 'no',
+          expiresAt: '2015-06-16T00:00:01.000Z'
         })
         assert.deepEqual(destinationTransfer, {
           id: destinationTransfer.id,
           ledger: ledgerB,
+          direction: 'outgoing',
           account: maryB,
           amount: '50.00',
           data: {
@@ -235,19 +232,17 @@ describe('RouteBuilder', function () {
         yield this.builder.getDestinationTransfer({
           id: '123',
           ledger: ledgerA,
-          debits: [{account: aliceA, amount: '100'}],
-          credits: [{
-            account: markA,
-            amount: '100',
-            memo: {
-              destination_transfer: {
-                id: '456',
-                ledger: ledgerC,
-                debits: [{account: null, amount: '50'}],
-                credits: [{account: carlC, amount: '50'}]
-              }
+          direction: 'incoming',
+          account: aliceA,
+          amount: '100',
+          data: {
+            destination_transfer: {
+              id: '456',
+              ledger: ledgerC,
+              debits: [{account: null, amount: '50'}],
+              credits: [{account: carlC, amount: '50'}]
             }
-          }]
+          }
         })
       }.bind(this), error('This connector does not support the given asset pair'))
     })
@@ -257,8 +252,9 @@ describe('RouteBuilder', function () {
         yield this.builder.getDestinationTransfer({
           id: '123',
           ledger: ledgerA,
-          debits: [{account: aliceA, amount: '100'}],
-          credits: [{account: markA, amount: '100'}]
+          account: aliceA,
+          amount: '100',
+          data: {}
         })
       }.bind(this), error('source transfer is missing destination_transfer in memo'))
     })

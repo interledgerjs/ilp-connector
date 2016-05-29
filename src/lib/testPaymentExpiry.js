@@ -40,7 +40,6 @@ function TransferTester (config, sourceTransfer, destinationTransfer) {
 }
 
 TransferTester.prototype.getExpiry = function (transfer) {
-  if (transfer.expires_at) return transfer.expires_at
   if (transfer.expiresAt) return transfer.expiresAt
   const expiries = _.uniq(_.values(_.pick(
     this.expiryByCase, getTransferCases(transfer))))
@@ -100,40 +99,12 @@ TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
   }
 }
 
-// We also need to check if we have enough time between the expiry
-// of the destination transfer with the latest expiry and the expiry of
-// the source transfer with the earliest expiry is greater than the
-// minMessageWindow.
-// This is done to ensure that we have enough time after the last
-// moment one of the destination transfers could happen (taking money out
-// of our account) to execute all of the source transfers
-TransferTester.prototype.validateMinMessageWindow = function () {
-  const earliestSourceTransferExpiry =
-    _.min(_.map(this.source_transfers, function (transfer) {
-      return (transfer.expires_at && transfer.state !== 'executed'
-        ? moment(transfer.expires_at, moment.ISO_8601).valueOf()
-        : Math.max())
-    }))
-
-  const latestDestinationTransferExpiry =
-    _.max(_.map(this.destination_transfers, function (transfer) {
-      return moment(transfer.expires_at, moment.ISO_8601).valueOf()
-    }))
-
-  if (earliestSourceTransferExpiry - latestDestinationTransferExpiry < this.minMessageWindow) {
-    throw new UnacceptableExpiryError('The window between the latest ' +
-      'destination transfer expiry and the earliest source transfer expiry ' +
-      'is insufficient to ensure that we can execute the source transfers')
-  }
-}
-
 // /////////////////////////////////////////////////////////////////////////////
 // Atomic
 // /////////////////////////////////////////////////////////////////////////////
 
 TransferTester.prototype.loadCaseExpiries = function * () {
   for (const transfer of this.transfers) {
-    if (transfer.expires_at) continue
     if (transfer.expiresAt) continue
     const caseIDs = getTransferCases(transfer)
     for (const caseID of caseIDs) {
@@ -163,5 +134,5 @@ TransferTester.prototype.loadCaseExpiry = function * (caseID) {
 }
 
 function getTransferCases (transfer) {
-  return (transfer.additional_info || {}).cases || transfer.cases || []
+  return transfer.cases || []
 }

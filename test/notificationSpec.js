@@ -11,6 +11,7 @@ const expect = require('chai').expect
 const assert = require('chai').assert
 const sinon = require('sinon')
 const jsonSigning = require('five-bells-shared').JSONSigning
+const subscriptions = require('../src/models/subscriptions')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -48,6 +49,7 @@ describe('Notifications', function () {
 
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
+    yield subscriptions.setupListeners(this.ledgers, this.config)
   })
 
   describe('POST /notifications -- signed', function () {
@@ -63,6 +65,7 @@ describe('Notifications', function () {
       ])
       appHelper.create(this)
       yield this.backend.connect(ratesResponse)
+      yield subscriptions.setupListeners(this.ledgers, this.config)
 
       this.clock = sinon.useFakeTimers(START_DATE)
       this.notificationSourceTransferPrepared =
@@ -103,6 +106,7 @@ describe('Notifications', function () {
       ])
       appHelper.create(this)
       yield this.backend.connect(ratesResponse)
+      yield subscriptions.setupListeners(this.ledgers, this.config)
 
       this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -288,6 +292,7 @@ describe('Notifications', function () {
               memo: {
                 source_transfer_ledger: payment.source_transfers[0].ledger,
                 source_transfer_id: payment.source_transfers[0].id
+                  .substring(payment.source_transfers[0].id.length - 36)
               }
             }]
           }
@@ -354,6 +359,7 @@ describe('Notifications', function () {
               memo: {
                 source_transfer_ledger: payment.source_transfers[0].ledger,
                 source_transfer_id: payment.source_transfers[0].id
+                  .substring(payment.source_transfers[0].id.length - 36)
               }
             }]
           }
@@ -381,8 +387,7 @@ describe('Notifications', function () {
           result: 'ignored',
           ignoreReason: {
             id: 'UnrelatedNotificationError',
-            message: 'Notification does not match a payment we have a record of' +
-              ' or the corresponding source transfers may already have been executed'
+            message: 'Notification does not seem related to connector'
           }
         })
         .end()
@@ -406,9 +411,25 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should return 200 if the payment includes assets this connector does not offer rates between', function * () {
+    it('should return 200 if the payment is from an unknown source ledger', function * () {
       this.notificationSourceTransferPrepared
         .resource.ledger = 'http://abc-ledger.example/ABC'
+
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {
+            id: 'AssetsNotTradedError',
+            message: 'Unexpected fulfillment from unknown source ledger: http://abc-ledger.example/ABC'
+          }
+        })
+        .end()
+    })
+
+    it('should return 200 if the payment is to an unknown destination ledger', function * () {
       this.notificationSourceTransferPrepared
         .resource.credits[0].memo
         .destination_transfer.ledger = 'http://xyz-ledger.example/XYZ'

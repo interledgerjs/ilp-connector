@@ -79,7 +79,7 @@ describe('Subscriptions', function () {
       .put('/fulfillment', this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
       .reply(201, this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
 
-    this.wsEurLedger.send(JSON.stringify({
+    this.wsUsdLedger.send(JSON.stringify({
       id: this.notificationSourceTransferPrepared.id,
       event: 'transfer.update',
       resource: _.merge({}, payment.source_transfers[0], {
@@ -93,13 +93,14 @@ describe('Subscriptions', function () {
 
     assert(nockDestinationTransfer.isDone(), 'destination transfer was not prepared')
 
-    this.wsUsdLedger.send(JSON.stringify(_.merge({}, this.notificationWithConditionFulfillment,
+    this.wsEurLedger.send(JSON.stringify(_.merge({}, this.notificationWithConditionFulfillment,
       {
         resource: {
           debits: [{
             memo: {
               source_transfer_ledger: payment.source_transfers[0].ledger,
               source_transfer_id: payment.source_transfers[0].id
+                .substring(payment.source_transfers[0].id.length - 36)
             }
           }]
         }

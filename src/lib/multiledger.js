@@ -1,5 +1,6 @@
 'use strict'
 
+const _ = require('lodash')
 const FiveBellsLedger = require('../ledgers/five-bells-ledger')
 const healthStatus = require('../common/health.js')
 
@@ -17,6 +18,10 @@ Multiledger.prototype.addLedger = function (Ledger) {
 
 Multiledger.prototype.getLedger = function (ledgerId) {
   return this.ledgers[ledgerId]
+}
+
+Multiledger.prototype.getLedgers = function () {
+  return _.clone(this.ledgers)
 }
 
 Multiledger.prototype.buildLedgers = function () {

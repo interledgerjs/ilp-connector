@@ -37,6 +37,7 @@
     "co-body": "^4.0.0",
     "co-defer": "^1.0.0",
     "co-request": "^1.0.0",
+    "eventemitter2": "^1.0.3",
     "five-bells-condition": "^3.2.0",
     "five-bells-routing": "~2.0.0",
     "five-bells-shared": "^15.0.0",
