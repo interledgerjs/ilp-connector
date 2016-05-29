@@ -87,8 +87,22 @@ class FiveBellsLedger extends EventEmitter2 {
           log.debug('notify', notification.resource.id)
           co.wrap(this._handleNotification)
             .call(this, notification.resource, notification.related_resources)
+            .then(() => {
+              if (this.config.features.debugReplyNotifications) {
+                ws.send(JSON.stringify({ result: 'processed' }))
+              }
+            })
             .catch((err) => {
               log.warn('failure while processing notification: ' + err)
+              if (this.config.features.debugReplyNotifications) {
+                ws.send(JSON.stringify({
+                  result: 'ignored',
+                  ignoreReason: {
+                    id: err.name,
+                    message: err.message
+                  }
+                }))
+              }
             })
         })
         ws.on('close', () => {

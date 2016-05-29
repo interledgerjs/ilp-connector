@@ -89,7 +89,7 @@ describe('Subscriptions', function () {
       })
     }))
 
-    yield new Promise((resolve) => this.setTimeout(resolve, 50))
+    yield new Promise((resolve) => this.wsUsdLedger.on('message', resolve))
 
     assert(nockDestinationTransfer.isDone(), 'destination transfer was not prepared')
 
@@ -107,7 +107,7 @@ describe('Subscriptions', function () {
       }
     )))
 
-    yield new Promise((resolve) => this.setTimeout(resolve, 50))
+    yield new Promise((resolve) => this.wsEurLedger.on('message', resolve))
 
     assert(nockSourceTransfer.isDone(), 'source transfer was not fulfilled')
   })

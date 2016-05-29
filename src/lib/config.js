@@ -179,7 +179,11 @@ function getLocalConfig () {
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
 
   const features = {}
+  // Debug feature: Automatically fund connectors accounts using admin credentials
   features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
+  // Debug feature: Reply to websocket notifications
+  features.debugReplyNotifications =
+    Config.castBool(Config.getEnv(envPrefix, 'DEBUG_REPLY_NOTIFICATIONS'))
 
   const adminEnv = parseAdminEnv()
   const useAdmin = adminEnv.username && (adminEnv.password || adminEnv.key)
@@ -237,6 +241,7 @@ function getLocalConfig () {
     if (!tradingPairs.length) {
       tradingPairs = require('../../test/data/tradingPairs.json')
     }
+    features.debugReplyNotifications = true
   } else {
     ledgerCredentials = parseCredentials()
   }

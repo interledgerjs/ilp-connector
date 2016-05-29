@@ -15,6 +15,10 @@ class MockWebSocket extends EventEmitter {
     this.sock.onerror = this.handleError.bind(this)
   }
 
+  send (msg) {
+    this.sock.send(msg)
+  }
+
   handleOpen () {
     this.emit('open')
   }
