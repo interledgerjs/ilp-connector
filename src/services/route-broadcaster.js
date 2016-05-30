@@ -7,7 +7,6 @@ module.exports = new RouteBroadcaster(
   require('./backend'),
   require('./ledgers'),
   {
-    ledgerCredentials: config.ledgerCredentials,
     tradingPairs: config.tradingPairs,
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,

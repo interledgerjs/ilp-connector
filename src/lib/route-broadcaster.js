@@ -11,7 +11,6 @@ class RouteBroadcaster {
    * @param {Backend} backend
    * @param {Multiledger} ledgers
    * @param {Object} config
-   * @param {Object} config.ledgerCredentials
    * @param {Object} config.tradingPairs
    * @param {Number} config.minMessageWindow
    * @param {Number} config.routeCleanupInterval
@@ -24,7 +23,6 @@ class RouteBroadcaster {
     this.routingTables = routingTables
     this.backend = backend
     this.ledgers = ledgers
-    this.ledgerCredentials = config.ledgerCredentials
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
     this.adjacentConnectors = {}

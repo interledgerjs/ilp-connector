@@ -140,12 +140,68 @@ class FiveBellsLedger extends EventEmitter2 {
     return this.connected
   }
 
+  getInfo () {
+    return co.wrap(this._getInfo).call(this)
+  }
+
+  * _getInfo () {
+    log.debug('getInfo', this.id)
+    function throwErr () {
+      throw new ExternalError('Unable to determine ledger precision')
+    }
+
+    let res
+    try {
+      res = yield request(this.id, {json: true})
+    } catch (e) {
+      if (!res || res.statusCode !== 200) {
+        log.debug('getPrecisionAndScale', e)
+        throwErr()
+      }
+    }
+
+    if (!res || res.statusCode !== 200) throwErr()
+    if (!res.body.precision || !res.body.scale) throwErr()
+
+    return {
+      precision: res.body.precision,
+      scale: res.body.scale
+    }
+  }
+
   getAccount () {
     return this.credentials.account_uri
   }
 
   _validateTransfer (transfer) {
     validator.validate('TransferTemplate', transfer)
+  }
+
+  getBalance () {
+    return co.wrap(this._getBalance).call(this)
+  }
+
+  * _getBalance () {
+    const creds = this.credentials
+    let res
+    try {
+      res = yield request({
+        method: 'get',
+        uri: creds.account_uri,
+        auth: creds.password && {
+          user: creds.username,
+          pass: creds.password
+        },
+        ca: creds.ca,
+        cert: creds.cert,
+        key: creds.key,
+        json: true
+      })
+    } catch (e) { }
+    if (!res || res.statusCode !== 200) {
+      throw new ExternalError('Unable to determine current balance')
+    }
+    return res.body.balance
   }
 
   getConnectors () {

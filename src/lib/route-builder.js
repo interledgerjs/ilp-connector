@@ -9,19 +9,20 @@ const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 class RouteBuilder {
   /**
    * @param {RoutingTables} routingTables
-   * @param {PrecisionCache} precisionCache
+   * @param {InfoCache} infoCache
+   * @param {Multiledger} ledgers
    * @param {Object} config
    * @param {Integer} config.minMessageWindow seconds
    * @param {Number} config.slippage
    * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, precisionCache, config) {
+  constructor (routingTables, infoCache, ledgers, config) {
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
-    this.precisionCache = precisionCache
+    this.infoCache = infoCache
+    this.ledgers = ledgers
     this.minMessageWindow = config.minMessageWindow
     this.slippage = config.slippage
-    this.ledgerCredentials = config.ledgerCredentials
   }
 
   /**
@@ -43,7 +44,8 @@ class RouteBuilder {
     const nextHop = yield this._roundHop(_nextHop)
 
     return {
-      source_connector_account: this.ledgerCredentials[nextHop.sourceLedger].account_uri,
+      source_connector_account:
+        this.ledgers.getLedger(nextHop.sourceLedger).getAccount(),
       source_ledger: nextHop.sourceLedger,
       source_amount: nextHop.sourceAmount,
       destination_ledger: nextHop.finalLedger,
@@ -147,7 +149,7 @@ class RouteBuilder {
   }
 
   * _roundAmount (sourceOrDestination, ledger, amount) {
-    const precisionAndScale = yield this.precisionCache.get(ledger)
+    const precisionAndScale = yield this.infoCache.get(ledger)
     const roundedAmount = new BigNumber(amount).toFixed(precisionAndScale.scale,
       sourceOrDestination === 'source' ? BigNumber.ROUND_UP : BigNumber.ROUND_DOWN)
     validatePrecision(roundedAmount, precisionAndScale.precision, sourceOrDestination)

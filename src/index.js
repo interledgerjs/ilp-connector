@@ -1,9 +1,7 @@
 'use strict'
 const ledgers = require('./services/ledgers')
 const config = require('./services/config')
-const balanceCache = require('./services/balance-cache')
 const createApp = require('./app')
-const precisionCache = require('./services/precision-cache')
 
 const connector = createApp(config, ledgers)
 
@@ -14,7 +12,7 @@ module.exports = {
   addLedger: ledgers.addLedger.bind(ledgers),
   _test: {
     BalanceCache: require('./lib/balance-cache'),
-    balanceCache: balanceCache,
+    balanceCache: require('./services/balance-cache'),
     RoutingTables: require('./lib/routing-tables'),
     RouteBroadcaster: require('./lib/route-broadcaster'),
     RouteBuilder: require('./lib/route-builder'),
@@ -22,7 +20,7 @@ module.exports = {
     config: require('./services/config'),
     logger: require('./common').log,
     backend: require('./services/backend'),
-    precisionCache: precisionCache
+    infoCache: require('./services/info-cache')
   }
 }
 

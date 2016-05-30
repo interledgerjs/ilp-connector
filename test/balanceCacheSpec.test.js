@@ -11,15 +11,9 @@ describe('BalanceCache', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    this.cache = new BalanceCache({
-      'http://ledger-ok.local': {
-        account_uri: 'http://ledger-ok.local',
-        username: 'bob',
-        password: 'bob'
-      }
-    })
+    this.cache = new BalanceCache(this.ledgers)
 
-    nock('http://ledger-ok.local').get('/')
+    nock('http://usd-ledger.example').get('/accounts/mark')
       .reply(200, { balance: '123.456' })
   })
 
@@ -27,14 +21,14 @@ describe('BalanceCache', function () {
 
   describe('get', function () {
     it('fetches the result', function * () {
-      let balance = yield this.cache.get('http://ledger-ok.local')
+      let balance = yield this.cache.get('http://usd-ledger.example')
       expect(balance).to.be.an.instanceof(BigNumber)
       expect(balance.toString()).to.equal('123.456')
     })
 
     it('caches the result', function * () {
-      yield this.cache.get('http://ledger-ok.local')
-      let balance = yield this.cache.get('http://ledger-ok.local')
+      yield this.cache.get('http://usd-ledger.example')
+      let balance = yield this.cache.get('http://usd-ledger.example')
       expect(balance).to.be.an.instanceof(BigNumber)
       expect(balance.toString()).to.equal('123.456')
     })

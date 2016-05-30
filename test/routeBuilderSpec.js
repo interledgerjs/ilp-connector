@@ -5,23 +5,23 @@ const RoutingTables = require('five-bells-connector')._test.RoutingTables
 const RouteBuilder = require('five-bells-connector')._test.RouteBuilder
 
 const baseURI = 'http://mark.example'
-const ledgerA = 'http://ledgerA.example'
-const ledgerB = 'http://ledgerB.example'
-const ledgerC = 'http://ledgerC.example'
+const ledgerA = 'http://usd-ledger.example'
+const ledgerB = 'http://eur-ledger.example'
+const ledgerC = 'http://cny-ledger.example'
 
 // sending/receiving users
-const aliceA = 'http://ledgerA.example/accounts/alice'
-const bobB = 'http://ledgerB.example/accounts/bob'
-const carlC = 'http://ledgerC.example/accounts/carl'
+const aliceA = 'http://usd-ledger.example/accounts/alice'
+const bobB = 'http://eur-ledger.example/accounts/bob'
+const carlC = 'http://cny-ledger.example/accounts/carl'
 
 // connector users
-const markA = 'http://ledgerA.example/accounts/mark'
-const markB = 'http://ledgerB.example/accounts/mark'
-const maryB = 'http://ledgerB.example/accounts/mary'
+const markA = 'http://usd-ledger.example/accounts/mark'
+const markB = 'http://eur-ledger.example/accounts/mark'
+const maryB = 'http://eur-ledger.example/accounts/mary'
 
 describe('RouteBuilder', function () {
   beforeEach(function * () {
-    this.precisionCache = {
+    this.infoCache = {
       get: function * (ledger) {
         return {precision: 10, scale: 2}
       }
@@ -36,13 +36,9 @@ describe('RouteBuilder', function () {
       min_message_window: 1,
       points: [ [0, 0], [200, 100] ]
     }])
-    this.builder = new RouteBuilder(this.tables, this.precisionCache, {
+    this.builder = new RouteBuilder(this.tables, this.infoCache, this.ledgers, {
       minMessageWindow: 1,
-      slippage: 0.01,
-      ledgerCredentials: {
-        'http://ledgerA.example': {account_uri: markA},
-        'http://ledgerB.example': {account_uri: markB}
-      }
+      slippage: 0.01
     })
   })
 

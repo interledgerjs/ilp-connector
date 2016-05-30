@@ -10,7 +10,7 @@ const balanceCache = require('five-bells-connector')._test.balanceCache
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const _ = require('lodash')
-const precisionCache = require('five-bells-connector')._test.precisionCache
+const infoCache = require('five-bells-connector')._test.infoCache
 const parseUrl = require('url').parse
 
 describe('Quotes', function () {
@@ -45,7 +45,7 @@ describe('Quotes', function () {
         })
     })
     balanceCache.reset()
-    precisionCache.reset()
+    infoCache.reset()
 
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
