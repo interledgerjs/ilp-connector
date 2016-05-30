@@ -43,14 +43,8 @@ Multiledger.prototype.getType = function (ledgerId) {
   return this.getLedger(ledgerId).constructor.TYPE
 }
 
-Multiledger.prototype.checkLedgersHealth = function * () {
-  this.ledgersHealth = { ledgersHealth: healthStatus.statusNotOk }
-  yield Object.keys(this.ledgers).map((ledgerId) => this.ledgers[ledgerId].checkHealth())
-  this.ledgersHealth = { ledgersHealth: healthStatus.statusOk }
-}
-
 Multiledger.prototype.getStatus = function () {
-  return this.ledgersHealth
+  return _.every(this.ledgers, (ledger) => ledger.isConnected())
 }
 
 module.exports = Multiledger

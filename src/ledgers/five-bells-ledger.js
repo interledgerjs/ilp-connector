@@ -44,7 +44,9 @@ class FiveBellsLedger extends EventEmitter2 {
     this.id = options.ledger_id
     this.credentials = options.credentials
     this.config = options.config
+
     this.connection = null
+    this.connected = false
   }
 
   connect () {
@@ -109,7 +111,15 @@ class FiveBellsLedger extends EventEmitter2 {
           log.info('ws disconnected from ' + streamUri)
         })
       })
-      .on('connect', () => resolve(null))
+      .once('connect', () => resolve(null))
+      .on('connect', () => {
+        this.connected = true
+        this.emit('connect')
+      })
+      .on('disconnect', () => {
+        this.connected = false
+        this.emit('disconnect')
+      })
       .on('error', function (err) {
         log.warn('ws error on ' + streamUri + ': ' + err)
         reject(err)
@@ -125,7 +135,11 @@ class FiveBellsLedger extends EventEmitter2 {
     }
   }
 
-  validateTransfer (transfer) {
+  isConnected () {
+    return this.connected
+  }
+
+  _validateTransfer (transfer) {
     validator.validate('TransferTemplate', transfer)
   }
 
@@ -222,7 +236,7 @@ class FiveBellsLedger extends EventEmitter2 {
 
         if (fiveBellsTransfer.state === 'prepared' ||
             (fiveBellsTransfer.state === 'executed' && !transfer.executionCondition)) {
-          this.validateTransfer(credit.memo.destination_transfer)
+          this._validateTransfer(credit.memo.destination_transfer)
           yield this.emitAsync('incoming', transfer)
         }
 
@@ -319,14 +333,6 @@ class FiveBellsLedger extends EventEmitter2 {
         fingerprint: this.credentials.fingerprint
       }
     }, 'could not create account at ledger ' + this.id, admin)
-  }
-
-  * checkHealth () {
-    log.info('checking health for ' + this.id)
-    yield requestRetry({
-      method: 'get',
-      url: this.id + '/health'
-    }, 'could not check health for ledger ' + this.id, this.credentials)
   }
 }
 
