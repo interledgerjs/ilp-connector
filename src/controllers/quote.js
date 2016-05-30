@@ -44,10 +44,10 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
  *    HTTP/1.1 200 OK
  *      {
  *        "source_connector_account": "mark",
- *        "source_ledger": "http://eur-ledger.example/EUR",
+ *        "source_ledger": "http://eur-ledger.example",
  *        "source_amount": "100.25",
  *        "source_expiry_duration": "6000",
- *        "destination_ledger": "http://usd-ledger.example/USD",
+ *        "destination_ledger": "http://usd-ledger.example",
  *        "destination_amount": "105.71",
  *        "destination_expiry_duration": "5000"
  *      }
@@ -64,10 +64,10 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
  *    HTTP/1.1 200 OK
  *      {
  *        "source_connector_account": "mark",
- *        "source_ledger": "http://eur-ledger.example/EUR",
+ *        "source_ledger": "http://eur-ledger.example",
  *        "source_amount": "100.25",
  *        "source_expiry_duration": "6000",
- *        "destination_ledger": "http://usd-ledger.example/USD",
+ *        "destination_ledger": "http://usd-ledger.example",
  *        "destination_amount": "105.71",
  *        "destination_expiry_duration": "5000"
  *      }

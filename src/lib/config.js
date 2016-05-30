@@ -174,7 +174,7 @@ function getLocalConfig () {
 
   const ledgers = parseLedgers()
   // Currency pairs traded should be specified as
-  // [["USD@http://usd-ledger.example/USD","EUR@http://eur-ledger.example"],...]
+  // [["USD@http://usd-ledger.example","EUR@http://eur-ledger.example"],...]
   let tradingPairs =
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
 

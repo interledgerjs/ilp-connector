@@ -28,13 +28,13 @@ describe('Subscriptions', function () {
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
 
-    nock('http://usd-ledger.example/USD').get('')
+    nock('http://usd-ledger.example').get('/')
       .reply(200, {
         precision: 10,
         scale: 4
       })
 
-    nock('http://eur-ledger.example/EUR').get('')
+    nock('http://eur-ledger.example').get('/')
       .reply(200, {
         precision: 10,
         scale: 4

@@ -1,27 +1,27 @@
 [
   [
-    "USD@http://usd-ledger.example/USD",
-    "EUR@http://eur-ledger.example/EUR"
+    "USD@http://usd-ledger.example",
+    "EUR@http://eur-ledger.example"
   ], [
-    "EUR@http://eur-ledger.example/EUR",
-    "USD@http://usd-ledger.example/USD"
+    "EUR@http://eur-ledger.example",
+    "USD@http://usd-ledger.example"
   ], [
-    "CAD@http://cad-ledger.example:1000/CAD",
-    "EUR@http://eur-ledger.example/EUR"
+    "CAD@http://cad-ledger.example:1000",
+    "EUR@http://eur-ledger.example"
   ], [
-    "USD@http://usd-ledger.example/USD",
-    "CAD@http://cad-ledger.example:1000/CAD"
+    "USD@http://usd-ledger.example",
+    "CAD@http://cad-ledger.example:1000"
   ], [
-    "CAD@http://cad-ledger.example:1000/CAD",
-    "USD@http://usd-ledger.example/USD"
+    "CAD@http://cad-ledger.example:1000",
+    "USD@http://usd-ledger.example"
   ], [
-    "EUR@http://eur-ledger.example/EUR",
-    "CAD@http://cad-ledger.example:1000/CAD"
+    "EUR@http://eur-ledger.example",
+    "CAD@http://cad-ledger.example:1000"
   ], [
-    "USD@http://usd-ledger.example/USD",
-    "CNY@http://cny-ledger.example/CNY"
+    "USD@http://usd-ledger.example",
+    "CNY@http://cny-ledger.example"
   ], [
-    "CNY@http://cny-ledger.example/CNY",
-    "USD@http://usd-ledger.example/USD"
+    "CNY@http://cny-ledger.example",
+    "USD@http://usd-ledger.example"
   ]
 ]

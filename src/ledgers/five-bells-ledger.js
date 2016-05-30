@@ -1,5 +1,6 @@
 'use strict'
 
+const _ = require('lodash')
 const co = require('co')
 const lodash = require('lodash')
 const request = require('co-request')
@@ -139,8 +140,28 @@ class FiveBellsLedger extends EventEmitter2 {
     return this.connected
   }
 
+  getAccount () {
+    return this.credentials.account_uri
+  }
+
   _validateTransfer (transfer) {
     validator.validate('TransferTemplate', transfer)
+  }
+
+  getConnectors () {
+    return co.wrap(this._getConnectors).call(this)
+  }
+
+  * _getConnectors () {
+    const res = yield request({
+      method: 'GET',
+      uri: this.id + '/connectors',
+      json: true
+    })
+    if (res.statusCode !== 200) {
+      throw new Error('Unexpected status code: ' + res.statusCode)
+    }
+    return _.map(res.body, 'connector')
   }
 
   send (transfer) {
@@ -183,7 +204,11 @@ class FiveBellsLedger extends EventEmitter2 {
     return null
   }
 
-  * fulfillCondition (transferID, conditionFulfillment) {
+  fulfillCondition (transferID, conditionFulfillment) {
+    return co.wrap(this._fulfillCondition).call(this, transferID, conditionFulfillment)
+  }
+
+  * _fulfillCondition (transferID, conditionFulfillment) {
     const fulfillmentRes = yield this._request({
       method: 'put',
       uri: this.id + '/transfers/' + transferID + '/fulfillment',
@@ -199,7 +224,7 @@ class FiveBellsLedger extends EventEmitter2 {
     }
   }
 
-  * getTransferFulfillment (transfer) {
+  * _getTransferFulfillment (transfer) {
     const fulfillmentRes = yield this._request({
       method: 'get',
       uri: transfer.id + '/fulfillment'

@@ -5,6 +5,7 @@ const RouteBroadcaster = require('../lib/route-broadcaster')
 module.exports = new RouteBroadcaster(
   require('./routing-tables'),
   require('./backend'),
+  require('./ledgers'),
   {
     ledgerCredentials: config.ledgerCredentials,
     tradingPairs: config.tradingPairs,

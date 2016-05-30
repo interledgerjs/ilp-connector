@@ -5,9 +5,10 @@ const RoutingTables = require('five-bells-connector')._test.RoutingTables
 const RouteBroadcaster = require('five-bells-connector')._test.RouteBroadcaster
 const nock = require('nock')
 
-const ledgerA = 'http://ledgerA.example'
-const ledgerB = 'http://ledgerB.example'
-const ledgerC = 'http://ledgerC.example'
+const ledgerA = 'http://cad-ledger.example:1000'
+const ledgerB = 'http://usd-ledger.example'
+const ledgerC = 'http://eur-ledger.example'
+const ledgerD = 'http://cny-ledger.example'
 const baseURI = 'http://connector.example'
 
 describe('RouteBroadcaster', function () {
@@ -30,15 +31,7 @@ describe('RouteBroadcaster', function () {
       points: [ [0, 0], [100, 200] ]
     }])
 
-    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, {
-      ledgerCredentials: {
-        'http://ledgerA.example': {account_uri: ledgerA + '/accounts/mark'},
-        'http://ledgerB.example': {account_uri: ledgerB + '/accounts/mark'}
-      },
-      tradingPairs: [
-        ['USD@' + ledgerA, 'EUR@' + ledgerB],
-        ['EUR@' + ledgerB, 'USD@' + ledgerA]
-      ],
+    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, {
       minMessageWindow: 1
     })
 
@@ -60,28 +53,30 @@ describe('RouteBroadcaster', function () {
         {connector: baseURI},
         {connector: 'http://other-connector2.example'}
       ])
+      nock(ledgerC).get('/connectors').reply(200, [{connector: baseURI}])
+      nock(ledgerD).get('/connectors').reply(200, [{connector: baseURI}])
 
       nock('http://other-connector2.example').post('/routes', [
         {
-          source_ledger: 'http://ledgerA.example',
-          destination_ledger: 'http://ledgerB.example',
+          source_ledger: ledgerA,
+          destination_ledger: ledgerB,
           connector: 'http://connector.example',
           min_message_window: 1,
-          source_account: 'http://ledgerA.example/accounts/mark',
+          source_account: ledgerA + '/accounts/mark',
           points: [ [0, 0], [200, 100] ]
         }, {
-          source_ledger: 'http://ledgerA.example',
-          destination_ledger: 'http://ledgerC.example',
+          source_ledger: ledgerA,
+          destination_ledger: ledgerC,
           connector: 'http://connector.example',
           min_message_window: 2,
-          source_account: 'http://ledgerA.example/accounts/mark',
+          source_account: ledgerA + '/accounts/mark',
           points: [ [0, 0], [100, 60], [200, 60] ]
         }, {
-          source_ledger: 'http://ledgerB.example',
-          destination_ledger: 'http://ledgerA.example',
+          source_ledger: ledgerB,
+          destination_ledger: ledgerA,
           connector: 'http://connector.example',
           min_message_window: 1,
-          source_account: 'http://ledgerB.example/accounts/mark',
+          source_account: ledgerB + '/accounts/mark',
           points: [ [0, 0], [100, 200] ]
         }
       ]).reply(200)

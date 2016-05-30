@@ -54,12 +54,12 @@ describe('ConnectorConfig', function () {
 
       it('should parse ledger credentials', function * () {
         const ledgerCredentialsEnv = {
-          'http://cad-ledger.example:1000/CAD': {
+          'http://cad-ledger.example:1000': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             password: 'mark'
           },
-          'http://usd-ledger.example/USD': {
+          'http://usd-ledger.example': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
@@ -73,12 +73,12 @@ describe('ConnectorConfig', function () {
         const config = loadConnectorConfig()
 
         const ledgerCredentials = {
-          'http://cad-ledger.example:1000/CAD': {
+          'http://cad-ledger.example:1000': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             password: 'mark'
           },
-          'http://usd-ledger.example/USD': {
+          'http://usd-ledger.example': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: fs.readFileSync('test/data/client1-crt.pem'),
@@ -93,7 +93,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing password', () => {
         const missingPassword = {
-          'http://cad-ledger.example:1000/CAD': {
+          'http://cad-ledger.example:1000': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark'
           }
@@ -105,7 +105,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing username', () => {
         const missingUsername = {
-          'http://cad-ledger.example:1000/CAD': {
+          'http://cad-ledger.example:1000': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             password: 'mark'
           }
@@ -117,7 +117,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing key', () => {
         const missingKey = {
-          'http://cad-ledger.example:1000/CAD': {
+          'http://cad-ledger.example:1000': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: '/cert'
@@ -130,7 +130,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing cert', () => {
         const missingCert = {
-          'http://cad-ledger.example:1000/CAD': {
+          'http://cad-ledger.example:1000': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             key: '/key'
@@ -143,7 +143,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing account_uri', () => {
         const missingAccountUri = {
-          'http://cad-ledger.example:1000/CAD': {
+          'http://cad-ledger.example:1000': {
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
             key: 'test/data/client1-key.pem',
@@ -157,7 +157,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing key file', function * () {
         const missingKeyFile = {
-          'http://usd-ledger.example/USD': {
+          'http://usd-ledger.example': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
@@ -173,7 +173,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing certificate file', function * () {
         const missingCertFile = {
-          'http://usd-ledger.example/USD': {
+          'http://usd-ledger.example': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'foo',
@@ -189,7 +189,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing ca certificate file', function * () {
         const missingCertFile = {
-          'http://usd-ledger.example/USD': {
+          'http://usd-ledger.example': {
             account_uri: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',

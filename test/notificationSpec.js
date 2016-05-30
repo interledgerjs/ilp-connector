@@ -35,13 +35,13 @@ describe('Notifications', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    nock('http://usd-ledger.example/USD').get('')
+    nock('http://usd-ledger.example').get('/')
       .reply(200, {
         precision: 10,
         scale: 4
       })
 
-    nock('http://eur-ledger.example/EUR').get('')
+    nock('http://eur-ledger.example').get('/')
       .reply(200, {
         precision: 10,
         scale: 4
@@ -531,7 +531,7 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send({
-          id: 'http://eur-ledger.example/EUR/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d',
+          id: 'http://eur-ledger.example/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d',
           event: 'transfer.update',
           resource: destinationTransfer
         })
@@ -570,7 +570,7 @@ describe('Notifications', function () {
       yield this.request()
         .post('/notifications')
         .send({
-          id: 'http://eur-ledger.example/EUR/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d',
+          id: 'http://eur-ledger.example/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d',
           event: 'transfer.update',
           resource: destinationTransfer
         })
