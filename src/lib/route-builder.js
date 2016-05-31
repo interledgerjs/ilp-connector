@@ -67,13 +67,13 @@ class RouteBuilder {
    * @returns {Transfer} destinationTransfer
    */
   * getDestinationTransfer (sourceTransfer) {
-    const finalTransfer = sourceTransfer.data && sourceTransfer.data.destination_transfer
-    if (!finalTransfer) {
-      throw new Error('source transfer is missing destination_transfer in memo')
+    const ilpHeader = sourceTransfer.data && sourceTransfer.data.ilp_header
+    if (!ilpHeader) {
+      throw new Error('source transfer is missing ilp_header in memo')
     }
 
     const sourceLedger = sourceTransfer.ledger
-    const finalLedger = finalTransfer.ledger
+    const finalLedger = ilpHeader.ledger
     const _nextHop = this.routingTables.findBestHopForSourceAmount(
       sourceLedger, finalLedger, sourceTransfer.amount)
     if (!_nextHop) throwAssetsNotTradedError()
@@ -81,21 +81,16 @@ class RouteBuilder {
 
     // Check if this connector can authorize the final transfer.
     if (nextHop.destinationLedger === finalLedger) {
-      const traderDebit = finalTransfer.debits.find((debit) => !debit.account)
-      if (traderDebit) {
-        traderDebit.account = nextHop.destinationDebitAccount
-      }
-
-      // Verify finalTransfer.credits[0].amount <= nextHop.destinationAmount
-      const finalAmount = new BigNumber(finalTransfer.credits[0].amount)
+      // Verify ilpHeader.amount <= nextHop.destinationAmount
+      const finalAmount = new BigNumber(ilpHeader.amount)
       if (finalAmount.greaterThan(nextHop.destinationAmount)) {
         throw new UnacceptableRateError('Payment rate does not match the rate currently offered')
       }
       // TODO: Verify atomic mode notaries are trusted
       // TODO: Verify expiry is acceptable
 
-      nextHop.destinationCreditAccount = finalTransfer.credits[0].account
-      nextHop.destinationAmount = finalTransfer.credits[0].amount
+      nextHop.destinationCreditAccount = ilpHeader.account
+      nextHop.destinationAmount = ilpHeader.amount
     }
 
     const noteToSelf = {
@@ -114,16 +109,14 @@ class RouteBuilder {
       // look unreliable. In order to assure this, the connector may use a
       // secret that seeds the deterministic ID generation.
       // TODO: Use a real secret
-      id: nextHop.destinationLedger !== finalLedger
-        ? getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id)
-        : finalTransfer.id.substring(finalTransfer.id.length - 36),
+      id: getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id),
       ledger: nextHop.destinationLedger,
       direction: 'outgoing',
       account: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
       data: nextHop.destinationLedger !== finalLedger
-        ? { destination_transfer: finalTransfer }
-        : finalTransfer.credits[0].memo,
+        ? { ilp_header: ilpHeader }
+        : ilpHeader.data,
       noteToSelf: noteToSelf,
       executionCondition: sourceTransfer.executionCondition,
       cancellationCondition: sourceTransfer.cancellationCondition,

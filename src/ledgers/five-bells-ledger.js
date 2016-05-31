@@ -249,6 +249,24 @@ class FiveBellsLedger extends EventEmitter2 {
       expires_at: transfer.expiresAt,
       additional_info: transfer.cases ? { cases: transfer.cases } : undefined
     }
+
+    // If Atomic mode, add destination transfer to notification targets
+    if (transfer.cases) {
+      for (let caseUri of transfer.cases) {
+        log.debug('Add case notification for ' + caseUri)
+        const res = yield request({
+          method: 'POST',
+          uri: caseUri + '/targets',
+          body: [ fiveBellsTransfer.id + '/fulfillment' ],
+          json: true
+        })
+
+        if (res.statusCode !== 200) {
+          throw new Error('Unexpected status code: ' + res.statusCode)
+        }
+      }
+    }
+
     yield this._request({
       method: 'put',
       uri: fiveBellsTransfer.id,
@@ -294,6 +312,8 @@ class FiveBellsLedger extends EventEmitter2 {
         this.id + ', transfer: ' + fiveBellsTransfer.ledger + ')')
     }
 
+    this._validateTransfer(fiveBellsTransfer)
+
     let handled = false
     for (let credit of fiveBellsTransfer.credits) {
       if (credit.account === this.credentials.account_uri) {
@@ -317,7 +337,6 @@ class FiveBellsLedger extends EventEmitter2 {
 
         if (fiveBellsTransfer.state === 'prepared' ||
             (fiveBellsTransfer.state === 'executed' && !transfer.executionCondition)) {
-          this._validateTransfer(credit.memo.destination_transfer)
           yield this.emitAsync('incoming', transfer)
         }
 

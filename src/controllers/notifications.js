@@ -124,7 +124,7 @@ exports.post = function * postNotification () {
       }
       return
     } else {
-      // TODO: Currently an invalid destination_transfer memo still triggers a
+      // TODO: Currently an invalid ilp_header memo still triggers a
       //   400 response. Invalid memos of any kind should be a 200 with result
       //   "ignored".
       log.error('Notification handling received critical error: ' + e)

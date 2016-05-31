@@ -12,29 +12,10 @@
       "amount":"1.07",
       "account":"http://usd-ledger.example/accounts/mark",
       "memo":{
-        "destination_transfer": {
-          "id": "http://eur-ledger.example/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
+        "ilp_header": {
           "ledger":"http://eur-ledger.example",
-          "debits":[{
-            "amount":"1.00",
-            "account":"http://eur-ledger.example/accounts/mark",
-            "memo": {
-              "source_transfer_ledger": "http://usd-ledger.example",
-              "source_transfer_id": "6851929f-5a91-4d02-b9f4-4ae6b7f1768c"
-            }
-          }],
-          "credits":[{
-            "amount":"1.00",
-            "account":"http://eur-ledger.example/accounts/bob"
-          }],
-          "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
-          "cancellation_condition": "cc:0:3:I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk:6",
-          "additional_info": {
-            "cases": [
-              "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a086",
-              "http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a087"
-            ]
-          }
+          "amount":"1.00",
+          "account":"http://eur-ledger.example/accounts/bob"
         }
       }
     }],
