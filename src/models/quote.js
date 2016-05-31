@@ -3,21 +3,20 @@
 const request = require('co-request')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
+const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const ExternalError = require('../errors/external-error')
 const balanceCache = require('../services/balance-cache.js')
 const routeBuilder = require('../services/route-builder')
 const DEFAULT_DESTINATION_EXPIRY = 5 // seconds
 
 function * makeQuoteQuery (params) {
-  const sourceAccount = params.source_account || null
-  const destinationAccount = params.destination_account || null
-  const sourceLedger = params.source_ledger || (yield getAccountLedger(sourceAccount))
-  const destinationLedger = params.destination_ledger || (yield getAccountLedger(destinationAccount))
+  const sourceLedger = params.source_ledger ||
+    (yield getAccountLedger(params.source_account))
+  const destinationLedger = params.destination_ledger ||
+    (yield getAccountLedger(params.destination_account))
   return {
     sourceLedger,
     destinationLedger,
-    sourceAccount,
-    destinationAccount,
     sourceAmount: params.source_amount,
     destinationAmount: params.destination_amount
   }
@@ -83,15 +82,6 @@ function * validateBalance (ledger, amount) {
   }
 }
 
-function getLocalTransfer (query) {
-  const amount = query.sourceAmount || query.destinationAmount
-  return {
-    ledger: query.sourceLedger,
-    debits: [{account: query.sourceAccount, amount: amount}],
-    credits: [{account: query.destinationAccount, amount: amount}]
-  }
-}
-
 /**
  * @param {Object} params
  * @param {String} params.source_ledger
@@ -103,12 +93,12 @@ function getLocalTransfer (query) {
  * @param {String} params.destination_amount
  * @param {String} params.destination_expiry_duration
  * @param {Object} config
- * @returns {Transfer}
+ * @returns {Quote}
  */
 function * getQuote (params, config) {
   const query = yield makeQuoteQuery(params)
   if (query.sourceLedger === query.destinationLedger) {
-    return getLocalTransfer(query)
+    throw new AssetsNotTradedError('source_ledger must be different from destination_ledger')
   }
 
   const quote = yield routeBuilder.getQuote(query)
@@ -119,10 +109,8 @@ function * getQuote (params, config) {
     params.source_expiry_duration,
     params.destination_expiry_duration,
     nextHop.minMessageWindow, config)
-  quote.expiry_duration =
-    String(expiryDurations.sourceExpiryDuration)
-  quote.credits[0].memo.destination_transfer.expiry_duration =
-    String(expiryDurations.destinationExpiryDuration)
+  quote.source_expiry_duration = String(expiryDurations.sourceExpiryDuration)
+  quote.destination_expiry_duration = String(expiryDurations.destinationExpiryDuration)
 
   // Check the balance of the next ledger (_not_ query.destinationLedger, which is the final ledger).
   yield validateBalance(nextHop.destinationLedger, nextHop.destinationAmount)
