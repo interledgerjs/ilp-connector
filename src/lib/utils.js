@@ -23,6 +23,16 @@ function getPairs (arr) {
  *
  * Uses HMAC-SHA-256 to generate a new UUID given a secret and a public input.
  *
+ * The ID for the next transfer should be deterministically generated, so
+ * that the connector doesn't send duplicate outgoing transfers if it
+ * receives duplicate notifications.
+ *
+ * The deterministic generation should ideally be impossible for a third
+ * party to predict. Otherwise an attacker might be able to squat on a
+ * predicted ID in order to interfere with a payment or make a connector
+ * look unreliable. In order to assure this, the connector may use a
+ * secret that seeds the deterministic ID generation.
+ *
  * @param {Buffer|String} secret Secret input
  * @param {String} input Public input
  * @returns {String} Deterministic output UUID
