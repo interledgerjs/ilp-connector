@@ -349,7 +349,7 @@ require([
 
 
     // Content-Scroll on Navigation click.
-    $('.sidenav').find('a').on('click', function(e) {
+    $('.sidenav').find('li a').on('click', function(e) {
         e.preventDefault();
         var id = $(this).attr('href');
         if ($(id).length > 0)

@@ -159,12 +159,12 @@ define({ "api": [
       "examples": [
         {
           "title": "200 Quote Response:",
-          "content": "HTTP/1.1 200 OK\n  {\n    \"source_transfers\": [\n      {\n        \"ledger\": \"http://eur-ledger.example/EUR\",\n        \"credits\": [\n          {\n            \"account\": \"mark\",\n            \"amount\": \"100.25\"\n          }\n        ],\n        \"expiry_duration\": \"6000\"\n      }\n    ],\n    \"destination_transfers\": [\n      {\n        \"ledger\": \"http://usd-ledger.example/USD\",\n        \"debits\": [\n          {\n            \"amount\": \"105.71\",\n            \"account\": \"mark\"\n          }\n        ],\n        \"expiry_duration\": \"5000\"\n      }\n    ]\n  }",
+          "content": "HTTP/1.1 200 OK\n  {\n    \"source_connector_account\": \"mark\",\n    \"source_ledger\": \"http://eur-ledger.example/EUR\",\n    \"source_amount\": \"100.25\",\n    \"source_expiry_duration\": \"6000\",\n    \"destination_ledger\": \"http://usd-ledger.example/USD\",\n    \"destination_amount\": \"105.71\",\n    \"destination_expiry_duration\": \"5000\"\n  }",
           "type": "json"
         },
         {
           "title": "200 Quote Response:",
-          "content": "HTTP/1.1 200 OK\n  {\n    \"source_transfers\": [\n      {\n        \"ledger\": \"http://eur-ledger.example/EUR\",\n        \"credits\": [\n          {\n            \"account\": \"mark\",\n            \"amount\": \"100.25\"\n          }\n        ],\n        \"expiry_duration\": \"6000\"\n      }\n    ],\n    \"destination_transfers\": [\n      {\n        \"ledger\": \"http://usd-ledger.example/USD\",\n        \"debits\": [\n          {\n            \"amount\": \"105.71\",\n            \"account\": \"mark\"\n          }\n        ],\n        \"expiry_duration\": \"5000\"\n      }\n    ]\n  }",
+          "content": "HTTP/1.1 200 OK\n  {\n    \"source_connector_account\": \"mark\",\n    \"source_ledger\": \"http://eur-ledger.example/EUR\",\n    \"source_amount\": \"100.25\",\n    \"source_expiry_duration\": \"6000\",\n    \"destination_ledger\": \"http://usd-ledger.example/USD\",\n    \"destination_amount\": \"105.71\",\n    \"destination_expiry_duration\": \"5000\"\n  }",
           "type": "json"
         }
       ]

@@ -381,13 +381,13 @@ pre.language-json .pun {
   color: #ff0c3e;
 }
 
-.sidenav > li.has-modifications a {
+/*.sidenav > li.has-modifications a {
   border-right: #60d060 4px solid;
 }
 
 .sidenav > li.is-new a {
   border-left: #e5e5e5 4px solid;
-}
+}*/
 
 /* ------------------------------------------------------------------------------------------
  * Compare
