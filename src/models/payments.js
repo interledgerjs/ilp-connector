@@ -31,7 +31,8 @@ function * updateIncomingTransfer (sourceTransfer, ledgers, config) {
 
 function * processExecutionFulfillment (transfer, fulfillment) {
   if (transfer.direction === 'outgoing') {
-    log.debug('Got notification about executed destination transfer')
+    log.debug('Got notification about executed destination transfer with ID ' +
+      transfer.id + ' on ledger ' + transfer.ledger)
     yield executeSourceTransfer(transfer, fulfillment)
   }
 }
