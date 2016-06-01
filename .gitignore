@@ -6,3 +6,4 @@ node_modules/
 /apidoc-out
 /integration-test
 *v8.log
+/web/
