@@ -13,10 +13,6 @@ function * validateExpiry (sourceTransfer, destinationTransfer, config) {
   tester.validateMaxHoldTime()
 }
 
-function * validate (sourceTransfer, destinationTransfer, config) {
-  yield validateExpiry(sourceTransfer, destinationTransfer, config)
-}
-
 function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
   log.debug('Settle payment, source: ' + JSON.stringify(sourceTransfer))
   log.debug('Settle payment, destination: ' + JSON.stringify(destinationTransfer))
@@ -29,7 +25,7 @@ function * updateIncomingTransfer (sourceTransfer, ledgers, config) {
   const destinationTransfer = sourceTransfer.data.destination_transfer =
     yield routeBuilder.getDestinationTransfer(sourceTransfer)
 
-  yield validate(sourceTransfer, destinationTransfer, config)
+  yield validateExpiry(sourceTransfer, destinationTransfer, config)
   yield settle(sourceTransfer, destinationTransfer, config, ledgers)
 }
 
