@@ -371,10 +371,6 @@ describe('Notifications', function () {
       sourceTransferExecuted.done()
     })
 
-    it.skip('should return a 422 if the two transfer conditions do not ' +
-      'match and the source transfer one does not have the same algorithm the ' +
-      'destination ledger uses')
-
     it('should return 200 if the payment is not relevant to the connector', function * () {
       this.notificationSourceTransferPrepared
         .resource.credits[0].account = 'http://usd-ledger.example/accounts/mary'
