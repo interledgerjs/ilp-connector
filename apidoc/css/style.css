@@ -54,43 +54,45 @@ h2 {
 }
 
 section {
-  border-top: 1px solid #ccc;
-  padding: 0px 0;
+  border-top: none;
+  padding: 0 0;
+  margin: 0;
 }
 
 section h1 {
-  font-size: 19px;
-  font-weight: 800;
-  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 40px;
+  font-weight: 600;
+  font-family: 'Titillium Web', sans-serif;
   color: #333;
-  margin: 0px;
-  padding-top: 12px;
-  line-height: 32px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  padding: 26px 0 0 0;
+  margin: 0 0;
 }
 
 article {
   padding: 0px 0 30px 0;
 }
 
-article h1 {
-  font-family: 'Titillium Web', sans-serif;
+article h1{
+  font-size: 32px;
   font-weight: 400;
-  font-size: 26px;
+  font-family: 'Titillium Web', sans-serif;
+  color: #333;
+  margin-bottom: 26px;
   line-height: 32px;
-  text-transform: none;
-  padding-top: 26px;
-  letter-spacing: 0px;
+  margin-top: 22px;
+  text-transform: initial;
+  letter-spacing: 0;
 }
 
 article h2 {
-  font-family: "Source Sans Pro", sans-serif;
   font-weight: 600;
-  font-size: 18px;
-  line-height: 24px;
+  font-style: normal;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   margin: 0;
-  padding: 26px 0 13px 0;
+  padding: 26px 0 2px 0;
+  color: #ccc;
 }
 
 article h3 {
@@ -123,6 +125,7 @@ th {
   padding: 4px 8px;
   font-size: 15px;
   border: #e0e0e0 1px solid;
+  border-bottom: #ddd 2px solid;
   color: #333;
 }
 
@@ -284,7 +287,7 @@ pre code {
   border: none;
   border-bottom-color: transparent;
   font-size: 15px;
-  padding: 7px 15px;
+  /*padding: 7px 15px;*/
   font-weight: 400;
   letter-spacing: 0px;
 }
@@ -621,14 +624,6 @@ ul.nav-tabs {
 
 /*Custom*/
 
-/* h1:before, h3:before {
-    display: block;
-    content: " ";
-    margin-top: -125px;
-    padding-top: 125px;
-    visibility: hidden;
-}
-*/
 button#version,
 .version {
   display: none;
@@ -699,23 +694,23 @@ li.active a {
 }
 
 article:before {
-    display: block;
-    content: "";
-    margin-top: -60px !important;
-    height: 60px;
-    visibility: hidden;
-    position: relative;
-    width: 0;
+  display: block;
+  content: "";
+  margin-top: -60px !important;
+  height: 60px;
+  visibility: hidden;
+  position: relative;
+  width: 0;
 }
 
 .anchor:before {
-    display: block;
-    content: "";
-    margin-top: -130px !important;
-    height: 130px;
-    visibility: hidden;
-    position: relative;
-    width: 0;
+  display: block;
+  content: "";
+  margin-top: -130px !important;
+  height: 130px;
+  visibility: hidden;
+  position: relative;
+  width: 0;
 }
 
 li.nav-header:before {
@@ -867,10 +862,10 @@ table>tbody>tr:nth-of-type(even) {
 }
 
 .dark p > code {
-    background-color: #434B50;
-    border-radius: 0px;
-    color: #fff;
-    font-size: 13px;
+  background-color: #434B50;
+  border-radius: 0px;
+  color: #fff;
+  font-size: 13px;
 }
 
 .dark article h2 {
@@ -934,11 +929,11 @@ table>tbody>tr:nth-of-type(even) {
 }
 
 .dark th {
-    background-color: #333C40;
-    font-weight: 400;
-    border: 1px solid #434B50;
-    color: #fff;
-    letter-spacing: 0.7px;
+  background-color: #333C40;
+  font-weight: 400;
+  border: 1px solid #434B50;
+  color: #fff;
+  letter-spacing: 0.7px;
 }
 
 .dark td {
@@ -956,7 +951,7 @@ table>tbody>tr:nth-of-type(even) {
 }
 
 .dark .navbar-default .navbar-nav>li>a {
-    font-weight: 400;
+  font-weight: 400;
 }
 
 .dark pre.prettyprint {
@@ -969,5 +964,5 @@ table>tbody>tr:nth-of-type(even) {
 }
 
 .dark table>tbody>tr:nth-of-type(even) {
-    background-color: #333C40;
+  background-color: #333C40;
 }
