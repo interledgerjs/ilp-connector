@@ -34,6 +34,7 @@ td.code {
 
 p {
   color: #555;
+  margin: 0;
 }
 
 h1 {
@@ -50,49 +51,49 @@ h2 {
   font-size: 24px;
   line-height: 26px;
   padding: 0;
-  margin: 0px 0 26px 0;
+  margin: 26px 0 26px 0;
 }
 
 section {
   border-top: none;
-  padding: 0 0;
+  padding: 0;
   margin: 0;
 }
 
 section h1 {
-  font-size: 40px;
+  padding: 0;
+  margin: 26px 0 0 0;
+  font-size: 32px;
   font-weight: 600;
   font-family: 'Titillium Web', sans-serif;
   color: #333;
-  padding: 26px 0 0 0;
-  margin: 0 0;
 }
 
 article {
-  padding: 0px 0 30px 0;
+  padding: 0px 0 26px 0;
 }
 
 article h1{
-  font-size: 32px;
-  font-weight: 400;
-  font-family: 'Titillium Web', sans-serif;
-  color: #333;
-  margin-bottom: 26px;
-  line-height: 32px;
-  margin-top: 22px;
-  text-transform: initial;
-  letter-spacing: 0;
-}
+    padding: 0;
+    margin: 13px 0 13px 0;
+    font-size: 26px;
+    font-weight: 400;
+    font-family: 'Titillium Web', sans-serif;
+    color: #333;
+    line-height: 32px;
+    text-transform: initial;
+    letter-spacing: 0;
+  }
 
 article h2 {
+  margin: 0;
+  padding: 0 0 2px 0;
   font-weight: 600;
   font-style: normal;
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin: 0;
-  padding: 26px 0 2px 0;
-  color: #ccc;
+  color: #333;
 }
 
 article h3 {
@@ -214,7 +215,7 @@ pre.language-json {
 }
 
 pre.language-html {
-  margin: 40px 0 20px 0;
+  margin: 20px 0 20px 0;
 }
 
 pre.language-html:before {
