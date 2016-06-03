@@ -40,7 +40,7 @@
     "eventemitter2": "^1.0.3",
     "five-bells-condition": "^3.2.0",
     "five-bells-routing": "~2.0.0",
-    "five-bells-shared": "^15.0.0",
+    "five-bells-shared": "^16.1.0",
     "koa": "^1.0.0",
     "koa-compress": "^1.0.6",
     "koa-cors": "0.0.16",

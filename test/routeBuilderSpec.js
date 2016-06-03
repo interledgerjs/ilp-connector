@@ -117,16 +117,15 @@ describe('RouteBuilder', function () {
         account: aliceA,
         amount: '100',
         data: {
-          destination_transfer: {
-            id: 'e901de57-0c9e-44f7-877a-ce98c84d3e0c',
+          ilp_header: {
             ledger: ledgerB,
-            debits: [{account: null, amount: '50'}],
-            credits: [{account: bobB, amount: '50'}]
+            account: bobB,
+            amount: '50'
           }
         }
       })
       assert.deepEqual(destinationTransfer, {
-        id: 'e901de57-0c9e-44f7-877a-ce98c84d3e0c',
+        id: 'c88dc516-ad0e-4a48-85ac-9dd08b3e72f3',
         ledger: ledgerB,
         direction: 'outgoing',
         account: bobB,
@@ -146,16 +145,15 @@ describe('RouteBuilder', function () {
         account: aliceA,
         amount: '100',
         data: {
-          destination_transfer: {
-            id: '219d7e92-d99b-4022-8e52-6f8510f671e6',
+          ilp_header: {
             ledger: ledgerB,
-            debits: [{account: ledgerB + '/accounts/bogus', amount: '50'}],
-            credits: [{account: bobB, amount: '50'}]
+            account: bobB,
+            amount: '50'
           }
         }
       })
       assert.deepEqual(destinationTransfer, {
-        id: '219d7e92-d99b-4022-8e52-6f8510f671e6',
+        id: '13eff292-b343-452d-8fc4-4833741a6186',
         ledger: ledgerB,
         direction: 'outgoing',
         account: bobB,
@@ -187,11 +185,10 @@ describe('RouteBuilder', function () {
           account: aliceA,
           amount: '100',
           data: {
-            destination_transfer: {
-              id: '456',
+            ilp_header: {
               ledger: ledgerC,
-              debits: [{account: null, amount: '25'}],
-              credits: [{account: carlC, amount: '25'}]
+              account: carlC,
+              amount: '25'
             }
           },
           executionCondition: 'yes',
@@ -205,11 +202,10 @@ describe('RouteBuilder', function () {
           account: maryB,
           amount: '50.00',
           data: {
-            destination_transfer: {
-              id: '456',
+            ilp_header: {
               ledger: ledgerC,
-              debits: [{account: null, amount: '25'}],
-              credits: [{account: carlC, amount: '25'}]
+              account: carlC,
+              amount: '25'
             }
           },
           noteToSelf: {
@@ -232,11 +228,10 @@ describe('RouteBuilder', function () {
           account: aliceA,
           amount: '100',
           data: {
-            destination_transfer: {
-              id: '456',
+            ilp_header: {
               ledger: ledgerC,
-              debits: [{account: null, amount: '50'}],
-              credits: [{account: carlC, amount: '50'}]
+              account: carlC,
+              amount: '50'
             }
           }
         })
@@ -252,7 +247,7 @@ describe('RouteBuilder', function () {
           amount: '100',
           data: {}
         })
-      }.bind(this), error('source transfer is missing destination_transfer in memo'))
+      }.bind(this), error('source transfer is missing ilp_header in memo'))
     })
   })
 })

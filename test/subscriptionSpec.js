@@ -84,7 +84,11 @@ describe('Subscriptions', function () {
       event: 'transfer.update',
       resource: _.merge({}, payment.source_transfers[0], {
         credits: [{
-          memo: {destination_transfer: payment.destination_transfers[0]}
+          memo: { ilp_header: {
+            ledger: payment.destination_transfers[0].ledger,
+            amount: payment.destination_transfers[0].credits[0].amount,
+            account: payment.destination_transfers[0].credits[0].account
+          } }
         }]
       })
     }))

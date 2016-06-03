@@ -127,6 +127,10 @@ describe('Notifications', function () {
         _.cloneDeep(require('./data/notificationSourceTransferAtomic.json'))
       this.notificationSourceTransferAtomic_TwoCases =
         _.cloneDeep(require('./data/notificationSourceTransferAtomic_TwoCases.json'))
+      this.notificationDestinationTransferPrepared =
+        _.cloneDeep(require('./data/notificationDestinationTransferPrepared.json'))
+      this.notificationDestinationTransferAtomic_TwoCases =
+        _.cloneDeep(require('./data/notificationDestinationTransferAtomic_TwoCases.json'))
     })
 
     afterEach(function * () {
@@ -254,7 +258,11 @@ describe('Notifications', function () {
           event: 'transfer.update',
           resource: _.merge({}, payment.source_transfers[0], {
             credits: [{
-              memo: {destination_transfer: payment.destination_transfers[0]}
+              memo: { ilp_header: {
+                ledger: payment.destination_transfers[0].ledger,
+                amount: payment.destination_transfers[0].credits[0].amount,
+                account: payment.destination_transfers[0].credits[0].account
+              } }
             }]
           })
         })
@@ -345,7 +353,11 @@ describe('Notifications', function () {
           event: 'transfer.update',
           resource: _.merge({}, payment.source_transfers[0], {
             credits: [{
-              memo: {destination_transfer: payment.destination_transfers[0]}
+              memo: { ilp_header: {
+                ledger: payment.destination_transfers[0].ledger,
+                amount: payment.destination_transfers[0].credits[0].amount,
+                account: payment.destination_transfers[0].credits[0].account
+              } }
             }]
           })
         })
@@ -428,7 +440,7 @@ describe('Notifications', function () {
     it('should return 200 if the payment is to an unknown destination ledger', function * () {
       this.notificationSourceTransferPrepared
         .resource.credits[0].memo
-        .destination_transfer.ledger = 'http://xyz-ledger.example/XYZ'
+        .ilp_header.ledger = 'http://xyz-ledger.example/XYZ'
 
       yield this.request()
         .post('/notifications')
@@ -444,10 +456,10 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('returns 400 if the source transfer\'s destination_transfer isn\'t a Transfer', function * () {
+    it('returns 400 if the source transfer\'s ilp_header isn\'t an ILP header', function * () {
       this.notificationSourceTransferPrepared
         .resource.credits[0].memo
-        .destination_transfer.debits = []
+        .ilp_header.amount = 'woot'
 
       yield this.request()
         .post('/notifications')
@@ -455,7 +467,7 @@ describe('Notifications', function () {
         .expect(400)
         .expect(function (res) {
           expect(res.body.id).to.equal('InvalidBodyError')
-          expect(res.body.message).to.equal('TransferTemplate schema validation error: Array is too short (0), minimum 1')
+          expect(res.body.message).to.equal('IlpHeader schema validation error: String does not match pattern: ^[-+]?[0-9]*[.]?[0-9]+([eE][-+]?[0-9]+)?$')
         })
         .end()
     })
@@ -498,11 +510,13 @@ describe('Notifications', function () {
 
     it('should return a 200 for a new payment even if the connector is also the payee of the destination transfer', function * () {
       const sourceTransfer = this.notificationSourceTransferPrepared.resource
-      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
-      destinationTransfer.credits = destinationTransfer.debits
+      const ilpHeader = sourceTransfer.credits[0].memo.ilp_header
+      ilpHeader.account = 'http://eur-ledger.example/accounts/mark'
+
+      const destinationTransfer = this.notificationDestinationTransferPrepared
 
       const connectorCredentials =
-        this.config.ledgerCredentials[destinationTransfer.ledger]
+        this.config.ledgerCredentials[ilpHeader.ledger]
 
       nock(destinationTransfer.id)
         .put('')
@@ -510,7 +524,9 @@ describe('Notifications', function () {
           user: connectorCredentials.username,
           pass: connectorCredentials.password
         })
-        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
+        .reply(201, _.assign({}, destinationTransfer, {
+          state: 'executed'
+        }))
 
       nock(sourceTransfer.id)
         .put('/fulfillment', this.transferExecutedReceipt)
@@ -536,7 +552,7 @@ describe('Notifications', function () {
 
     it('should return a 200 for a new payment even if the connector is also the payer of the source transfer', function * () {
       const sourceTransfer = this.notificationSourceTransferPrepared.resource
-      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
+      const destinationTransfer = this.notificationDestinationTransferPrepared
       sourceTransfer.debits = sourceTransfer.credits
 
       const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
@@ -575,7 +591,7 @@ describe('Notifications', function () {
 
     it('should get the fulfillment and execute the source transfers when the destination transfer response indicates that it has already been executed', function * () {
       const sourceTransfer = this.notificationSourceTransferPrepared.resource
-      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
+      const destinationTransfer = this.notificationDestinationTransferPrepared
 
       const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
 
@@ -603,7 +619,7 @@ describe('Notifications', function () {
 
     it('should execute a payment where its account is not the only credit in the source transfer', function * () {
       const sourceTransfer = this.notificationSourceTransferPrepared.resource
-      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
+      const destinationTransfer = this.notificationDestinationTransferPrepared
 
       sourceTransfer.debits[0].amount = '21.07'
       sourceTransfer.credits.unshift({
@@ -635,124 +651,9 @@ describe('Notifications', function () {
         .end()
     })
 
-    it('should execute a payment where there are multiple debits from its account in the destination transfer', function * () {
-      // Note there is no good reason why this should happen but we should
-      // be able to handle it appropriately anyway
-
-      const sourceTransfer = this.notificationSourceTransferPrepared.resource
-      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
-
-      destinationTransfer.debits[0].amount = '0.60'
-      destinationTransfer.debits.push({
-        account: 'http://eur-ledger.example/accounts/mark',
-        amount: '0.40'
-      })
-
-      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
-
-      nock(destinationTransfer.id)
-        .put('')
-        .basicAuth({
-          user: connectorCredentials.username,
-          pass: connectorCredentials.password
-        })
-        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
-
-      nock(sourceTransfer.id)
-        .put('/fulfillment', this.transferExecutedReceipt)
-        .reply(201, this.transferExecutedReceipt)
-      nock(destinationTransfer.id)
-        .get('/fulfillment')
-        .reply(200, this.transferExecutedReceipt)
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-    })
-
-    it('should execute a payment where there are multiple credits in the destination transfer', function * () {
-      const sourceTransfer = this.notificationSourceTransferPrepared.resource
-      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
-
-      destinationTransfer.credits[0].amount = '0.60'
-      destinationTransfer.credits.push({
-        account: 'http://usd-ledger.example/accounts/timothy',
-        amount: '0.40'
-      })
-
-      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
-
-      nock(destinationTransfer.id)
-        .put('')
-        .basicAuth({
-          user: connectorCredentials.username,
-          pass: connectorCredentials.password
-        })
-        .reply(201, _.assign({}, destinationTransfer, {state: 'executed'}))
-
-      nock(sourceTransfer.id)
-        .put('/fulfillment', this.transferExecutedReceipt)
-        .reply(201, this.transferExecutedReceipt)
-
-      nock(destinationTransfer.id)
-        .get('/fulfillment')
-        .reply(200, this.transferExecutedReceipt)
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-    })
-
-    it('should only add authorization to the destination transfer debits from the connector\'s account', function * () {
-      const sourceTransfer = this.notificationSourceTransferPrepared.resource
-      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
-
-      destinationTransfer.debits.unshift({
-        amount: '10',
-        account: 'http://eur-ledger.example/accounts/other'
-      })
-      destinationTransfer.credits.unshift({
-        amount: '10',
-        account: 'http://eur-ledger.example/accounts/jane'
-      })
-
-      nock(destinationTransfer.id)
-        .get('/state')
-        .reply(200, this.transferProposedReceipt)
-
-      const connectorCredentials = this.config.ledgerCredentials[destinationTransfer.ledger]
-      const debitMemo = {
-        source_transfer_ledger: sourceTransfer.ledger,
-        source_transfer_id: sourceTransfer.id
-      }
-      const authorizedDestinationTransfer = _.merge({}, destinationTransfer, {
-        debits: [
-          {memo: debitMemo},
-          {memo: debitMemo, authorized: true}
-        ]
-      })
-      nock(destinationTransfer.id)
-        .put('', authorizedDestinationTransfer)
-        .basicAuth({
-          user: connectorCredentials.username,
-          pass: connectorCredentials.password
-        })
-        .reply(201, authorizedDestinationTransfer)
-
-      yield this.request()
-        .post('/notifications')
-        .send(this.notificationSourceTransferPrepared)
-        .expect(200)
-        .end()
-    })
-
     it('should execute a payment where the source transfer\'s expires_at date has passed if the transfer was executed before it expired', function * () {
       const sourceTransfer = this.notificationSourceTransferPrepared.resource
-      const destinationTransfer = sourceTransfer.credits[0].memo.destination_transfer
+      const destinationTransfer = this.notificationDestinationTransferPrepared
 
       sourceTransfer.expires_at = moment(START_DATE - 1).toISOString()
       sourceTransfer.state = 'executed'
@@ -795,7 +696,7 @@ describe('Notifications', function () {
       })
 
       it('should check the expiry on a cancellation condition: too long', function * () {
-        const caseID = this.destination_transfer.additional_info.cases[0]
+        const caseID = this.source_transfer.additional_info.cases[0]
         nock(caseID)
           .get('')
           .reply(200, { expires_at: future(15000) })
@@ -808,7 +709,7 @@ describe('Notifications', function () {
       })
 
       it('should check the expiry on a cancellation condition: already expired', function * () {
-        const caseID = this.destination_transfer.additional_info.cases[0]
+        const caseID = this.source_transfer.additional_info.cases[0]
         nock(caseID)
           .get('')
           .reply(200, { expires_at: future(-15000) })
@@ -821,7 +722,7 @@ describe('Notifications', function () {
       })
 
       it('should check the expiry on a cancellation condition: missing expiry', function * () {
-        const caseID = this.destination_transfer.additional_info.cases[0]
+        const caseID = this.source_transfer.additional_info.cases[0]
         nock(caseID)
           .get('')
           .reply(200, {})
@@ -837,12 +738,12 @@ describe('Notifications', function () {
     describe('atomic mode: two cases', function () {
       beforeEach(function () {
         this.source_transfer = this.notificationSourceTransferAtomic_TwoCases.resource
-        this.destination_transfer = this.source_transfer.credits[0].memo.destination_transfer
+        this.destination_transfer = this.notificationDestinationTransferAtomic_TwoCases
       })
 
       it('should check the expiry on a cancellation condition: different expiries', function * () {
-        const caseID1 = this.destination_transfer.additional_info.cases[0]
-        const caseID2 = this.destination_transfer.additional_info.cases[1]
+        const caseID1 = this.source_transfer.additional_info.cases[0]
+        const caseID2 = this.source_transfer.additional_info.cases[1]
         nock(caseID1).get('').reply(200, {expires_at: future(5000)})
         nock(caseID2).get('').reply(200, {expires_at: future(6000)})
 
@@ -854,14 +755,18 @@ describe('Notifications', function () {
       })
 
       it('should check the expiry on a cancellation condition: same expiries', function * () {
-        const caseID1 = this.destination_transfer.additional_info.cases[0]
-        const caseID2 = this.destination_transfer.additional_info.cases[1]
+        const caseID1 = this.source_transfer.additional_info.cases[0]
+        const caseID2 = this.source_transfer.additional_info.cases[1]
         const authorizedDestinationTransfer = _.merge({}, this.destination_transfer, {
           debits: [{authorized: true}]
         })
         const expiresAt = future(5000)
         nock(caseID1).get('').reply(200, {expires_at: expiresAt})
         nock(caseID2).get('').reply(200, {expires_at: expiresAt})
+
+        // Should register the destination transfer as a notification target
+        const nockRegTarget1 = nock(caseID1).post('/targets').reply(200, {})
+        const nockRegTarget2 = nock(caseID2).post('/targets').reply(200, {})
 
         nock(authorizedDestinationTransfer.id)
           .put('', (body) => {
@@ -875,6 +780,9 @@ describe('Notifications', function () {
           .send(this.notificationSourceTransferAtomic_TwoCases)
           .expect(200)
           .end()
+
+        nockRegTarget1.done()
+        nockRegTarget2.done()
       })
     })
   })
