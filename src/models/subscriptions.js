@@ -53,7 +53,7 @@ function * subscribeLedger (ledgerUri, ledgersService, config) {
   log.info('subscribing to ' + ledgerUri)
   const ledger = ledgersService.getLedger(ledgerUri)
 
-  ledger.connect()
+  yield ledger.connect()
 }
 
 module.exports = {
