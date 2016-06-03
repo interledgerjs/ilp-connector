@@ -2,6 +2,8 @@
 
 const nock = require('nock')
 const expect = require('chai').expect
+const logger = require('five-bells-connector')._test.logger
+const logHelper = require('five-bells-shared/testHelpers/log')
 
 const UnsupportedPairError = require('../src/errors/unsupported-pair-error')
 const NoAmountSpecifiedError = require('../src/errors/no-amount-specified-error')
@@ -10,6 +12,8 @@ const ServerError = require('five-bells-shared/errors/server-error')
 const Backend = require('../src/backends/ilp-quoter')
 
 describe('ILPQuoter', function () {
+  logHelper(logger)
+
   beforeEach(function * () {
     this.backendUri = 'http://marketmaker.quoter.com'
     this.pairs =
@@ -125,4 +129,3 @@ describe('ILPQuoter', function () {
     })
   })
 })
-

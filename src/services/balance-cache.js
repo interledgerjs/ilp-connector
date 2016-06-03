@@ -1,4 +1,4 @@
 'use strict'
-const config = require('../services/config')
 const BalanceCache = require('../lib/balance-cache')
-module.exports = new BalanceCache(config.get('ledgerCredentials'))
+const ledgers = require('./ledgers')
+module.exports = new BalanceCache(ledgers)

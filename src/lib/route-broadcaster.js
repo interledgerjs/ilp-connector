@@ -1,36 +1,31 @@
 'use strict'
 
+const _ = require('lodash')
 const co = require('co')
 const defer = require('co-defer')
-const _ = require('lodash')
 const request = require('co-request')
 
 class RouteBroadcaster {
   /**
    * @param {RoutingTables} routingTables
    * @param {Backend} backend
+   * @param {Multiledger} ledgers
    * @param {Object} config
-   * @param {Object} config.ledgerCredentials
    * @param {Object} config.tradingPairs
    * @param {Number} config.minMessageWindow
    * @param {Number} config.routeCleanupInterval
    * @param {Number} config.routeBroadcastInterval
    */
-  constructor (routingTables, backend, config) {
+  constructor (routingTables, backend, ledgers, config) {
     this.routeCleanupInterval = config.routeCleanupInterval
     this.routeBroadcastInterval = config.routeBroadcastInterval
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.backend = backend
-    this.ledgerCredentials = config.ledgerCredentials
+    this.ledgers = ledgers
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
     this.adjacentConnectors = {}
-    this.adjacentLedgers = {}
-    for (const pair of config.tradingPairs) {
-      const destinationLedger = pair[1].split('@')[1]
-      this.adjacentLedgers[destinationLedger] = true
-    }
   }
 
   * start () {
@@ -74,19 +69,11 @@ class RouteBroadcaster {
   }
 
   crawlLedgers () {
-    return Object.keys(this.adjacentLedgers).map(this._crawlLedger, this)
+    return _.values(this.ledgers.getLedgers()).map(this._crawlLedger, this)
   }
 
   * _crawlLedger (ledger) {
-    const res = yield request({
-      method: 'GET',
-      uri: ledger + '/connectors',
-      json: true
-    })
-    if (res.statusCode !== 200) {
-      throw new Error('Unexpected status code: ' + res.statusCode)
-    }
-    const connectors = _.map(res.body, 'connector')
+    const connectors = yield ledger.getConnectors()
     for (const connector of connectors) {
       // Don't broadcast routes to ourselves.
       if (connector === this.baseURI) continue
@@ -126,8 +113,8 @@ class RouteBroadcaster {
       destination_ledger: quote.destination_ledger,
       connector: this.baseURI,
       min_message_window: this.minMessageWindow,
-      source_account: this.ledgerCredentials[quote.source_ledger].account_uri,
-      destination_account: this.ledgerCredentials[quote.destination_ledger].account_uri,
+      source_account: this.ledgers.getLedger(quote.source_ledger).getAccount(),
+      destination_account: this.ledgers.getLedger(quote.destination_ledger).getAccount(),
       points: [
         [0, 0],
         [+quote.source_amount, +quote.destination_amount]

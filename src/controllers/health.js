@@ -18,7 +18,7 @@ const healthStatus = require('../common/health.js')
  */
 exports.getResource = function * health () {
   const backendStatus = yield this.backend.getStatus()
-  const ledgersStatus = yield this.ledgers.getStatus()
+  const ledgersStatus = this.ledgers.getStatus()
   const body = _.extend({}, backendStatus, ledgersStatus)
   body.status = (backendStatus.backendStatus === healthStatus.statusOk &&
                  ledgersStatus.ledgersStatus === healthStatus.statusOk) ? healthStatus.statusOk

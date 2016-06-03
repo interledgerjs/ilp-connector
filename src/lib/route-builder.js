@@ -1,26 +1,28 @@
 'use strict'
 const _ = require('lodash')
-const uuid = require('uuid4')
 const BigNumber = require('bignumber.js')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
+const UnacceptableRateError = require('../errors/unacceptable-rate-error')
+const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 
 class RouteBuilder {
   /**
    * @param {RoutingTables} routingTables
-   * @param {PrecisionCache} precisionCache
+   * @param {InfoCache} infoCache
+   * @param {Multiledger} ledgers
    * @param {Object} config
    * @param {Integer} config.minMessageWindow seconds
    * @param {Number} config.slippage
    * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, precisionCache, config) {
+  constructor (routingTables, infoCache, ledgers, config) {
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
-    this.precisionCache = precisionCache
+    this.infoCache = infoCache
+    this.ledgers = ledgers
     this.minMessageWindow = config.minMessageWindow
     this.slippage = config.slippage
-    this.ledgerCredentials = config.ledgerCredentials
   }
 
   /**
@@ -42,7 +44,8 @@ class RouteBuilder {
     const nextHop = yield this._roundHop(_nextHop)
 
     return {
-      source_connector_account: this.ledgerCredentials[nextHop.sourceLedger].account_uri,
+      source_connector_account:
+        this.ledgers.getLedger(nextHop.sourceLedger).getAccount(),
       source_ledger: nextHop.sourceLedger,
       source_amount: nextHop.sourceAmount,
       destination_ledger: nextHop.finalLedger,
@@ -64,8 +67,7 @@ class RouteBuilder {
    * @returns {Transfer} destinationTransfer
    */
   * getDestinationTransfer (sourceTransfer) {
-    const traderCredit = sourceTransfer.credits.find(this._isTraderFunds, this)
-    const finalTransfer = traderCredit.memo && traderCredit.memo.destination_transfer
+    const finalTransfer = sourceTransfer.data && sourceTransfer.data.destination_transfer
     if (!finalTransfer) {
       throw new Error('source transfer is missing destination_transfer in memo')
     }
@@ -73,7 +75,7 @@ class RouteBuilder {
     const sourceLedger = sourceTransfer.ledger
     const finalLedger = finalTransfer.ledger
     const _nextHop = this.routingTables.findBestHopForSourceAmount(
-      sourceLedger, finalLedger, traderCredit.amount)
+      sourceLedger, finalLedger, sourceTransfer.amount)
     if (!_nextHop) throwAssetsNotTradedError()
     const nextHop = yield this._roundHop(_nextHop)
 
@@ -83,24 +85,50 @@ class RouteBuilder {
       if (traderDebit) {
         traderDebit.account = nextHop.destinationDebitAccount
       }
-      return finalTransfer
+
+      // Verify finalTransfer.credits[0].amount <= nextHop.destinationAmount
+      const finalAmount = new BigNumber(finalTransfer.credits[0].amount)
+      if (finalAmount.greaterThan(nextHop.destinationAmount)) {
+        throw new UnacceptableRateError('Payment rate does not match the rate currently offered')
+      }
+      // TODO: Verify atomic mode notaries are trusted
+      // TODO: Verify expiry is acceptable
+
+      nextHop.destinationCreditAccount = finalTransfer.credits[0].account
+      nextHop.destinationAmount = finalTransfer.credits[0].amount
+    }
+
+    const noteToSelf = {
+      source_transfer_ledger: sourceTransfer.ledger,
+      source_transfer_id: sourceTransfer.id
     }
 
     return _.omitBy({
-      id: nextHop.destinationLedger + '/transfers/' + uuid(),
+      // The ID for the next transfer should be deterministically generated, so
+      // that the connector doesn't send duplicate outgoing transfers if it
+      // receives duplicate notifications.
+      //
+      // The deterministic generation should ideally be impossible for a third
+      // party to predict. Otherwise an attacker might be able to squat on a
+      // predicted ID in order to interfere with a payment or make a connector
+      // look unreliable. In order to assure this, the connector may use a
+      // secret that seeds the deterministic ID generation.
+      // TODO: Use a real secret
+      id: nextHop.destinationLedger !== finalLedger
+        ? getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id)
+        : finalTransfer.id.substring(finalTransfer.id.length - 36),
       ledger: nextHop.destinationLedger,
-      debits: [{
-        account: nextHop.destinationDebitAccount,
-        amount: nextHop.destinationAmount
-      }],
-      credits: [{
-        account: nextHop.destinationCreditAccount,
-        amount: nextHop.destinationAmount,
-        memo: {destination_transfer: finalTransfer}
-      }],
-      execution_condition: sourceTransfer.execution_condition,
-      cancellation_condition: sourceTransfer.cancellation_condition,
-      expires_at: this._getDestinationExpiry(sourceTransfer.expires_at)
+      direction: 'outgoing',
+      account: nextHop.destinationCreditAccount,
+      amount: nextHop.destinationAmount,
+      data: nextHop.destinationLedger !== finalLedger
+        ? { destination_transfer: finalTransfer }
+        : finalTransfer.credits[0].memo,
+      noteToSelf: noteToSelf,
+      executionCondition: sourceTransfer.executionCondition,
+      cancellationCondition: sourceTransfer.cancellationCondition,
+      expiresAt: this._getDestinationExpiry(sourceTransfer.expiresAt),
+      cases: sourceTransfer.cases
     }, _.isUndefined)
   }
 
@@ -130,7 +158,7 @@ class RouteBuilder {
   }
 
   * _roundAmount (sourceOrDestination, ledger, amount) {
-    const precisionAndScale = yield this.precisionCache.get(ledger)
+    const precisionAndScale = yield this.infoCache.get(ledger)
     const roundedAmount = new BigNumber(amount).toFixed(precisionAndScale.scale,
       sourceOrDestination === 'source' ? BigNumber.ROUND_UP : BigNumber.ROUND_DOWN)
     validatePrecision(roundedAmount, precisionAndScale.precision, sourceOrDestination)

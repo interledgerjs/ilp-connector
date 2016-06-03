@@ -3,19 +3,17 @@
 const BigNumber = require('bignumber.js')
 const nock = require('nock')
 const expect = require('chai').expect
+const logger = require('five-bells-connector')._test.logger
+const logHelper = require('five-bells-shared/testHelpers/log')
 const BalanceCache = require('five-bells-connector')._test.BalanceCache
 
 describe('BalanceCache', function () {
-  beforeEach(function * () {
-    this.cache = new BalanceCache({
-      'http://ledger-ok.local': {
-        account_uri: 'http://ledger-ok.local',
-        username: 'bob',
-        password: 'bob'
-      }
-    })
+  logHelper(logger)
 
-    nock('http://ledger-ok.local').get('/')
+  beforeEach(function * () {
+    this.cache = new BalanceCache(this.ledgers)
+
+    nock('http://usd-ledger.example').get('/accounts/mark')
       .reply(200, { balance: '123.456' })
   })
 
@@ -23,14 +21,14 @@ describe('BalanceCache', function () {
 
   describe('get', function () {
     it('fetches the result', function * () {
-      let balance = yield this.cache.get('http://ledger-ok.local')
+      let balance = yield this.cache.get('http://usd-ledger.example')
       expect(balance).to.be.an.instanceof(BigNumber)
       expect(balance.toString()).to.equal('123.456')
     })
 
     it('caches the result', function * () {
-      yield this.cache.get('http://ledger-ok.local')
-      let balance = yield this.cache.get('http://ledger-ok.local')
+      yield this.cache.get('http://usd-ledger.example')
+      let balance = yield this.cache.get('http://usd-ledger.example')
       expect(balance).to.be.an.instanceof(BigNumber)
       expect(balance.toString()).to.equal('123.456')
     })

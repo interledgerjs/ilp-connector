@@ -21,17 +21,17 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
  *   funds on hold while waiting for the outcome of a transaction. No expiry can
  *   exceed this value.
  */
-module.exports = function * (config, payment) {
-  const tester = new TransferTester(config, payment)
+module.exports = function * (config, sourceTransfer, destinationTransfer) {
+  const tester = new TransferTester(config, sourceTransfer, destinationTransfer)
   yield tester.loadCaseExpiries()
   return tester
 }
 
-function TransferTester (config, payment) {
+function TransferTester (config, sourceTransfer, destinationTransfer) {
   this.config = config
-  this.source_transfers = payment.source_transfers
-  this.destination_transfers = payment.destination_transfers
-  this.transfers = this.source_transfers.concat(this.destination_transfers)
+  this.sourceTransfer = sourceTransfer
+  this.destinationTransfer = destinationTransfer
+  this.transfers = [sourceTransfer, destinationTransfer]
   this.expiryByCase = {}
 
   // TODO use a more intelligent value for the minMessageWindow
@@ -40,7 +40,7 @@ function TransferTester (config, payment) {
 }
 
 TransferTester.prototype.getExpiry = function (transfer) {
-  if (transfer.expires_at) return transfer.expires_at
+  if (transfer.expiresAt) return transfer.expiresAt
   const expiries = _.uniq(_.values(_.pick(
     this.expiryByCase, getTransferCases(transfer))))
   if (expiries.length === 0) return undefined
@@ -49,7 +49,7 @@ TransferTester.prototype.getExpiry = function (transfer) {
 }
 
 TransferTester.prototype.isAtomic = function () {
-  return getTransferCases(this.source_transfers[0]).length > 0
+  return getTransferCases(this.sourceTransfer).length > 0
 }
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -58,15 +58,18 @@ TransferTester.prototype.isAtomic = function () {
 
 // Verify that none of the transfers have already expired
 TransferTester.prototype.validateNotExpired = function () {
-  this.source_transfers.forEach(this.validateTransferNotExpired, this)
-  this.destination_transfers.forEach(this.validateTransferNotExpired, this)
-}
-
-TransferTester.prototype.validateTransferNotExpired = function (transfer) {
-  const expiresAt = this.getExpiry(transfer)
-  if (expiresAt && transfer.state !== 'executed' &&
-    moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
-    throw new UnacceptableExpiryError('Transfer has already expired')
+  {
+    const expiresAt = this.getExpiry(this.sourceTransfer)
+    if (expiresAt && this.sourceTransfer.state !== 'executed' &&
+      moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
+      throw new UnacceptableExpiryError('Transfer has already expired')
+    }
+  }
+  {
+    const expiresAt = this.getExpiry(this.destinationTransfer)
+    if (expiresAt && moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
+      throw new UnacceptableExpiryError('Not enough time to send payment')
+    }
   }
 }
 
@@ -78,15 +81,13 @@ TransferTester.prototype.validateTransferNotExpired = function (transfer) {
 // we need to make sure we're not being asked
 // to hold money for too long
 TransferTester.prototype.validateMaxHoldTime = function () {
-  for (const transfer of this.destination_transfers) {
-    const expiresAt = this.getExpiry(transfer)
-    if (expiresAt) {
-      this.validateExpiryHoldTime(expiresAt)
-    } else {
-      throw new UnacceptableExpiryError('Destination transfers with ' +
-        'execution conditions must have an expires_at field for connector ' +
-        'to agree to authorize them')
-    }
+  const expiresAt = this.getExpiry(this.destinationTransfer)
+  if (expiresAt) {
+    this.validateExpiryHoldTime(expiresAt)
+  } else {
+    throw new UnacceptableExpiryError('Destination transfers with ' +
+      'execution conditions must have an expires_at field for connector ' +
+      'to agree to authorize them')
   }
 }
 
@@ -98,40 +99,13 @@ TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
   }
 }
 
-// We also need to check if we have enough time between the expiry
-// of the destination transfer with the latest expiry and the expiry of
-// the source transfer with the earliest expiry is greater than the
-// minMessageWindow.
-// This is done to ensure that we have enough time after the last
-// moment one of the destination transfers could happen (taking money out
-// of our account) to execute all of the source transfers
-TransferTester.prototype.validateMinMessageWindow = function () {
-  const earliestSourceTransferExpiry =
-    _.min(_.map(this.source_transfers, function (transfer) {
-      return (transfer.expires_at && transfer.state !== 'executed'
-        ? moment(transfer.expires_at, moment.ISO_8601).valueOf()
-        : Math.max())
-    }))
-
-  const latestDestinationTransferExpiry =
-    _.max(_.map(this.destination_transfers, function (transfer) {
-      return moment(transfer.expires_at, moment.ISO_8601).valueOf()
-    }))
-
-  if (earliestSourceTransferExpiry - latestDestinationTransferExpiry < this.minMessageWindow) {
-    throw new UnacceptableExpiryError('The window between the latest ' +
-      'destination transfer expiry and the earliest source transfer expiry ' +
-      'is insufficient to ensure that we can execute the source transfers')
-  }
-}
-
 // /////////////////////////////////////////////////////////////////////////////
 // Atomic
 // /////////////////////////////////////////////////////////////////////////////
 
 TransferTester.prototype.loadCaseExpiries = function * () {
   for (const transfer of this.transfers) {
-    if (transfer.expires_at) continue
+    if (transfer.expiresAt) continue
     const caseIDs = getTransferCases(transfer)
     for (const caseID of caseIDs) {
       yield this.loadCaseExpiry(caseID)
@@ -160,5 +134,5 @@ TransferTester.prototype.loadCaseExpiry = function * (caseID) {
 }
 
 function getTransferCases (transfer) {
-  return (transfer.additional_info || {}).cases || []
+  return transfer.cases || []
 }
