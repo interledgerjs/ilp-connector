@@ -1,6 +1,6 @@
 define({
   "name": "five-bells-connector",
-  "version": "6.1.0",
+  "version": "7.0.0",
   "description": "Five Bells connector reference implementation",
   "title": "Five Bells Connector API",
   "url": "https://acme-connector.example",
@@ -14,7 +14,7 @@ define({
   "apidoc": "0.2.0",
   "generator": {
     "name": "apidoc",
-    "time": "2016-06-03T23:10:52.020Z",
+    "time": "2016-06-04T20:46:07.888Z",
     "url": "http://apidocjs.com",
     "version": "0.13.2"
   }
