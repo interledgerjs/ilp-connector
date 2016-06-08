@@ -1,11 +1,11 @@
-# Five Bells Connector [![npm][npm-image]][npm-url] [![circle][circle-image]][circle-url] [![coveralls][coveralls-image]][coveralls-url]
+# Five Bells Connector [![npm][npm-image]][npm-url] [![circle][circle-image]][circle-url] [![codecov][codecov-image]][codecov-url]
 
 [npm-image]: https://img.shields.io/npm/v/five-bells-connector.svg?style=flat
 [npm-url]: https://npmjs.org/package/five-bells-connector
 [circle-image]: https://circleci.com/gh/interledger/five-bells-connector.svg?style=shield
 [circle-url]: https://circleci.com/gh/interledger/five-bells-connector
-[coveralls-image]: https://coveralls.io/repos/interledger/five-bells-connector/badge.svg?branch=master
-[coveralls-url]: https://coveralls.io/r/interledger/five-bells-connector?branch=master
+[codecov-image]: https://codecov.io/gh/interledger/five-bells-connector/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/interledger/five-bells-connector
 
 > A reference implementation of the Five Bells Connector API
 
