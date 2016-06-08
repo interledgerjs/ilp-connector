@@ -23,7 +23,7 @@
     "start:watch": "nodemon src/index.js",
     "lint": "eslint .",
     "test": "istanbul test -- _mocha",
-    "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls",
+    "report-coverage": "codecov",
     "apidoc": "apidoc -o apidoc-out -i src/controllers/",
     "integration": "integration all",
     "bump": "version-bump"
@@ -64,6 +64,7 @@
     "chai": "^3.2.0",
     "co-mocha": "^1.1.0",
     "co-supertest": "0.0.10",
+    "codecov": "^1.0.1",
     "coveralls": "^2.11.2",
     "eslint": "^2.5.1",
     "eslint-config-standard": "^5.1.0",
