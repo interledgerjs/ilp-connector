@@ -6,6 +6,7 @@ module.exports = new RouteBroadcaster(
   require('./routing-tables'),
   require('./backend'),
   require('./ledgers'),
+  require('./info-cache'),
   {
     tradingPairs: config.tradingPairs,
     minMessageWindow: config.expiry.minMessageWindow,

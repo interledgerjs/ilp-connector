@@ -210,9 +210,11 @@ function getLocalConfig () {
   expiry.maxHoldTime = +Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || DEFAULT_MAX_HOLD_TIME
 
   // The spread is added to every quoted rate
-  const fxSpread = Number(Config.getEnv(envPrefix, 'FX_SPREAD')) || DEFAULT_FX_SPREAD
+  const fxSpreadString = Config.getEnv(envPrefix, 'FX_SPREAD')
+  const fxSpread = fxSpreadString ? +fxSpreadString : DEFAULT_FX_SPREAD
 
-  const slippage = +Config.getEnv(envPrefix, 'SLIPPAGE') || DEFAULT_SLIPPAGE
+  const slippageString = Config.getEnv(envPrefix, 'SLIPPAGE')
+  const slippage = slippageString ? +slippageString : DEFAULT_SLIPPAGE
 
   // BACKEND_URI must be defined for backends that connect to an external
   // component to retrieve the rate or amounts (it is therefore required

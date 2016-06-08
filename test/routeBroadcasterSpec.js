@@ -33,7 +33,17 @@ describe('RouteBroadcaster', function () {
       additional_info: {}
     }])
 
-    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, {
+    this.infoCache = {
+      get: function * (ledger) {
+        return {precision: 10, scale: 2}
+      }
+    }
+
+    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.infoCache, {
+      tradingPairs: [
+        ['USD@' + ledgerA, 'EUR@' + ledgerB],
+        ['EUR@' + ledgerB, 'USD@' + ledgerA]
+      ],
       minMessageWindow: 1
     })
 
@@ -97,7 +107,7 @@ describe('RouteBroadcaster', function () {
           destination_ledger: ledgerB,
           source_amount: '123',
           destination_amount: '456'
-        }), {
+        }, 2), {
           source_ledger: ledgerA,
           destination_ledger: ledgerB,
           additional_info: undefined,

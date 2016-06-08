@@ -35,21 +35,30 @@ describe('Notifications', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    nock('http://usd-ledger.example').get('/')
-      .reply(200, {
-        precision: 10,
-        scale: 4
-      })
+    const testLedgers = [
+      'http://cad-ledger.example:1000',
+      'http://usd-ledger.example',
+      'http://eur-ledger.example',
+      'http://cny-ledger.example'
+    ]
 
-    nock('http://eur-ledger.example').get('/')
-      .reply(200, {
+    this.clock = sinon.useFakeTimers(START_DATE)
+
+    _.each(testLedgers, (ledgerUri) => {
+      nock(ledgerUri).get('/').reply(200, {
         precision: 10,
         scale: 4
-      })
+      }).persist()
+    })
 
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
     yield subscriptions.setupListeners(this.ledgers, this.config)
+  })
+
+  afterEach(function * () {
+    nock.cleanAll()
+    this.clock.restore()
   })
 
   describe('POST /notifications -- signed', function () {
@@ -67,16 +76,11 @@ describe('Notifications', function () {
       yield this.backend.connect(ratesResponse)
       yield subscriptions.setupListeners(this.ledgers, this.config)
 
-      this.clock = sinon.useFakeTimers(START_DATE)
       this.notificationSourceTransferPrepared =
         _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
     })
 
-    afterEach(function * () {
-      nock.cleanAll()
-      this.clock.restore()
-      process.env = _.cloneDeep(env)
-    })
+    afterEach(function * () { process.env = _.cloneDeep(env) })
 
     it('returns 200 if the notification is signed', function * () {
       this.notificationSourceTransferPrepared.resource.state = 'proposed'
@@ -108,8 +112,6 @@ describe('Notifications', function () {
       yield this.backend.connect(ratesResponse)
       yield subscriptions.setupListeners(this.ledgers, this.config)
 
-      this.clock = sinon.useFakeTimers(START_DATE)
-
       this.paymentOneToOne =
         _.cloneDeep(require('./data/paymentOneToOne.json'))
       this.paymentManyToOne =
@@ -133,11 +135,7 @@ describe('Notifications', function () {
         _.cloneDeep(require('./data/notificationDestinationTransferAtomic_TwoCases.json'))
     })
 
-    afterEach(function * () {
-      nock.cleanAll()
-      this.clock.restore()
-      process.env = _.cloneDeep(env)
-    })
+    afterEach(function * () { process.env = _.cloneDeep(env) })
 
     it('should return a 400 if the notification does not have an id field', function * () {
       delete this.notificationNoConditionFulfillment.id

@@ -2,8 +2,11 @@
 
 const _ = require('lodash')
 const routing = require('five-bells-routing')
-const ROUTE_EXPIRY = 45 * 1000 // milliseconds
+const Route = require('./route')
 const SIMPLIFY_POINTS = 10
+// A next hop of LOCAL distinguishes a local pair A→B from a complex route
+// that just happens to be local, i.e. when A→C & C→B are local pairs.
+const LOCAL = 'LOCAL'
 
 class RoutingTables {
   constructor (baseURI, localRoutes) {
@@ -15,51 +18,61 @@ class RoutingTables {
 
   /**
    * @param {Routes} localRoutes - Each local route should include the optional
-   *   `destination_account` parameter. `connector` should always be `baseURI`.
+   *   `destinationAccount` parameter. `connector` should always be `baseURI`.
    */
-  addLocalRoutes (localRoutes) {
+  addLocalRoutes (_localRoutes) {
+    const localRoutes = _localRoutes.map(Route.fromData)
     for (const localRoute of localRoutes) {
-      const table = this.sources[localRoute.source_ledger] ||
-        (this.sources[localRoute.source_ledger] = new routing.RoutingTable())
-      const route = new routing.Route(localRoute.points, {
-        minMessageWindow: localRoute.min_message_window,
-        nextLedger: localRoute.destination_ledger,
-        additional_info: localRoute.additional_info
-      })
-      table.addRoute(localRoute.destination_ledger, this.baseURI, route)
+      const table = this.sources[localRoute.sourceLedger] ||
+        (this.sources[localRoute.sourceLedger] = new routing.RoutingTable())
+      table.addRoute(localRoute.destinationLedger, LOCAL, localRoute)
     }
-    localRoutes.forEach(this.addRoute, this)
+    localRoutes.forEach((route) => this.addRoute(route))
   }
 
   /**
    * Given a `route` B→C, create a route A→C for each source ledger A with a
    * local route to B.
    *
-   * @param {Route} route from ledger B→C
+   * @param {Route|RouteData} _route from ledger B→C
+   * @returns {Boolean} whether or not a new route was added
    */
-  addRoute (route) {
-    const ledgerB = route.source_ledger
-    const ledgerC = route.destination_ledger
-    const connectorFromBToC = route.connector
-    const routeFromBToC = new routing.Route(route.points)
-
-    this.accounts[connectorFromBToC + ';' + ledgerB] = route.source_account
-    if (route.destination_account) {
-      this.accounts[connectorFromBToC + ';' + ledgerC] = route.destination_account
+  addRoute (_route) {
+    const route = (_route instanceof Route) ? _route : Route.fromData(_route)
+    this.accounts[route.connector + ';' + route.sourceLedger] = route.sourceAccount
+    if (route.destinationAccount) {
+      this.accounts[route.connector + ';' + route.destinationLedger] = route.destinationAccount
     }
 
+    let added = false
     this.eachSource((tableFromA, ledgerA) => {
-      // Don't create A→B→A.
-      if (ledgerA === ledgerC) return
-      // Don't create local route A→B→C if local route A→C already exists.
-      if (this.baseURI === connectorFromBToC && this._getLocalRoute(ledgerA, ledgerC)) return
-      // Don't create A→B→C when A→B is not a local pair.
-      const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
-      if (!routeFromAToB) return
-      const routeFromAToC = routeFromAToB.join(routeFromBToC)
-      routeFromAToC.info = makeRouteInfo(route, routeFromAToB.info.minMessageWindow)
-      tableFromA.addRoute(ledgerC, connectorFromBToC, routeFromAToC)
+      added = this._addRouteFromSource(tableFromA, ledgerA, route) || added
     })
+    return added
+  }
+
+  _addRouteFromSource (tableFromA, ledgerA, routeFromBToC) {
+    const ledgerB = routeFromBToC.sourceLedger
+    const ledgerC = routeFromBToC.destinationLedger
+    const connectorFromBToC = routeFromBToC.connector
+    let added = false
+
+    // Don't create local route A→B→C if local route A→C already exists.
+    if (this.baseURI === connectorFromBToC && this._getLocalRoute(ledgerA, ledgerC)) return
+    // Don't create A→B→C when A→B is not a local pair.
+    const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
+    if (!routeFromAToB) return
+
+    // Make sure the routes can be joined.
+    const routeFromAToC = routeFromAToB.join(routeFromBToC)
+    if (!routeFromAToC) return
+
+    if (!this._getRoute(ledgerA, ledgerC, connectorFromBToC)) added = true
+    tableFromA.addRoute(ledgerC, connectorFromBToC, routeFromAToC)
+
+    // Given pairs A↔B,B→C; on addRoute(C→D) create A→D after creating B→D.
+    if (added) added = this.addRoute(routeFromAToC) || added
+    return added
   }
 
   _removeRoute (ledgerB, ledgerC, connectorFromBToC) {
@@ -69,9 +82,8 @@ class RoutingTables {
   }
 
   removeExpiredRoutes () {
-    const now = Date.now()
     this.eachRoute((routeFromAToB, ledgerA, ledgerB, nextHop) => {
-      if (routeFromAToB.info.expiresAt && routeFromAToB.info.expiresAt < now) {
+      if (routeFromAToB.isExpired()) {
         this._removeRoute(ledgerA, ledgerB, nextHop)
       }
     })
@@ -106,14 +118,8 @@ class RoutingTables {
       for (const destinationLedger of table.destinations.keys()) {
         const routesByConnector = table.destinations.get(destinationLedger)
         const combinedRoute = combineRoutesByConnector(routesByConnector)
-        routes.push({
-          source_ledger: sourceLedger,
-          destination_ledger: destinationLedger,
-          connector: this.baseURI,
-          points: combinedRoute.getPoints(),
-          min_message_window: combinedRoute.info.minMessageWindow,
-          source_account: this._getAccount(this.baseURI, sourceLedger)
-        })
+        const sourceAccount = this._getAccount(this.baseURI, sourceLedger)
+        routes.push(combinedRoute.toData(this.baseURI, sourceAccount))
       }
     })
     return routes
@@ -124,9 +130,13 @@ class RoutingTables {
   }
 
   _getLocalRoute (ledgerA, ledgerB) {
+    return this._getRoute(ledgerA, ledgerB, LOCAL)
+  }
+
+  _getRoute (ledgerA, ledgerB, connector) {
     const routesFromAToB = this.sources[ledgerA].destinations.get(ledgerB)
     if (!routesFromAToB) return
-    return routesFromAToB.get(this.baseURI)
+    return routesFromAToB.get(connector)
   }
 
   /**
@@ -142,23 +152,30 @@ class RoutingTables {
   findBestHopForDestinationAmount (ledgerA, ledgerC, finalAmount) {
     const nextHop = this._findBestHopForDestinationAmount(ledgerA, ledgerC, +finalAmount)
     if (!nextHop) return
-    const ledgerB = nextHop.info.nextLedger
+    const ledgerB = nextHop.bestRoute.nextLedger
     const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
+<<<<<<< 3751b2e746060ff1ff33357c9941ca3a88242c24
     const isLocal = this.baseURI === nextHop.bestHop
 
+=======
+    const isFinal = ledgerB === ledgerC
+>>>>>>> [FIX] Fix demo routing (rounding); slippage=0
     return {
+      isFinal: isFinal,
       connector: nextHop.bestHop,
       sourceLedger: ledgerA,
-      // Prevent 'BigNumber Error: new BigNumber() number type has more than 15 significant digits'
       sourceAmount: nextHop.bestCost.toString(),
       destinationLedger: ledgerB,
       destinationAmount: routeFromAToB.amountAt(nextHop.bestCost).toString(),
-      destinationDebitAccount: this._getAccount(this.baseURI, ledgerB),
-      destinationCreditAccount: isLocal ? null : this._getAccount(nextHop.bestHop, ledgerB),
+      destinationCreditAccount: isFinal ? null : this._getAccount(nextHop.bestHop, ledgerB),
       finalLedger: ledgerC,
       finalAmount: finalAmount,
+<<<<<<< 3751b2e746060ff1ff33357c9941ca3a88242c24
       minMessageWindow: nextHop.info.minMessageWindow,
       additionalInfo: isLocal ? routeFromAToB.info.additional_info : undefined
+=======
+      minMessageWindow: nextHop.bestRoute.minMessageWindow
+>>>>>>> [FIX] Fix demo routing (rounding); slippage=0
     }
   }
 
@@ -171,55 +188,58 @@ class RoutingTables {
   findBestHopForSourceAmount (ledgerA, ledgerC, sourceAmount) {
     const nextHop = this._findBestHopForSourceAmount(ledgerA, ledgerC, +sourceAmount)
     if (!nextHop) return
-    const ledgerB = nextHop.info.nextLedger
+    const ledgerB = nextHop.bestRoute.nextLedger
     const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
+<<<<<<< 3751b2e746060ff1ff33357c9941ca3a88242c24
     const isLocal = this.baseURI === nextHop.bestHop
 
+=======
+    const isFinal = ledgerB === ledgerC
+>>>>>>> [FIX] Fix demo routing (rounding); slippage=0
     return {
+      isFinal: isFinal,
       connector: nextHop.bestHop,
       sourceLedger: ledgerA,
       sourceAmount: sourceAmount,
       destinationLedger: ledgerB,
-      destinationAmount: routeFromAToB.amountAt(sourceAmount).toString(),
-      destinationDebitAccount: this._getAccount(this.baseURI, ledgerB),
-      destinationCreditAccount: isLocal ? null : this._getAccount(nextHop.bestHop, ledgerB),
+      destinationAmount: routeFromAToB.amountAt(+sourceAmount).toString(),
+      destinationCreditAccount: isFinal ? null : this._getAccount(nextHop.bestHop, ledgerB),
       finalLedger: ledgerC,
       finalAmount: nextHop.bestValue.toString(),
+<<<<<<< 3751b2e746060ff1ff33357c9941ca3a88242c24
       minMessageWindow: nextHop.info.minMessageWindow,
       additionalInfo: isLocal ? routeFromAToB.info.additional_info : undefined
+=======
+      minMessageWindow: nextHop.bestRoute.minMessageWindow
+>>>>>>> [FIX] Fix demo routing (rounding); slippage=0
     }
   }
 
   _findBestHopForSourceAmount (source, destination, amount) {
     if (!this.sources[source]) return
-    return this.sources[source].findBestHopForSourceAmount(destination, amount)
+    return this._rewriteLocalHop(
+      this.sources[source].findBestHopForSourceAmount(destination, amount))
   }
 
   _findBestHopForDestinationAmount (source, destination, amount) {
     if (!this.sources[source]) return
-    return this.sources[source].findBestHopForDestinationAmount(destination, amount)
+    return this._rewriteLocalHop(
+      this.sources[source].findBestHopForDestinationAmount(destination, amount))
+  }
+
+  _rewriteLocalHop (hop) {
+    if (hop && hop.bestHop === LOCAL) hop.bestHop = this.baseURI
+    return hop
   }
 }
 
 function combineRoutesByConnector (routesByConnector) {
-  let totalRoute = new routing.Route([])
-  const info = {minMessageWindow: 0}
-  for (const subRoute of routesByConnector.values()) {
+  const routes = routesByConnector.values()
+  let totalRoute = routes.next().value
+  for (const subRoute of routes) {
     totalRoute = totalRoute.combine(subRoute)
-    if (info.minMessageWindow < subRoute.info.minMessageWindow) {
-      info.minMessageWindow = subRoute.info.minMessageWindow
-    }
   }
-  totalRoute.info = info
   return totalRoute.simplify(SIMPLIFY_POINTS)
-}
-
-function makeRouteInfo (route, minMessageWindow) {
-  return {
-    minMessageWindow: route.min_message_window + minMessageWindow,
-    expiresAt: Date.now() + ROUTE_EXPIRY,
-    nextLedger: route.source_ledger
-  }
 }
 
 module.exports = RoutingTables

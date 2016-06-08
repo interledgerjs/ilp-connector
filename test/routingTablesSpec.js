@@ -8,6 +8,8 @@ const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 const ledgerA = 'http://ledgerA.example'
 const ledgerB = 'http://ledgerB.example'
 const ledgerC = 'http://ledgerC.example'
+const ledgerD = 'http://ledgerD.example'
+const ledgerE = 'http://ledgerE.example'
 
 // connector users
 const markA = 'http://ledgerA.example/accounts/mark'
@@ -41,6 +43,56 @@ describe('RoutingTables', function () {
     this.clock.restore()
   })
 
+  describe('addLocalRoutes', function () {
+    it('routes between multiple local pairs, but doesn\'t combine them', function () {
+      this.tables.addLocalRoutes([
+        {
+          source_ledger: ledgerB,
+          destination_ledger: ledgerC,
+          connector: 'http://mark.example',
+          min_message_window: 1,
+          points: [ [0, 0], [100, 200] ]
+        }, {
+          source_ledger: ledgerC,
+          destination_ledger: ledgerD,
+          connector: 'http://mark.example',
+          min_message_window: 1,
+          points: [ [0, 0], [100, 200] ]
+        }
+      ])
+      this.tables.addRoute({
+        source_ledger: ledgerD,
+        destination_ledger: ledgerE,
+        connector: 'http://mary.example',
+        min_message_window: 1,
+        points: [ [0, 0], [100, 200] ]
+      })
+
+      // A → B → C
+      assertSubset(this.tables.findBestHopForSourceAmount(ledgerA, ledgerC, 20), {
+        connector: 'http://mark.example',
+        destinationLedger: ledgerB,
+        finalAmount: '20',
+        minMessageWindow: 2
+      })
+      // A → B → C → D → E
+      // It can't just skip from A→D, because it isn't a pair, even though its components are local.
+      assertSubset(this.tables.findBestHopForSourceAmount(ledgerA, ledgerE, 20), {
+        connector: 'http://mark.example',
+        destinationLedger: ledgerB,
+        finalAmount: '80',
+        minMessageWindow: 4
+      })
+      // C → D → E
+      assertSubset(this.tables.findBestHopForSourceAmount(ledgerC, ledgerE, 20), {
+        connector: 'http://mary.example',
+        destinationLedger: ledgerD,
+        finalAmount: '80',
+        minMessageWindow: 2
+      })
+    })
+  })
+
   describe('addRoute', function () {
     it('doesn\'t create a route from A→B→A', function * () {
       assert.strictEqual(
@@ -50,34 +102,34 @@ describe('RoutingTables', function () {
 
     it('doesn\'t create a route from A→C→B if A→C isnt local', function * () {
       // Implicitly create A→C
-      this.tables.addRoute({
+      assert.equal(this.tables.addRoute({
         source_ledger: ledgerB,
         destination_ledger: ledgerC,
         connector: 'http://mary.example',
         min_message_window: 1,
         points: [ [0, 0], [50, 60] ]
-      })
+      }), true)
       // This should *not* create A→C→B, because A→C isn't local.
-      this.tables.addRoute({
+      assert.equal(this.tables.addRoute({
         source_ledger: ledgerC,
         destination_ledger: ledgerB,
         connector: 'http://mary.example',
         min_message_window: 1,
         points: [ [0, 0], [200, 100] ]
-      })
+      }), false)
       assert.strictEqual(
         this.tables.sources[ledgerA].destinations.get(ledgerB).get('http://mary.example'),
         undefined)
     })
 
     it('doesn\'t override local pair paths with a remote one', function * () {
-      this.tables.addRoute({
+      assert.equal(this.tables.addRoute({
         source_ledger: ledgerA,
         destination_ledger: ledgerB,
         connector: 'http://mary.example',
         min_message_window: 1,
         points: [ [0, 0], [200, 9999] ]
-      })
+      }), false)
       // Dont create a second A→B
       assert.strictEqual(
         this.tables.sources[ledgerA].destinations.get(ledgerB).get('http://mary.example'),
@@ -321,12 +373,12 @@ describe('RoutingTables', function () {
       assert.deepEqual(
         this.tables.findBestHopForDestinationAmount(ledgerA, ledgerC, '25'),
         {
+          isFinal: false,
           connector: 'http://mary.example',
           sourceLedger: ledgerA,
           sourceAmount: (100).toString(),
           destinationLedger: ledgerB,
           destinationAmount: (50).toString(),
-          destinationDebitAccount: ledgerB + '/accounts/mark',
           destinationCreditAccount: ledgerB + '/accounts/mary',
           finalLedger: ledgerC,
           finalAmount: '25',
@@ -339,12 +391,12 @@ describe('RoutingTables', function () {
       assert.deepStrictEqual(
         this.tables.findBestHopForDestinationAmount(ledgerA, ledgerB, '50'),
         {
+          isFinal: true,
           connector: 'http://mark.example',
           sourceLedger: ledgerA,
           sourceAmount: (100).toString(),
           destinationLedger: ledgerB,
           destinationAmount: (50).toString(),
-          destinationDebitAccount: markB,
           destinationCreditAccount: null,
           finalLedger: ledgerB,
           finalAmount: '50',
@@ -359,12 +411,12 @@ describe('RoutingTables', function () {
       assert.deepStrictEqual(
         this.tables.findBestHopForSourceAmount(ledgerA, ledgerB, '100'),
         {
+          isFinal: true,
           connector: 'http://mark.example',
           sourceLedger: ledgerA,
           sourceAmount: '100',
           destinationLedger: ledgerB,
           destinationAmount: (50).toString(),
-          destinationDebitAccount: markB,
           destinationCreditAccount: null,
           finalLedger: ledgerB,
           finalAmount: (50).toString(),
