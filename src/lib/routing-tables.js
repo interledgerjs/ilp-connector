@@ -23,7 +23,8 @@ class RoutingTables {
         (this.sources[localRoute.source_ledger] = new routing.RoutingTable())
       const route = new routing.Route(localRoute.points, {
         minMessageWindow: localRoute.min_message_window,
-        nextLedger: localRoute.destination_ledger
+        nextLedger: localRoute.destination_ledger,
+        additional_info: localRoute.additional_info
       })
       table.addRoute(localRoute.destination_ledger, this.baseURI, route)
     }
@@ -144,6 +145,7 @@ class RoutingTables {
     const ledgerB = nextHop.info.nextLedger
     const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
     const isLocal = this.baseURI === nextHop.bestHop
+
     return {
       connector: nextHop.bestHop,
       sourceLedger: ledgerA,
@@ -155,7 +157,8 @@ class RoutingTables {
       destinationCreditAccount: isLocal ? null : this._getAccount(nextHop.bestHop, ledgerB),
       finalLedger: ledgerC,
       finalAmount: finalAmount,
-      minMessageWindow: nextHop.info.minMessageWindow
+      minMessageWindow: nextHop.info.minMessageWindow,
+      additionalInfo: isLocal ? routeFromAToB.info.additional_info : undefined
     }
   }
 
@@ -171,6 +174,7 @@ class RoutingTables {
     const ledgerB = nextHop.info.nextLedger
     const routeFromAToB = this._getLocalRoute(ledgerA, ledgerB)
     const isLocal = this.baseURI === nextHop.bestHop
+
     return {
       connector: nextHop.bestHop,
       sourceLedger: ledgerA,
@@ -181,7 +185,8 @@ class RoutingTables {
       destinationCreditAccount: isLocal ? null : this._getAccount(nextHop.bestHop, ledgerB),
       finalLedger: ledgerC,
       finalAmount: nextHop.bestValue.toString(),
-      minMessageWindow: nextHop.info.minMessageWindow
+      minMessageWindow: nextHop.info.minMessageWindow,
+      additionalInfo: isLocal ? routeFromAToB.info.additional_info : undefined
     }
   }
 

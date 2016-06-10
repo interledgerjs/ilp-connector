@@ -23,7 +23,8 @@ describe('RoutingTables', function () {
       min_message_window: 1,
       source_account: markA,
       destination_account: markB,
-      points: [ [0, 0], [200, 100] ]
+      points: [ [0, 0], [200, 100] ],
+      additional_info: { rate_info: '0.5' }
     }, {
       source_ledger: ledgerB,
       destination_ledger: ledgerA,
@@ -31,7 +32,8 @@ describe('RoutingTables', function () {
       min_message_window: 1,
       source_account: markB,
       destination_account: markA,
-      points: [ [0, 0], [100, 200] ]
+      points: [ [0, 0], [100, 200] ],
+      additional_info: { rate_info: '2.0' }
     }])
   })
 
@@ -328,7 +330,8 @@ describe('RoutingTables', function () {
           destinationCreditAccount: ledgerB + '/accounts/mary',
           finalLedger: ledgerC,
           finalAmount: '25',
-          minMessageWindow: 2
+          minMessageWindow: 2,
+          additionalInfo: undefined
         })
     })
 
@@ -345,7 +348,8 @@ describe('RoutingTables', function () {
           destinationCreditAccount: null,
           finalLedger: ledgerB,
           finalAmount: '50',
-          minMessageWindow: 1
+          minMessageWindow: 1,
+          additionalInfo: { rate_info: '0.5' }
         })
     })
   })
@@ -364,7 +368,8 @@ describe('RoutingTables', function () {
           destinationCreditAccount: null,
           finalLedger: ledgerB,
           finalAmount: (50).toString(),
-          minMessageWindow: 1
+          minMessageWindow: 1,
+          additionalInfo: { rate_info: '0.5' }
         })
     })
   })
