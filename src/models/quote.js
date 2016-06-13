@@ -14,11 +14,13 @@ function * makeQuoteQuery (params) {
     (yield getAccountLedger(params.source_account))
   const destinationLedger = params.destination_ledger ||
     (yield getAccountLedger(params.destination_account))
+  const explain = params.explain === 'true'
   return {
     sourceLedger,
     destinationLedger,
     sourceAmount: params.source_amount,
-    destinationAmount: params.destination_amount
+    destinationAmount: params.destination_amount,
+    explain
   }
 }
 

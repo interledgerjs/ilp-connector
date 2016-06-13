@@ -111,6 +111,7 @@ class RouteBroadcaster {
     return {
       source_ledger: quote.source_ledger,
       destination_ledger: quote.destination_ledger,
+      additional_info: quote.additional_info,
       connector: this.baseURI,
       min_message_window: this.minMessageWindow,
       source_account: this.ledgers.getLedger(quote.source_ledger).getAccount(),

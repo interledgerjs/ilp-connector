@@ -49,7 +49,7 @@ describe('ILPQuoter', function () {
                       .put('/pair/EUR/USD').reply(200)
                       .put('/pair/USD/EUR').reply(200)
       yield this.backend.connect()
-      scope.isDone()
+      expect(scope.isDone()).to.be.true
     })
 
     it('should make sure unsupported pair is handled correctly', function * () {
@@ -59,7 +59,7 @@ describe('ILPQuoter', function () {
                       .put('/pair/XRP/USD').reply(400)
                       .put('/pair/USD/EUR').reply(200)
       yield yieldAndAssertException(this.backend.connect(), UnsupportedPairError)
-      scope.isDone()
+      expect(scope.isDone()).to.be.true
     })
 
     it('should fail for a quote with a missing source_ledger', function * () {
@@ -90,7 +90,7 @@ describe('ILPQuoter', function () {
       const quoteResponse = yield this.backend.getQuote(quote)
       expect(quoteResponse.source_amount).to.be.equal(123.89)
       expect(quoteResponse.destination_amount).to.be.equal(88.77)
-      scope.isDone()
+      expect(scope.isDone()).to.be.true
     })
 
     it('should make sure a valid quote returns with correct destination amount', function * () {
@@ -103,7 +103,7 @@ describe('ILPQuoter', function () {
       const quoteResponse = yield this.backend.getQuote(quote)
       expect(quoteResponse.source_amount).to.be.equal(99.77)
       expect(quoteResponse.destination_amount).to.be.equal(123.89)
-      scope.isDone()
+      expect(scope.isDone()).to.be.true
     })
 
     it('should make sure an error is thrown if the quoter returns a 404', function * () {
@@ -114,7 +114,7 @@ describe('ILPQuoter', function () {
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/123.89/source').reply(404)
       yield yieldAndAssertException(this.backend.getQuote(quote), ServerError)
-      scope.isDone()
+      expect(scope.isDone()).to.be.true
     })
 
     it('should make sure an error is thrown if the quoter returns a 500', function * () {
@@ -125,7 +125,7 @@ describe('ILPQuoter', function () {
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/123.89/source').reply(500)
       yield yieldAndAssertException(this.backend.getQuote(quote), ServerError)
-      scope.isDone()
+      expect(scope.isDone()).to.be.true
     })
   })
 })
