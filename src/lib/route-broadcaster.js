@@ -4,25 +4,29 @@ const _ = require('lodash')
 const co = require('co')
 const defer = require('co-defer')
 const request = require('co-request')
+const Route = require('five-bells-routing').Route
+const SIMPLIFY_POINTS = 10
 
 class RouteBroadcaster {
   /**
    * @param {RoutingTables} routingTables
    * @param {Backend} backend
    * @param {Multiledger} ledgers
+   * @param {InfoCache} infoCache
    * @param {Object} config
    * @param {Object} config.tradingPairs
    * @param {Number} config.minMessageWindow
    * @param {Number} config.routeCleanupInterval
    * @param {Number} config.routeBroadcastInterval
    */
-  constructor (routingTables, backend, ledgers, config) {
+  constructor (routingTables, backend, ledgers, infoCache, config) {
     this.routeCleanupInterval = config.routeCleanupInterval
     this.routeBroadcastInterval = config.routeBroadcastInterval
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.backend = backend
     this.ledgers = ledgers
+    this.infoCache = infoCache
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
     this.adjacentConnectors = {}
@@ -49,7 +53,7 @@ class RouteBroadcaster {
   }
 
   broadcast () {
-    const routes = this.routingTables.toJSON()
+    const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
     return Promise.all(
       Object.keys(this.adjacentConnectors).map(
         (adjacentConnector) => this._broadcastTo(adjacentConnector, routes)))
@@ -74,29 +78,29 @@ class RouteBroadcaster {
 
   * _crawlLedger (ledger) {
     const connectors = yield ledger.getConnectors()
-    for (const connector of connectors) {
-      // Don't broadcast routes to ourselves.
-      if (connector === this.baseURI) continue
-      this.adjacentConnectors[connector] = true
-    }
+    connectors.forEach(this.addConnector, this)
+  }
+
+  * reloadLocalRoutes () {
+    const localRoutes = yield this._getLocalRoutes()
+    this.routingTables.addLocalRoutes(localRoutes)
   }
 
   /**
-   * @returns {Promise}
+   * @param {URI} connector
    */
-  reloadLocalRoutes () {
-    return this._getLocalRoutes().then(
-      (routes) => this.routingTables.addLocalRoutes(routes))
+  addConnector (connector) {
+    // Don't broadcast routes to ourselves.
+    if (connector === this.baseURI) return
+    this.adjacentConnectors[connector] = true
   }
 
   _getLocalRoutes () {
-    return Promise.all(this.tradingPairs.map((pair) => {
-      return this._tradingPairToQuote(pair)
-        .then((quote) => this._quoteToLocalRoute(quote))
-    }))
+    return Promise.all(this.tradingPairs.map(
+      (pair) => this._tradingPairToLocalRoute(pair)))
   }
 
-  _tradingPairToQuote (pair) {
+  _tradingPairToLocalRoute (pair) {
     const sourceLedger = pair[0].split('@')[1]
     const destinationLedger = pair[1].split('@')[1]
     // TODO change the backend API to return curves, not points
@@ -104,11 +108,12 @@ class RouteBroadcaster {
       source_ledger: sourceLedger,
       destination_ledger: destinationLedger,
       source_amount: 100000000
-    })
+    }).then((quote) => this._quoteToLocalRoute(quote))
+      .then((route) => co(this._shiftRoute.bind(this), route))
   }
 
   _quoteToLocalRoute (quote) {
-    return {
+    return Route.fromData({
       source_ledger: quote.source_ledger,
       destination_ledger: quote.destination_ledger,
       additional_info: quote.additional_info,
@@ -120,7 +125,19 @@ class RouteBroadcaster {
         [0, 0],
         [+quote.source_amount, +quote.destination_amount]
       ]
-    }
+    })
+  }
+
+  // Shift the graph down by a small amount so that precision rounding doesn't
+  // cause UnacceptableRateErrors.
+  * _shiftRoute (route) {
+    const destinationAdjustment = yield this._getScaleAdjustment(route.destinationLedger)
+    return route.shiftY(-destinationAdjustment)
+  }
+
+  * _getScaleAdjustment (ledger) {
+    const scale = (yield this.infoCache.get(ledger)).scale
+    return scale ? (1 / Math.pow(10, scale)) : 0
   }
 }
 

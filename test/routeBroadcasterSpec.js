@@ -1,7 +1,7 @@
 'use strict'
 
 const assert = require('assert')
-const RoutingTables = require('five-bells-connector')._test.RoutingTables
+const routing = require('five-bells-routing')
 const RouteBroadcaster = require('five-bells-connector')._test.RouteBroadcaster
 const nock = require('nock')
 
@@ -13,7 +13,7 @@ const baseURI = 'http://connector.example'
 
 describe('RouteBroadcaster', function () {
   beforeEach(function * () {
-    this.tables = new RoutingTables(baseURI, [{
+    this.tables = new routing.RoutingTables(baseURI, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,
       connector: baseURI,
@@ -33,7 +33,17 @@ describe('RouteBroadcaster', function () {
       additional_info: {}
     }])
 
-    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, {
+    this.infoCache = {
+      get: function * (ledger) {
+        return {precision: 10, scale: 2}
+      }
+    }
+
+    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.infoCache, {
+      tradingPairs: [
+        ['USD@' + ledgerA, 'EUR@' + ledgerB],
+        ['EUR@' + ledgerB, 'USD@' + ledgerA]
+      ],
       minMessageWindow: 1
     })
 
@@ -91,22 +101,15 @@ describe('RouteBroadcaster', function () {
 
   describe('_quoteToLocalRoute', function () {
     it('returns a Route', function * () {
-      assert.deepEqual(
-        this.broadcaster._quoteToLocalRoute({
-          source_ledger: ledgerA,
-          destination_ledger: ledgerB,
-          source_amount: '123',
-          destination_amount: '456'
-        }), {
-          source_ledger: ledgerA,
-          destination_ledger: ledgerB,
-          additional_info: undefined,
-          connector: 'http://connector.example',
-          min_message_window: 1,
-          source_account: ledgerA + '/accounts/mark',
-          destination_account: ledgerB + '/accounts/mark',
-          points: [ [0, 0], [123, 456] ]
-        })
+      const route = this.broadcaster._quoteToLocalRoute({
+        source_ledger: ledgerA,
+        destination_ledger: ledgerB,
+        source_amount: '123',
+        destination_amount: '456'
+      })
+      assert.ok(route instanceof routing.Route)
+      assert.deepEqual(route.hops, [ledgerA, ledgerB])
+      assert.deepEqual(route.getPoints(), [ [0, 0], [123, 456] ])
     })
   })
 })

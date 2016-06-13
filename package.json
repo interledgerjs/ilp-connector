@@ -39,7 +39,7 @@
     "co-request": "^1.0.0",
     "eventemitter2": "^1.0.3",
     "five-bells-condition": "^3.2.0",
-    "five-bells-routing": "~2.0.0",
+    "five-bells-routing": "~3.1.0",
     "five-bells-shared": "^16.1.0",
     "koa": "^1.0.0",
     "koa-compress": "^1.0.6",

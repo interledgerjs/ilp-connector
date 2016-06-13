@@ -48,7 +48,8 @@ class RouteBuilder {
       _nextHop.sourceAmount = amountWithSlippage.toString()
       info.slippage = (amount - amountWithSlippage).toString()
     }
-    const nextHop = yield this._roundHop(_nextHop)
+    // Round in our favor to ensure that the adjustments don't fall off.
+    const nextHop = yield this._roundHop(_nextHop, 'up', 'down')
 
     const quote = {
       source_connector_account:
@@ -87,16 +88,18 @@ class RouteBuilder {
 
     const sourceLedger = sourceTransfer.ledger
     const finalLedger = ilpHeader.ledger
-    const _nextHop = this.routingTables.findBestHopForSourceAmount(
+    // Use `findBestHopForSourceAmount` since the source amount includes the slippage.
+    const _nextHopBySourceAmount = this.routingTables.findBestHopForSourceAmount(
       sourceLedger, finalLedger, sourceTransfer.amount)
-    if (!_nextHop) throwAssetsNotTradedError()
-    const nextHop = yield this._roundHop(_nextHop)
+    if (!_nextHopBySourceAmount) throwAssetsNotTradedError()
+    // Round against ourselves since the quote rate was overestimated in our favor.
+    const nextHop = yield this._roundHop(_nextHopBySourceAmount, 'down', 'up')
 
     // Check if this connector can authorize the final transfer.
-    if (nextHop.destinationLedger === finalLedger) {
-      // Verify ilpHeader.amount <= nextHop.destinationAmount
-      const finalAmount = new BigNumber(ilpHeader.amount)
-      if (finalAmount.greaterThan(nextHop.destinationAmount)) {
+    if (nextHop.isFinal) {
+      // Verify ilpHeader.amount ≤ nextHop.finalAmount
+      const expectedFinalAmount = new BigNumber(ilpHeader.amount)
+      if (expectedFinalAmount.greaterThan(nextHop.finalAmount)) {
         throw new UnacceptableRateError('Payment rate does not match the rate currently offered')
       }
       // TODO: Verify atomic mode notaries are trusted
@@ -127,9 +130,7 @@ class RouteBuilder {
       direction: 'outgoing',
       account: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
-      data: nextHop.destinationLedger !== finalLedger
-        ? { ilp_header: ilpHeader }
-        : ilpHeader.data,
+      data: nextHop.isFinal ? ilpHeader.data : { ilp_header: ilpHeader },
       noteToSelf: noteToSelf,
       executionCondition: sourceTransfer.executionCondition,
       cancellationCondition: sourceTransfer.cancellationCondition,
@@ -156,18 +157,28 @@ class RouteBuilder {
   /**
    * Round the hop's amounts according to the corresponding ledgers' scales/precisions.
    */
-  * _roundHop (hop) {
-    hop.sourceAmount = yield this._roundAmount('source', hop.sourceLedger, hop.sourceAmount)
-    hop.destinationAmount = yield this._roundAmount('destination', hop.destinationLedger, hop.destinationAmount)
-    hop.finalAmount = yield this._roundAmount('destination', hop.finalLedger, hop.finalAmount)
+  * _roundHop (hop, sourceUpDown, destinationUpDown) {
+    hop.sourceAmount = yield this._roundAmount('source', sourceUpDown, hop.sourceLedger, hop.sourceAmount)
+    hop.finalAmount = yield this._roundAmount('destination', destinationUpDown, hop.finalLedger, hop.finalAmount)
+    hop.destinationAmount = yield this._roundAmount('destination', destinationUpDown, hop.destinationLedger, hop.destinationAmount)
     return hop
   }
 
-  * _roundAmount (sourceOrDestination, ledger, amount) {
+  /**
+   * Round amounts against the connector's favor. This cancels out part of the
+   * connector's rate curve shift by 1/10^scale.
+   *
+   * @param {String} sourceOrDestination "source" or "destination"
+   * @param {String} upOrDown "up" or "down"
+   * @param {URI} ledger
+   * @param {String} amount
+   * @returns {String} rounded amount
+   */
+  * _roundAmount (sourceOrDestination, upOrDown, ledger, amount) {
     const precisionAndScale = yield this.infoCache.get(ledger)
     const roundedAmount = new BigNumber(amount).toFixed(precisionAndScale.scale,
-      sourceOrDestination === 'source' ? BigNumber.ROUND_UP : BigNumber.ROUND_DOWN)
-    validatePrecision(roundedAmount, precisionAndScale.precision, sourceOrDestination)
+      upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP)
+    validatePrecision(roundedAmount, precisionAndScale.precision, ledger, sourceOrDestination)
     return roundedAmount
   }
 
@@ -182,15 +193,15 @@ function throwAssetsNotTradedError () {
   throw new AssetsNotTradedError('This connector does not support the given asset pair')
 }
 
-function validatePrecision (amount, precision, ledger) {
+function validatePrecision (amount, precision, ledger, sourceOrDestination) {
   const bnAmount = new BigNumber(amount)
   if (bnAmount.precision() > precision) {
     throw new UnacceptableAmountError(
-      `Amount (${amount}) exceeds ledger precision on ${ledger} ledger`)
+      `Amount (${amount}) exceeds ledger precision on ${ledger}`)
   }
   if (bnAmount.lte(0)) {
     throw new UnacceptableAmountError(
-      `Quoted ${ledger} is lower than minimum amount allowed`)
+      `Quoted ${sourceOrDestination} is lower than minimum amount allowed`)
   }
 }
 

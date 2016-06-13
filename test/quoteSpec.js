@@ -31,7 +31,7 @@ describe('Quotes', function () {
       .reply(200, {
         precision: 10,
         scale: 4
-      })
+      }).persist()
     })
 
     // Connector queries its balances when getting a quote to ensure it has sufficient funds.
@@ -44,9 +44,10 @@ describe('Quotes', function () {
           balance: 150000
         })
     })
-    balanceCache.reset()
-    infoCache.reset()
 
+    // Reset before and after just in case a test wants to change the precision.
+    infoCache.reset()
+    balanceCache.reset()
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
   })
@@ -137,10 +138,11 @@ describe('Quotes', function () {
     })
 
     it('should return a 422 if source_ledger amount is greater than source_ledger precision', function * () {
+      infoCache.reset()
       nock.cleanAll()
       // Decrease precision
-      nock('http://eur-ledger.example').get('/').reply(200, {precision: 4, scale: 2})
-      nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 4})
+      nock('http://eur-ledger.example').get('/').reply(200, {precision: 4, scale: 2}).persist()
+      nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 4}).persist()
       nock('http://eur-ledger.example/accounts/mark').get('')
         .reply(200, {
           name: 'mark',
@@ -161,12 +163,13 @@ describe('Quotes', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableAmountError')
-          expect(res.body.message).to.equal('Amount (12345.00) exceeds ledger precision on source ledger')
+          expect(res.body.message).to.equal('Amount (12345.00) exceeds ledger precision on http://eur-ledger.example')
         })
         .end()
     })
 
     it('should return a 422 if destination_ledger amount is greater than destination_ledger precision', function * () {
+      infoCache.reset()
       nock.cleanAll()
       // Decrease precision
       nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
@@ -185,13 +188,13 @@ describe('Quotes', function () {
         })
 
       yield this.request()
-        .get('/quote?source_amount=12345' +
+        .get('/quote?destination_amount=12345' +
           '&source_ledger=http://eur-ledger.example' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableAmountError')
-          expect(res.body.message).to.equal('Amount (13049.6723) exceeds ledger precision on destination ledger')
+          expect(res.body.message).to.equal('Amount (12345.0000) exceeds ledger precision on http://usd-ledger.example')
         })
         .end()
     })
@@ -288,6 +291,7 @@ describe('Quotes', function () {
     })
 
     it('should return a 502 when unable to get precision from source_ledger', function * () {
+      infoCache.reset()
       nock.cleanAll()
       nock('http://eur-ledger.example').get('/').reply(500)
       nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
@@ -307,6 +311,7 @@ describe('Quotes', function () {
     })
 
     it('should return a 502 when unable to get precision from destination_ledger', function * () {
+      infoCache.reset()
       nock.cleanAll()
       nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
       nock('http://usd-ledger.example').get('/').reply(500)
@@ -326,6 +331,7 @@ describe('Quotes', function () {
     })
 
     it('should return a 502 when unable to get balance from ledger', function * () {
+      infoCache.reset()
       nock.cleanAll()
       nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
       nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
@@ -361,6 +367,7 @@ describe('Quotes', function () {
     })
 
     it('should return quotes for fixed source amounts -- lower precision source_ledger', function * () {
+      infoCache.reset()
       nock.cleanAll()
       // Increase scale
       nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
@@ -388,13 +395,14 @@ describe('Quotes', function () {
           source_amount: '100.00',
           source_expiry_duration: '6',
           destination_ledger: 'http://usd-ledger.example',
-          destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+          destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
         .end()
     })
 
     it('should return quotes for fixed source amounts -- lower precision destination_ledger', function * () {
+      infoCache.reset()
       nock.cleanAll()
       // Increase scale
       nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 4})
@@ -429,6 +437,7 @@ describe('Quotes', function () {
     })
 
     it('caches source and destination ledger precision', function * () {
+      infoCache.reset()
       nock.cleanAll()
       nock('http://eur-ledger.example')
         .get('/').reply(200, {precision: 10, scale: 4})
@@ -477,7 +486,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'http://usd-ledger.example',
-          destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+          destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -493,7 +502,7 @@ describe('Quotes', function () {
         .expect(200, {
           source_connector_account: 'http://eur-ledger.example/accounts/mark',
           source_ledger: 'http://eur-ledger.example',
-          source_amount: '94.6947', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
+          source_amount: '94.6948', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
           source_expiry_duration: '6',
           destination_ledger: 'http://usd-ledger.example',
           destination_amount: '100.0000',
@@ -513,7 +522,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'http://usd-ledger.example',
-          destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+          destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -530,7 +539,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'http://eur-ledger.example',
-          destination_amount: '94.1278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
+          destination_amount: '94.1277', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -547,7 +556,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'http://cad-ledger.example:1000',
-          destination_amount: '127.8538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
+          destination_amount: '127.8537', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -564,7 +573,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'http://usd-ledger.example',
-          destination_amount: '77.7460', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
+          destination_amount: '77.7459', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -699,6 +708,7 @@ describe('Quotes', function () {
       nock('http://random-ledger.example')
         .get('/accounts/bob')
         .reply(200, {ledger: 'http://random-ledger.example/'})
+      nock('http://random-ledger.example')
         .get('/')
         .reply(200, { precision: 10, scale: 4 })
 
@@ -727,7 +737,7 @@ describe('Quotes', function () {
             source_amount: '100.0000',
             source_expiry_duration: '7',
             destination_ledger: 'http://random-ledger.example/',
-            destination_amount: '188.2556',
+            destination_amount: '188.2554',
             destination_expiry_duration: '5'
           })
         })
