@@ -28,7 +28,11 @@
       "description": "Time in seconds between proposed_at and expires_at. Set in quotes from payment systems but not valid in actual transfers",
       "$ref": "NonNegativeDuration.json"
     },
-    "destination_expiry_duration": { "$ref": "NonNegativeDuration.json" }
+    "destination_expiry_duration": { "$ref": "NonNegativeDuration.json" },
+    "additional_info": {
+      "description": "Additional information related to the quote",
+      "type": "object"
+    }
   },
   "required": [
     "source_ledger",

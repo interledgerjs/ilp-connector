@@ -19,7 +19,8 @@ describe('RouteBroadcaster', function () {
       min_message_window: 1,
       source_account: ledgerA + '/accounts/mark',
       destination_account: ledgerB + '/accounts/mark',
-      points: [ [0, 0], [200, 100] ]
+      points: [ [0, 0], [200, 100] ],
+      additional_info: {}
     }, {
       source_ledger: ledgerB,
       destination_ledger: ledgerA,
@@ -27,7 +28,8 @@ describe('RouteBroadcaster', function () {
       min_message_window: 1,
       source_account: ledgerB + '/accounts/mark',
       destination_account: ledgerA + '/accounts/mark',
-      points: [ [0, 0], [100, 200] ]
+      points: [ [0, 0], [100, 200] ],
+      additional_info: {}
     }])
 
     this.broadcaster = new RouteBroadcaster(this.tables, this.backend, {
@@ -47,7 +49,8 @@ describe('RouteBroadcaster', function () {
       destination_ledger: ledgerC,
       connector: 'http://other-connector2.example',
       min_message_window: 1,
-      points: [ [0, 0], [50, 60] ]
+      points: [ [0, 0], [50, 60] ],
+      additional_info: {}
     })
   })
 
@@ -102,6 +105,7 @@ describe('RouteBroadcaster', function () {
         }), {
           source_ledger: ledgerA,
           destination_ledger: ledgerB,
+          additional_info: undefined,
           connector: 'http://connector.example',
           min_message_window: 1,
           source_account: ledgerA + '/accounts/mark',
