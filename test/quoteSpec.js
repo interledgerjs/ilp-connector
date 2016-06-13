@@ -163,7 +163,7 @@ describe('Quotes', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableAmountError')
-          expect(res.body.message).to.equal('Amount (12345.00) exceeds ledger precision on source ledger')
+          expect(res.body.message).to.equal('Amount (12345.00) exceeds ledger precision on http://eur-ledger.example')
         })
         .end()
     })
@@ -194,7 +194,7 @@ describe('Quotes', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableAmountError')
-          expect(res.body.message).to.equal('Amount (12345.0000) exceeds ledger precision on destination ledger')
+          expect(res.body.message).to.equal('Amount (12345.0000) exceeds ledger precision on http://usd-ledger.example')
         })
         .end()
     })

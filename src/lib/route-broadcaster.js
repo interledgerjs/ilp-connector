@@ -4,6 +4,8 @@ const _ = require('lodash')
 const co = require('co')
 const defer = require('co-defer')
 const request = require('co-request')
+const Route = require('five-bells-routing').Route
+const SIMPLIFY_POINTS = 10
 
 class RouteBroadcaster {
   /**
@@ -51,7 +53,7 @@ class RouteBroadcaster {
   }
 
   broadcast () {
-    const routes = this.routingTables.toJSON()
+    const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
     return Promise.all(
       Object.keys(this.adjacentConnectors).map(
         (adjacentConnector) => this._broadcastTo(adjacentConnector, routes)))
@@ -111,7 +113,7 @@ class RouteBroadcaster {
   }
 
   _quoteToLocalRoute (quote) {
-    return {
+    return Route.fromData({
       source_ledger: quote.source_ledger,
       destination_ledger: quote.destination_ledger,
       additional_info: quote.additional_info,
@@ -123,22 +125,14 @@ class RouteBroadcaster {
         [0, 0],
         [+quote.source_amount, +quote.destination_amount]
       ]
-    }
+    })
   }
 
   // Shift the graph down by a small amount so that precision rounding doesn't
   // cause UnacceptableRateErrors.
   * _shiftRoute (route) {
-    const destinationAdjustment = yield this._getScaleAdjustment(route.destination_ledger)
-    const shiftedPoints = []
-    for (const point of route.points) {
-      shiftedPoints.push([
-        point[0],
-        point[1] - destinationAdjustment
-      ])
-    }
-    route.points = shiftedPoints
-    return route
+    const destinationAdjustment = yield this._getScaleAdjustment(route.destinationLedger)
+    return route.shiftY(-destinationAdjustment)
   }
 
   * _getScaleAdjustment (ledger) {

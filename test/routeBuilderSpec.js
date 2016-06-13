@@ -1,7 +1,7 @@
 'use strict'
 
 const assert = require('assert')
-const RoutingTables = require('five-bells-connector')._test.RoutingTables
+const RoutingTables = require('five-bells-routing').RoutingTables
 const RouteBuilder = require('five-bells-connector')._test.RouteBuilder
 
 const baseURI = 'http://mark.example'

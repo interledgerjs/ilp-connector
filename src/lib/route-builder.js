@@ -178,7 +178,7 @@ class RouteBuilder {
     const precisionAndScale = yield this.infoCache.get(ledger)
     const roundedAmount = new BigNumber(amount).toFixed(precisionAndScale.scale,
       upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP)
-    validatePrecision(roundedAmount, precisionAndScale.precision, sourceOrDestination)
+    validatePrecision(roundedAmount, precisionAndScale.precision, ledger, sourceOrDestination)
     return roundedAmount
   }
 
@@ -187,22 +187,17 @@ class RouteBuilder {
       return credentials.account_uri === funds.account
     })
   }
-
-  * _getScaleAdjustment (ledger) {
-    const scale = (yield this.infoCache.get(ledger)).scale
-    return scale ? (1 / Math.pow(10, scale)) : 0
-  }
 }
 
 function throwAssetsNotTradedError () {
   throw new AssetsNotTradedError('This connector does not support the given asset pair')
 }
 
-function validatePrecision (amount, precision, sourceOrDestination) {
+function validatePrecision (amount, precision, ledger, sourceOrDestination) {
   const bnAmount = new BigNumber(amount)
   if (bnAmount.precision() > precision) {
     throw new UnacceptableAmountError(
-      `Amount (${amount}) exceeds ledger precision on ${sourceOrDestination} ledger`)
+      `Amount (${amount}) exceeds ledger precision on ${ledger}`)
   }
   if (bnAmount.lte(0)) {
     throw new UnacceptableAmountError(
