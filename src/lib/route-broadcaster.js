@@ -47,9 +47,10 @@ class RouteBroadcaster {
       }
     }
     setInterval(() => this.routingTables.removeExpiredRoutes(), this.routeCleanupInterval)
-    defer.setInterval(() => {
-      return this.reloadLocalRoutes().then(this.broadcast.bind(this))
-    }, this.routeBroadcastInterval)
+    defer.setInterval(function * () {
+      yield this.reloadLocalRoutes()
+      yield this.broadcast()
+    }.bind(this), this.routeBroadcastInterval)
   }
 
   broadcast () {
