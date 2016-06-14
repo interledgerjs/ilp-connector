@@ -34,7 +34,8 @@ describe('RouteBuilder', function () {
       source_account: markA,
       destination_account: markB,
       min_message_window: 1,
-      points: [ [0, 0], [200, 100] ]
+      points: [ [0, 0], [200, 100] ],
+      additional_info: { rate_info: 'someInfoAboutTheRate' }
     }])
     this.builder = new RouteBuilder(this.tables, this.precisionCache, {
       minMessageWindow: 1,
@@ -59,13 +60,37 @@ describe('RouteBuilder', function () {
     })
 
     describe('fixed sourceAmount', function () {
+      it('Local quote should return additional info', function * () {
+        const quoteTransfer = yield this.builder.getQuote({
+          sourceLedger: ledgerA,
+          sourceAccount: aliceA,
+          destinationLedger: ledgerB,
+          destinationAccount: bobB,
+          sourceAmount: '200',
+          explain: 'true'
+        })
+        assert.deepStrictEqual(quoteTransfer, {
+          source_connector_account: markA,
+          source_ledger: ledgerA,
+          source_amount: '200.00',
+          destination_ledger: ledgerB,
+          destination_amount: '99.00',
+          _hop: quoteTransfer._hop,
+          additional_info: { rate_info: 'someInfoAboutTheRate',
+                             slippage: '1' }
+        })
+      })
+    })
+
+    describe('fixed sourceAmount', function () {
       it('returns a quote with slippage in the final amount', function * () {
         const quoteTransfer = yield this.builder.getQuote({
           sourceLedger: ledgerA,
           sourceAccount: aliceA,
           destinationLedger: ledgerC,
           destinationAccount: carlC,
-          sourceAmount: '100'
+          sourceAmount: '100',
+          explain: 'true'
         })
         assert.deepStrictEqual(quoteTransfer, {
           source_connector_account: markA,
@@ -73,7 +98,8 @@ describe('RouteBuilder', function () {
           source_amount: '100.00',
           destination_ledger: ledgerC,
           destination_amount: '24.75',
-          _hop: quoteTransfer._hop
+          _hop: quoteTransfer._hop,
+          additional_info: { slippage: '0.25' }
         })
       })
     })
@@ -85,7 +111,8 @@ describe('RouteBuilder', function () {
           sourceAccount: aliceA,
           destinationLedger: ledgerC,
           destinationAccount: carlC,
-          destinationAmount: '25'
+          destinationAmount: '25',
+          explain: 'true'
         })
         assert.deepStrictEqual(quoteTransfer, {
           source_connector_account: markA,
@@ -93,7 +120,8 @@ describe('RouteBuilder', function () {
           source_amount: '101.00',
           destination_ledger: ledgerC,
           destination_amount: '25.00',
-          _hop: quoteTransfer._hop
+          _hop: quoteTransfer._hop,
+          additional_info: { slippage: '-1' }
         })
       })
 

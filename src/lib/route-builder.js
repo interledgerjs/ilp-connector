@@ -32,23 +32,38 @@ class RouteBuilder {
    * @returns {Quote}
    */
   * getQuote (query) {
+    const info = {}
     const _nextHop = this._findNextHop(query)
     if (!_nextHop) throwAssetsNotTradedError()
     if (query.sourceAmount) {
-      _nextHop.finalAmount = (new BigNumber(_nextHop.finalAmount)).times(1 - this.slippage).toString()
+      const amount = new BigNumber(_nextHop.finalAmount)
+      const amountWithSlippage = amount.times(1 - this.slippage)
+      _nextHop.finalAmount = amountWithSlippage.toString()
+      info.slippage = (amount - amountWithSlippage).toString()
     } else { // fixed destinationAmount
-      _nextHop.sourceAmount = (new BigNumber(_nextHop.sourceAmount)).times(1 + this.slippage).toString()
+      const amount = new BigNumber(_nextHop.sourceAmount)
+      const amountWithSlippage = amount.times(1 + this.slippage)
+      _nextHop.sourceAmount = amountWithSlippage.toString()
+      info.slippage = (amount - amountWithSlippage).toString()
     }
     const nextHop = yield this._roundHop(_nextHop)
 
-    return {
-      source_connector_account: this.ledgerCredentials[nextHop.sourceLedger].account_uri,
+    const quote = {
+      source_connector_account:
+        this.ledgerCredentials[nextHop.sourceLedger].account_uri,
+        // this.ledgers.getLedger(nextHop.sourceLedger).getAccount(),
       source_ledger: nextHop.sourceLedger,
       source_amount: nextHop.sourceAmount,
       destination_ledger: nextHop.finalLedger,
       destination_amount: nextHop.finalAmount,
       _hop: nextHop
     }
+
+    if (query.explain) {
+      quote.additional_info = _.assign({}, nextHop.additionalInfo, info)
+    }
+
+    return quote
   }
 
   /**
