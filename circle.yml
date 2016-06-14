@@ -10,7 +10,7 @@ test:
     - npm run apidoc
 deployment:
   production:
-    branch: master
+    branch: [master, ilp_server_alpha]
     commands:
       # ST: Coverage reporting is broken - disable for now
       #- npm run coveralls
