@@ -104,7 +104,8 @@ class ILPQuoter {
       source_ledger: params.source_ledger,
       destination_ledger: params.destination_ledger,
       source_amount: result.body.source_amount,
-      destination_amount: result.body.destination_amount
+      destination_amount: result.body.destination_amount,
+      additional_info: result.body.additional_info
     }
     return quote
   }
