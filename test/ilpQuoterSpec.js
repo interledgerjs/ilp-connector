@@ -3,7 +3,6 @@
 const nock = require('nock')
 const expect = require('chai').expect
 
-const UnsupportedPairError = require('../src/errors/unsupported-pair-error')
 const NoAmountSpecifiedError = require('../src/errors/no-amount-specified-error')
 const AssetsNotTradedError = require('../src/errors/assets-not-traded-error')
 const ServerError = require('five-bells-shared/errors/server-error')
@@ -54,7 +53,7 @@ describe('ILPQuoter', function () {
                       .put('/pair/EUR/USD').reply(200)
                       .put('/pair/XRP/USD').reply(400)
                       .put('/pair/USD/EUR').reply(200)
-      yield yieldAndAssertException(this.backend.connect(), UnsupportedPairError)
+      yield this.backend.connect()
       expect(scope.isDone()).to.be.true
     })
 
