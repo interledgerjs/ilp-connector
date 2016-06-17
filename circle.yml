@@ -15,7 +15,14 @@ deployment:
       # ST: Coverage reporting is broken - disable for now
       #- npm run coveralls
       - mv npmrc-env .npmrc
-      - if [ -z "$(npm info $(npm ls --depth=-1 2>/dev/null | head -1 | cut -f 1 -d " ") 2>/dev/null)" ] ; then npm publish ; fi
+      - >
+        if [ -z "$(npm info $(npm ls --depth=-1 2>/dev/null | head -1 | cut -f 1 -d " ") 2>/dev/null)" ]; then
+          if [[ $CIRCLE_BRANCH = "ilp_server_alpha" ]]; then
+            npm publish --tag ilp_server_alpha
+          else
+            npm publish
+          fi
+        fi
 general:
   artifacts:
     - "coverage/lcov-report"
