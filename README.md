@@ -108,6 +108,9 @@ ex.
 * `CONNECTOR_TLS_CERTIFICATE` (default: none) the path to the server certificate file. Required if using HTTPS.
 * `CONNECTOR_TLS_CRL` (default: none) the path to the server certificate revokation list file. Optional if using HTTPS.
 * `CONNECTOR_TLS_CA` (default: none) the path to a trusted certificate to be used in addition to using the [default list](https://github.com/nodejs/node/blob/v4.3.0/src/node_root_certs.h). Optional if using HTTPS.
+* `CONNECTOR_ROUTE_BROADCAST_INTERVAL` (default: `30000`) the frequency at which the connector broadcasts its routes to adjacent connectors.
+* `CONNECTOR_ROUTE_CLEANUP_INTERVAL` (default: `1000`) the frequency at which the connector checks for expired routes.
+* `CONNECTOR_ROUTE_EXPIRY` (default: `45000`) the maximum age of a route.
 
 #### Auto-funding
 

@@ -15,6 +15,7 @@ const DEFAULT_SLIPPAGE = 0.001 // 0.1%
 
 const DEFAULT_ROUTE_BROADCAST_INTERVAL = 30 * 1000 // milliseconds
 const DEFAULT_ROUTE_CLEANUP_INTERVAL = 1000 // milliseconds
+const DEFAULT_ROUTE_EXPIRY = 45 * 1000 // milliseconds
 
 function isRunningTests () {
   return (
@@ -225,6 +226,8 @@ function getLocalConfig () {
     Number(Config.getEnv(envPrefix, 'ROUTE_BROADCAST_INTERVAL')) || DEFAULT_ROUTE_BROADCAST_INTERVAL
   const routeCleanupInterval =
     Number(Config.getEnv(envPrefix, 'ROUTE_CLEANUP_INTERVAL')) || DEFAULT_ROUTE_CLEANUP_INTERVAL
+  const routeExpiry =
+    Number(Config.getEnv(envPrefix, 'ROUTE_EXPIRY')) || DEFAULT_ROUTE_EXPIRY
 
   // Credentials should be specified as a map of the form
   // {
@@ -263,7 +266,8 @@ function getLocalConfig () {
     backendUri,
     notifications,
     routeBroadcastInterval,
-    routeCleanupInterval
+    routeCleanupInterval,
+    routeExpiry
   }
 }
 
