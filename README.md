@@ -60,7 +60,7 @@ npm start
 {
   // Using Basic Auth
   "<ledger_uri>": {
-    "account_uri": "...",
+    "account": "...",
     "username": "...",
     "password": "..."
     "ca": "...", // Optional
@@ -68,7 +68,7 @@ npm start
 
   // Using Client Certificate Auth
   "<ledger_uri_2>": {
-    "account_uri": "...",
+    "account": "...",
     "username": "...",
     "cert": "...",
     "key": "...",

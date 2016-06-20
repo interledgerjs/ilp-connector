@@ -184,7 +184,7 @@ class RouteBuilder {
 
   _isTraderFunds (funds) {
     return _.some(this.ledgerCredentials, (credentials) => {
-      return credentials.account_uri === funds.account
+      return credentials.account === funds.account
     })
   }
 }

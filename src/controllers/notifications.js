@@ -3,13 +3,6 @@
 const requestUtil = require('five-bells-shared/utils/request')
 const log = require('../common').log('notifications')
 const model = require('../models/notifications')
-const AssetsNotTradedError = require('../errors/assets-not-traded-error')
-const NoRelatedSourceCreditError = require('../errors/no-related-source-credit-error')
-const UnacceptableRateError = require('../errors/unacceptable-rate-error')
-const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
-const UnacceptableConditionsError = require('../errors/unacceptable-conditions-error')
-const UnrelatedNotificationError = require('../errors/unrelated-notification-error')
-const NoRelatedDestinationDebitError = require('../errors/no-related-destination-debit-error')
 const UnprocessableEntityError =
   require('five-bells-shared').UnprocessableEntityError
 
@@ -91,13 +84,13 @@ exports.post = function * postNotification () {
     yield model.processNotification(notification, this.ledgers, this.config)
   } catch (e) {
     if (
-      (e instanceof AssetsNotTradedError) ||
-      (e instanceof NoRelatedDestinationDebitError) ||
-      (e instanceof NoRelatedSourceCreditError) ||
-      (e instanceof UnacceptableConditionsError) ||
-      (e instanceof UnacceptableExpiryError) ||
-      (e instanceof UnacceptableRateError) ||
-      (e instanceof UnrelatedNotificationError)
+      (e.name === 'AssetsNotTradedError') ||
+      (e.name === 'NoRelatedDestinationDebitError') ||
+      (e.name === 'NoRelatedSourceCreditError') ||
+      (e.name === 'UnacceptableConditionsError') ||
+      (e.name === 'UnacceptableExpiryError') ||
+      (e.name === 'UnacceptableRateError') ||
+      (e.name === 'UnrelatedNotificationError')
     ) {
       // Certain exceptions indicate an error in the transfer memo, rather than
       // the transfer itself. Since the client is the ledger and the ledger is

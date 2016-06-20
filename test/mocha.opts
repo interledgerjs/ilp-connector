@@ -1,1 +1,2 @@
 -r co-mocha
+-r ./test/helpers/ws

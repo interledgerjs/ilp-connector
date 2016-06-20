@@ -1,8 +1,9 @@
 'use strict'
 
-const wsService = require('../../src/services/ws')
 const mockSocket = require('mock-socket')
 const EventEmitter = require('events').EventEmitter
+
+const mockRequire = require('mock-require')
 
 class MockWebSocket extends EventEmitter {
   constructor (uri, opts) {
@@ -36,7 +37,7 @@ class MockWebSocket extends EventEmitter {
   }
 }
 
-wsService.WebSocket = MockWebSocket
+mockRequire('ws', MockWebSocket)
 
 exports.WebSocket = MockWebSocket
 exports.Server = mockSocket.Server

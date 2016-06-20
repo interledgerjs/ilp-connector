@@ -40,6 +40,30 @@ describe('Subscriptions', function () {
         scale: 4
       })
 
+    nock('http://usd-ledger.example').get('/accounts/mark')
+      .reply(200, {
+        ledger: 'http://usd-ledger.example',
+        name: 'mark'
+      })
+
+    nock('http://eur-ledger.example').get('/accounts/mark')
+      .reply(200, {
+        ledger: 'http://eur-ledger.example',
+        name: 'mark'
+      })
+
+    nock('http://cad-ledger.example:1000').get('/accounts/mark')
+      .reply(200, {
+        ledger: 'http://cad-ledger.example:1000',
+        name: 'mark'
+      })
+
+    nock('http://cny-ledger.example').get('/accounts/mark')
+      .reply(200, {
+        ledger: 'http://cny-ledger.example',
+        name: 'mark'
+      })
+
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
 

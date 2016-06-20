@@ -1,19 +1,14 @@
 'use strict'
 
 const _ = require('lodash')
-const FiveBellsLedger = require('../ledgers/five-bells-ledger')
 const healthStatus = require('../common/health.js')
 
 function Multiledger (options) {
   this.config = options.config
-  this.log = options.log
-  this.ledger_types = {undefined: FiveBellsLedger}
+  this.log = options.log('multiledger')
+  this.makeLogger = options.log
   this.ledgers = this.buildLedgers()
   this.ledgersHealth = { ledgersHealth: healthStatus.statusNotOk }
-}
-
-Multiledger.prototype.addLedger = function (Ledger) {
-  this.ledger_types[Ledger.TYPE] = Ledger
 }
 
 Multiledger.prototype.getLedger = function (ledgerId) {
@@ -27,13 +22,20 @@ Multiledger.prototype.getLedgers = function () {
 Multiledger.prototype.buildLedgers = function () {
   const ledgers = {}
   Object.keys(this.config.get('ledgerCredentials')).forEach((ledgerId) => {
-    let creds = this.config.getIn(['ledgerCredentials', ledgerId])
-    let Ledger = this.ledger_types[creds.type]
-    ledgers[ledgerId] = new Ledger({
-      ledger_id: ledgerId,
-      credentials: creds,
-      log: this.log(Ledger.name),
-      config: this.config
+    const creds = this.config.getIn(['ledgerCredentials', ledgerId])
+
+    const LedgerPlugin = require('ilp-plugin-' + creds.type)
+    ledgers[ledgerId] = new LedgerPlugin({
+      id: ledgerId,
+      auth: creds,
+      debugReplyNotifications: this.config.features.debugReplyNotifications,
+      debugAutofund: this.config.getIn(['features', 'debugAutoFund'])
+        ? {
+          admin: this.config.get('admin'),
+          connector: this.config.getIn(['server', 'base_uri'])
+        }
+        : null,
+      log: this.makeLogger('plugin-' + creds.type)
     })
   })
   return ledgers

@@ -9,7 +9,6 @@ module.exports = {
   app: connector.koaApp,
   createApp: createApp,
   listen: connector.listen,
-  addLedger: ledgers.addLedger.bind(ledgers),
   _test: {
     BalanceCache: require('./lib/balance-cache'),
     balanceCache: require('./services/balance-cache'),
