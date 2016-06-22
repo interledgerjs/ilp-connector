@@ -59,7 +59,12 @@ function listen (koaApp, config, ledgers) {
   // Start a coroutine that connects to the backend and
   // subscribes to all the ledgers in the background
   co(function * () {
-    yield backend.connect()
+    try {
+      yield backend.connect()
+    } catch (error) {
+      log('app').error(error.message)
+      process.exit(1)
+    }
     yield routeBroadcaster.start()
     yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgers, config)
   }).catch(function (err) {

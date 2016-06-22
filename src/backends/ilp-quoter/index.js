@@ -31,9 +31,17 @@ class ILPQuoter {
   * putPair (uri) {
     const req = request({ method: 'PUT', uri, json: true })
     const res = yield req
-    if (res.statusCode >= 400) {
-      throw new UnsupportedPairError(req.uri)
+    const result = {
+      success: true,
+      errorMessage: undefined
     }
+    if (res.statusCode >= 400) {
+      result.success = false
+      result.errorMessage = uri
+      log.debug('Unsupported pair, the quoter reported a ' + res.statusCode + ' status on PUT ' + uri)
+      log.debug(res.body)
+    }
+    return result
   }
 
   /**
@@ -42,9 +50,13 @@ class ILPQuoter {
    */
   * connect () {
     const uris = _.uniq(this.currencyPairs.map((pair) => this.backendUri + '/pair/' + pair[0] + '/' + pair[1]))
-    yield uris.map((uri) => this.putPair(uri))
-    this.backendStatus = healthStatus.statusOk
-    return
+    const results = yield uris.map((uri) => this.putPair(uri))
+    const success = _.every(results, (result) => result.success)
+    if (!success) {
+      const message = _.reduce(results, (msg, result) => result.success ? msg : msg + result.errorMessage + ' ', '')
+      throw new UnsupportedPairError(message)
+    }
+    this.backendStatus = success ? healthStatus.statusOk : healthStatus.statusNotOk
   }
 
   /**
