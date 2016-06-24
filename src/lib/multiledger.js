@@ -29,13 +29,8 @@ Multiledger.prototype.buildLedgers = function () {
       id: ledgerId,
       auth: creds,
       debugReplyNotifications: this.config.features.debugReplyNotifications,
-      debugAutofund: this.config.getIn(['features', 'debugAutoFund'])
-        ? {
-          admin: this.config.get('admin'),
-          connector: this.config.getIn(['server', 'base_uri'])
-        }
-        : null,
-      log: this.makeLogger('plugin-' + creds.type)
+      log: this.makeLogger('plugin-' + creds.type),
+      connector: this.config.getIn(['server', 'base_uri'])
     })
   })
   return ledgers

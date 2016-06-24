@@ -43,25 +43,29 @@ describe('Subscriptions', function () {
     nock('http://usd-ledger.example').get('/accounts/mark')
       .reply(200, {
         ledger: 'http://usd-ledger.example',
-        name: 'mark'
+        name: 'mark',
+        connector: 'http://localhost'
       })
 
     nock('http://eur-ledger.example').get('/accounts/mark')
       .reply(200, {
         ledger: 'http://eur-ledger.example',
-        name: 'mark'
+        name: 'mark',
+        connector: 'http://localhost'
       })
 
     nock('http://cad-ledger.example:1000').get('/accounts/mark')
       .reply(200, {
         ledger: 'http://cad-ledger.example:1000',
-        name: 'mark'
+        name: 'mark',
+        connector: 'http://localhost'
       })
 
     nock('http://cny-ledger.example').get('/accounts/mark')
       .reply(200, {
         ledger: 'http://cny-ledger.example',
-        name: 'mark'
+        name: 'mark',
+        connector: 'http://localhost'
       })
 
     this.setTimeout = setTimeout

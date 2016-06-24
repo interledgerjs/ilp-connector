@@ -73,22 +73,6 @@ function parseCredentials () {
   })
 }
 
-function parseAdminEnv () {
-  const adminUser = Config.getEnv(envPrefix, 'ADMIN_USER') || 'admin'
-  const adminPass = Config.getEnv(envPrefix, 'ADMIN_PASS')
-  const adminKey = Config.getEnv(envPrefix, 'ADMIN_KEY')
-  const adminCert = Config.getEnv(envPrefix, 'ADMIN_CERT')
-  const adminCa = Config.getEnv(envPrefix, 'ADMIN_CA')
-
-  return {
-    username: adminUser,
-    password: adminPass,
-    key: adminKey,
-    cert: adminCert,
-    ca: adminCa
-  }
-}
-
 function parseLedgers () {
   // List of ledgers this connector has accounts on (used to auto-generate pairs)
   // e.g. ["USD@http://usd-ledger.example","EUR@http://eur-ledger.example/some/path"]
@@ -140,22 +124,6 @@ function validateCredentialsEnv () {
   })
 }
 
-function validateAdminEnv () {
-  const admin = parseAdminEnv()
-
-  if ((admin.cert === undefined) !== (admin.key === undefined)) {
-    throw new Error('Missing ADMIN_CERT or ADMIN_KEY')
-  }
-
-  try {
-    admin.cert && fs.accessSync(admin.cert, fs.R_OK)
-    admin.key && fs.accessSync(admin.key, fs.R_OK)
-    admin.ca && fs.accessSync(admin.ca, fs.R_OK)
-  } catch (e) {
-    throw new Error(`Failed to read admin credentials: ${e.message}`)
-  }
-}
-
 function validateNotificationEnv () {
   // Validate notification signing public keys
   const notifications = parseNotificationSignEnv()
@@ -180,7 +148,6 @@ function validateNotificationEnv () {
 function validateLocalEnvConfig () {
   validateNotificationEnv()
   validateCredentialsEnv()
-  validateAdminEnv()
 }
 
 function getLocalConfig () {
@@ -193,25 +160,9 @@ function getLocalConfig () {
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
 
   const features = {}
-  // Debug feature: Automatically fund connectors accounts using admin credentials
-  features.debugAutoFund = Config.castBool(Config.getEnv(envPrefix, 'DEBUG_AUTOFUND'))
   // Debug feature: Reply to websocket notifications
   features.debugReplyNotifications =
     Config.castBool(Config.getEnv(envPrefix, 'DEBUG_REPLY_NOTIFICATIONS'))
-
-  const adminEnv = parseAdminEnv()
-  const useAdmin = adminEnv.username && (adminEnv.password || adminEnv.key)
-  if (features.debugAutoFund && !useAdmin) {
-    throw new Error(`${envPrefix}_DEBUG_AUTOFUND requires either ${envPrefix}_ADMIN_PASS or ${envPrefix}_ADMIN_KEY`)
-  }
-
-  const admin = useAdmin ? _.omitBy({
-    username: adminEnv.username,
-    password: adminEnv.password,
-    key: adminEnv.key && fs.readFileSync(adminEnv.key),
-    cert: adminEnv.cert && fs.readFileSync(adminEnv.cert),
-    ca: adminEnv.ca && fs.readFileSync(adminEnv.ca)
-  }, _.isUndefined) : undefined
 
   // Configure which backend we will use to determine
   // rates and execute payments. The list of available backends
@@ -273,7 +224,6 @@ function getLocalConfig () {
     slippage,
     expiry,
     features,
-    admin,
     tradingPairs,
     server,
     backendUri,
