@@ -65,8 +65,8 @@ function listen (koaApp, config, ledgers) {
       log('app').error(error.message)
       process.exit(1)
     }
-    yield routeBroadcaster.start()
     yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgers, config)
+    yield routeBroadcaster.start()
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)
   })
