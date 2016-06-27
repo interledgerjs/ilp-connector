@@ -26,10 +26,6 @@ describe('ConnectorConfig', function () {
       process.env = _.cloneDeep(env)
     })
 
-    afterEach(function () {
-      process.env = _.cloneDeep(env)
-    })
-
     it('should auto-generate pairs', function * () {
       const config = loadConnectorConfig()
       expect(config.get('tradingPairs')).to.deep.equal([[
@@ -42,6 +38,18 @@ describe('ConnectorConfig', function () {
         'EUR@https://eur-ledger.example',
         'AUD@https://aud-ledger.example'
       ]])
+    })
+
+    it('should allow slippage and spread to be set to 0', function * () {
+      process.env.UNIT_TEST_OVERRIDE = 'true'
+      process.env.CONNECTOR_FX_SPREAD = '0'
+      process.env.CONNECTOR_SLIPPAGE = '0'
+
+      const config = loadConnectorConfig()
+
+      expect(config.get('fxSpread')).to.deep.equal(0)
+
+      expect(config.get('slippage')).to.deep.equal(0)
     })
 
     describe('ledger credentials', () => {
