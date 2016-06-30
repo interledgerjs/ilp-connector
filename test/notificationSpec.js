@@ -118,6 +118,8 @@ describe('Notifications', function () {
         _.cloneDeep(require('./data/paymentManyToOne.json'))
       this.paymentSameExecutionCondition =
         _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
+      this.paymentOptimistic =
+        _.cloneDeep(require('./data/paymentOptimistic.json'))
       this.transferExecutedReceipt = require('./data/transferExecutedFulfillment.json')
       this.notificationNoConditionFulfillment =
         _.cloneDeep(require('./data/notificationNoConditionFulfillment.json'))
@@ -781,6 +783,36 @@ describe('Notifications', function () {
 
         nockRegTarget1.done()
         nockRegTarget2.done()
+      })
+    })
+
+    describe('optimistic mode', function () {
+      it('prepares the next transfer', function * () {
+        const payment = this.formatId(this.paymentOptimistic, '/payments/')
+        nock(payment.destination_transfers[0].id)
+          .put('')
+          .reply(201, _.assign({}, payment.destination_transfers[0], {
+            state: 'prepared'
+          }))
+
+        yield this.request()
+          .post('/notifications')
+          .send({
+            id: this.notificationSourceTransferPrepared.id,
+            event: 'transfer.update',
+            resource: _.merge({}, payment.source_transfers[0], {
+              credits: [{
+                memo: { ilp_header: {
+                  ledger: payment.destination_transfers[0].ledger,
+                  amount: payment.destination_transfers[0].credits[0].amount,
+                  account: payment.destination_transfers[0].credits[0].account
+                } }
+              }]
+            })
+          })
+          .expect(200)
+          .expect({result: 'processed'})
+          .end()
       })
     })
   })

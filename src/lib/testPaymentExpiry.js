@@ -82,6 +82,9 @@ TransferTester.prototype.validateNotExpired = function () {
 // to hold money for too long
 TransferTester.prototype.validateMaxHoldTime = function () {
   const expiresAt = this.getExpiry(this.destinationTransfer)
+  // A missing expiry is nothing to worry about in optimistic mode.
+  if (!expiresAt && !this.destinationTransfer.executionCondition) return
+
   if (expiresAt) {
     this.validateExpiryHoldTime(expiresAt)
   } else {
