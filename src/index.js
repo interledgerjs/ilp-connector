@@ -1,15 +1,12 @@
 'use strict'
-const ledgers = require('./services/ledgers')
-const config = require('./services/config')
 const createApp = require('./app')
 
-const connector = createApp(config, ledgers)
+const connector = createApp()
 
 module.exports = {
   app: connector.koaApp,
   createApp: createApp,
   listen: connector.listen,
-  addLedger: ledgers.addLedger.bind(ledgers),
   _test: {
     BalanceCache: require('./lib/balance-cache'),
     balanceCache: require('./services/balance-cache'),

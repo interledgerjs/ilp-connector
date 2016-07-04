@@ -19,10 +19,8 @@ const logger = require('koa-mag')
 const Passport = require('koa-passport').KoaPassport
 const cors = require('koa-cors')
 const log = require('./common/log')
-const backend = require('./services/backend')
-const routeBroadcaster = require('./services/route-broadcaster')
 
-function listen (koaApp, config, ledgers) {
+function listen (koaApp, config, ledgers, backend, routeBuilder, routeBroadcaster) {
   if (config.getIn(['server', 'secure'])) {
     const spdy = require('spdy')
     const tls = config.get('tls')
@@ -65,18 +63,39 @@ function listen (koaApp, config, ledgers) {
       log('app').error(error.message)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgers, config)
+    yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgers, config, routeBuilder)
     yield routeBroadcaster.start()
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)
   })
 }
 
-function createApp (config, ledgers) {
+function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster) {
   const koaApp = koa()
+
+  if (!config) {
+    config = require('./services/config')
+  }
+
+  if (!ledgers) {
+    ledgers = require('./services/ledgers')
+  }
+
+  if (!backend) {
+    backend = require('./services/backend')
+  }
+
+  if (!routeBuilder) {
+    routeBuilder = require('./services/route-builder')
+  }
+
+  if (!routeBroadcaster) {
+    routeBroadcaster = require('./services/route-broadcaster')
+  }
 
   koaApp.context.config = config
   koaApp.context.ledgers = ledgers
+  koaApp.context.routeBuilder = routeBuilder
   koaApp.context.backend = backend
 
   // Configure passport
@@ -107,7 +126,7 @@ function createApp (config, ledgers) {
 
   return {
     koaApp: koaApp,
-    listen: _.partial(listen, koaApp, config, ledgers),
+    listen: _.partial(listen, koaApp, config, ledgers, backend, routeBuilder, routeBroadcaster),
     callback: koaApp.callback.bind(koaApp)
   }
 }

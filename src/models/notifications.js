@@ -34,7 +34,7 @@ function * processNotification (notification, ledgers, config) {
   if (notification.event === 'transfer.update') {
     const ledger = ledgers.getLedger(notification.resource.ledger)
     if (!ledger) {
-      throw new AssetsNotTradedError('Unexpected fulfillment from unknown source ledger: ' +
+      throw new AssetsNotTradedError('Unexpected notification from unknown source ledger: ' +
         notification.resource.ledger)
     }
     yield ledger._handleNotification(

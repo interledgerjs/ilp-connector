@@ -1,12 +1,11 @@
 'use strict'
 
-const ledgers = require('../services/ledgers')
 const log = require('../common').log('executeSourceTransfer')
 const validator = require('./validate')
 
 // Add the execution_condition_fulfillment to the source transfer
 // and submit it to the source ledger
-function * executeSourceTransfer (destinationTransfer, fulfillment) {
+function * executeSourceTransfer (destinationTransfer, fulfillment, ledgers) {
   if (!fulfillment) {
     log.error('Cannot execute source transfers, no condition fulfillment found. Destination transfer: ' + JSON.stringify(destinationTransfer))
     return

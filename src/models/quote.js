@@ -5,8 +5,7 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const ExternalError = require('../errors/external-error')
-const balanceCache = require('../services/balance-cache.js')
-const routeBuilder = require('../services/route-builder')
+const balanceCache = require('../services/balance-cache')
 const DEFAULT_DESTINATION_EXPIRY = 5 // seconds
 
 function * makeQuoteQuery (params) {
@@ -97,7 +96,7 @@ function * validateBalance (ledger, amount) {
  * @param {Object} config
  * @returns {Quote}
  */
-function * getQuote (params, config) {
+function * getQuote (params, config, routeBuilder) {
   const query = yield makeQuoteQuery(params)
   if (query.sourceLedger === query.destinationLedger) {
     throw new AssetsNotTradedError('source_ledger must be different from destination_ledger')
@@ -110,7 +109,7 @@ function * getQuote (params, config) {
   const expiryDurations = getQuoteExpiryDurations(
     params.source_expiry_duration,
     params.destination_expiry_duration,
-    nextHop.minMessageWindow, config)
+    config.expiry.minMessageWindow, config)
   quote.source_expiry_duration = String(expiryDurations.sourceExpiryDuration)
   quote.destination_expiry_duration = String(expiryDurations.destinationExpiryDuration)
 

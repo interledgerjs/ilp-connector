@@ -20,10 +20,6 @@ describe('Subscriptions', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    process.env.CONNECTOR_LEDGERS = JSON.stringify([
-      'EUR@http://eur-ledger.example',
-      'USD@http://example.com'
-    ])
     appHelper.create(this)
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
@@ -40,6 +36,34 @@ describe('Subscriptions', function () {
         scale: 4
       })
 
+    nock('http://usd-ledger.example').get('/accounts/mark')
+      .reply(200, {
+        ledger: 'http://usd-ledger.example',
+        name: 'mark',
+        connector: 'http://localhost'
+      })
+
+    nock('http://eur-ledger.example').get('/accounts/mark')
+      .reply(200, {
+        ledger: 'http://eur-ledger.example',
+        name: 'mark',
+        connector: 'http://localhost'
+      })
+
+    nock('http://cad-ledger.example:1000').get('/accounts/mark')
+      .reply(200, {
+        ledger: 'http://cad-ledger.example:1000',
+        name: 'mark',
+        connector: 'http://localhost'
+      })
+
+    nock('http://cny-ledger.example').get('/accounts/mark')
+      .reply(200, {
+        ledger: 'http://cny-ledger.example',
+        name: 'mark',
+        connector: 'http://localhost'
+      })
+
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -49,7 +73,7 @@ describe('Subscriptions', function () {
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
     yield subscriptions.subscribePairs(require('./data/tradingPairs.json'),
-      this.ledgers, this.config)
+      this.ledgers, this.config, this.routeBuilder)
 
     this.paymentSameExecutionCondition =
       _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))

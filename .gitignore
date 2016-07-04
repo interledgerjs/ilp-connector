@@ -7,3 +7,4 @@ node_modules/
 /integration-test
 *v8.log
 /web/
+/.tags*

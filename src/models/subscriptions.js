@@ -5,11 +5,12 @@ const co = require('co')
 const log = require('../common').log('subscriptions')
 const payments = require('../models/payments')
 
-function * setupListeners (ledgersService, config) {
+function * setupListeners (ledgersService, config, routeBuilder) {
   for (let ledger of _.values(ledgersService.getLedgers())) {
-    ledger.on('incoming', (transfer) => {
+    ledger.on('receive', (transfer) => {
       return co(function * () {
-        yield payments.updateIncomingTransfer(transfer, ledgersService, config)
+        const transferWithLedger = Object.assign({}, transfer, { ledger: ledger.id })
+        yield payments.updateIncomingTransfer(transferWithLedger, ledgersService, config, routeBuilder)
       }).catch((err) => {
         log.warn('error processing notification: ' + err)
         throw err
@@ -17,15 +18,8 @@ function * setupListeners (ledgersService, config) {
     })
     ledger.on('fulfill_execution_condition', (transfer, fulfillment) => {
       return co(function * () {
-        yield payments.processExecutionFulfillment(transfer, fulfillment, ledgersService, config)
-      }).catch((err) => {
-        log.warn('error processing notification: ' + err)
-        throw err
-      })
-    })
-    ledger.on('fulfill_cancellation_condition', (transfer, fulfillment) => {
-      return co(function * () {
-        yield payments.processCancellationFulfillment(transfer, fulfillment, ledgersService, config)
+        const transferWithLedger = Object.assign({}, transfer, { ledger: ledger.id })
+        yield payments.processExecutionFulfillment(transferWithLedger, fulfillment, ledgersService, config)
       }).catch((err) => {
         log.warn('error processing notification: ' + err)
         throw err
@@ -34,8 +28,8 @@ function * setupListeners (ledgersService, config) {
   }
 }
 
-function * subscribePairs (pairs, ledgersService, config) {
-  yield this.setupListeners(ledgersService, config)
+function * subscribePairs (pairs, ledgersService, config, routeBuilder) {
+  yield this.setupListeners(ledgersService, config, routeBuilder)
 
   let ledgers = _(pairs)
     .flatten()

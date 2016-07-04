@@ -5,6 +5,7 @@ const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
 const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
+const log = require('mag')('route-builder')
 
 class RouteBuilder {
   /**
@@ -17,6 +18,10 @@ class RouteBuilder {
    * @param {Object} config.ledgerCredentials
    */
   constructor (routingTables, infoCache, ledgers, config) {
+    if (!ledgers) {
+      throw new TypeError('Must be given a valid ledgers instance')
+    }
+
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.infoCache = infoCache
@@ -34,6 +39,10 @@ class RouteBuilder {
    * @returns {Quote}
    */
   * getQuote (query) {
+    log.info('creating quote sourceLedger=%s sourceAmount=%s ' +
+      'destinationLedger=%s destinationAmount=%s',
+      query.sourceLedger, query.sourceAmount,
+      query.destinationLedger, query.destinationAmount)
     const info = {}
     const _nextHop = this._findNextHop(query)
     if (!_nextHop) throwAssetsNotTradedError()
@@ -81,6 +90,10 @@ class RouteBuilder {
    * @returns {Transfer} destinationTransfer
    */
   * getDestinationTransfer (sourceTransfer) {
+    log.info('constructing destination transfer ' +
+      'sourceLedger=%s sourceAmount=%s ilpHeader=%s',
+      sourceTransfer.ledger, sourceTransfer.amount,
+      sourceTransfer.data && JSON.stringify(sourceTransfer.data.ilp_header))
     const ilpHeader = sourceTransfer.data && sourceTransfer.data.ilp_header
     if (!ilpHeader) {
       throw new Error('source transfer is missing ilp_header in memo')
@@ -131,7 +144,7 @@ class RouteBuilder {
       account: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
       data: nextHop.isFinal ? ilpHeader.data : { ilp_header: ilpHeader },
-      noteToSelf: noteToSelf,
+      noteToSelf,
       executionCondition: sourceTransfer.executionCondition,
       cancellationCondition: sourceTransfer.cancellationCondition,
       expiresAt: this._getDestinationExpiry(sourceTransfer.expiresAt),
@@ -180,12 +193,6 @@ class RouteBuilder {
       upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP)
     validatePrecision(roundedAmount, precisionAndScale.precision, ledger, sourceOrDestination)
     return roundedAmount
-  }
-
-  _isTraderFunds (funds) {
-    return _.some(this.ledgerCredentials, (credentials) => {
-      return credentials.account_uri === funds.account
-    })
   }
 }
 

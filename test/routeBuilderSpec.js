@@ -3,6 +3,7 @@
 const assert = require('assert')
 const RoutingTables = require('five-bells-routing').RoutingTables
 const RouteBuilder = require('five-bells-connector')._test.RouteBuilder
+const appHelper = require('./helpers/app')
 
 const baseURI = 'http://mark.example'
 const ledgerA = 'http://usd-ledger.example'
@@ -21,6 +22,8 @@ const maryB = 'http://eur-ledger.example/accounts/mary'
 
 describe('RouteBuilder', function () {
   beforeEach(function * () {
+    appHelper.create(this)
+
     this.infoCache = {
       get: function * (ledger) {
         return {precision: 10, scale: 2}

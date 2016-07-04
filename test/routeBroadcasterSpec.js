@@ -4,6 +4,7 @@ const assert = require('assert')
 const routing = require('five-bells-routing')
 const RouteBroadcaster = require('five-bells-connector')._test.RouteBroadcaster
 const nock = require('nock')
+const appHelper = require('./helpers/app')
 
 const ledgerA = 'http://cad-ledger.example:1000'
 const ledgerB = 'http://usd-ledger.example'
@@ -13,6 +14,8 @@ const baseURI = 'http://connector.example'
 
 describe('RouteBroadcaster', function () {
   beforeEach(function * () {
+    appHelper.create(this)
+
     this.tables = new routing.RoutingTables(baseURI, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,

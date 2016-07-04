@@ -1,7 +1,5 @@
 'use strict'
 
-const FiveBellsLedger = require('../ledgers/five-bells-ledger')
-
 /**
  * Cache ledger meta-information.
  */
@@ -17,8 +15,10 @@ class InfoCache {
       // Default to Five Bells Ledger
       // TODO: This hack is necessary to fetch the precision information for
       // non-adjacent ledgers. How can we handle this case properly?
+      const FiveBellsLedger = require('ilp-plugin-bells')
       plugin = new FiveBellsLedger({
-        ledger_id: ledger
+        id: ledger,
+        auth: {}
       })
     }
     return yield plugin.getInfo()

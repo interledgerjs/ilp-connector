@@ -20,6 +20,10 @@ class RouteBroadcaster {
    * @param {Number} config.routeBroadcastInterval
    */
   constructor (routingTables, backend, ledgers, infoCache, config) {
+    if (!ledgers) {
+      throw new TypeError('Must be given a valid ledgers instance')
+    }
+
     this.routeCleanupInterval = config.routeCleanupInterval
     this.routeBroadcastInterval = config.routeBroadcastInterval
     this.baseURI = routingTables.baseURI
