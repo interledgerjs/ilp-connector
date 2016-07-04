@@ -11,7 +11,7 @@ describe('BalanceCache', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    this.cache = new BalanceCache(this.ledgers)
+    this.cache = new BalanceCache(require('../src/services/ledgers'))
 
     nock('http://usd-ledger.example').get('/accounts/mark')
       .reply(200, { balance: '123.456' })

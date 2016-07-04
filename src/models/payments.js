@@ -3,7 +3,6 @@
 const testPaymentExpiry = require('../lib/testPaymentExpiry')
 const log = require('../common').log('payments')
 const executeSourceTransfer = require('../lib/executeSourceTransfer')
-const routeBuilder = require('../services/route-builder')
 const validator = require('../lib/validate')
 
 function validateIlpHeader (sourceTransfer) {
@@ -24,7 +23,7 @@ function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
   yield ledgers.getLedger(destinationTransfer.ledger).send(destinationTransfer)
 }
 
-function * updateIncomingTransfer (sourceTransfer, ledgers, config) {
+function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
   validateIlpHeader(sourceTransfer)
 
   const destinationTransfer = yield routeBuilder.getDestinationTransfer(sourceTransfer)
@@ -33,20 +32,17 @@ function * updateIncomingTransfer (sourceTransfer, ledgers, config) {
   yield settle(sourceTransfer, destinationTransfer, config, ledgers)
 }
 
-function * processExecutionFulfillment (transfer, fulfillment) {
+function * processExecutionFulfillment (transfer, fulfillment, ledgers) {
+  // If the destination transfer was executed, the connector should try to
+  // execute the source transfer to get paid.
   if (transfer.direction === 'outgoing') {
     log.debug('Got notification about executed destination transfer with ID ' +
       transfer.id + ' on ledger ' + transfer.ledger)
-    yield executeSourceTransfer(transfer, fulfillment)
+    yield executeSourceTransfer(transfer, fulfillment, ledgers)
   }
-}
-
-function * processCancellationFulfillment (transfer, fulfillment) {
-  // TODO: Forward source fulfillment to the destination
 }
 
 module.exports = {
   updateIncomingTransfer,
-  processExecutionFulfillment,
-  processCancellationFulfillment
+  processExecutionFulfillment
 }

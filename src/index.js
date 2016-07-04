@@ -1,9 +1,7 @@
 'use strict'
-const ledgers = require('./services/ledgers')
-const config = require('./services/config')
 const createApp = require('./app')
 
-const connector = createApp(config, ledgers)
+const connector = createApp()
 
 module.exports = {
   app: connector.koaApp,

@@ -5,12 +5,12 @@ const co = require('co')
 const log = require('../common').log('subscriptions')
 const payments = require('../models/payments')
 
-function * setupListeners (ledgersService, config) {
+function * setupListeners (ledgersService, config, routeBuilder) {
   for (let ledger of _.values(ledgersService.getLedgers())) {
     ledger.on('receive', (transfer) => {
       return co(function * () {
         const transferWithLedger = Object.assign({}, transfer, { ledger: ledger.id })
-        yield payments.updateIncomingTransfer(transferWithLedger, ledgersService, config)
+        yield payments.updateIncomingTransfer(transferWithLedger, ledgersService, config, routeBuilder)
       }).catch((err) => {
         log.warn('error processing notification: ' + err)
         throw err
@@ -25,21 +25,11 @@ function * setupListeners (ledgersService, config) {
         throw err
       })
     })
-    ledger.on('fulfill_cancellation_condition', (transfer, fulfillment) => {
-      return co(function * () {
-        const transferWithLedger = Object.assign({}, transfer, { ledger: ledger.id })
-        yield payments.processCancellationFulfillment(
-          transferWithLedger, fulfillment, ledgersService, config)
-      }).catch((err) => {
-        log.warn('error processing notification: ' + err)
-        throw err
-      })
-    })
   }
 }
 
-function * subscribePairs (pairs, ledgersService, config) {
-  yield this.setupListeners(ledgersService, config)
+function * subscribePairs (pairs, ledgersService, config, routeBuilder) {
+  yield this.setupListeners(ledgersService, config, routeBuilder)
 
   let ledgers = _(pairs)
     .flatten()

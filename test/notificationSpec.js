@@ -51,9 +51,10 @@ describe('Notifications', function () {
       }).persist()
     })
 
+    appHelper.create(this)
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
-    yield subscriptions.setupListeners(this.ledgers, this.config)
+    yield subscriptions.setupListeners(this.ledgers, this.config, this.routeBuilder)
   })
 
   afterEach(function * () {
@@ -74,7 +75,7 @@ describe('Notifications', function () {
       ])
       appHelper.create(this)
       yield this.backend.connect(ratesResponse)
-      yield subscriptions.setupListeners(this.ledgers, this.config)
+      yield subscriptions.setupListeners(this.ledgers, this.config, this.routeBuilder)
 
       this.notificationSourceTransferPrepared =
         _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
@@ -104,14 +105,6 @@ describe('Notifications', function () {
 
   describe('POST /notifications', function () {
     beforeEach(function * () {
-      process.env.CONNECTOR_LEDGERS = JSON.stringify([
-        'EUR@http://eur-ledger.example',
-        'USD@http://example.com'
-      ])
-      appHelper.create(this)
-      yield this.backend.connect(ratesResponse)
-      yield subscriptions.setupListeners(this.ledgers, this.config)
-
       this.paymentOneToOne =
         _.cloneDeep(require('./data/paymentOneToOne.json'))
       this.paymentManyToOne =
@@ -431,7 +424,7 @@ describe('Notifications', function () {
           result: 'ignored',
           ignoreReason: {
             id: 'AssetsNotTradedError',
-            message: 'Unexpected fulfillment from unknown source ledger: http://abc-ledger.example/ABC'
+            message: 'Unexpected notification from unknown source ledger: http://abc-ledger.example/ABC'
           }
         })
         .end()

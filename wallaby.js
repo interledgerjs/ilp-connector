@@ -24,7 +24,7 @@ module.exports = function (wallaby) {
       type: 'node',
       runner: 'node',
       params: {
-        env: 'NODE_ENV=unit UNIT_TEST_OVERRIDE=true'
+        env: 'NODE_ENV=unit'
       }
     },
 

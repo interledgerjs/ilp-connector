@@ -20,10 +20,6 @@ describe('Subscriptions', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    process.env.CONNECTOR_LEDGERS = JSON.stringify([
-      'EUR@http://eur-ledger.example',
-      'USD@http://example.com'
-    ])
     appHelper.create(this)
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
@@ -77,7 +73,7 @@ describe('Subscriptions', function () {
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
     yield subscriptions.subscribePairs(require('./data/tradingPairs.json'),
-      this.ledgers, this.config)
+      this.ledgers, this.config, this.routeBuilder)
 
     this.paymentSameExecutionCondition =
       _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))

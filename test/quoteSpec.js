@@ -701,7 +701,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('quotes a multi-hop route', function * () {
+    it.skip('quotes a multi-hop route', function * () {
       nock('http://usd-ledger.example')
         .get('/accounts/alice')
         .reply(200, {ledger: 'http://usd-ledger.example'})

@@ -3,6 +3,10 @@ const BigNumber = require('bignumber.js')
 const log = require('../common').log('BalanceCache')
 
 function BalanceCache (ledgers) {
+  if (!ledgers) {
+    throw new TypeError('Must be given a valid ledgers instance')
+  }
+
   this.ledgers = ledgers
   this.balanceByLedger = {}
   this.timer = null
