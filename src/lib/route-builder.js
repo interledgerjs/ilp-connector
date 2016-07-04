@@ -194,12 +194,6 @@ class RouteBuilder {
     validatePrecision(roundedAmount, precisionAndScale.precision, ledger, sourceOrDestination)
     return roundedAmount
   }
-
-  _isTraderFunds (funds) {
-    return _.some(this.ledgerCredentials, (credentials) => {
-      return credentials.account === funds.account
-    })
-  }
 }
 
 function throwAssetsNotTradedError () {
