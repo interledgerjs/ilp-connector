@@ -26,10 +26,6 @@ describe('ConnectorConfig', function () {
       process.env = _.cloneDeep(env)
     })
 
-    afterEach(function () {
-      process.env = _.cloneDeep(env)
-    })
-
     it('should auto-generate pairs', function * () {
       const config = loadConnectorConfig()
       expect(config.get('tradingPairs')).to.deep.equal([[
@@ -48,6 +44,19 @@ describe('ConnectorConfig', function () {
       it('should parse ledger credentials -- test env', function * () {
         const config = loadConnectorConfig()
         const ledgerCredentials = require('./data/ledgerCredentials.json')
+        expect(config.get('ledgerCredentials'))
+          .to.deep.equal(ledgerCredentials)
+      })
+
+      it('should parse ledger credentials -- deprecated format', function * () {
+        const ledgerCredentials = require('./data/ledgerCredentials.json')
+        const ledgerCredsModified = _.cloneDeep(ledgerCredentials)
+        const usdLedgerCreds = ledgerCredsModified['http://usd-ledger.example']
+        usdLedgerCreds.account_uri = usdLedgerCreds.account
+        delete usdLedgerCreds.account
+        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(ledgerCredsModified)
+
+        const config = loadConnectorConfig()
         expect(config.get('ledgerCredentials'))
           .to.deep.equal(ledgerCredentials)
       })
