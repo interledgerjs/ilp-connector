@@ -26,6 +26,7 @@ class ILPQuoter {
                                                                   p[1].slice(0, 3)])
     this.backendUri = opts.backendUri
     this.backendStatus = healthStatus.statusNotOk
+    this.infoCache = opts.infoCache
   }
 
   * putPair (uri) {
@@ -80,22 +81,32 @@ class ILPQuoter {
     const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs,
                                                params.source_ledger,
                                                params.destination_ledger)
-    let amount, type
+    let amount
+    let type
+    let ledger
     if (params.source_amount) {
       amount = params.source_amount
       type = 'source'
-    }
-    if (params.destination_amount) {
+      ledger = params.destination_ledger
+    } else if (params.destination_amount) {
       amount = params.destination_amount
       type = 'destination'
+      ledger = params.source_ledger
     }
+
     if (!amount) {
       throw new NoAmountSpecifiedError('Amount was not specified correctly')
     }
+
     const uri = this.backendUri + '/quote/' +
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
                 '/' + type
-    const result = yield request({ uri, json: true })
+
+    const ledgerInfo = yield this.infoCache.get(ledger)
+    const precision = ledgerInfo.precision
+    const scale = ledgerInfo.scale
+
+    const result = yield request({uri, json: true, qs: {precision, scale}})
     if (result.statusCode >= 400) {
       log.error('Error getting quote: ', JSON.stringify(result.body))
       throw new ServerError('Unable to get quote from backend.')

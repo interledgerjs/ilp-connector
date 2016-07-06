@@ -30,8 +30,8 @@ class InfoCache {
       return cached
     }
 
-    const precision = yield this.getInfoUncached(ledger)
-    this.cache[ledger] = precision
+    const info = yield this.getInfoUncached(ledger)
+    this.cache[ledger] = info
     return this.cache[ledger]
   }
 
