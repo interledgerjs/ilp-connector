@@ -41,7 +41,10 @@ Multiledger.prototype.getType = function (ledgerId) {
 }
 
 Multiledger.prototype.getStatus = function () {
-  return _.every(this.ledgers, (ledger) => ledger.isConnected())
+  return {
+    ledgersStatus: _.every(this.ledgers, (ledger) => ledger.isConnected())
+      ? healthStatus.statusOk : healthStatus.statusNotOk
+  }
 }
 
 module.exports = Multiledger
