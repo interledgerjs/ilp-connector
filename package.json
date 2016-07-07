@@ -58,6 +58,7 @@
     "passport-client-certificate": "^0.1.1",
     "reconnect-core": "^1.2.0",
     "spdy": "^3.2.3",
+    "url": "^0.11.0",
     "uuid4": "^1.0.0",
     "ws": "^1.1.0"
   },
