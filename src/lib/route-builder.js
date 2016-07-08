@@ -1,5 +1,6 @@
 'use strict'
 const _ = require('lodash')
+const url = require('url')
 const BigNumber = require('bignumber.js')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
@@ -127,6 +128,13 @@ class RouteBuilder {
       source_transfer_id: sourceTransfer.id
     }
 
+    let destinationTransferUUID
+
+    if (nextHop.isFinal && _.get(ilpHeader, 'data.id')) {
+      const destinationTransferID = url.parse(_.get(ilpHeader, 'data.id'))
+      destinationTransferUUID = destinationTransferID.path.split('/')[2]
+    }
+
     return _.omitBy({
       // The ID for the next transfer should be deterministically generated, so
       // that the connector doesn't send duplicate outgoing transfers if it
@@ -138,7 +146,7 @@ class RouteBuilder {
       // look unreliable. In order to assure this, the connector may use a
       // secret that seeds the deterministic ID generation.
       // TODO: Use a real secret
-      id: getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id),
+      id: destinationTransferUUID || getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id),
       ledger: nextHop.destinationLedger,
       direction: 'outgoing',
       account: nextHop.destinationCreditAccount,

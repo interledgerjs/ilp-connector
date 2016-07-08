@@ -196,6 +196,40 @@ describe('RouteBuilder', function () {
       })
     })
 
+    it('uses the destination transfer id provided in the ilp_header data section', function * () {
+      const destinationTransfer = yield this.builder.getDestinationTransfer({
+        id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
+        ledger: ledgerA,
+        direction: 'incoming',
+        account: aliceA,
+        amount: '100',
+        data: {
+          ilp_header: {
+            ledger: ledgerB,
+            account: bobB,
+            amount: '50',
+            data: {
+              id: 'https://localhost:4001/transfers/4a2790d4-8243-4b53-92a9-fe55b1954d08'
+            }
+          }
+        }
+      })
+      assert.deepEqual(destinationTransfer, {
+        id: '4a2790d4-8243-4b53-92a9-fe55b1954d08',
+        ledger: ledgerB,
+        direction: 'outgoing',
+        account: bobB,
+        amount: '50',
+        data: {
+          id: 'https://localhost:4001/transfers/4a2790d4-8243-4b53-92a9-fe55b1954d08'
+        },
+        noteToSelf: {
+          source_transfer_id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
+          source_transfer_ledger: ledgerA
+        }
+      })
+    })
+
     describe('with a route from ledgerB → ledgerC', function () {
       beforeEach(function * () {
         this.tables.addRoute({
