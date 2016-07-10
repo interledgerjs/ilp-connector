@@ -43,6 +43,7 @@
     "five-bells-routing": "~3.1.0",
     "five-bells-shared": "^16.1.0",
     "ilp-plugin-bells": "^2.1.1",
+    "ilp-plugin-virtual": "^1.2.0",
     "koa": "^1.0.0",
     "koa-compress": "^1.0.6",
     "koa-cors": "0.0.16",
@@ -58,6 +59,7 @@
     "passport-client-certificate": "^0.1.1",
     "reconnect-core": "^1.2.0",
     "spdy": "^3.2.3",
+    "sqlite3": "^3.1.4",
     "uuid4": "^1.0.0",
     "ws": "^1.1.0"
   },

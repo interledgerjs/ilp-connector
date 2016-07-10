@@ -2,6 +2,7 @@
 
 const _ = require('lodash')
 const healthStatus = require('../common/health.js')
+const newSqliteStore = require('../lib/sqliteStore.js')
 
 function Multiledger (options) {
   this.config = options.config
@@ -22,12 +23,14 @@ Multiledger.prototype.getLedgers = function () {
 Multiledger.prototype.buildLedgers = function () {
   const ledgers = {}
   Object.keys(this.config.get('ledgerCredentials')).forEach((ledgerId) => {
-    const creds = this.config.getIn(['ledgerCredentials', ledgerId])
+    const creds = _.clone(this.config.getIn(['ledgerCredentials', ledgerId]))
+    const store = creds.store && newSqliteStore(creds.store)
 
     const LedgerPlugin = require('ilp-plugin-' + creds.type)
     ledgers[ledgerId] = new LedgerPlugin({
       id: ledgerId,
       auth: creds,
+      store: store,
       debugReplyNotifications: this.config.features.debugReplyNotifications,
       log: this.makeLogger('plugin-' + creds.type),
       connector: this.config.getIn(['server', 'base_uri'])
