@@ -146,5 +146,21 @@ describe('ILPQuoter', function () {
       yield yieldAndAssertException(this.backend.getQuote(quote), ServerError)
       expect(scope.isDone()).to.be.true
     })
+
+    it('should make sure additional information from quoter is passed in quote', function * () {
+      const quote = { destination_amount: 123.89,
+                      source_ledger: 'https://localhost:3001',
+                      destination_ledger: 'https://localhost:4000' }
+      const scope = nock(this.backendUri)
+                      .get('/quote/EUR/USD/123.89/destination').query({precision, scale})
+                                                               .reply(200, { source_amount: 99.77,
+                                                                             destination_amount: 123.89,
+                                                                             additional_info: { rate: 'somerate' } })
+      const quoteResponse = yield this.backend.getQuote(quote)
+      expect(quoteResponse.source_amount).to.be.equal(99.77)
+      expect(quoteResponse.destination_amount).to.be.equal(123.89)
+      expect(quoteResponse.additional_info).to.be.deep.equal({ rate: 'somerate' })
+      expect(scope.isDone()).to.be.true
+    })
   })
 })
