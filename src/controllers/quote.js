@@ -85,7 +85,7 @@ exports.get = function * () {
   if (!this.query.destination_account && !this.query.destination_ledger) {
     throw new InvalidUriParameterError('Missing required parameter: destination_ledger or destination_account')
   }
-  this.body = yield model.getQuote(this.query, this.config, this.routeBuilder)
+  this.body = yield model.getQuote(this.query, this.config, this.routeBuilder, this.balanceCache)
 }
 
 function validateAmounts (sourceAmount, destinationAmount) {

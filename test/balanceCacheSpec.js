@@ -1,5 +1,9 @@
 'use strict'
 
+const mockPlugin = require('./mocks/mockPlugin')
+const mock = require('mock-require')
+mock('ilp-plugin-mock', mockPlugin)
+
 const BigNumber = require('bignumber.js')
 const nock = require('nock')
 const expect = require('chai').expect
@@ -12,9 +16,6 @@ describe('BalanceCache', function () {
 
   beforeEach(function * () {
     this.cache = new BalanceCache(require('../src/services/ledgers'))
-
-    nock('http://usd-ledger.example').get('/accounts/mark')
-      .reply(200, { balance: '123.456' })
   })
 
   afterEach(function * () { nock.cleanAll() })

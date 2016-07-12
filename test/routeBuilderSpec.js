@@ -30,6 +30,9 @@ describe('RouteBuilder', function () {
       }
     }
 
+    this.ledgers.getLedger(ledgerA).getAccount = function () { return markA }
+    this.ledgers.getLedger(ledgerB).getAccount = function () { return markB }
+
     this.tables = new RoutingTables(baseURI, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,

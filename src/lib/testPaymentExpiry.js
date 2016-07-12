@@ -60,8 +60,7 @@ TransferTester.prototype.isAtomic = function () {
 TransferTester.prototype.validateNotExpired = function () {
   {
     const expiresAt = this.getExpiry(this.sourceTransfer)
-    if (expiresAt && this.sourceTransfer.state !== 'executed' &&
-      moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
+    if (expiresAt && moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
       throw new UnacceptableExpiryError('Transfer has already expired')
     }
   }
