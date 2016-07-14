@@ -11,21 +11,21 @@ class RouteBuilder {
   /**
    * @param {RoutingTables} routingTables
    * @param {InfoCache} infoCache
-   * @param {Multiledger} ledgers
+   * @param {ilp-client.Core} core
    * @param {Object} config
    * @param {Integer} config.minMessageWindow seconds
    * @param {Number} config.slippage
    * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, infoCache, ledgers, config) {
-    if (!ledgers) {
-      throw new TypeError('Must be given a valid ledgers instance')
+  constructor (routingTables, infoCache, core, config) {
+    if (!core) {
+      throw new TypeError('Must be given a valid Core instance')
     }
 
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.infoCache = infoCache
-    this.ledgers = ledgers
+    this.core = core
     this.minMessageWindow = config.minMessageWindow
     this.slippage = config.slippage
   }
@@ -36,13 +36,16 @@ class RouteBuilder {
    * @param {String} query.sourceAmount
    * @param {String} query.destinationLedger
    * @param {String} query.destinationAmount
+   * @param {Object} query.destinationPrecisionAndScale optional
    * @returns {Quote}
    */
   * getQuote (query) {
     log.info('creating quote sourceLedger=%s sourceAmount=%s ' +
-      'destinationLedger=%s destinationAmount=%s',
+      'destinationLedger=%s destinationAmount=%s ' +
+      'destinationPrecisionAndScale=%s',
       query.sourceLedger, query.sourceAmount,
-      query.destinationLedger, query.destinationAmount)
+      query.destinationLedger, query.destinationAmount,
+      query.destinationPrecisionAndScale)
     const info = {}
     const _nextHop = this._findNextHop(query)
     if (!_nextHop) throwAssetsNotTradedError()
@@ -58,11 +61,12 @@ class RouteBuilder {
       info.slippage = (amount - amountWithSlippage).toString()
     }
     // Round in our favor to ensure that the adjustments don't fall off.
-    const nextHop = yield this._roundHop(_nextHop, 'up', 'down')
+    const nextHop = yield this._roundHop(_nextHop, 'up', 'down',
+      query.destinationPrecisionAndScale)
 
     const quote = {
       source_connector_account:
-        this.ledgers.getLedger(nextHop.sourceLedger).getAccount(),
+        this.core.resolvePlugin(nextHop.sourceLedger).getAccount(),
       source_ledger: nextHop.sourceLedger,
       source_amount: nextHop.sourceAmount,
       destination_ledger: nextHop.finalLedger,
@@ -170,10 +174,13 @@ class RouteBuilder {
   /**
    * Round the hop's amounts according to the corresponding ledgers' scales/precisions.
    */
-  * _roundHop (hop, sourceUpDown, destinationUpDown) {
+  * _roundHop (hop, sourceUpDown, destinationUpDown, destinationPrecisionAndScale) {
     hop.sourceAmount = yield this._roundAmount('source', sourceUpDown, hop.sourceLedger, hop.sourceAmount)
-    hop.finalAmount = yield this._roundAmount('destination', destinationUpDown, hop.finalLedger, hop.finalAmount)
-    hop.destinationAmount = yield this._roundAmount('destination', destinationUpDown, hop.destinationLedger, hop.destinationAmount)
+    hop.destinationAmount = yield this._roundAmount('destination', destinationUpDown, hop.destinationLedger, hop.destinationAmount, destinationPrecisionAndScale)
+    // Only round the final amount if we know the precision/scale.
+    if (hop.isFinal || destinationPrecisionAndScale) {
+      hop.finalAmount = yield this._roundAmount('destination', destinationUpDown, hop.finalLedger, hop.finalAmount, destinationPrecisionAndScale)
+    }
     return hop
   }
 
@@ -185,10 +192,11 @@ class RouteBuilder {
    * @param {String} upOrDown "up" or "down"
    * @param {URI} ledger
    * @param {String} amount
+   * @param {Object} _precisionAndScale optional
    * @returns {String} rounded amount
    */
-  * _roundAmount (sourceOrDestination, upOrDown, ledger, amount) {
-    const precisionAndScale = yield this.infoCache.get(ledger)
+  * _roundAmount (sourceOrDestination, upOrDown, ledger, amount, _precisionAndScale) {
+    const precisionAndScale = _precisionAndScale || (yield this.infoCache.get(ledger))
     const roundedAmount = new BigNumber(amount).toFixed(precisionAndScale.scale,
       upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP)
     validatePrecision(roundedAmount, precisionAndScale.precision, ledger, sourceOrDestination)

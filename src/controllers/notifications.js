@@ -81,7 +81,7 @@ exports.post = function * postNotification () {
   }
 
   try {
-    yield model.processNotification(notification, this.ledgers, this.config)
+    yield model.processNotification(notification, this.core, this.config)
   } catch (e) {
     if (
       (e.name === 'AssetsNotTradedError') ||

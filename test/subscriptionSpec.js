@@ -72,7 +72,7 @@ describe('Subscriptions', function () {
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
     yield subscriptions.subscribePairs(require('./data/tradingPairs.json'),
-      this.ledgers, this.config, this.routeBuilder)
+      this.core, this.config, this.routeBuilder)
 
     this.paymentSameExecutionCondition =
       _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
@@ -93,14 +93,14 @@ describe('Subscriptions', function () {
       '/payments/')
 
     const sendSpy = sinon.spy(
-      this.ledgers.getLedger(payment.destination_transfers[0].ledger),
+      this.core.resolvePlugin(payment.destination_transfers[0].ledger),
       'send')
 
     const fulfillSpy = sinon.spy(
-      this.ledgers.getLedger(payment.source_transfers[0].ledger),
+      this.core.resolvePlugin(payment.source_transfers[0].ledger),
       'fulfillCondition')
 
-    yield this.ledgers.getLedger(payment.source_transfers[0].ledger)
+    yield this.core.resolvePlugin(payment.source_transfers[0].ledger)
       .emitAsync('receive', {
         id: payment.source_transfers[0].id,
         direction: 'incoming',
@@ -121,7 +121,7 @@ describe('Subscriptions', function () {
 
     const sourceId = payment.source_transfers[0].id
       .substring(payment.source_transfers[0].id.length - 36)
-    yield this.ledgers.getLedger(payment.source_transfers[0].ledger)
+    yield this.core.resolvePlugin(payment.source_transfers[0].ledger)
       .emitAsync('fulfill_execution_condition', {
         id: payment.destination_transfers[0].id,
         direction: 'outgoing',

@@ -30,15 +30,15 @@ function verifySignature (notification, config) {
   return jsonSigning.verify(notification, pubKey)
 }
 
-function * processNotification (notification, ledgers, config) {
+function * processNotification (notification, core, config) {
   if (notification.event === 'transfer.update') {
-    const ledger = ledgers.getLedger(notification.resource.ledger)
-    if (!ledger) {
+    const plugin = core.resolvePlugin(notification.resource.ledger)
+    if (!plugin) {
       throw new AssetsNotTradedError('Unexpected notification from unknown source ledger: ' +
         notification.resource.ledger)
     }
-    yield ledger._handleNotification(
-      notification.resource, notification.related_resources, ledgers, config)
+    yield plugin._handleNotification(
+      notification.resource, notification.related_resources, core, config)
   }
 }
 

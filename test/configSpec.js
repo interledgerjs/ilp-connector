@@ -51,7 +51,7 @@ describe('ConnectorConfig', function () {
       it('should parse ledger credentials -- deprecated format', function * () {
         const ledgerCredentials = require('./data/ledgerCredentials.json')
         const ledgerCredsModified = _.cloneDeep(ledgerCredentials)
-        const usdLedgerCreds = ledgerCredsModified['http://usd-ledger.example']
+        const usdLedgerCreds = ledgerCredsModified['usd-ledger']
         usdLedgerCreds.account_uri = usdLedgerCreds.account
         delete usdLedgerCreds.account
         process.env.CONNECTOR_CREDENTIALS = JSON.stringify(ledgerCredsModified)
@@ -63,12 +63,12 @@ describe('ConnectorConfig', function () {
 
       it('should parse ledger credentials', function * () {
         const ledgerCredentialsEnv = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             password: 'mark'
           },
-          'http://usd-ledger.example': {
+          'usd-ledger': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
@@ -82,13 +82,13 @@ describe('ConnectorConfig', function () {
         const config = loadConnectorConfig()
 
         const ledgerCredentials = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger': {
             type: 'bells',
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             password: 'mark'
           },
-          'http://usd-ledger.example': {
+          'usd-ledger': {
             type: 'bells',
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
@@ -168,7 +168,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing key file', function * () {
         const missingKeyFile = {
-          'http://usd-ledger.example': {
+          'usd-ledger': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
@@ -184,7 +184,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing certificate file', function * () {
         const missingCertFile = {
-          'http://usd-ledger.example': {
+          'usd-ledger': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'foo',
@@ -200,7 +200,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing ca certificate file', function * () {
         const missingCertFile = {
-          'http://usd-ledger.example': {
+          'usd-ledger': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',

@@ -8,19 +8,19 @@ const logHelper = require('./helpers/log')
 const logger = require('five-bells-connector')._test.logger
 
 const baseURI = 'http://mark.example'
-const ledgerA = 'http://usd-ledger.example'
-const ledgerB = 'http://eur-ledger.example'
-const ledgerC = 'http://cny-ledger.example'
+const ledgerA = 'usd-ledger'
+const ledgerB = 'eur-ledger'
+const ledgerC = 'cny-ledger'
 
 // sending/receiving users
-const aliceA = 'http://usd-ledger.example/accounts/alice'
-const bobB = 'http://eur-ledger.example/accounts/bob'
-const carlC = 'http://cny-ledger.example/accounts/carl'
+const aliceA = 'usd-ledger.alice'
+const bobB = 'eur-ledger.bob'
+const carlC = 'cny-ledger.carl'
 
 // connector users
-const markA = 'http://usd-ledger.example/accounts/mark'
-const markB = 'http://eur-ledger.example/accounts/mark'
-const maryB = 'http://eur-ledger.example/accounts/mary'
+const markA = 'usd-ledger.mark'
+const markB = 'eur-ledger.mark'
+const maryB = 'eur-ledger.mary'
 
 describe('RouteBuilder', function () {
   beforeEach(function * () {
@@ -33,8 +33,8 @@ describe('RouteBuilder', function () {
       }
     }
 
-    this.ledgers.getLedger(ledgerA).getAccount = function () { return markA }
-    this.ledgers.getLedger(ledgerB).getAccount = function () { return markB }
+    this.core.resolvePlugin(ledgerA).getAccount = function () { return markA }
+    this.core.resolvePlugin(ledgerB).getAccount = function () { return markB }
 
     this.tables = new RoutingTables(baseURI, [{
       source_ledger: ledgerA,
@@ -46,7 +46,7 @@ describe('RouteBuilder', function () {
       points: [ [0, 0], [200, 100] ],
       additional_info: { rate_info: 'someInfoAboutTheRate' }
     }])
-    this.builder = new RouteBuilder(this.tables, this.infoCache, this.ledgers, {
+    this.builder = new RouteBuilder(this.tables, this.infoCache, this.core, {
       minMessageWindow: 1,
       slippage: 0.01
     })
@@ -124,7 +124,7 @@ describe('RouteBuilder', function () {
           source_ledger: ledgerA,
           source_amount: '101.00',
           destination_ledger: ledgerC,
-          destination_amount: '25.00',
+          destination_amount: '25',
           _hop: quoteTransfer._hop,
           additional_info: { slippage: '-1' }
         })
@@ -137,7 +137,7 @@ describe('RouteBuilder', function () {
             sourceLedger: ledgerA,
             sourceAccount: aliceA,
             destinationLedger: ledgerD,
-            destinationAccount: ledgerD + '/accounts/doraD',
+            destinationAccount: ledgerD + '.doraD',
             destinationAmount: '25'
           })
         }.bind(this), error('This connector does not support the given asset pair'))
@@ -162,7 +162,7 @@ describe('RouteBuilder', function () {
         }
       })
       assert.deepEqual(destinationTransfer, {
-        id: 'c88dc516-ad0e-4a48-85ac-9dd08b3e72f3',
+        id: '22b983fe-0402-4178-8a8f-3bd201f85ed1',
         ledger: ledgerB,
         direction: 'outgoing',
         account: bobB,
@@ -197,7 +197,7 @@ describe('RouteBuilder', function () {
         }
       })
       assert.deepEqual(destinationTransfer, {
-        id: '13eff292-b343-452d-8fc4-4833741a6186',
+        id: '46e73d19-6973-471f-8bd3-900b52ee1e34',
         ledger: ledgerB,
         direction: 'outgoing',
         account: bobB,
