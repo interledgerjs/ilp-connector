@@ -29,7 +29,7 @@ describe('Quotes', function () {
     ]
 
     _.map(testLedgers, (ledgerUri) => {
-      this.ledgers.getLedger(ledgerUri).getBalance =
+      this.core.resolvePlugin(ledgerUri).getBalance =
         function * () { return '150000' }
     })
 
@@ -129,9 +129,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Decrease precision
-      this.ledgers.getLedger('http://eur-ledger.example')
+      this.core.resolvePlugin('http://eur-ledger.example')
         .getInfo = function * () { return {precision: 4, scale: 2} }
-      this.ledgers.getLedger('http://usd-ledger.example')
+      this.core.resolvePlugin('http://usd-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 4} }
 
       yield this.request()
@@ -150,9 +150,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Decrease precision
-      this.ledgers.getLedger('http://eur-ledger.example')
+      this.core.resolvePlugin('http://eur-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.ledgers.getLedger('http://usd-ledger.example')
+      this.core.resolvePlugin('http://usd-ledger.example')
         .getInfo = function * () { return {precision: 4, scale: 4} }
 
       yield this.request()
@@ -261,9 +261,9 @@ describe('Quotes', function () {
     it('should return a 502 when unable to get precision from source_ledger', function * () {
       this.infoCache.reset()
       nock.cleanAll()
-      this.ledgers.getLedger('http://eur-ledger.example')
+      this.core.resolvePlugin('http://eur-ledger.example')
         .getInfo = function * () { throw new ExternalError() }
-      this.ledgers.getLedger('http://usd-ledger.example')
+      this.core.resolvePlugin('http://usd-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 2} }
 
       yield this.request()
@@ -282,9 +282,9 @@ describe('Quotes', function () {
     it('should return a 502 when unable to get precision from destination_ledger', function * () {
       this.infoCache.reset()
       nock.cleanAll()
-      this.ledgers.getLedger('http://eur-ledger.example')
+      this.core.resolvePlugin('http://eur-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.ledgers.getLedger('http://usd-ledger.example')
+      this.core.resolvePlugin('http://usd-ledger.example')
         .getInfo = function * () { throw new ExternalError() }
 
       yield this.request()
@@ -303,11 +303,11 @@ describe('Quotes', function () {
     it('should return a 502 when unable to get balance from ledger', function * () {
       this.infoCache.reset()
       nock.cleanAll()
-      this.ledgers.getLedger('http://eur-ledger.example')
+      this.core.resolvePlugin('http://eur-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.ledgers.getLedger('http://usd-ledger.example')
+      this.core.resolvePlugin('http://usd-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.ledgers.getLedger('http://usd-ledger.example')
+      this.core.resolvePlugin('http://usd-ledger.example')
         .getBalance = function * () { throw new ExternalError() }
 
       yield this.request()
@@ -342,9 +342,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
-      this.ledgers.getLedger('http://eur-ledger.example')
+      this.core.resolvePlugin('http://eur-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.ledgers.getLedger('http://usd-ledger.example')
+      this.core.resolvePlugin('http://usd-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 4} }
 
       yield this.request()
@@ -367,9 +367,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
-      this.ledgers.getLedger('http://eur-ledger.example')
+      this.core.resolvePlugin('http://eur-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 4} }
-      this.ledgers.getLedger('http://usd-ledger.example')
+      this.core.resolvePlugin('http://usd-ledger.example')
         .getInfo = function * () { return {precision: 10, scale: 2} }
 
       yield this.request()

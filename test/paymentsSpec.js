@@ -61,13 +61,13 @@ describe('Payments', function () {
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
     yield subscriptions.subscribePairs(pairs,
-      this.ledgers, this.config, this.routeBuilder)
+      this.core, this.config, this.routeBuilder)
 
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
 
-    this.mockPlugin1 = this.ledgers.getLedger('http://test1.mock')
-    this.mockPlugin2 = this.ledgers.getLedger('http://test2.mock')
+    this.mockPlugin1 = this.core.resolvePlugin('http://test1.mock')
+    this.mockPlugin2 = this.core.resolvePlugin('http://test2.mock')
   })
 
   afterEach(function * () {
@@ -151,6 +151,7 @@ describe('Payments', function () {
   })
 
   it('authorizes the payment even if the connector is also the payee of the destination transfer', function * () {
+    this.mockPlugin2.FOO = 'bar'
     const sendSpy = sinon.spy(this.mockPlugin2, 'send')
     yield this.mockPlugin1.emitAsync('receive', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',

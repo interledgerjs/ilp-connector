@@ -18,7 +18,12 @@ const healthStatus = require('../common/health.js')
  */
 exports.getResource = function * health () {
   const backendStatus = yield this.backend.getStatus()
-  const ledgersStatus = this.ledgers.getStatus()
+  const ledgersStatus = {
+    ledgersStatus:
+      _.every(this.core.getClients(), (client) => {
+        return client.getPlugin().isConnected()
+      }) ? healthStatus.statusOk : healthStatus.statusNotOk
+  }
   const body = _.extend({}, backendStatus, ledgersStatus)
   body.status = (backendStatus.backendStatus === healthStatus.statusOk &&
                  ledgersStatus.ledgersStatus === healthStatus.statusOk) ? healthStatus.statusOk

@@ -4,13 +4,13 @@
  * Cache ledger meta-information.
  */
 class InfoCache {
-  constructor (ledgers) {
-    this.ledgers = ledgers
+  constructor (core) {
+    this.core = core
     this.cache = {}
   }
 
   * getInfoUncached (ledger) {
-    let plugin = this.ledgers.getLedger(ledger)
+    let plugin = this.core.resolvePlugin(ledger)
     if (!plugin) {
       // Default to Five Bells Ledger
       // TODO: This hack is necessary to fetch the precision information for

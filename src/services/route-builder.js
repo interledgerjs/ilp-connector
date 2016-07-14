@@ -5,7 +5,7 @@ const config = require('./config')
 module.exports = new RouteBuilder(
   require('./routing-tables'),
   require('./info-cache'),
-  require('./ledgers'),
+  require('./core'),
   {
     minMessageWindow: config.expiry.minMessageWindow,
     slippage: config.slippage

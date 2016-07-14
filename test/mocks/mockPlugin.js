@@ -27,6 +27,7 @@ class MockPlugin extends EventEmitter {
   }
 
   send (transfer) {
+    this.SEND = true
     return Promise.resolve(null)
   }
 
