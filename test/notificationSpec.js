@@ -295,35 +295,64 @@ describe('Notifications', function () {
         .end()
     })
 
-    ;[
-      {
-        label: 'should return 200 if the payment is not relevant to the connector',
-        error: 'UnrelatedNotificationError'
-      }, {
-        label: 'should return 200 if the rate of the payment is worse than the one currently offered',
-        error: 'UnacceptableRateError'
-      }, {
-        label: 'should return 200 if the payment is from an unknown source ledger',
-        error: 'AssetsNotTradedError'
-      }, {
-        label: 'should return a 200 if the source transfer is expired',
-        error: 'UnacceptableExpiryError'
-      }
-    ].forEach(function (data) {
-      it(data.label, function * () {
-        this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
-          ._handleNotification = function * () { throw makeError(data.error) }
+    it('should return 200 if the payment is not relevant to the connector', function * () {
+      this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
+        ._handleNotification = function * () { throw makeError('UnrelatedNotificationError') }
 
-        yield this.request()
-          .post('/notifications')
-          .send(this.notificationSourceTransferPrepared)
-          .expect(200)
-          .expect({
-            result: 'ignored',
-            ignoreReason: {id: data.error, message: 'error message'}
-          })
-          .end()
-      })
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {id: 'UnrelatedNotificationError', message: 'error message'}
+        })
+        .end()
+    })
+
+    it('should return 200 if the rate of the payment is worse than the one currently offered', function * () {
+      this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
+        ._handleNotification = function * () { throw makeError('UnacceptableRateError') }
+
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {id: 'UnacceptableRateError', message: 'error message'}
+        })
+        .end()
+    })
+
+    it('should return 200 if the payment is from an unknown source ledger', function * () {
+      this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
+        ._handleNotification = function * () { throw makeError('AssetsNotTradedError') }
+
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {id: 'AssetsNotTradedError', message: 'error message'}
+        })
+        .end()
+    })
+
+    it('should return a 200 if the source transfer is expired', function * () {
+      this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
+        ._handleNotification = function * () { throw makeError('UnacceptableExpiryError') }
+
+      yield this.request()
+        .post('/notifications')
+        .send(this.notificationSourceTransferPrepared)
+        .expect(200)
+        .expect({
+          result: 'ignored',
+          ignoreReason: {id: 'UnacceptableExpiryError', message: 'error message'}
+        })
+        .end()
     })
 
     it.skip('should get the fulfillment and execute the source transfers when the destination transfer response indicates that it has already been executed', function * () {
