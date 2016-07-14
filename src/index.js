@@ -9,14 +9,10 @@ module.exports = {
   listen: connector.listen,
   _test: {
     BalanceCache: require('./lib/balance-cache'),
-    balanceCache: require('./services/balance-cache'),
     RouteBroadcaster: require('./lib/route-broadcaster'),
     RouteBuilder: require('./lib/route-builder'),
     loadConnectorConfig: require('./lib/config'),
-    config: require('./services/config'),
-    logger: require('./common').log,
-    backend: require('./services/backend'),
-    infoCache: require('./services/info-cache')
+    logger: require('./common').log
   }
 }
 

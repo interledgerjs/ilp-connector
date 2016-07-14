@@ -5,7 +5,6 @@ const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const ExternalError = require('../errors/external-error')
-const balanceCache = require('../services/balance-cache')
 const DEFAULT_DESTINATION_EXPIRY = 5 // seconds
 
 function * makeQuoteQuery (params) {
@@ -73,10 +72,11 @@ function getQuoteExpiryDurations (_sourceExpiryDuration, _destinationExpiryDurat
   } else {
     sourceExpiryDuration = destinationExpiryDuration + minMessageWindow
   }
+
   return {sourceExpiryDuration, destinationExpiryDuration}
 }
 
-function * validateBalance (ledger, amount) {
+function * validateBalance (balanceCache, ledger, amount) {
   const balance = yield balanceCache.get(ledger)
   if (balance.lessThan(amount)) {
     throw new UnacceptableAmountError('Insufficient liquidity in market maker account')
@@ -94,9 +94,10 @@ function * validateBalance (ledger, amount) {
  * @param {String} params.destination_amount
  * @param {String} params.destination_expiry_duration
  * @param {Object} config
+ * @param {Object} balanceCache
  * @returns {Quote}
  */
-function * getQuote (params, config, routeBuilder) {
+function * getQuote (params, config, routeBuilder, balanceCache) {
   const query = yield makeQuoteQuery(params)
   if (query.sourceLedger === query.destinationLedger) {
     throw new AssetsNotTradedError('source_ledger must be different from destination_ledger')
@@ -109,12 +110,12 @@ function * getQuote (params, config, routeBuilder) {
   const expiryDurations = getQuoteExpiryDurations(
     params.source_expiry_duration,
     params.destination_expiry_duration,
-    config.expiry.minMessageWindow, config)
+    nextHop.minMessageWindow, config)
   quote.source_expiry_duration = String(expiryDurations.sourceExpiryDuration)
   quote.destination_expiry_duration = String(expiryDurations.destinationExpiryDuration)
 
   // Check the balance of the next ledger (_not_ query.destinationLedger, which is the final ledger).
-  yield validateBalance(nextHop.destinationLedger, nextHop.destinationAmount)
+  yield validateBalance(balanceCache, nextHop.destinationLedger, nextHop.destinationAmount)
   return quote
 }
 

@@ -3,7 +3,6 @@
 const _ = require('lodash')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
-const assert = require('chai').assert
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('five-bells-connector')._test.logger
@@ -93,50 +92,49 @@ describe('Subscriptions', function () {
     const payment = this.formatId(this.paymentSameExecutionCondition,
       '/payments/')
 
-    const nockDestinationTransfer = nock(payment.destination_transfers[0].id)
-      .put('')
-      .reply(201, _.assign({}, payment.destination_transfers[0], {
-        state: 'prepared'
-      }))
+    const sendSpy = sinon.spy(
+      this.ledgers.getLedger(payment.destination_transfers[0].ledger),
+      'send')
 
-    const nockSourceTransfer = nock(payment.source_transfers[0].id)
-      .put('/fulfillment', this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
-      .reply(201, this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
+    const fulfillSpy = sinon.spy(
+      this.ledgers.getLedger(payment.source_transfers[0].ledger),
+      'fulfillCondition')
 
-    this.wsUsdLedger.send(JSON.stringify({
-      id: this.notificationSourceTransferPrepared.id,
-      event: 'transfer.update',
-      resource: _.merge({}, payment.source_transfers[0], {
-        credits: [{
-          memo: { ilp_header: {
+    yield this.ledgers.getLedger(payment.source_transfers[0].ledger)
+      .emitAsync('receive', {
+        id: payment.source_transfers[0].id,
+        direction: 'incoming',
+        account: payment.source_transfers[0].debits[0].account,
+        amount: payment.source_transfers[0].debits[0].amount,
+        executionCondition: payment.source_transfers[0].debits[0].execution_condition,
+        expiresAt: payment.source_transfers[0].debits[0].expires_at,
+        data: {
+          ilp_header: {
             ledger: payment.destination_transfers[0].ledger,
             amount: payment.destination_transfers[0].credits[0].amount,
             account: payment.destination_transfers[0].credits[0].account
-          } }
-        }]
-      })
-    }))
-
-    yield new Promise((resolve) => this.wsUsdLedger.on('message', resolve))
-
-    assert(nockDestinationTransfer.isDone(), 'destination transfer was not prepared')
-
-    this.wsEurLedger.send(JSON.stringify(_.merge({}, this.notificationWithConditionFulfillment,
-      {
-        resource: {
-          debits: [{
-            memo: {
-              source_transfer_ledger: payment.source_transfers[0].ledger,
-              source_transfer_id: payment.source_transfers[0].id
-                .substring(payment.source_transfers[0].id.length - 36)
-            }
-          }]
+          }
         }
-      }
-    )))
+      })
 
-    yield new Promise((resolve) => this.wsEurLedger.on('message', resolve))
+    sinon.assert.calledOnce(sendSpy)
 
-    assert(nockSourceTransfer.isDone(), 'source transfer was not fulfilled')
+    const sourceId = payment.source_transfers[0].id
+      .substring(payment.source_transfers[0].id.length - 36)
+    yield this.ledgers.getLedger(payment.source_transfers[0].ledger)
+      .emitAsync('fulfill_execution_condition', {
+        id: payment.destination_transfers[0].id,
+        direction: 'outgoing',
+        account: payment.destination_transfers[0].debits[0].account,
+        amount: payment.destination_transfers[0].debits[0].amount,
+        executionCondition: payment.destination_transfers[0].debits[0].execution_condition,
+        noteToSelf: {
+          source_transfer_ledger: payment.source_transfers[0].ledger,
+          source_transfer_id: sourceId
+        }
+      }, 'cf:0:')
+
+    sinon.assert.calledOnce(fulfillSpy)
+    sinon.assert.calledWith(fulfillSpy, sourceId, 'cf:0:')
   })
 })

@@ -64,13 +64,12 @@ describe('RouteBroadcaster', function () {
 
   describe('broadcast', function () {
     it('sends the combined routes to all adjacent connectors', function * () {
-      nock(ledgerA).get('/connectors').reply(200, [{connector: baseURI}])
-      nock(ledgerB).get('/connectors').reply(200, [
-        {connector: baseURI},
-        {connector: 'http://other-connector2.example'}
-      ])
-      nock(ledgerC).get('/connectors').reply(200, [{connector: baseURI}])
-      nock(ledgerD).get('/connectors').reply(200, [{connector: baseURI}])
+      this.ledgers.getLedger(ledgerA).getConnectors =
+      this.ledgers.getLedger(ledgerC).getConnectors =
+      this.ledgers.getLedger(ledgerD).getConnectors =
+        function * () { return [baseURI] }
+      this.ledgers.getLedger(ledgerB).getConnectors =
+        function * () { return [baseURI, 'http://other-connector2.example'] }
 
       nock('http://other-connector2.example').post('/routes', [
         {

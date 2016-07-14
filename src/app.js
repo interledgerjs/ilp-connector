@@ -70,7 +70,7 @@ function listen (koaApp, config, ledgers, backend, routeBuilder, routeBroadcaste
   })
 }
 
-function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster) {
+function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache) {
   const koaApp = koa()
 
   if (!config) {
@@ -93,10 +93,26 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster) {
     routeBroadcaster = require('./services/route-broadcaster')
   }
 
+  if (!routingTables) {
+    routingTables = require('./services/routing-tables')
+  }
+
+  if (!infoCache) {
+    infoCache = require('./services/info-cache')
+  }
+
+  if (!balanceCache) {
+    balanceCache = require('./services/balance-cache')
+  }
+
   koaApp.context.config = config
   koaApp.context.ledgers = ledgers
-  koaApp.context.routeBuilder = routeBuilder
   koaApp.context.backend = backend
+  koaApp.context.routeBuilder = routeBuilder
+  koaApp.context.routeBroadcaster = routeBroadcaster
+  koaApp.context.routingTables = routingTables
+  koaApp.context.infoCache = infoCache
+  koaApp.context.balanceCache = balanceCache
 
   // Configure passport
   const passport = new Passport()

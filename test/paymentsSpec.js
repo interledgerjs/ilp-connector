@@ -1,5 +1,6 @@
 'use strict'
 
+const assert = require('assert')
 const _ = require('lodash')
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
@@ -51,11 +52,11 @@ describe('Payments', function () {
       }
     })
     process.env.CONNECTOR_PAIRS = JSON.stringify(pairs)
-    const ledgerInfoNock = nock('http://test2.mock').get('/')
-      .reply(200, {
-        precision: 10,
-        scale: 4
-      })
+    nock('http://test1.mock').get('/')
+      .reply(200, { precision: 10, scale: 4 })
+    nock('http://test2.mock').get('/')
+      .reply(200, { precision: 10, scale: 4 })
+
     appHelper.create(this)
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
@@ -64,7 +65,6 @@ describe('Payments', function () {
 
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
-    ledgerInfoNock.done()
 
     this.mockPlugin1 = this.ledgers.getLedger('http://test1.mock')
     this.mockPlugin2 = this.ledgers.getLedger('http://test2.mock')
@@ -89,4 +89,247 @@ describe('Payments', function () {
     sinon.assert.calledOnce(fulfillSpy)
     sinon.assert.calledWith(fulfillSpy, '130394ed-f621-4663-80dc-910adc66f4c6', 'cf:0:')
   })
+
+  it('passes on the executionCondition', function * () {
+    const sendSpy = sinon.spy(this.mockPlugin2, 'send')
+    yield this.mockPlugin1.emitAsync('receive', {
+      id: '5857d460-2a46-4545-8311-1539d99e78e8',
+      direction: 'incoming',
+      amount: '100',
+      executionCondition: 'cc:0:',
+      expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+      data: {
+        ilp_header: {
+          ledger: 'http://test2.mock',
+          account: 'http://test2.mock/accounts/bob',
+          amount: '50'
+        }
+      }
+    })
+
+    sinon.assert.calledOnce(sendSpy)
+    sinon.assert.calledWithMatch(sendSpy, {
+      direction: 'outgoing',
+      ledger: 'http://test2.mock',
+      account: 'http://test2.mock/accounts/bob',
+      amount: '50',
+      executionCondition: 'cc:0:',
+      expiresAt: (new Date(START_DATE)).toISOString(),
+      noteToSelf: {
+        source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        source_transfer_ledger: 'http://test1.mock'
+      }
+    })
+  })
+
+  it('supports optimistic mode', function * () {
+    const sendSpy = sinon.spy(this.mockPlugin2, 'send')
+    yield this.mockPlugin1.emitAsync('receive', {
+      id: '5857d460-2a46-4545-8311-1539d99e78e8',
+      direction: 'incoming',
+      amount: '100',
+      data: {
+        ilp_header: {
+          ledger: 'http://test2.mock',
+          account: 'http://test2.mock/accounts/bob',
+          amount: '50'
+        }
+      }
+    })
+
+    sinon.assert.calledOnce(sendSpy)
+    sinon.assert.calledWithMatch(sendSpy, {
+      direction: 'outgoing',
+      ledger: 'http://test2.mock',
+      account: 'http://test2.mock/accounts/bob',
+      amount: '50',
+      noteToSelf: {
+        source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        source_transfer_ledger: 'http://test1.mock'
+      }
+    })
+  })
+
+  it('authorizes the payment even if the connector is also the payee of the destination transfer', function * () {
+    const sendSpy = sinon.spy(this.mockPlugin2, 'send')
+    yield this.mockPlugin1.emitAsync('receive', {
+      id: '5857d460-2a46-4545-8311-1539d99e78e8',
+      direction: 'incoming',
+      amount: '100',
+      data: {
+        ilp_header: {
+          ledger: 'http://test2.mock',
+          account: 'http://test2.mock/accounts/mark',
+          amount: '50'
+        }
+      }
+    })
+
+    sinon.assert.calledOnce(sendSpy)
+    sinon.assert.calledWithMatch(sendSpy, {
+      direction: 'outgoing',
+      ledger: 'http://test2.mock',
+      account: 'http://test2.mock/accounts/mark',
+      amount: '50',
+      noteToSelf: {
+        source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        source_transfer_ledger: 'http://test1.mock'
+      }
+    })
+  })
+
+  it('throws InvalidBodyError if the incoming transfer\'s ilp_header isn\'t an IlpHeader', function * () {
+    try {
+      yield this.mockPlugin1.emitAsync('receive', {
+        id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        direction: 'incoming',
+        amount: '100',
+        data: {
+          ilp_header: {
+            ledger: 'http://test2.mock',
+            account: 'http://test2.mock/accounts/bob',
+            amount: 'woot'
+          }
+        }
+      })
+      assert(false)
+    } catch (err) {
+      assert.equal(err.name, 'InvalidBodyError')
+      assert.equal(err.message, 'IlpHeader schema validation error: String does not match pattern: ^[-+]?[0-9]*[.]?[0-9]+([eE][-+]?[0-9]+)?$')
+    }
+  })
+
+  it('throws UnacceptableExpiryError if the incoming transfer is expired', function * () {
+    try {
+      yield this.mockPlugin1.emitAsync('receive', {
+        id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        direction: 'incoming',
+        amount: '100',
+        expiresAt: (new Date(START_DATE - 1)).toISOString(),
+        data: {
+          ilp_header: {
+            ledger: 'http://test2.mock',
+            account: 'http://test2.mock/accounts/bob',
+            amount: '50'
+          }
+        }
+      })
+      assert(false)
+    } catch (err) {
+      assert.equal(err.name, 'UnacceptableExpiryError')
+      assert.equal(err.message, 'Transfer has already expired')
+    }
+  })
+
+  it('throws UnacceptableExpiryError if the incoming transfer expires so soon we cannot create a destination transfer with a sufficient large expiry difference', function * () {
+    try {
+      yield this.mockPlugin1.emitAsync('receive', {
+        id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        direction: 'incoming',
+        amount: '100',
+        expiresAt: (new Date(START_DATE + 999)).toISOString(),
+        data: {
+          ilp_header: {
+            ledger: 'http://test2.mock',
+            account: 'http://test2.mock/accounts/bob',
+            amount: '50'
+          }
+        }
+      })
+      assert(false)
+    } catch (err) {
+      assert.equal(err.name, 'UnacceptableExpiryError')
+      assert.equal(err.message, 'Not enough time to send payment')
+    }
+  })
+
+  describe('atomic mode', function () {
+    beforeEach(function () {
+      this.caseId1 = 'http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a086'
+      this.caseId2 = 'http://notary.example/cases/2cd5bcdb-46c9-4243-ac3f-79046a87a087'
+      this.transfer = {
+        id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        direction: 'incoming',
+        amount: '100',
+        data: {
+          ilp_header: {
+            ledger: 'http://test2.mock',
+            account: 'http://test2.mock/accounts/bob',
+            amount: '50'
+          }
+        }
+      }
+    })
+
+    // One case
+
+    ;[
+      {
+        label: 'throws UnacceptableExpiryError when the case\'s expiry is too far in the future',
+        case: {expires_at: future(15000)},
+        message: 'Destination transfer expiry is too far in the future. The connector\'s money would need to be held for too long'
+      }, {
+        label: 'throws UnacceptableExpiryError when the case has already expired',
+        case: {expires_at: future(-15000)},
+        message: 'Transfer has already expired'
+      }, {
+        label: 'throws UnacceptableExpiryError when the case is missing an expiry',
+        case: {},
+        message: 'Cases must have an expiry.'
+      }
+    ].forEach(function (data) {
+      it(data.label, function * () {
+        nock(this.caseId1).get('').reply(200, data.case)
+        try {
+          yield this.mockPlugin1.emitAsync('receive',
+            Object.assign(this.transfer, {cases: [this.caseId1]}))
+          assert(false)
+        } catch (err) {
+          assert.equal(err.name, 'UnacceptableExpiryError')
+          assert.equal(err.message, data.message)
+        }
+      })
+    })
+
+    // Two cases
+
+    it('throws UnacceptableExpiryError when the cases have different expiries', function * () {
+      nock(this.caseId1).get('').reply(200, {expires_at: future(5000)})
+      nock(this.caseId2).get('').reply(200, {expires_at: future(6000)})
+      try {
+        yield this.mockPlugin1.emitAsync('receive',
+          Object.assign(this.transfer, {cases: [this.caseId1, this.caseId2]}))
+        assert(false)
+      } catch (err) {
+        assert.equal(err.name, 'UnacceptableExpiryError')
+        assert.equal(err.message, 'Case expiries don\'t agree')
+      }
+    })
+
+    it('authorizes the payment if the case expiries match', function * () {
+      nock(this.caseId1).get('').reply(200, {expires_at: future(5000)})
+      nock(this.caseId2).get('').reply(200, {expires_at: future(5000)})
+
+      const sendSpy = sinon.spy(this.mockPlugin2, 'send')
+      yield this.mockPlugin1.emitAsync('receive',
+        Object.assign(this.transfer, {cases: [this.caseId1, this.caseId2]}))
+
+      sinon.assert.calledOnce(sendSpy)
+      sinon.assert.calledWithMatch(sendSpy, {
+        direction: 'outgoing',
+        ledger: 'http://test2.mock',
+        account: 'http://test2.mock/accounts/bob',
+        amount: '50',
+        cases: [this.caseId1, this.caseId2],
+        noteToSelf: {
+          source_transfer_id: this.transfer.id,
+          source_transfer_ledger: 'http://test1.mock'
+        }
+      })
+    })
+  })
 })
+
+function future (diff) {
+  return (new Date(START_DATE + diff)).toISOString()
+}

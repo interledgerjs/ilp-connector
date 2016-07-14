@@ -5,13 +5,13 @@ const nock = require('nock')
 const expect = require('chai').expect
 const logger = require('five-bells-connector')._test.logger
 const logHelper = require('five-bells-shared/testHelpers/log')
+const appHelper = require('./helpers/app')
 
 const UnsupportedPairError = require('../src/errors/unsupported-pair-error')
 const NoAmountSpecifiedError = require('../src/errors/no-amount-specified-error')
 const AssetsNotTradedError = require('../src/errors/assets-not-traded-error')
 const ServerError = require('five-bells-shared/errors/server-error')
 const Backend = require('../src/backends/ilp-quoter')
-const infoCache = require('five-bells-connector')._test.infoCache
 
 const precision = 10
 const scale = 4
@@ -20,6 +20,7 @@ describe('ILPQuoter', function () {
   logHelper(logger)
 
   beforeEach(function * () {
+    appHelper.create(this)
     this.backendUri = 'http://marketmaker.quoter.com'
     this.pairs =
       [['USD@https://localhost:3000', 'EUR@https://localhost:4001'],
@@ -34,7 +35,7 @@ describe('ILPQuoter', function () {
     this.backend = new Backend({
       currencyWithLedgerPairs: this.pairs,
       backendUri: this.backendUri,
-      infoCache: infoCache
+      infoCache: this.infoCache
     })
 
     const getLedger = (currencyLedger) => currencyLedger.split('@')[1]
@@ -51,7 +52,7 @@ describe('ILPQuoter', function () {
 
   afterEach(function () {
     nock.cleanAll()
-    infoCache.reset()
+    this.infoCache.reset()
   })
 
   function * yieldAndAssertException (action, exception) {
@@ -77,7 +78,7 @@ describe('ILPQuoter', function () {
       this.backend = new Backend({
         currencyWithLedgerPairs: this.unsupportedPairs,
         backendUri: this.backendUri,
-        infoCache: infoCache
+        infoCache: this.infoCache
       })
 
       const scope = nock(this.backendUri)

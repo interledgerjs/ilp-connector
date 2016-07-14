@@ -1,17 +1,19 @@
 'use strict'
-const parseURL = require('url').parse
+
+const mockPlugin = require('./mocks/mockPlugin')
+const mock = require('mock-require')
+mock('ilp-plugin-mock', mockPlugin)
+
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
 const validate = require('five-bells-shared/services/validate')
 const appHelper = require('./helpers/app')
 const logger = require('five-bells-connector')._test.logger
-const balanceCache = require('five-bells-connector')._test.balanceCache
 const logHelper = require('five-bells-shared/testHelpers/log')
 const expect = require('chai').expect
 const _ = require('lodash')
-const infoCache = require('five-bells-connector')._test.infoCache
-const parseUrl = require('url').parse
+const ExternalError = require('../src/errors/external-error')
 
 describe('Quotes', function () {
   logHelper(logger)
@@ -26,28 +28,14 @@ describe('Quotes', function () {
       'http://cny-ledger.example'
     ]
 
-    _.each(testLedgers, (ledgerUri) => {
-      nock(ledgerUri).get('/')
-      .reply(200, {
-        precision: 10,
-        scale: 4
-      }).persist()
-    })
-
-    // Connector queries its balances when getting a quote to ensure it has sufficient funds.
-    _.map(testLedgers, (ledgerUri) => 'http://' + parseUrl(ledgerUri).host + '/accounts/mark')
-    .forEach((connectorAccountUri) => {
-      nock(connectorAccountUri).get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://' + parseURL(connectorAccountUri).host,
-          balance: 150000
-        })
+    _.map(testLedgers, (ledgerUri) => {
+      this.ledgers.getLedger(ledgerUri).getBalance =
+        function * () { return '150000' }
     })
 
     // Reset before and after just in case a test wants to change the precision.
-    infoCache.reset()
-    balanceCache.reset()
+    this.infoCache.reset()
+    this.balanceCache.reset()
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
   })
@@ -138,23 +126,13 @@ describe('Quotes', function () {
     })
 
     it('should return a 422 if source_ledger amount is greater than source_ledger precision', function * () {
-      infoCache.reset()
+      this.infoCache.reset()
       nock.cleanAll()
       // Decrease precision
-      nock('http://eur-ledger.example').get('/').reply(200, {precision: 4, scale: 2}).persist()
-      nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 4}).persist()
-      nock('http://eur-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://eur-ledger.example/accounts/mark',
-          balance: 150000
-        })
-      nock('http://usd-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://usd-ledger.example/accounts/mark',
-          balance: 150000
-        })
+      this.ledgers.getLedger('http://eur-ledger.example')
+        .getInfo = function * () { return {precision: 4, scale: 2} }
+      this.ledgers.getLedger('http://usd-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 4} }
 
       yield this.request()
         .get('/quote?source_amount=12345' +
@@ -169,23 +147,13 @@ describe('Quotes', function () {
     })
 
     it('should return a 422 if destination_ledger amount is greater than destination_ledger precision', function * () {
-      infoCache.reset()
+      this.infoCache.reset()
       nock.cleanAll()
       // Decrease precision
-      nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
-      nock('http://usd-ledger.example').get('/').reply(200, {precision: 4, scale: 4})
-      nock('http://eur-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://eur-ledger.example/accounts/mark',
-          balance: 150000
-        })
-      nock('http://usd-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://usd-ledger.example/accounts/mark',
-          balance: 150000
-        })
+      this.ledgers.getLedger('http://eur-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 2} }
+      this.ledgers.getLedger('http://usd-ledger.example')
+        .getInfo = function * () { return {precision: 4, scale: 4} }
 
       yield this.request()
         .get('/quote?destination_amount=12345' +
@@ -291,10 +259,12 @@ describe('Quotes', function () {
     })
 
     it('should return a 502 when unable to get precision from source_ledger', function * () {
-      infoCache.reset()
+      this.infoCache.reset()
       nock.cleanAll()
-      nock('http://eur-ledger.example').get('/').reply(500)
-      nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
+      this.ledgers.getLedger('http://eur-ledger.example')
+        .getInfo = function * () { throw new ExternalError() }
+      this.ledgers.getLedger('http://usd-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 2} }
 
       yield this.request()
         .get('/quote?' +
@@ -305,16 +275,17 @@ describe('Quotes', function () {
         .expect(502)
         .expect(function (res) {
           expect(res.body.id).to.equal('ExternalError')
-          expect(res.body.message).to.equal('Unable to determine ledger precision')
         })
         .end()
     })
 
     it('should return a 502 when unable to get precision from destination_ledger', function * () {
-      infoCache.reset()
+      this.infoCache.reset()
       nock.cleanAll()
-      nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
-      nock('http://usd-ledger.example').get('/').reply(500)
+      this.ledgers.getLedger('http://eur-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 2} }
+      this.ledgers.getLedger('http://usd-ledger.example')
+        .getInfo = function * () { throw new ExternalError() }
 
       yield this.request()
         .get('/quote?' +
@@ -325,17 +296,19 @@ describe('Quotes', function () {
         .expect(502)
         .expect(function (res) {
           expect(res.body.id).to.equal('ExternalError')
-          expect(res.body.message).to.equal('Unable to determine ledger precision')
         })
         .end()
     })
 
     it('should return a 502 when unable to get balance from ledger', function * () {
-      infoCache.reset()
+      this.infoCache.reset()
       nock.cleanAll()
-      nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
-      nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
-      nock('http://eur-ledger.example/accounts/').get('').reply(500)
+      this.ledgers.getLedger('http://eur-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 2} }
+      this.ledgers.getLedger('http://usd-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 2} }
+      this.ledgers.getLedger('http://usd-ledger.example')
+        .getBalance = function * () { throw new ExternalError() }
 
       yield this.request()
         .get('/quote?' +
@@ -346,7 +319,6 @@ describe('Quotes', function () {
         .expect(502)
         .expect(function (res) {
           expect(res.body.id).to.equal('ExternalError')
-          expect(res.body.message).to.equal('Unable to determine current balance')
         })
         .end()
     })
@@ -367,30 +339,20 @@ describe('Quotes', function () {
     })
 
     it('should return quotes for fixed source amounts -- lower precision source_ledger', function * () {
-      infoCache.reset()
+      this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
-      nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
-      nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 4})
-      nock('http://eur-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://eur-ledger.example/accounts/mark',
-          balance: 150000
-        })
-      nock('http://usd-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://usd-ledger.example/accounts/mark',
-          balance: 150000
-        })
+      this.ledgers.getLedger('http://eur-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 2} }
+      this.ledgers.getLedger('http://usd-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 4} }
 
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://eur-ledger.example' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(200, {
-          source_connector_account: 'http://eur-ledger.example/accounts/mark',
+          source_connector_account: 'mocky',
           source_ledger: 'http://eur-ledger.example',
           source_amount: '100.00',
           source_expiry_duration: '6',
@@ -402,30 +364,20 @@ describe('Quotes', function () {
     })
 
     it('should return quotes for fixed source amounts -- lower precision destination_ledger', function * () {
-      infoCache.reset()
+      this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
-      nock('http://eur-ledger.example').get('/').reply(200, {precision: 10, scale: 4})
-      nock('http://usd-ledger.example').get('/').reply(200, {precision: 10, scale: 2})
-      nock('http://eur-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://eur-ledger.example/accounts/mark',
-          balance: 150000
-        })
-      nock('http://usd-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://usd-ledger.example/accounts/mark',
-          balance: 150000
-        })
+      this.ledgers.getLedger('http://eur-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 4} }
+      this.ledgers.getLedger('http://usd-ledger.example')
+        .getInfo = function * () { return {precision: 10, scale: 2} }
 
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_ledger=http://eur-ledger.example' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(200, {
-          source_connector_account: 'http://eur-ledger.example/accounts/mark',
+          source_connector_account: 'mocky',
           source_ledger: 'http://eur-ledger.example',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -437,7 +389,7 @@ describe('Quotes', function () {
     })
 
     it('caches source and destination ledger precision', function * () {
-      infoCache.reset()
+      this.infoCache.reset()
       nock.cleanAll()
       nock('http://eur-ledger.example')
         .get('/').reply(200, {precision: 10, scale: 4})
@@ -481,7 +433,7 @@ describe('Quotes', function () {
           '&source_ledger=http://eur-ledger.example' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(200, {
-          source_connector_account: 'http://eur-ledger.example/accounts/mark',
+          source_connector_account: 'mocky',
           source_ledger: 'http://eur-ledger.example',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -500,7 +452,7 @@ describe('Quotes', function () {
           '&destination_amount=100' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(200, {
-          source_connector_account: 'http://eur-ledger.example/accounts/mark',
+          source_connector_account: 'mocky',
           source_ledger: 'http://eur-ledger.example',
           source_amount: '94.6948', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
           source_expiry_duration: '6',
@@ -517,7 +469,7 @@ describe('Quotes', function () {
           '&source_ledger=http://eur-ledger.example' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(200, {
-          source_connector_account: 'http://eur-ledger.example/accounts/mark',
+          source_connector_account: 'mocky',
           source_ledger: 'http://eur-ledger.example',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -534,7 +486,7 @@ describe('Quotes', function () {
           '&source_ledger=http://usd-ledger.example' +
           '&destination_ledger=http://eur-ledger.example')
         .expect(200, {
-          source_connector_account: 'http://usd-ledger.example/accounts/mark',
+          source_connector_account: 'mocky',
           source_ledger: 'http://usd-ledger.example',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -551,7 +503,7 @@ describe('Quotes', function () {
           '&source_ledger=http://usd-ledger.example' +
           '&destination_ledger=http://cad-ledger.example:1000')
         .expect(200, {
-          source_connector_account: 'http://usd-ledger.example/accounts/mark',
+          source_connector_account: 'mocky',
           source_ledger: 'http://usd-ledger.example',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -568,7 +520,7 @@ describe('Quotes', function () {
           '&source_ledger=http://cad-ledger.example:1000' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(200, {
-          source_connector_account: 'http://cad-ledger.example:1000/accounts/mark',
+          source_connector_account: 'mocky',
           source_ledger: 'http://cad-ledger.example:1000',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -701,13 +653,13 @@ describe('Quotes', function () {
         .end()
     })
 
-    it.skip('quotes a multi-hop route', function * () {
+    it('quotes a multi-hop route', function * () {
       nock('http://usd-ledger.example')
         .get('/accounts/alice')
         .reply(200, {ledger: 'http://usd-ledger.example'})
       nock('http://random-ledger.example')
         .get('/accounts/bob')
-        .reply(200, {ledger: 'http://random-ledger.example/'})
+        .reply(200, {ledger: 'http://random-ledger.example'})
       nock('http://random-ledger.example')
         .get('/')
         .reply(200, { precision: 10, scale: 4 })
@@ -716,7 +668,7 @@ describe('Quotes', function () {
         .post('/routes')
         .send([{
           source_ledger: 'http://eur-ledger.example',
-          destination_ledger: 'http://random-ledger.example/',
+          destination_ledger: 'http://random-ledger.example',
           connector: 'http://mary.example',
           min_message_window: 1,
           source_account: 'http://eur-ledger.example/accounts/mary',
@@ -732,11 +684,11 @@ describe('Quotes', function () {
         .expect(200)
         .expect(function (res) {
           expect(res.body).to.deep.equal({
-            source_connector_account: 'http://usd-ledger.example/accounts/mark',
+            source_connector_account: 'mocky',
             source_ledger: 'http://usd-ledger.example',
             source_amount: '100.0000',
             source_expiry_duration: '7',
-            destination_ledger: 'http://random-ledger.example/',
+            destination_ledger: 'http://random-ledger.example',
             destination_amount: '188.2554',
             destination_expiry_duration: '5'
           })

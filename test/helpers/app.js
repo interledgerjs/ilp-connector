@@ -6,11 +6,12 @@ const superagent = require('co-supertest')
 const log = require('../../src/common').log
 
 const loadConfig = require('../../src/lib/config')
-const infoCache = require('../../src/services/info-cache')
+const InfoCache = require('../../src/lib/info-cache')
 const RoutingTables = require('five-bells-routing').RoutingTables
 const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
 const Multiledger = require('../../src/lib/multiledger')
+const BalanceCache = require('../../src/lib/balance-cache')
 
 const createApp = require('five-bells-connector').createApp
 
@@ -20,6 +21,7 @@ exports.create = function (context) {
     config: config,
     log: log
   })
+  const infoCache = new InfoCache(ledgers)
   const Backend = require('../../src/backends/' + config.get('backend'))
   const backend = new Backend({
     currencyWithLedgerPairs: config.get('tradingPairs'),
@@ -36,8 +38,14 @@ exports.create = function (context) {
       slippage: config.slippage
     }
   )
-  const routeBroadcaster = new RouteBroadcaster(routingTables, backend, ledgers, infoCache, config)
-  const app = createApp(config, ledgers, backend, routeBuilder, routeBroadcaster)
+  const routeBroadcaster = new RouteBroadcaster(routingTables, backend, ledgers, infoCache, {
+    tradingPairs: config.tradingPairs,
+    minMessageWindow: config.expiry.minMessageWindow,
+    routeCleanupInterval: config.routeCleanupInterval,
+    routeBroadcastInterval: config.routeBroadcastInterval
+  })
+  const balanceCache = new BalanceCache(ledgers)
+  const app = createApp(config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache)
   context.app = app
   context.backend = backend
   context.routingTables = routingTables
@@ -45,6 +53,8 @@ exports.create = function (context) {
   context.routeBuilder = routeBuilder
   context.ledgers = ledgers
   context.config = config
+  context.infoCache = infoCache
+  context.balanceCache = balanceCache
 
   context.server = http.createServer(app.callback()).listen()
   context.port = context.server.address().port
