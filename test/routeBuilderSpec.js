@@ -30,8 +30,8 @@ describe('RouteBuilder', function () {
       }
     }
 
-    this.ledgers.getLedger(ledgerA).getAccount = function () { return markA }
-    this.ledgers.getLedger(ledgerB).getAccount = function () { return markB }
+    this.core.resolvePlugin(ledgerA).getAccount = function () { return markA }
+    this.core.resolvePlugin(ledgerB).getAccount = function () { return markB }
 
     this.tables = new RoutingTables(baseURI, [{
       source_ledger: ledgerA,
@@ -43,7 +43,7 @@ describe('RouteBuilder', function () {
       points: [ [0, 0], [200, 100] ],
       additional_info: { rate_info: 'someInfoAboutTheRate' }
     }])
-    this.builder = new RouteBuilder(this.tables, this.infoCache, this.ledgers, {
+    this.builder = new RouteBuilder(this.tables, this.infoCache, this.core, {
       minMessageWindow: 1,
       slippage: 0.01
     })

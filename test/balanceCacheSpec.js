@@ -15,7 +15,7 @@ describe('BalanceCache', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    this.cache = new BalanceCache(require('../src/services/ledgers'))
+    this.cache = new BalanceCache(require('../src/services/core'))
   })
 
   afterEach(function * () { nock.cleanAll() })

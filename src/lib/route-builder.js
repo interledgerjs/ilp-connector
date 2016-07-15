@@ -11,21 +11,21 @@ class RouteBuilder {
   /**
    * @param {RoutingTables} routingTables
    * @param {InfoCache} infoCache
-   * @param {Multiledger} ledgers
+   * @param {ilp-client.Core} core
    * @param {Object} config
    * @param {Integer} config.minMessageWindow seconds
    * @param {Number} config.slippage
    * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, infoCache, ledgers, config) {
-    if (!ledgers) {
-      throw new TypeError('Must be given a valid ledgers instance')
+  constructor (routingTables, infoCache, core, config) {
+    if (!core) {
+      throw new TypeError('Must be given a valid Core instance')
     }
 
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.infoCache = infoCache
-    this.ledgers = ledgers
+    this.core = core
     this.minMessageWindow = config.minMessageWindow
     this.slippage = config.slippage
   }
@@ -62,7 +62,7 @@ class RouteBuilder {
 
     const quote = {
       source_connector_account:
-        this.ledgers.getLedger(nextHop.sourceLedger).getAccount(),
+        this.core.resolvePlugin(nextHop.sourceLedger).getAccount(),
       source_ledger: nextHop.sourceLedger,
       source_amount: nextHop.sourceAmount,
       destination_ledger: nextHop.finalLedger,

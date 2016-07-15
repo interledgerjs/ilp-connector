@@ -20,7 +20,7 @@ const Passport = require('koa-passport').KoaPassport
 const cors = require('koa-cors')
 const log = require('./common/log')
 
-function listen (koaApp, config, ledgers, backend, routeBuilder, routeBroadcaster) {
+function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster) {
   if (config.getIn(['server', 'secure'])) {
     const spdy = require('spdy')
     const tls = config.get('tls')
@@ -63,22 +63,22 @@ function listen (koaApp, config, ledgers, backend, routeBuilder, routeBroadcaste
       log('app').error(error.message)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgers, config, routeBuilder)
+    yield subscriptions.subscribePairs(config.get('tradingPairs'), core, config, routeBuilder)
     yield routeBroadcaster.start()
   }).catch(function (err) {
     log('app').error(typeof err === 'object' && err.stack || err)
   })
 }
 
-function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache) {
+function createApp (config, core, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache) {
   const koaApp = koa()
 
   if (!config) {
     config = require('./services/config')
   }
 
-  if (!ledgers) {
-    ledgers = require('./services/ledgers')
+  if (!core) {
+    core = require('./services/core')
   }
 
   if (!backend) {
@@ -106,7 +106,7 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
   }
 
   koaApp.context.config = config
-  koaApp.context.ledgers = ledgers
+  koaApp.context.core = core
   koaApp.context.backend = backend
   koaApp.context.routeBuilder = routeBuilder
   koaApp.context.routeBroadcaster = routeBroadcaster
@@ -142,7 +142,7 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
 
   return {
     koaApp: koaApp,
-    listen: _.partial(listen, koaApp, config, ledgers, backend, routeBuilder, routeBroadcaster),
+    listen: _.partial(listen, koaApp, config, core, backend, routeBuilder, routeBroadcaster),
     callback: koaApp.callback.bind(koaApp)
   }
 }

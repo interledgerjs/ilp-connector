@@ -42,7 +42,7 @@ describe('RouteBroadcaster', function () {
       }
     }
 
-    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.infoCache, {
+    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.core, this.infoCache, {
       tradingPairs: [
         ['USD@' + ledgerA, 'EUR@' + ledgerB],
         ['EUR@' + ledgerB, 'USD@' + ledgerA]
@@ -64,11 +64,11 @@ describe('RouteBroadcaster', function () {
 
   describe('broadcast', function () {
     it('sends the combined routes to all adjacent connectors', function * () {
-      this.ledgers.getLedger(ledgerA).getConnectors =
-      this.ledgers.getLedger(ledgerC).getConnectors =
-      this.ledgers.getLedger(ledgerD).getConnectors =
+      this.core.resolvePlugin(ledgerA).getConnectors =
+      this.core.resolvePlugin(ledgerC).getConnectors =
+      this.core.resolvePlugin(ledgerD).getConnectors =
         function * () { return [baseURI] }
-      this.ledgers.getLedger(ledgerB).getConnectors =
+      this.core.resolvePlugin(ledgerB).getConnectors =
         function * () { return [baseURI, 'http://other-connector2.example'] }
 
       nock('http://other-connector2.example').post('/routes', [
