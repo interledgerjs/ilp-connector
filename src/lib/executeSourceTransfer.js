@@ -23,9 +23,9 @@ function * executeSourceTransfer (destinationTransfer, fulfillment, ledgers) {
   // See https://github.com/interledger/five-bells-ledger/issues/149
   const sourceTransferState = yield ledgers.getLedger(sourceTransferLedger)
     .fulfillCondition(sourceTransferID, fulfillment)
-  if (sourceTransferState !== 'executed') {
-    log.error('Attempted to execute source transfer but it was unsucessful: we have not been fully repaid')
-  }
+    .catch(() => {
+      log.error('Attempted to execute source transfer but it was unsucessful: we have not been fully repaid')
+    })
 }
 
 module.exports = executeSourceTransfer
