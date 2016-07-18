@@ -31,6 +31,9 @@ class MockPlugin extends EventEmitter {
   }
 
   fulfillCondition (transferId, conditionFulfillment) {
+    if (conditionFulfillment === 'invalid') {
+      return Promise.reject(new Error('invalid fulfillment'))
+    }
     return Promise.resolve(null)
   }
 
