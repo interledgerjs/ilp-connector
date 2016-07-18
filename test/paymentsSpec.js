@@ -75,6 +75,17 @@ describe('Payments', function () {
     process.env = _.cloneDeep(env)
   })
 
+  it('should handle an invalid fulfillment', function * () {
+    this.mockPlugin1.emit('fulfill_execution_condition', {
+      id: '5857d460-2a46-4545-8311-1539d99e78e8',
+      direction: 'outgoing',
+      noteToSelf: {
+        source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
+        source_transfer_ledger: 'http://test2.mock'
+      }
+    }, 'invalid') // 'invalid' triggers error in mock plugin
+  })
+
   it('should pass on an execution condition fulfillment', function * () {
     const fulfillSpy = sinon.spy(this.mockPlugin2, 'fulfillCondition')
     this.mockPlugin1.emit('fulfill_execution_condition', {
