@@ -11,5 +11,6 @@ module.exports = new RouteBroadcaster(
     tradingPairs: config.tradingPairs,
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,
-    routeBroadcastInterval: config.routeBroadcastInterval
+    routeBroadcastInterval: config.routeBroadcastInterval,
+    routeShift: config.routeShift
   })

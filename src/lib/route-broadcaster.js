@@ -34,6 +34,7 @@ class RouteBroadcaster {
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
     this.adjacentConnectors = {}
+    this.routeShift = config.routeShift
   }
 
   * start () {
@@ -114,7 +115,7 @@ class RouteBroadcaster {
       destination_ledger: destinationLedger,
       source_amount: 100000000
     }).then((quote) => this._quoteToLocalRoute(quote))
-      .then((route) => co(this._shiftRoute.bind(this), route))
+      .then((route) => this.routeShift ? co(this._shiftRoute.bind(this), route) : route)
   }
 
   _quoteToLocalRoute (quote) {
