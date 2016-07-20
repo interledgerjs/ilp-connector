@@ -167,6 +167,13 @@ describe('RouteBuilder', function () {
         noteToSelf: {
           source_transfer_id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
           source_transfer_ledger: ledgerA
+        },
+        data: {
+          ilp_header: {
+            ledger: ledgerB,
+            account: bobB,
+            amount: '50'
+          }
         }
       })
     })
@@ -195,6 +202,37 @@ describe('RouteBuilder', function () {
         noteToSelf: {
           source_transfer_id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
           source_transfer_ledger: ledgerA
+        },
+        data: {
+          ilp_header: {
+            ledger: ledgerB,
+            account: bobB,
+            amount: '50'
+          }
+        }
+      })
+    })
+
+    it('passes on the ilp_header', function * () {
+      const destinationTransfer = yield this.builder.getDestinationTransfer({
+        id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
+        ledger: ledgerA,
+        direction: 'incoming',
+        account: aliceA,
+        amount: '100',
+        data: {
+          ilp_header: {
+            ledger: ledgerB,
+            account: bobB,
+            amount: '50'
+          }
+        }
+      })
+      assert.deepEqual(destinationTransfer.data, {
+        ilp_header: {
+          ledger: ledgerB,
+          account: bobB,
+          amount: '50'
         }
       })
     })
