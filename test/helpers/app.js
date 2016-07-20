@@ -42,7 +42,8 @@ exports.create = function (context) {
     tradingPairs: config.tradingPairs,
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,
-    routeBroadcastInterval: config.routeBroadcastInterval
+    routeBroadcastInterval: config.routeBroadcastInterval,
+    routeShift: config.routeShift
   })
   const balanceCache = new BalanceCache(ledgers)
   const app = createApp(config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache)
