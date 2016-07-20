@@ -2,7 +2,7 @@
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const logger = require('five-bells-connector')._test.logger
-const logHelper = require('five-bells-shared/testHelpers/log')
+const logHelper = require('./helpers/log')
 const expect = require('chai').expect
 const appHelper = require('./helpers/app')
 

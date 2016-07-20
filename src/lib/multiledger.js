@@ -6,8 +6,8 @@ const newSqliteStore = require('../lib/sqliteStore.js')
 
 function Multiledger (options) {
   this.config = options.config
-  this.log = options.log('multiledger')
-  this.makeLogger = options.log
+  this.log = options.log.create('multiledger')
+  this.makeLogger = options.log.create
   this.ledgers = this.buildLedgers()
   this.ledgersHealth = { ledgersHealth: healthStatus.statusNotOk }
 }

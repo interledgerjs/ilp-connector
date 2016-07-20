@@ -1,7 +1,7 @@
 'use strict'
 
 const requestUtil = require('five-bells-shared/utils/request')
-const log = require('../common').log('notifications')
+const log = require('../common').log.create('notifications')
 const model = require('../models/notifications')
 const UnprocessableEntityError =
   require('five-bells-shared').UnprocessableEntityError

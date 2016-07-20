@@ -2,7 +2,7 @@
 
 const _ = require('lodash')
 const co = require('co')
-const log = require('../common').log('subscriptions')
+const log = require('../common').log.create('subscriptions')
 const payments = require('../models/payments')
 
 function * setupListeners (ledgersService, config, routeBuilder) {

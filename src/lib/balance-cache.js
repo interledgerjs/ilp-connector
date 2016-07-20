@@ -1,6 +1,6 @@
 'use strict'
 const BigNumber = require('bignumber.js')
-const log = require('../common').log('BalanceCache')
+const log = require('../common').log.create('BalanceCache')
 
 function BalanceCache (ledgers) {
   if (!ledgers) {

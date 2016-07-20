@@ -1,6 +1,6 @@
 'use strict'
 
-const log = require('../common').log('executeSourceTransfer')
+const log = require('../common').log.create('executeSourceTransfer')
 const validator = require('./validate')
 
 // Add the execution_condition_fulfillment to the source transfer

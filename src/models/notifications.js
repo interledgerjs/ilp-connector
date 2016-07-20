@@ -2,7 +2,7 @@
 
 const jsonSigning = require('five-bells-shared').JSONSigning
 const url = require('url')
-const log = require('../common/log')('notifications')
+const log = require('../common/log').create('notifications')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 
 function parseLedger (notificationId) {

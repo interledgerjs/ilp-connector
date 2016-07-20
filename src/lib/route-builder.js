@@ -5,7 +5,7 @@ const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
 const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
-const log = require('mag')('route-builder')
+const log = require('../common/log').create('route-builder')
 
 class RouteBuilder {
   /**

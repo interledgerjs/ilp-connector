@@ -10,7 +10,7 @@ nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('five-bells-connector')._test.logger
-const logHelper = require('five-bells-shared/testHelpers/log')
+const logHelper = require('./helpers/log')
 const sinon = require('sinon')
 const jsonSigning = require('five-bells-shared').JSONSigning
 const subscriptions = require('../src/models/subscriptions')
