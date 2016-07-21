@@ -4,7 +4,7 @@ const _ = require('lodash')
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
 const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
-const log = require('../../common').log('fixerio')
+const log = require('../../common').log.create('fixerio')
 const utils = require('../utils')
 const healthStatus = require('../../common/health.js')
 

@@ -4,7 +4,6 @@ const fs = require('fs')
 const cc = require('five-bells-condition')
 const Config = require('five-bells-shared').Config
 const Utils = require('../lib/utils')
-const log = require('mag')('config')
 const _ = require('lodash')
 
 const envPrefix = 'CONNECTOR'
@@ -48,7 +47,7 @@ function parseCredentials () {
   return _.mapValues(credentialsEnv, (credentials) => {
     // DEPRECATED: `account_uri` (should be just `account`)
     if (credentials.account_uri) {
-      log.warn('DEPRECATED: The key `account_uri` in ledger credentials has been renamed `account`')
+      console.error('DEPRECATED: The key `account_uri` in ledger credentials has been renamed `account`')
       credentials.account = credentials.account_uri
       delete credentials.account_uri
     }
@@ -98,6 +97,15 @@ function parseNotificationSignEnv () {
   return {
     must_verify: mustVerify,
     keys
+  }
+}
+
+function getLogLevel () {
+  if (useTestConfig()) {
+    return 'debug'
+  } else {
+    // https://github.com/trentm/node-bunyan#levels
+    return Config.getEnv(envPrefix, 'LOG_LEVEL') || 'info'
   }
 }
 
@@ -219,6 +227,7 @@ function getLocalConfig () {
   }
 
   const notifications = parseNotificationSignEnv()
+  const logLevel = getLogLevel()
 
   return {
     backend,
@@ -234,7 +243,8 @@ function getLocalConfig () {
     routeBroadcastInterval,
     routeCleanupInterval,
     routeExpiry,
-    routeShift
+    routeShift,
+    logLevel
   }
 }
 

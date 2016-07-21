@@ -15,7 +15,7 @@ const route = require('koa-route')
 const errorHandler = require('five-bells-shared/middlewares/error-handler')
 const koa = require('koa')
 const path = require('path')
-const logger = require('koa-mag')
+const logger = require('koa-bunyan-logger')
 const Passport = require('koa-passport').KoaPassport
 const cors = require('koa-cors')
 const log = require('./common/log')
@@ -47,11 +47,11 @@ function listen (koaApp, config, ledgers, backend, routeBuilder, routeBroadcaste
     koaApp.listen(config.getIn(['server', 'port']))
   }
 
-  log('app').info('connector listening on ' + config.getIn(['server', 'bind_ip']) + ':' +
+  log.info('connector listening on ' + config.getIn(['server', 'bind_ip']) + ':' +
     config.getIn(['server', 'port']))
-  log('app').info('public at ' + config.getIn(['server', 'base_uri']))
+  log.info('public at ' + config.getIn(['server', 'base_uri']))
   for (let pair of config.get('tradingPairs')) {
-    log('app').info('pair', pair)
+    log.info('pair', pair)
   }
 
   // Start a coroutine that connects to the backend and
@@ -60,14 +60,12 @@ function listen (koaApp, config, ledgers, backend, routeBuilder, routeBroadcaste
     try {
       yield backend.connect()
     } catch (error) {
-      log('app').error(error.message)
+      log.error(error)
       process.exit(1)
     }
     yield subscriptions.subscribePairs(config.get('tradingPairs'), ledgers, config, routeBuilder)
     yield routeBroadcaster.start()
-  }).catch(function (err) {
-    log('app').error(typeof err === 'object' && err.stack || err)
-  })
+  }).catch((err) => log.error(err))
 }
 
 function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache) {
@@ -119,8 +117,29 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
   require('./services/auth')(passport, config)
 
   // Logger
-  koaApp.use(logger())
-  koaApp.use(errorHandler({log: log('error-handler')}))
+  koaApp.use(logger(log.create('koa')))
+  koaApp.use(logger.requestIdContext())
+
+  const isTrace = log.trace()
+  koaApp.use(logger.requestLogger({
+    updateRequestLogFields: function (fields) {
+      return {
+        headers: this.req.headers,
+        body: isTrace ? this.body : undefined,
+        query: this.query
+      }
+    },
+    updateResponseLogFields: function (fields) {
+      return {
+        duration: fields.duration,
+        status: this.status,
+        headers: this.headers,
+        body: isTrace ? this.body : undefined
+      }
+    }
+  }))
+  koaApp.use(errorHandler({log: log.create('error-handler')}))
+  koaApp.on('error', function () {})
 
   koaApp.use(passport.initialize())
   koaApp.use(cors({expose: ['link']}))

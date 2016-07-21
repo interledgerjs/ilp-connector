@@ -45,6 +45,7 @@ npm start
 * `CONNECTOR_HOSTNAME` (default: *[your hostname]*) Publicly visible hostname. This is important for things like generating globally unique IDs. Make sure this is a hostname that all your clients will be able to see. The default should be fine for local testing.
 * `CONNECTOR_PUBLIC_PORT` (default: `$PORT`) Publicly visible port. You can set this if your public port differs from the listening port, e.g. because the connector is running behind a proxy.
 * `CONNECTOR_PUBLIC_HTTPS` (default: `''`) Whether or not the publicly visible instance of Five Bells Connector is using HTTPS.
+* `CONNECTOR_LOG_LEVEL` (default: `info`) the allowed levels in order of verbosity are `fatal`, `error`, `warn`, `info`, `debug`, and `trace`
 
 #### Trading
 

@@ -2,7 +2,7 @@
 
 const BigNumber = require('bignumber.js')
 const NoAmountSpecifiedError = require('../errors/no-amount-specified-error')
-const log = require('../common').log('one-to-one')
+const log = require('../common').log.create('one-to-one')
 const healthStatus = require('../common/health.js')
 
 /**

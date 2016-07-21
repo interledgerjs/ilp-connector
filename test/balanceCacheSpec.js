@@ -8,7 +8,7 @@ const BigNumber = require('bignumber.js')
 const nock = require('nock')
 const expect = require('chai').expect
 const logger = require('five-bells-connector')._test.logger
-const logHelper = require('five-bells-shared/testHelpers/log')
+const logHelper = require('./helpers/log')
 const BalanceCache = require('five-bells-connector')._test.BalanceCache
 
 describe('BalanceCache', function () {

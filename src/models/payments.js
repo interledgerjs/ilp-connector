@@ -1,7 +1,7 @@
 'use strict'
 
 const testPaymentExpiry = require('../lib/testPaymentExpiry')
-const log = require('../common').log('payments')
+const log = require('../common').log.create('payments')
 const executeSourceTransfer = require('../lib/executeSourceTransfer')
 const validator = require('../lib/validate')
 

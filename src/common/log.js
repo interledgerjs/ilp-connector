@@ -1,18 +1,42 @@
 'use strict'
 
-const hub = require('mag-hub')
-const mag = require('mag')
-const log = require('five-bells-shared/lib/log')
-const debug = require('debug')
+const bunyan = require('bunyan')
+const config = require('../services/config')
 
-debug.formatArgs = null
-debug.log = function () {
-  hub.write({
-    arguments: Array.prototype.slice.call(arguments),
-    severity: 6,
-    timestamp: new Date(),
-    namespace: this.namespace
+function createLogger (name) {
+  const logger = bunyan.createLogger({
+    name: name,
+    level: config.logLevel,
+    stream: process.stdout
+  })
+  return logger
+}
+
+const defaultLogger = createLogger('connector')
+const loggers = [defaultLogger]
+
+function createChildLogger (module) {
+  const logger = defaultLogger.child({
+    module: module
+  })
+  loggers.push(logger)
+  return logger
+}
+
+// For unit testing
+function setOutputStream (outputStream) {
+  loggers.forEach((logger) => {
+    logger.streams = []
+    logger.addStream({
+      type: 'stream',
+      stream: outputStream,
+      level: config.logLevel
+    })
+    logger.currentOutput = outputStream
   })
 }
 
-module.exports = log(mag, hub)
+defaultLogger.create = createChildLogger
+defaultLogger.setOutputStream = setOutputStream
+module.exports = defaultLogger
+

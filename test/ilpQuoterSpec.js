@@ -4,7 +4,7 @@ const _ = require('lodash')
 const nock = require('nock')
 const expect = require('chai').expect
 const logger = require('five-bells-connector')._test.logger
-const logHelper = require('five-bells-shared/testHelpers/log')
+const logHelper = require('./helpers/log')
 const appHelper = require('./helpers/app')
 
 const UnsupportedPairError = require('../src/errors/unsupported-pair-error')

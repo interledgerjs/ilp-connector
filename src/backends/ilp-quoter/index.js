@@ -6,7 +6,7 @@ const NoAmountSpecifiedError =
   require('../../errors/no-amount-specified-error')
 const UnsupportedPairError =
   require('../../errors/unsupported-pair-error')
-const log = require('../../common').log('ilpquoter')
+const log = require('../../common').log.create('ilpquoter')
 const ServerError = require('five-bells-shared/errors/server-error')
 const utils = require('../utils')
 const healthStatus = require('../../common/health.js')

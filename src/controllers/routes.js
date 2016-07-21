@@ -1,7 +1,7 @@
 'use strict'
 
 const co = require('co')
-const log = require('../common').log('routes')
+const log = require('../common').log.create('routes')
 const requestUtil = require('five-bells-shared/utils/request')
 
 exports.post = function * () {
