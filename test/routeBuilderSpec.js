@@ -155,7 +155,6 @@ describe('RouteBuilder', function () {
         amount: '100',
         data: {
           ilp_header: {
-            ledger: ledgerB,
             account: bobB,
             amount: '50'
           }
@@ -173,7 +172,6 @@ describe('RouteBuilder', function () {
         },
         data: {
           ilp_header: {
-            ledger: ledgerB,
             account: bobB,
             amount: '50'
           }
@@ -190,7 +188,6 @@ describe('RouteBuilder', function () {
         amount: '100',
         data: {
           ilp_header: {
-            ledger: ledgerB,
             account: bobB,
             amount: '50'
           }
@@ -208,7 +205,6 @@ describe('RouteBuilder', function () {
         },
         data: {
           ilp_header: {
-            ledger: ledgerB,
             account: bobB,
             amount: '50'
           }
@@ -225,7 +221,6 @@ describe('RouteBuilder', function () {
         amount: '100',
         data: {
           ilp_header: {
-            ledger: ledgerB,
             account: bobB,
             amount: '50'
           }
@@ -233,7 +228,6 @@ describe('RouteBuilder', function () {
       })
       assert.deepEqual(destinationTransfer.data, {
         ilp_header: {
-          ledger: ledgerB,
           account: bobB,
           amount: '50'
         }
@@ -261,7 +255,6 @@ describe('RouteBuilder', function () {
           amount: '100',
           data: {
             ilp_header: {
-              ledger: ledgerC,
               account: carlC,
               amount: '25'
             }
@@ -278,7 +271,6 @@ describe('RouteBuilder', function () {
           amount: '50.00',
           data: {
             ilp_header: {
-              ledger: ledgerC,
               account: carlC,
               amount: '25'
             }
@@ -304,7 +296,6 @@ describe('RouteBuilder', function () {
           amount: '100',
           data: {
             ilp_header: {
-              ledger: ledgerC,
               account: carlC,
               amount: '50'
             }

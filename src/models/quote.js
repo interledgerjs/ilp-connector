@@ -1,5 +1,6 @@
 'use strict'
 
+const addressToLedger = require('../lib/utils').addressToLedger
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
@@ -20,10 +21,6 @@ function * makeQuoteQuery (params) {
     },
     explain
   }
-}
-
-function addressToLedger (address) {
-  return address.split('.').slice(0, -1).join('.')
 }
 
 /**

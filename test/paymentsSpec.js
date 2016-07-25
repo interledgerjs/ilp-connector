@@ -88,7 +88,7 @@ describe('Payments', function () {
 
   it('should pass on an execution condition fulfillment', function * () {
     const fulfillSpy = sinon.spy(this.mockPlugin2, 'fulfillCondition')
-    this.mockPlugin1.emit('fulfill_execution_condition', {
+    yield this.mockPlugin1.emitAsync('fulfill_execution_condition', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'outgoing',
       noteToSelf: {
@@ -111,7 +111,6 @@ describe('Payments', function () {
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
       data: {
         ilp_header: {
-          ledger: 'mock.test2',
           account: 'mock.test2.bob',
           amount: '50'
         }
@@ -141,7 +140,6 @@ describe('Payments', function () {
       amount: '100',
       data: {
         ilp_header: {
-          ledger: 'mock.test2',
           account: 'mock.test2.bob',
           amount: '50'
         }
@@ -170,7 +168,6 @@ describe('Payments', function () {
       amount: '100',
       data: {
         ilp_header: {
-          ledger: 'mock.test2',
           account: 'mock.test2.mark',
           amount: '50'
         }
@@ -198,7 +195,6 @@ describe('Payments', function () {
         amount: '100',
         data: {
           ilp_header: {
-            ledger: 'mock.test2',
             account: 'mock.test2.bob',
             amount: 'woot'
           }
@@ -220,7 +216,6 @@ describe('Payments', function () {
         expiresAt: (new Date(START_DATE - 1)).toISOString(),
         data: {
           ilp_header: {
-            ledger: 'mock.test2',
             account: 'mock.test2.bob',
             amount: '50'
           }
@@ -242,7 +237,6 @@ describe('Payments', function () {
         expiresAt: (new Date(START_DATE + 999)).toISOString(),
         data: {
           ilp_header: {
-            ledger: 'mock.test2',
             account: 'mock.test2.bob',
             amount: '50'
           }
@@ -265,7 +259,6 @@ describe('Payments', function () {
         amount: '100',
         data: {
           ilp_header: {
-            ledger: 'mock.test2',
             account: 'mock.test2.bob',
             amount: '50'
           }

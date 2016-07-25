@@ -6,6 +6,7 @@ const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
 const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 const log = require('../common/log').create('route-builder')
+const addressToLedger = require('./utils').addressToLedger
 
 class RouteBuilder {
   /**
@@ -104,7 +105,7 @@ class RouteBuilder {
     }
 
     const sourceLedger = sourceTransfer.ledger
-    const finalLedger = ilpHeader.ledger
+    const finalLedger = addressToLedger(ilpHeader.account)
     // Use `findBestHopForSourceAmount` since the source amount includes the slippage.
     const _nextHopBySourceAmount = this.routingTables.findBestHopForSourceAmount(
       sourceLedger, finalLedger, sourceTransfer.amount)

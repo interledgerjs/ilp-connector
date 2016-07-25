@@ -14,7 +14,7 @@ function * executeSourceTransfer (destinationTransfer, fulfillment, core) {
   const noteToSelf = destinationTransfer.noteToSelf || {}
   const sourceTransferLedger = noteToSelf.source_transfer_ledger
   const sourceTransferID = noteToSelf.source_transfer_id
-  validator.validate('Iri', sourceTransferLedger)
+  validator.validate('IlpAddress', sourceTransferLedger)
   validator.validate('Uuid', sourceTransferID)
 
   log.debug('Requesting fulfillment of source transfer: ' + sourceTransferID + ' (fulfillment: ' + JSON.stringify(fulfillment) + ')')

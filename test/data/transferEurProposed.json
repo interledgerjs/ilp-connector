@@ -1,0 +1,15 @@
+{
+  "id": "http://eur-ledger.example/transfers/3968e526-b5ef-4c35-8923-0e7cfd0892d3",
+  "ledger":"eur-ledger",
+  "debits":[{
+    "amount":"1.00",
+    "account":"eur-ledger.mark"
+  }],
+  "credits":[{
+    "amount":"1.00",
+    "account":"eur-ledger.bob"
+  }],
+  "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
+  "expires_at": "2015-06-16T00:00:10.000Z",
+  "state": "proposed"
+}

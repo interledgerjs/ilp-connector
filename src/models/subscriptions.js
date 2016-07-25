@@ -6,27 +6,26 @@ const log = require('../common').log.create('subscriptions')
 const payments = require('../models/payments')
 
 function * setupListeners (core, config, routeBuilder) {
-  for (let client of core.getClients()) {
-    const ledger = yield client.getPlugin().getPrefix()
-    client.on('receive', (transfer) => {
-      return co(function * () {
-        const transferWithLedger = Object.assign({}, transfer, {ledger})
-        yield payments.updateIncomingTransfer(transferWithLedger, core, config, routeBuilder)
-      }).catch((err) => {
-        log.warn('error processing notification: ' + err)
-        throw err
-      })
+  core.on('receive', (client, transfer) => {
+    return co(function * () {
+      const ledger = yield client.getPlugin().getPrefix()
+      const transferWithLedger = Object.assign({}, transfer, {ledger})
+      yield payments.updateIncomingTransfer(transferWithLedger, core, config, routeBuilder)
+    }).catch((err) => {
+      log.warn('error processing notification: ' + err)
+      throw err
     })
-    client.on('fulfill_execution_condition', (transfer, fulfillment) => {
-      return co(function * () {
-        const transferWithLedger = Object.assign({}, transfer, {ledger})
-        yield payments.processExecutionFulfillment(transferWithLedger, fulfillment, core, config)
-      }).catch((err) => {
-        log.warn('error processing notification: ' + err)
-        throw err
-      })
+  })
+  core.on('fulfill_execution_condition', (client, transfer, fulfillment) => {
+    return co(function * () {
+      const ledger = yield client.getPlugin().getPrefix()
+      const transferWithLedger = Object.assign({}, transfer, {ledger})
+      yield payments.processExecutionFulfillment(transferWithLedger, fulfillment, core, config)
+    }).catch((err) => {
+      log.warn('error processing notification: ' + err)
+      throw err
     })
-  }
+  })
 }
 
 function * subscribePairs (pairs, core, config, routeBuilder) {

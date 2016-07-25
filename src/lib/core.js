@@ -9,7 +9,7 @@ module.exports = function (options) {
   const makeLogger = options.log.create
   const routingTables = options.routingTables
 
-  const core = new ilpCore.Core(routingTables)
+  const core = new ilpCore.Core({routingTables})
   Object.keys(options.config.ledgerCredentials).forEach((ledgerPrefix) => {
     const creds = _.clone(options.config.ledgerCredentials[ledgerPrefix])
     const store = creds.store && newSqliteStore(creds.store)

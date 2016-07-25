@@ -641,7 +641,7 @@ describe('Quotes', function () {
           destination_ledger: 'random-ledger',
           connector: 'http://mary.example',
           min_message_window: 1,
-          source_account: 'http://eur-ledger.example/accounts/mary',
+          source_account: 'eur-ledger.mary',
           points: [ [0, 0], [10000, 20000] ]
         }])
         .expect(200)

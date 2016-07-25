@@ -96,10 +96,8 @@ describe('Notifications', function () {
 
   describe('POST /notifications', function () {
     beforeEach(function * () {
-      this.paymentOneToOne =
-        _.cloneDeep(require('./data/paymentOneToOne.json'))
-      this.paymentSameExecutionCondition =
-        _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
+      this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
+      this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
       this.transferExecutedReceipt = require('./data/transferExecutedFulfillment.json')
       this.notificationNoConditionFulfillment =
         _.cloneDeep(require('./data/notificationNoConditionFulfillment.json'))
@@ -204,16 +202,14 @@ describe('Notifications', function () {
     })
 
     it('should return a 200 if the notification is properly formatted', function * () {
-      const payment = this.formatId(this.paymentSameExecutionCondition,
-        '/payments/')
+      const sourceTransfer = this.transferUsdPrepared
+      const destinationTransfer = this.transferEurProposed
 
-      nock(payment.destination_transfers[0].id)
+      nock(destinationTransfer.id)
         .put('')
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'prepared'
-        }))
+        .reply(201, _.assign({}, destinationTransfer, {state: 'prepared'}))
 
-      nock(payment.source_transfers[0].id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
         .reply(201, this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
 
@@ -222,12 +218,12 @@ describe('Notifications', function () {
         .send({
           id: this.notificationSourceTransferPrepared.id,
           event: 'transfer.update',
-          resource: _.merge({}, payment.source_transfers[0], {
+          resource: _.merge({}, sourceTransfer, {
             credits: [{
               memo: { ilp_header: {
-                ledger: payment.destination_transfers[0].ledger,
-                amount: payment.destination_transfers[0].credits[0].amount,
-                account: payment.destination_transfers[0].credits[0].account
+                ledger: destinationTransfer.ledger,
+                amount: destinationTransfer.credits[0].amount,
+                account: destinationTransfer.credits[0].account
               } }
             }]
           })
@@ -241,8 +237,8 @@ describe('Notifications', function () {
           resource: {
             debits: [{
               memo: {
-                source_transfer_ledger: payment.source_transfers[0].ledger,
-                source_transfer_id: payment.source_transfers[0].id
+                source_transfer_ledger: sourceTransfer.ledger,
+                source_transfer_id: sourceTransfer.id
               }
             }]
           }
@@ -251,10 +247,10 @@ describe('Notifications', function () {
     })
 
     it('should return a 500 if the notification handler throws', function * () {
-      const payment = this.formatId(this.paymentSameExecutionCondition,
-        '/payments/')
+      const sourceTransfer = this.transferUsdPrepared
+      const destinationTransfer = this.transferEurProposed
 
-      this.core.resolvePlugin(payment.destination_transfers[0].ledger)._handleNotification =
+      this.core.resolvePlugin(destinationTransfer.ledger)._handleNotification =
         function * () { throw new Error() }
 
       yield this.request()
@@ -263,9 +259,9 @@ describe('Notifications', function () {
           resource: {
             debits: [{
               memo: {
-                source_transfer_ledger: payment.source_transfers[0].ledger,
-                source_transfer_id: payment.source_transfers[0].id
-                  .substring(payment.source_transfers[0].id.length - 36)
+                source_transfer_ledger: sourceTransfer.ledger,
+                source_transfer_id: sourceTransfer.id
+                  .substring(sourceTransfer.id.length - 36)
               }
             }]
           }
@@ -275,14 +271,6 @@ describe('Notifications', function () {
     })
 
     it('should not cause server error if source transfer is missing execution_condition', function * () {
-      const payment = this.formatId(this.paymentOneToOne, '/payments/')
-
-      nock(payment.destination_transfers[0].id)
-        .put('')
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'prepared'
-        }))
-
       const notification = _.cloneDeep(this.notificationSourceTransferPrepared)
       delete notification.resource.execution_condition
 
