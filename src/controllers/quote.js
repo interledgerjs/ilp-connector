@@ -96,12 +96,12 @@ function validateAmounts (sourceAmount, destinationAmount) {
     throw new NoAmountSpecifiedError('Exactly one of source_amount or destination_amount must be specified')
   }
   if (sourceAmount) {
-    if (isNaN(sourceAmount) || Number(sourceAmount) === 0 ||
+    if (isNaN(sourceAmount) || Number(sourceAmount) <= 0 ||
       Number(sourceAmount) === Number.POSITIVE_INFINITY) {
       throw new InvalidAmountSpecifiedError('source_amount must be finite and positive')
     }
   } else if (destinationAmount) {
-    if (isNaN(destinationAmount) || Number(destinationAmount) === 0 ||
+    if (isNaN(destinationAmount) || Number(destinationAmount) <= 0 ||
       Number(destinationAmount) === Number.POSITIVE_INFINITY) {
       throw new InvalidAmountSpecifiedError('destination_amount must be finite and positive')
     }

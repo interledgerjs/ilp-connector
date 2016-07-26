@@ -102,6 +102,19 @@ describe('Quotes', function () {
     it('should return a 400 if source_amount isNan', function * () {
       yield this.request()
         .get('/quote?' +
+          'source_amount=foo&source_ledger=http://eur-ledger.example' +
+          '&destination_ledger=http://usd-ledger.example')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidAmountSpecifiedError')
+          expect(res.body.message).to.equal('source_amount must be finite and positive')
+        })
+        .end()
+    })
+
+    it('should return a 400 if destination_amount isNan', function * () {
+      yield this.request()
+        .get('/quote?' +
           'destination_amount=foo&source_ledger=http://eur-ledger.example' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(400)
@@ -112,10 +125,23 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('should return a 400 if destination_amount isNan', function * () {
+    it('should return a 400 if source_amount is negative', function * () {
       yield this.request()
         .get('/quote?' +
-          'destination_amount=foo&source_ledger=http://eur-ledger.example' +
+          'source_amount=-1.3&source_ledger=http://eur-ledger.example' +
+          '&destination_ledger=http://usd-ledger.example')
+        .expect(400)
+        .expect(function (res) {
+          expect(res.body.id).to.equal('InvalidAmountSpecifiedError')
+          expect(res.body.message).to.equal('source_amount must be finite and positive')
+        })
+        .end()
+    })
+
+    it('should return a 400 if destination_amount is negative', function * () {
+      yield this.request()
+        .get('/quote?' +
+          'destination_amount=-1.4&source_ledger=http://eur-ledger.example' +
           '&destination_ledger=http://usd-ledger.example')
         .expect(400)
         .expect(function (res) {
