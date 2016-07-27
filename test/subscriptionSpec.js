@@ -93,14 +93,14 @@ describe('Subscriptions', function () {
     const destinationTransfer = this.transferEurProposed
 
     const sendSpy = sinon.spy(
-      this.core.resolvePlugin(destinationTransfer.ledger),
+      this.core.getPlugin(destinationTransfer.ledger),
       'send')
 
     const fulfillSpy = sinon.spy(
-      this.core.resolvePlugin(sourceTransfer.ledger),
+      this.core.getPlugin(sourceTransfer.ledger),
       'fulfillCondition')
 
-    yield this.core.resolvePlugin(sourceTransfer.ledger)
+    yield this.core.getPlugin(sourceTransfer.ledger)
       .emitAsync('receive', {
         id: sourceTransfer.id,
         direction: 'incoming',
@@ -119,7 +119,7 @@ describe('Subscriptions', function () {
     sinon.assert.calledOnce(sendSpy)
 
     const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
-    yield this.core.resolvePlugin(sourceTransfer.ledger)
+    yield this.core.getPlugin(sourceTransfer.ledger)
       .emitAsync('fulfill_execution_condition', {
         id: destinationTransfer.id,
         direction: 'outgoing',

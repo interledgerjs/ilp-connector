@@ -6,10 +6,10 @@ const RouteBroadcaster = require('five-bells-connector')._test.RouteBroadcaster
 const nock = require('nock')
 const appHelper = require('./helpers/app')
 
-const ledgerA = 'cad-ledger'
-const ledgerB = 'usd-ledger'
-const ledgerC = 'eur-ledger'
-const ledgerD = 'cny-ledger'
+const ledgerA = 'cad-ledger.'
+const ledgerB = 'usd-ledger.'
+const ledgerC = 'eur-ledger.'
+const ledgerD = 'cny-ledger.'
 const baseURI = 'http://connector.example'
 
 describe('RouteBroadcaster', function () {
@@ -64,11 +64,11 @@ describe('RouteBroadcaster', function () {
 
   describe('broadcast', function () {
     it('sends the combined routes to all adjacent connectors', function * () {
-      this.core.resolvePlugin(ledgerA).getConnectors =
-      this.core.resolvePlugin(ledgerC).getConnectors =
-      this.core.resolvePlugin(ledgerD).getConnectors =
+      this.core.getPlugin(ledgerA).getConnectors =
+      this.core.getPlugin(ledgerC).getConnectors =
+      this.core.getPlugin(ledgerD).getConnectors =
         function * () { return [baseURI] }
-      this.core.resolvePlugin(ledgerB).getConnectors =
+      this.core.getPlugin(ledgerB).getConnectors =
         function * () { return [baseURI, 'http://other-connector2.example'] }
 
       nock('http://other-connector2.example').post('/routes', [

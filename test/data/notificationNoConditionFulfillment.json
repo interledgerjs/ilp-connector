@@ -3,7 +3,7 @@
   "event": "transfer.update",
   "resource": {
     "id": "http://eur-ledger.example/transfers/c92f2a2c-b21d-4e6c-96e7-4f6d6df4bee9",
-    "ledger":"eur-ledger",
+    "ledger":"eur-ledger.",
     "debits":[{
       "amount":"1.00",
       "account":"eur-ledger.mark"

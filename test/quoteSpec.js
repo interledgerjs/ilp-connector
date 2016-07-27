@@ -21,9 +21,9 @@ describe('Quotes', function () {
   beforeEach(function * () {
     appHelper.create(this)
 
-    const testLedgers = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
+    const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
     _.map(testLedgers, (ledgerUri) => {
-      this.core.resolvePlugin(ledgerUri).getBalance =
+      this.core.getPlugin(ledgerUri).getBalance =
         function * () { return '150000' }
     })
 
@@ -149,9 +149,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Decrease precision
-      this.core.resolvePlugin('eur-ledger')
+      this.core.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 4, scale: 2} }
-      this.core.resolvePlugin('usd-ledger')
+      this.core.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 4} }
 
       yield this.request()
@@ -161,7 +161,7 @@ describe('Quotes', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableAmountError')
-          expect(res.body.message).to.equal('Amount (12345.00) exceeds ledger precision on eur-ledger')
+          expect(res.body.message).to.equal('Amount (12345.00) exceeds ledger precision on eur-ledger.')
         })
         .end()
     })
@@ -170,9 +170,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Decrease precision
-      this.core.resolvePlugin('eur-ledger')
+      this.core.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.resolvePlugin('usd-ledger')
+      this.core.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 4, scale: 4} }
 
       yield this.request()
@@ -182,7 +182,7 @@ describe('Quotes', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('UnacceptableAmountError')
-          expect(res.body.message).to.equal('Amount (12345.0000) exceeds ledger precision on usd-ledger')
+          expect(res.body.message).to.equal('Amount (12345.0000) exceeds ledger precision on usd-ledger.')
         })
         .end()
     })
@@ -281,9 +281,9 @@ describe('Quotes', function () {
     it('should return a 502 when unable to get precision from source_address', function * () {
       this.infoCache.reset()
       nock.cleanAll()
-      this.core.resolvePlugin('eur-ledger')
+      this.core.getPlugin('eur-ledger.')
         .getInfo = function * () { throw new ExternalError() }
-      this.core.resolvePlugin('usd-ledger')
+      this.core.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
 
       yield this.request()
@@ -302,9 +302,9 @@ describe('Quotes', function () {
     it('should return a 502 when unable to get precision from destination_address', function * () {
       this.infoCache.reset()
       nock.cleanAll()
-      this.core.resolvePlugin('eur-ledger')
+      this.core.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.resolvePlugin('usd-ledger')
+      this.core.getPlugin('usd-ledger.')
         .getInfo = function * () { throw new ExternalError() }
 
       yield this.request()
@@ -323,11 +323,11 @@ describe('Quotes', function () {
     it('should return a 502 when unable to get balance from ledger', function * () {
       this.infoCache.reset()
       nock.cleanAll()
-      this.core.resolvePlugin('eur-ledger')
+      this.core.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.resolvePlugin('usd-ledger')
+      this.core.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.resolvePlugin('usd-ledger')
+      this.core.getPlugin('usd-ledger.')
         .getBalance = function * () { throw new ExternalError() }
 
       yield this.request()
@@ -362,9 +362,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
-      this.core.resolvePlugin('eur-ledger')
+      this.core.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.resolvePlugin('usd-ledger')
+      this.core.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 4} }
 
       yield this.request()
@@ -373,10 +373,10 @@ describe('Quotes', function () {
           '&destination_address=usd-ledger.bob')
         .expect(200, {
           source_connector_account: 'mocky',
-          source_ledger: 'eur-ledger',
+          source_ledger: 'eur-ledger.',
           source_amount: '100.00',
           source_expiry_duration: '6',
-          destination_ledger: 'usd-ledger',
+          destination_ledger: 'usd-ledger.',
           destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
@@ -387,9 +387,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
-      this.core.resolvePlugin('eur-ledger')
+      this.core.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 4} }
-      this.core.resolvePlugin('usd-ledger')
+      this.core.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
 
       yield this.request()
@@ -398,10 +398,10 @@ describe('Quotes', function () {
           '&destination_address=usd-ledger.bob')
         .expect(200, {
           source_connector_account: 'mocky',
-          source_ledger: 'eur-ledger',
+          source_ledger: 'eur-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
-          destination_ledger: 'usd-ledger',
+          destination_ledger: 'usd-ledger.',
           destination_amount: '105.60', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
@@ -454,10 +454,10 @@ describe('Quotes', function () {
           '&destination_address=usd-ledger.bob')
         .expect(200, {
           source_connector_account: 'mocky',
-          source_ledger: 'eur-ledger',
+          source_ledger: 'eur-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
-          destination_ledger: 'usd-ledger',
+          destination_ledger: 'usd-ledger.',
           destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
@@ -473,10 +473,10 @@ describe('Quotes', function () {
           '&destination_address=usd-ledger.bob')
         .expect(200, {
           source_connector_account: 'mocky',
-          source_ledger: 'eur-ledger',
+          source_ledger: 'eur-ledger.',
           source_amount: '94.6948', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
           source_expiry_duration: '6',
-          destination_ledger: 'usd-ledger',
+          destination_ledger: 'usd-ledger.',
           destination_amount: '100.0000',
           destination_expiry_duration: '5'
         })
@@ -490,10 +490,10 @@ describe('Quotes', function () {
           '&destination_address=usd-ledger.bob')
         .expect(200, {
           source_connector_account: 'mocky',
-          source_ledger: 'eur-ledger',
+          source_ledger: 'eur-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
-          destination_ledger: 'usd-ledger',
+          destination_ledger: 'usd-ledger.',
           destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
@@ -507,10 +507,10 @@ describe('Quotes', function () {
           '&destination_address=eur-ledger.alice')
         .expect(200, {
           source_connector_account: 'mocky',
-          source_ledger: 'usd-ledger',
+          source_ledger: 'usd-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
-          destination_ledger: 'eur-ledger',
+          destination_ledger: 'eur-ledger.',
           destination_amount: '94.1277', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
           destination_expiry_duration: '5'
         })
@@ -524,10 +524,10 @@ describe('Quotes', function () {
           '&destination_address=cad-ledger.carl')
         .expect(200, {
           source_connector_account: 'mocky',
-          source_ledger: 'usd-ledger',
+          source_ledger: 'usd-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
-          destination_ledger: 'cad-ledger',
+          destination_ledger: 'cad-ledger.',
           destination_amount: '127.8537', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
           destination_expiry_duration: '5'
         })
@@ -541,10 +541,10 @@ describe('Quotes', function () {
           '&destination_address=usd-ledger.bob')
         .expect(200, {
           source_connector_account: 'mocky',
-          source_ledger: 'cad-ledger',
+          source_ledger: 'cad-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
-          destination_ledger: 'usd-ledger',
+          destination_ledger: 'usd-ledger.',
           destination_amount: '77.7459', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
           destination_expiry_duration: '5'
         })
@@ -637,8 +637,8 @@ describe('Quotes', function () {
       yield this.request()
         .post('/routes')
         .send([{
-          source_ledger: 'eur-ledger',
-          destination_ledger: 'random-ledger',
+          source_ledger: 'eur-ledger.',
+          destination_ledger: 'random-ledger.',
           connector: 'http://mary.example',
           min_message_window: 1,
           source_account: 'eur-ledger.mary',
@@ -657,10 +657,10 @@ describe('Quotes', function () {
         .expect(function (res) {
           expect(res.body).to.deep.equal({
             source_connector_account: 'mocky',
-            source_ledger: 'usd-ledger',
+            source_ledger: 'usd-ledger.',
             source_amount: '100.0000',
             source_expiry_duration: '7',
-            destination_ledger: 'random-ledger',
+            destination_ledger: 'random-ledger.',
             destination_amount: '188.2554',
             destination_expiry_duration: '5'
           })

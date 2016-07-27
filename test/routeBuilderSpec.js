@@ -8,9 +8,9 @@ const logHelper = require('./helpers/log')
 const logger = require('five-bells-connector')._test.logger
 
 const baseURI = 'http://mark.example'
-const ledgerA = 'usd-ledger'
-const ledgerB = 'eur-ledger'
-const ledgerC = 'cny-ledger'
+const ledgerA = 'usd-ledger.'
+const ledgerB = 'eur-ledger.'
+const ledgerC = 'cny-ledger.'
 
 // sending/receiving users
 const aliceA = 'usd-ledger.alice'
@@ -33,8 +33,8 @@ describe('RouteBuilder', function () {
       }
     }
 
-    this.core.resolvePlugin(ledgerA).getAccount = function () { return markA }
-    this.core.resolvePlugin(ledgerB).getAccount = function () { return markB }
+    this.core.getPlugin(ledgerA).getAccount = function () { return markA }
+    this.core.getPlugin(ledgerB).getAccount = function () { return markB }
 
     this.tables = new RoutingTables(baseURI, [{
       source_ledger: ledgerA,
@@ -161,7 +161,7 @@ describe('RouteBuilder', function () {
         }
       })
       assert.deepEqual(destinationTransfer, {
-        id: '22b983fe-0402-4178-8a8f-3bd201f85ed1',
+        id: 'd9600d94-f171-4443-83f5-c4c685fa70cd',
         ledger: ledgerB,
         direction: 'outgoing',
         account: bobB,
@@ -194,7 +194,7 @@ describe('RouteBuilder', function () {
         }
       })
       assert.deepEqual(destinationTransfer, {
-        id: '46e73d19-6973-471f-8bd3-900b52ee1e34',
+        id: '628cc7c4-4046-4815-897d-78895741efd9',
         ledger: ledgerB,
         direction: 'outgoing',
         account: bobB,

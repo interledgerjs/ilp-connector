@@ -45,7 +45,7 @@ function * subscribePairs (pairs, core, config, routeBuilder) {
 
 function * subscribeLedger (ledgerUri, core, config) {
   log.info('subscribing to ' + ledgerUri)
-  const client = core.resolve(ledgerUri)
+  const client = core.getClient(ledgerUri)
 
   yield client.connect()
 }

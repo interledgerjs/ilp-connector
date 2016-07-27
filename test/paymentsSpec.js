@@ -26,24 +26,20 @@ describe('Payments', function () {
   beforeEach(function * () {
     const pairs = [
       [
-        'USD@mock.test1',
-        'EUR@mock.test2'
+        'USD@mock.test1.',
+        'EUR@mock.test2.'
       ]
     ]
-    process.env.CONNECTOR_LEDGERS = JSON.stringify([
-      'EUR@http://eur-ledger.example',
-      'USD@http://example.com'
-    ])
     process.env.UNIT_TEST_OVERRIDE = '1'
     process.env.CONNECTOR_CREDENTIALS = JSON.stringify({
-      'mock.test1': {
+      'mock.test1.': {
         type: 'mock',
         host: 'http://test1.mock',
         account: 'xyz',
         username: 'bob',
         password: 'bob'
       },
-      'mock.test2': {
+      'mock.test2.': {
         type: 'mock',
         host: 'http://test2.mock',
         account: 'xyz',
@@ -66,8 +62,8 @@ describe('Payments', function () {
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
 
-    this.mockPlugin1 = this.core.resolvePlugin('mock.test1')
-    this.mockPlugin2 = this.core.resolvePlugin('mock.test2')
+    this.mockPlugin1 = this.core.getPlugin('mock.test1.')
+    this.mockPlugin2 = this.core.getPlugin('mock.test2.')
   })
 
   afterEach(function * () {
@@ -81,7 +77,7 @@ describe('Payments', function () {
       direction: 'outgoing',
       noteToSelf: {
         source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-        source_transfer_ledger: 'http://test2.mock'
+        source_transfer_ledger: 'test2.mock.'
       }
     }, 'invalid') // 'invalid' triggers error in mock plugin
   })
@@ -93,7 +89,7 @@ describe('Payments', function () {
       direction: 'outgoing',
       noteToSelf: {
         source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-        source_transfer_ledger: 'mock.test2'
+        source_transfer_ledger: 'mock.test2.'
       }
     }, 'cf:0:')
 
@@ -120,14 +116,14 @@ describe('Payments', function () {
     sinon.assert.calledOnce(sendSpy)
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
-      ledger: 'mock.test2',
+      ledger: 'mock.test2.',
       account: 'mock.test2.bob',
       amount: '50',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE)).toISOString(),
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'mock.test1'
+        source_transfer_ledger: 'mock.test1.'
       }
     })
   })
@@ -149,12 +145,12 @@ describe('Payments', function () {
     sinon.assert.calledOnce(sendSpy)
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
-      ledger: 'mock.test2',
+      ledger: 'mock.test2.',
       account: 'mock.test2.bob',
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'mock.test1'
+        source_transfer_ledger: 'mock.test1.'
       }
     })
   })
@@ -177,12 +173,12 @@ describe('Payments', function () {
     sinon.assert.calledOnce(sendSpy)
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
-      ledger: 'mock.test2',
+      ledger: 'mock.test2.',
       account: 'mock.test2.mark',
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'mock.test1'
+        source_transfer_ledger: 'mock.test1.'
       }
     })
   })
@@ -322,13 +318,13 @@ describe('Payments', function () {
       sinon.assert.calledOnce(sendSpy)
       sinon.assert.calledWithMatch(sendSpy, {
         direction: 'outgoing',
-        ledger: 'mock.test2',
+        ledger: 'mock.test2.',
         account: 'mock.test2.bob',
         amount: '50',
         cases: [this.caseId1, this.caseId2],
         noteToSelf: {
           source_transfer_id: this.transfer.id,
-          source_transfer_ledger: 'mock.test1'
+          source_transfer_ledger: 'mock.test1.'
         }
       })
     })

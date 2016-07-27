@@ -52,15 +52,15 @@ npm start
 * `CONNECTOR_LEDGERS` (default: `[]`) Ledgers where this connector has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
 ```js
 [
-  "USD@http://usd-ledger.example",
-  "EUR@http://eur-ledger.example"
+  "USD@example.usd-ledger.",
+  "EUR@example.eur-ledger."
 ]
 ```
 * `CONNECTOR_CREDENTIALS` (default: `{}`) Connector's login credentials for various ledgers, ex.
 ```js
 {
   // Using Basic Auth
-  "<ledger_uri>": {
+  "<ledger_address>": {
     "account": "...",
     "username": "...",
     "password": "..."
@@ -68,7 +68,7 @@ npm start
   },
 
   // Using Client Certificate Auth
-  "<ledger_uri_2>": {
+  "<ledger_address_2>": {
     "account": "...",
     "username": "...",
     "cert": "...",
@@ -81,11 +81,11 @@ npm start
 ```js
 [
   [
-    'USD@http://ledger1.example',
-    'EUR@http://ledger2.example'
+    'USD@example.ledger1.',
+    'EUR@example.ledger2.'
   ],[
-    'EUR@http://ledger2.example',
-    'USD@http://ledger1.example'
+    'EUR@example.ledger2.',
+    'USD@example.ledger1.'
   ]
 ]
 ```

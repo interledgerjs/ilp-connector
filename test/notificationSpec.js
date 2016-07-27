@@ -57,12 +57,13 @@ describe('Notifications', function () {
     beforeEach(function * () {
       process.env.CONNECTOR_NOTIFICATION_VERIFY = 'true'
       process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-        'http://eur-ledger.example': 'cc:3:11:Jd1P5DR8KKOp3OfcTfKdolh2IREIdG3LP2WU8gg6pCc:518',
-        'http://example.com': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518'
+        'eur-ledger.': 'cc:3:11:Jd1P5DR8KKOp3OfcTfKdolh2IREIdG3LP2WU8gg6pCc:518',
+        'usd-ledger.': 'cc:3:11:Jd1P5DR8KKOp3OfcTfKdolh2IREIdG3LP2WU8gg6pCc:518',
+        'example.': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518'
       })
       process.env.CONNECTOR_LEDGERS = JSON.stringify([
-        'EUR@http://eur-ledger.example',
-        'USD@http://example.com'
+        'EUR@eur-ledger.',
+        'USD@example.'
       ])
       appHelper.create(this)
       yield this.backend.connect(ratesResponse)
@@ -250,7 +251,7 @@ describe('Notifications', function () {
       const sourceTransfer = this.transferUsdPrepared
       const destinationTransfer = this.transferEurProposed
 
-      this.core.resolvePlugin(destinationTransfer.ledger)._handleNotification =
+      this.core.getPlugin(destinationTransfer.ledger)._handleNotification =
         function * () { throw new Error() }
 
       yield this.request()
@@ -282,7 +283,7 @@ describe('Notifications', function () {
     })
 
     it('should return 200 if the payment is not relevant to the connector', function * () {
-      this.core.resolvePlugin(this.notificationSourceTransferPrepared.resource.ledger)
+      this.core.getPlugin(this.notificationSourceTransferPrepared.resource.ledger)
         ._handleNotification = function * () { throw makeError('UnrelatedNotificationError') }
 
       yield this.request()
@@ -297,7 +298,7 @@ describe('Notifications', function () {
     })
 
     it('should return 200 if the rate of the payment is worse than the one currently offered', function * () {
-      this.core.resolvePlugin(this.notificationSourceTransferPrepared.resource.ledger)
+      this.core.getPlugin(this.notificationSourceTransferPrepared.resource.ledger)
         ._handleNotification = function * () { throw makeError('UnacceptableRateError') }
 
       yield this.request()
@@ -312,7 +313,7 @@ describe('Notifications', function () {
     })
 
     it('should return 200 if the payment is from an unknown source ledger', function * () {
-      this.core.resolvePlugin(this.notificationSourceTransferPrepared.resource.ledger)
+      this.core.getPlugin(this.notificationSourceTransferPrepared.resource.ledger)
         ._handleNotification = function * () { throw makeError('AssetsNotTradedError') }
 
       yield this.request()
@@ -327,7 +328,7 @@ describe('Notifications', function () {
     })
 
     it('should return a 200 if the source transfer is expired', function * () {
-      this.core.resolvePlugin(this.notificationSourceTransferPrepared.resource.ledger)
+      this.core.getPlugin(this.notificationSourceTransferPrepared.resource.ledger)
         ._handleNotification = function * () { throw makeError('UnacceptableExpiryError') }
 
       yield this.request()

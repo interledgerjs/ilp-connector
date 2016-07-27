@@ -21,7 +21,7 @@ function * executeSourceTransfer (destinationTransfer, fulfillment, core) {
   // TODO check the timestamp on the response from the ledger against
   // the transfer's expiry date
   // See https://github.com/interledger/five-bells-ledger/issues/149
-  yield core.resolvePlugin(sourceTransferLedger)
+  yield core.getPlugin(sourceTransferLedger)
     .fulfillCondition(sourceTransferID, fulfillment)
     .catch(() => {
       log.error('Attempted to execute source transfer but it was unsucessful: we have not been fully repaid')

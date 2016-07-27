@@ -124,8 +124,8 @@ class RouteBroadcaster {
       additional_info: quote.additional_info,
       connector: this.baseURI,
       min_message_window: this.minMessageWindow,
-      source_account: this.core.resolvePlugin(quote.source_ledger).getAccount(),
-      destination_account: this.core.resolvePlugin(quote.destination_ledger).getAccount(),
+      source_account: this.core.getPlugin(quote.source_ledger).getAccount(),
+      destination_account: this.core.getPlugin(quote.destination_ledger).getAccount(),
       points: [
         [0, 0],
         [+quote.source_amount, +quote.destination_amount]

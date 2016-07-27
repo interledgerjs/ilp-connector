@@ -10,7 +10,7 @@ class InfoCache {
   }
 
   * getInfoUncached (ledger) {
-    return yield this.core.resolvePlugin(ledger).getInfo()
+    return yield this.core.getPlugin(ledger).getInfo()
   }
 
   * get (ledger) {

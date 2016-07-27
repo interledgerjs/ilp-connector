@@ -67,7 +67,7 @@ class RouteBuilder {
 
     const quote = {
       source_connector_account:
-        this.core.resolvePlugin(nextHop.sourceLedger).getAccount(),
+        this.core.getPlugin(nextHop.sourceLedger).getAccount(),
       source_ledger: nextHop.sourceLedger,
       source_amount: nextHop.sourceAmount,
       destination_ledger: nextHop.finalLedger,

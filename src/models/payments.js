@@ -20,7 +20,7 @@ function * validateExpiry (sourceTransfer, destinationTransfer, config) {
 function * settle (sourceTransfer, destinationTransfer, config, core) {
   log.debug('Settle payment, source: ' + JSON.stringify(sourceTransfer))
   log.debug('Settle payment, destination: ' + JSON.stringify(destinationTransfer))
-  yield core.resolvePlugin(destinationTransfer.account).send(destinationTransfer)
+  yield core.getPlugin(destinationTransfer.ledger).send(destinationTransfer)
 }
 
 function * updateIncomingTransfer (sourceTransfer, core, config, routeBuilder) {

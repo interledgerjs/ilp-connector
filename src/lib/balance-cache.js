@@ -24,7 +24,7 @@ BalanceCache.prototype.load = function * (ledger) {
   clearInterval(this.timer)
   this.timer = setInterval(this.reset.bind(this), 60000).unref()
 
-  const plugin = this.core.resolvePlugin(ledger)
+  const plugin = this.core.getPlugin(ledger)
   return new BigNumber(yield plugin.getBalance())
 }
 

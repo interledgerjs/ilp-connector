@@ -52,7 +52,7 @@ function getDeterministicUuid (secret, input) {
 }
 
 function addressToLedger (address) {
-  return address.split('.').slice(0, -1).join('.')
+  return address.split('.').slice(0, -1).join('.') + '.'
 }
 
 module.exports = {

@@ -14,10 +14,9 @@ module.exports = function (options) {
     const creds = _.clone(options.config.ledgerCredentials[ledgerPrefix])
     const store = creds.store && newSqliteStore(creds.store)
 
+    creds.prefix = ledgerPrefix
     core.addClient(ledgerPrefix, new ilpCore.Client({
       plugin: require('ilp-plugin-' + creds.type),
-      prefix: ledgerPrefix,
-      host: creds.host,
       auth: creds,
       store: store,
       log: makeLogger('plugin-' + creds.type),

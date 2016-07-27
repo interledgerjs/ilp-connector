@@ -22,14 +22,14 @@ describe('BalanceCache', function () {
 
   describe('get', function () {
     it('fetches the result', function * () {
-      let balance = yield this.cache.get('usd-ledger')
+      let balance = yield this.cache.get('usd-ledger.')
       expect(balance).to.be.an.instanceof(BigNumber)
       expect(balance.toString()).to.equal('123.456')
     })
 
     it('caches the result', function * () {
-      yield this.cache.get('usd-ledger')
-      let balance = yield this.cache.get('usd-ledger')
+      yield this.cache.get('usd-ledger.')
+      let balance = yield this.cache.get('usd-ledger.')
       expect(balance).to.be.an.instanceof(BigNumber)
       expect(balance.toString()).to.equal('123.456')
     })

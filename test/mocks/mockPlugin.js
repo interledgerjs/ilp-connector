@@ -5,7 +5,7 @@ const EventEmitter = require('eventemitter2')
 class MockPlugin extends EventEmitter {
   constructor (options) {
     super()
-    this.prefix = options.prefix || 'mock'
+    this.prefix = options.auth.prefix || 'mock.'
   }
 
   connect () {
