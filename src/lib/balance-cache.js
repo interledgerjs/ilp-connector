@@ -2,12 +2,12 @@
 const BigNumber = require('bignumber.js')
 const log = require('../common').log.create('BalanceCache')
 
-function BalanceCache (ledgers) {
-  if (!ledgers) {
-    throw new TypeError('Must be given a valid ledgers instance')
+function BalanceCache (core) {
+  if (!core) {
+    throw new TypeError('Must be given a valid Core instance')
   }
 
-  this.ledgers = ledgers
+  this.core = core
   this.balanceByLedger = {}
   this.timer = null
 }
@@ -24,7 +24,7 @@ BalanceCache.prototype.load = function * (ledger) {
   clearInterval(this.timer)
   this.timer = setInterval(this.reset.bind(this), 60000).unref()
 
-  const plugin = this.ledgers.getLedger(ledger)
+  const plugin = this.core.getPlugin(ledger)
   return new BigNumber(yield plugin.getBalance())
 }
 

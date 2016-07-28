@@ -5,31 +5,31 @@ const co = require('co')
 const log = require('../common').log.create('subscriptions')
 const payments = require('../models/payments')
 
-function * setupListeners (ledgersService, config, routeBuilder) {
-  for (let ledger of _.values(ledgersService.getLedgers())) {
-    ledger.on('receive', (transfer) => {
-      return co(function * () {
-        const transferWithLedger = Object.assign({}, transfer, { ledger: ledger.id })
-        yield payments.updateIncomingTransfer(transferWithLedger, ledgersService, config, routeBuilder)
-      }).catch((err) => {
-        log.warn('error processing notification: ' + err)
-        throw err
-      })
+function * setupListeners (core, config, routeBuilder) {
+  core.on('receive', (client, transfer) => {
+    return co(function * () {
+      const ledger = yield client.getPlugin().getPrefix()
+      const transferWithLedger = Object.assign({}, transfer, {ledger})
+      yield payments.updateIncomingTransfer(transferWithLedger, core, config, routeBuilder)
+    }).catch((err) => {
+      log.warn('error processing notification: ' + err)
+      throw err
     })
-    ledger.on('fulfill_execution_condition', (transfer, fulfillment) => {
-      return co(function * () {
-        const transferWithLedger = Object.assign({}, transfer, { ledger: ledger.id })
-        yield payments.processExecutionFulfillment(transferWithLedger, fulfillment, ledgersService, config)
-      }).catch((err) => {
-        log.warn('error processing notification: ' + err)
-        throw err
-      })
+  })
+  core.on('fulfill_execution_condition', (client, transfer, fulfillment) => {
+    return co(function * () {
+      const ledger = yield client.getPlugin().getPrefix()
+      const transferWithLedger = Object.assign({}, transfer, {ledger})
+      yield payments.processExecutionFulfillment(transferWithLedger, fulfillment, core, config)
+    }).catch((err) => {
+      log.warn('error processing notification: ' + err)
+      throw err
     })
-  }
+  })
 }
 
-function * subscribePairs (pairs, ledgersService, config, routeBuilder) {
-  yield this.setupListeners(ledgersService, config, routeBuilder)
+function * subscribePairs (pairs, core, config, routeBuilder) {
+  yield this.setupListeners(core, config, routeBuilder)
 
   let ledgers = _(pairs)
     .flatten()
@@ -40,14 +40,14 @@ function * subscribePairs (pairs, ledgersService, config, routeBuilder) {
     .value()
 
   // Subscribe to all ledgers in parallel.
-  yield ledgers.map((l) => subscribeLedger(l, ledgersService, config))
+  yield ledgers.map((l) => subscribeLedger(l, core, config))
 }
 
-function * subscribeLedger (ledgerUri, ledgersService, config) {
+function * subscribeLedger (ledgerUri, core, config) {
   log.info('subscribing to ' + ledgerUri)
-  const ledger = ledgersService.getLedger(ledgerUri)
+  const client = core.getClient(ledgerUri)
 
-  yield ledger.connect()
+  yield client.connect()
 }
 
 module.exports = {

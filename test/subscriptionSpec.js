@@ -72,10 +72,10 @@ describe('Subscriptions', function () {
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
     yield subscriptions.subscribePairs(require('./data/tradingPairs.json'),
-      this.ledgers, this.config, this.routeBuilder)
+      this.core, this.config, this.routeBuilder)
 
-    this.paymentSameExecutionCondition =
-      _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
+    this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
+    this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
     this.notificationSourceTransferPrepared =
       _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
     this.notificationWithConditionFulfillment =
@@ -89,47 +89,45 @@ describe('Subscriptions', function () {
   })
 
   it('should initiate and complete a universal mode payment', function * () {
-    const payment = this.formatId(this.paymentSameExecutionCondition,
-      '/payments/')
+    const sourceTransfer = this.transferUsdPrepared
+    const destinationTransfer = this.transferEurProposed
 
     const sendSpy = sinon.spy(
-      this.ledgers.getLedger(payment.destination_transfers[0].ledger),
+      this.core.getPlugin(destinationTransfer.ledger),
       'send')
 
     const fulfillSpy = sinon.spy(
-      this.ledgers.getLedger(payment.source_transfers[0].ledger),
+      this.core.getPlugin(sourceTransfer.ledger),
       'fulfillCondition')
 
-    yield this.ledgers.getLedger(payment.source_transfers[0].ledger)
+    yield this.core.getPlugin(sourceTransfer.ledger)
       .emitAsync('receive', {
-        id: payment.source_transfers[0].id,
+        id: sourceTransfer.id,
         direction: 'incoming',
-        account: payment.source_transfers[0].debits[0].account,
-        amount: payment.source_transfers[0].debits[0].amount,
-        executionCondition: payment.source_transfers[0].debits[0].execution_condition,
-        expiresAt: payment.source_transfers[0].debits[0].expires_at,
+        account: sourceTransfer.debits[0].account,
+        amount: sourceTransfer.debits[0].amount,
+        executionCondition: sourceTransfer.debits[0].execution_condition,
+        expiresAt: sourceTransfer.debits[0].expires_at,
         data: {
           ilp_header: {
-            ledger: payment.destination_transfers[0].ledger,
-            amount: payment.destination_transfers[0].credits[0].amount,
-            account: payment.destination_transfers[0].credits[0].account
+            amount: destinationTransfer.credits[0].amount,
+            account: destinationTransfer.credits[0].account
           }
         }
       })
 
     sinon.assert.calledOnce(sendSpy)
 
-    const sourceId = payment.source_transfers[0].id
-      .substring(payment.source_transfers[0].id.length - 36)
-    yield this.ledgers.getLedger(payment.source_transfers[0].ledger)
+    const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
+    yield this.core.getPlugin(sourceTransfer.ledger)
       .emitAsync('fulfill_execution_condition', {
-        id: payment.destination_transfers[0].id,
+        id: destinationTransfer.id,
         direction: 'outgoing',
-        account: payment.destination_transfers[0].debits[0].account,
-        amount: payment.destination_transfers[0].debits[0].amount,
-        executionCondition: payment.destination_transfers[0].debits[0].execution_condition,
+        account: destinationTransfer.debits[0].account,
+        amount: destinationTransfer.debits[0].amount,
+        executionCondition: destinationTransfer.debits[0].execution_condition,
         noteToSelf: {
-          source_transfer_ledger: payment.source_transfers[0].ledger,
+          source_transfer_ledger: sourceTransfer.ledger,
           source_transfer_id: sourceId
         }
       }, 'cf:0:')

@@ -15,21 +15,21 @@ describe('BalanceCache', function () {
   logHelper(logger)
 
   beforeEach(function * () {
-    this.cache = new BalanceCache(require('../src/services/ledgers'))
+    this.cache = new BalanceCache(require('../src/services/core'))
   })
 
   afterEach(function * () { nock.cleanAll() })
 
   describe('get', function () {
     it('fetches the result', function * () {
-      let balance = yield this.cache.get('http://usd-ledger.example')
+      let balance = yield this.cache.get('usd-ledger.')
       expect(balance).to.be.an.instanceof(BigNumber)
       expect(balance.toString()).to.equal('123.456')
     })
 
     it('caches the result', function * () {
-      yield this.cache.get('http://usd-ledger.example')
-      let balance = yield this.cache.get('http://usd-ledger.example')
+      yield this.cache.get('usd-ledger.')
+      let balance = yield this.cache.get('usd-ledger.')
       expect(balance).to.be.an.instanceof(BigNumber)
       expect(balance.toString()).to.equal('123.456')
     })

@@ -140,15 +140,15 @@ function validateNotificationEnv () {
   if (notifications.must_verify) {
     const ledgers = parseLedgers()
     for (let ledgerObj of ledgers) {
-      const uri = ledgerObj.ledger
-      if (notifications.keys[uri] === undefined) {
-        throw new Error(`Missing notification signing keys for ledger: ${uri}`)
+      const ledgerPrefix = ledgerObj.ledger
+      if (notifications.keys[ledgerPrefix] === undefined) {
+        throw new Error(`Missing notification signing keys for ledger: ${ledgerPrefix}`)
       }
 
       try {
-        cc.validateCondition(notifications.keys[uri])
+        cc.validateCondition(notifications.keys[ledgerPrefix])
       } catch (e) {
-        throw new Error(`Failed to read signing key for ledger ${uri}: ${e.message}`)
+        throw new Error(`Failed to read signing key for ledger ${ledgerPrefix}: ${e.message}`)
       }
     }
   }

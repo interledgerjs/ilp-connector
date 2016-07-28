@@ -12,9 +12,9 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
  * @apiName Quote
  * @apiGroup Quote
  *
- * @apiParam {URI} source_ledger Ledger where the transfer crediting the
+ * @apiParam {URI} source_address Account where the transfer crediting the
  *    connector's account will take place
- * @apiParam {URI} destination_ledger Ledger where the transfer debiting the
+ * @apiParam {URI} destination_address Account where the transfer debiting the
  *    connector's account will take place
  * @apiParam {Number} [source_amount="(Set by connector if destination_amount is
  *    specified)"] Fixed amount to be debited from sender's account
@@ -35,8 +35,8 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
  * @apiExample {shell} Fixed Source Amount:
  *    curl https://connector.example? \
  *      source_amount=100.25 \
- *      &source_ledger=https://eur-ledger.example/EUR \
- *      &destination_ledger=https://usd-ledger.example/USD \
+ *      &source_address=eur-ledger.alice \
+ *      &destination_address=usd-ledger.bob \
  *      &source_expiry_duration=6 \
  *      &destination_expiry_duration=5 \
  *
@@ -44,10 +44,10 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
  *    HTTP/1.1 200 OK
  *      {
  *        "source_connector_account": "mark",
- *        "source_ledger": "http://eur-ledger.example",
+ *        "source_ledger": "eur-ledger",
  *        "source_amount": "100.25",
  *        "source_expiry_duration": "6000",
- *        "destination_ledger": "http://usd-ledger.example",
+ *        "destination_ledger": "usd-ledger",
  *        "destination_amount": "105.71",
  *        "destination_expiry_duration": "5000"
  *      }
@@ -55,8 +55,8 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
  * @apiExample {shell} Fixed Destination Amount:
  *    curl https://connector.example? \
  *      destination_amount=105.71 \
- *      &source_ledger=https://eur-ledger.example/EUR \
- *      &destination_ledger=https://usd-ledger.example/USD \
+ *      &source_address=eur-ledger.alice \
+ *      &destination_address=usd-ledger.bob \
  *      &source_expiry_duration=6000 \
  *      &destination_expiry_duration=5000 \
  *
@@ -64,10 +64,10 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
  *    HTTP/1.1 200 OK
  *      {
  *        "source_connector_account": "mark",
- *        "source_ledger": "http://eur-ledger.example",
+ *        "source_ledger": "eur-ledger",
  *        "source_amount": "100.25",
  *        "source_expiry_duration": "6000",
- *        "destination_ledger": "http://usd-ledger.example",
+ *        "destination_ledger": "usd-ledger",
  *        "destination_amount": "105.71",
  *        "destination_expiry_duration": "5000"
  *      }
@@ -79,11 +79,12 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
 
 exports.get = function * () {
   validateAmounts(this.query.source_amount, this.query.destination_amount)
-  if (!this.query.source_account && !this.query.source_ledger) {
-    throw new InvalidUriParameterError('Missing required parameter: source_ledger or source_account')
+  validatePrecisionAndScale(this.query.destination_precision, this.query.destination_scale)
+  if (!this.query.source_address) {
+    throw new InvalidUriParameterError('Missing required parameter: source_address')
   }
-  if (!this.query.destination_account && !this.query.destination_ledger) {
-    throw new InvalidUriParameterError('Missing required parameter: destination_ledger or destination_account')
+  if (!this.query.destination_address) {
+    throw new InvalidUriParameterError('Missing required parameter: destination_address')
   }
   this.body = yield model.getQuote(this.query, this.config, this.routeBuilder, this.balanceCache)
 }
@@ -106,4 +107,10 @@ function validateAmounts (sourceAmount, destinationAmount) {
       throw new InvalidAmountSpecifiedError('destination_amount must be finite and positive')
     }
   }
+}
+
+function validatePrecisionAndScale (precision, scale) {
+  if (precision && scale) return
+  if (!precision && !scale) return
+  throw new InvalidUriParameterError('Either both or neither of "precision" and "scale" must be specified')
 }

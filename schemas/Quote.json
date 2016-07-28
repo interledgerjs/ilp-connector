@@ -6,15 +6,15 @@
   "properties": {
     "source_connector_account": {
       "description": "the connector's account on the source ledger",
-      "$ref": "Iri.json"
+      "$ref": "IlpAddress.json"
     },
     "source_ledger": {
-      "description": "The URI of the source ledger",
-      "$ref": "Iri.json"
+      "description": "The ILP Address of the source ledger",
+      "$ref": "IlpAddress.json"
     },
     "destination_ledger": {
-      "description": "The URI of the destination ledger",
-      "$ref": "Iri.json"
+      "description": "The ILP Address of the destination ledger",
+      "$ref": "IlpAddress.json"
     },
     "source_amount": {
       "description": "The amount in the currency used by the source ledger",

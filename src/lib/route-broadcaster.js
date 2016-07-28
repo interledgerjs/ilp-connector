@@ -1,6 +1,5 @@
 'use strict'
 
-const _ = require('lodash')
 const co = require('co')
 const defer = require('co-defer')
 const request = require('co-request')
@@ -11,7 +10,7 @@ class RouteBroadcaster {
   /**
    * @param {RoutingTables} routingTables
    * @param {Backend} backend
-   * @param {Multiledger} ledgers
+   * @param {ilp-core.Core} core
    * @param {InfoCache} infoCache
    * @param {Object} config
    * @param {Object} config.tradingPairs
@@ -19,9 +18,9 @@ class RouteBroadcaster {
    * @param {Number} config.routeCleanupInterval
    * @param {Number} config.routeBroadcastInterval
    */
-  constructor (routingTables, backend, ledgers, infoCache, config) {
-    if (!ledgers) {
-      throw new TypeError('Must be given a valid ledgers instance')
+  constructor (routingTables, backend, core, infoCache, config) {
+    if (!core) {
+      throw new TypeError('Must be given a valid Core instance')
     }
 
     this.routeCleanupInterval = config.routeCleanupInterval
@@ -29,7 +28,7 @@ class RouteBroadcaster {
     this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.backend = backend
-    this.ledgers = ledgers
+    this.core = core
     this.infoCache = infoCache
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
@@ -79,11 +78,11 @@ class RouteBroadcaster {
   }
 
   crawlLedgers () {
-    return _.values(this.ledgers.getLedgers()).map(this._crawlLedger, this)
+    return this.core.getClients().map(this._crawlLedger, this)
   }
 
-  * _crawlLedger (ledger) {
-    const connectors = yield ledger.getConnectors()
+  * _crawlLedger (client) {
+    const connectors = yield client.getPlugin().getConnectors()
     connectors.forEach(this.addConnector, this)
   }
 
@@ -125,8 +124,8 @@ class RouteBroadcaster {
       additional_info: quote.additional_info,
       connector: this.baseURI,
       min_message_window: this.minMessageWindow,
-      source_account: this.ledgers.getLedger(quote.source_ledger).getAccount(),
-      destination_account: this.ledgers.getLedger(quote.destination_ledger).getAccount(),
+      source_account: this.core.getPlugin(quote.source_ledger).getAccount(),
+      destination_account: this.core.getPlugin(quote.destination_ledger).getAccount(),
       points: [
         [0, 0],
         [+quote.source_amount, +quote.destination_amount]

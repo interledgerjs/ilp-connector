@@ -26,26 +26,22 @@ describe('Payments', function () {
   beforeEach(function * () {
     const pairs = [
       [
-        'USD@http://test1.mock',
-        'EUR@http://test2.mock'
+        'USD@mock.test1.',
+        'EUR@mock.test2.'
       ]
     ]
-    process.env.CONNECTOR_LEDGERS = JSON.stringify([
-      'EUR@http://eur-ledger.example',
-      'USD@http://example.com'
-    ])
     process.env.UNIT_TEST_OVERRIDE = '1'
     process.env.CONNECTOR_CREDENTIALS = JSON.stringify({
-      'http://test1.mock': {
+      'mock.test1.': {
         type: 'mock',
-        id: 'http://test1.mock',
+        host: 'http://test1.mock',
         account: 'xyz',
         username: 'bob',
         password: 'bob'
       },
-      'http://test2.mock': {
+      'mock.test2.': {
         type: 'mock',
-        id: 'http://test2.mock',
+        host: 'http://test2.mock',
         account: 'xyz',
         username: 'bob',
         password: 'bob'
@@ -61,13 +57,13 @@ describe('Payments', function () {
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
     yield subscriptions.subscribePairs(pairs,
-      this.ledgers, this.config, this.routeBuilder)
+      this.core, this.config, this.routeBuilder)
 
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
 
-    this.mockPlugin1 = this.ledgers.getLedger('http://test1.mock')
-    this.mockPlugin2 = this.ledgers.getLedger('http://test2.mock')
+    this.mockPlugin1 = this.core.getPlugin('mock.test1.')
+    this.mockPlugin2 = this.core.getPlugin('mock.test2.')
   })
 
   afterEach(function * () {
@@ -81,19 +77,19 @@ describe('Payments', function () {
       direction: 'outgoing',
       noteToSelf: {
         source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-        source_transfer_ledger: 'http://test2.mock'
+        source_transfer_ledger: 'test2.mock.'
       }
     }, 'invalid') // 'invalid' triggers error in mock plugin
   })
 
   it('should pass on an execution condition fulfillment', function * () {
     const fulfillSpy = sinon.spy(this.mockPlugin2, 'fulfillCondition')
-    this.mockPlugin1.emit('fulfill_execution_condition', {
+    yield this.mockPlugin1.emitAsync('fulfill_execution_condition', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'outgoing',
       noteToSelf: {
         source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-        source_transfer_ledger: 'http://test2.mock'
+        source_transfer_ledger: 'mock.test2.'
       }
     }, 'cf:0:')
 
@@ -111,8 +107,7 @@ describe('Payments', function () {
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
       data: {
         ilp_header: {
-          ledger: 'http://test2.mock',
-          account: 'http://test2.mock/accounts/bob',
+          account: 'mock.test2.bob',
           amount: '50'
         }
       }
@@ -121,14 +116,14 @@ describe('Payments', function () {
     sinon.assert.calledOnce(sendSpy)
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
-      ledger: 'http://test2.mock',
-      account: 'http://test2.mock/accounts/bob',
+      ledger: 'mock.test2.',
+      account: 'mock.test2.bob',
       amount: '50',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE)).toISOString(),
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'http://test1.mock'
+        source_transfer_ledger: 'mock.test1.'
       }
     })
   })
@@ -141,8 +136,7 @@ describe('Payments', function () {
       amount: '100',
       data: {
         ilp_header: {
-          ledger: 'http://test2.mock',
-          account: 'http://test2.mock/accounts/bob',
+          account: 'mock.test2.bob',
           amount: '50'
         }
       }
@@ -151,17 +145,18 @@ describe('Payments', function () {
     sinon.assert.calledOnce(sendSpy)
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
-      ledger: 'http://test2.mock',
-      account: 'http://test2.mock/accounts/bob',
+      ledger: 'mock.test2.',
+      account: 'mock.test2.bob',
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'http://test1.mock'
+        source_transfer_ledger: 'mock.test1.'
       }
     })
   })
 
   it('authorizes the payment even if the connector is also the payee of the destination transfer', function * () {
+    this.mockPlugin2.FOO = 'bar'
     const sendSpy = sinon.spy(this.mockPlugin2, 'send')
     yield this.mockPlugin1.emitAsync('receive', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
@@ -169,8 +164,7 @@ describe('Payments', function () {
       amount: '100',
       data: {
         ilp_header: {
-          ledger: 'http://test2.mock',
-          account: 'http://test2.mock/accounts/mark',
+          account: 'mock.test2.mark',
           amount: '50'
         }
       }
@@ -179,12 +173,12 @@ describe('Payments', function () {
     sinon.assert.calledOnce(sendSpy)
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
-      ledger: 'http://test2.mock',
-      account: 'http://test2.mock/accounts/mark',
+      ledger: 'mock.test2.',
+      account: 'mock.test2.mark',
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'http://test1.mock'
+        source_transfer_ledger: 'mock.test1.'
       }
     })
   })
@@ -197,8 +191,7 @@ describe('Payments', function () {
         amount: '100',
         data: {
           ilp_header: {
-            ledger: 'http://test2.mock',
-            account: 'http://test2.mock/accounts/bob',
+            account: 'mock.test2.bob',
             amount: 'woot'
           }
         }
@@ -219,8 +212,7 @@ describe('Payments', function () {
         expiresAt: (new Date(START_DATE - 1)).toISOString(),
         data: {
           ilp_header: {
-            ledger: 'http://test2.mock',
-            account: 'http://test2.mock/accounts/bob',
+            account: 'mock.test2.bob',
             amount: '50'
           }
         }
@@ -241,8 +233,7 @@ describe('Payments', function () {
         expiresAt: (new Date(START_DATE + 999)).toISOString(),
         data: {
           ilp_header: {
-            ledger: 'http://test2.mock',
-            account: 'http://test2.mock/accounts/bob',
+            account: 'mock.test2.bob',
             amount: '50'
           }
         }
@@ -264,8 +255,7 @@ describe('Payments', function () {
         amount: '100',
         data: {
           ilp_header: {
-            ledger: 'http://test2.mock',
-            account: 'http://test2.mock/accounts/bob',
+            account: 'mock.test2.bob',
             amount: '50'
           }
         }
@@ -328,13 +318,13 @@ describe('Payments', function () {
       sinon.assert.calledOnce(sendSpy)
       sinon.assert.calledWithMatch(sendSpy, {
         direction: 'outgoing',
-        ledger: 'http://test2.mock',
-        account: 'http://test2.mock/accounts/bob',
+        ledger: 'mock.test2.',
+        account: 'mock.test2.bob',
         amount: '50',
         cases: [this.caseId1, this.caseId2],
         noteToSelf: {
           source_transfer_id: this.transfer.id,
-          source_transfer_ledger: 'http://test1.mock'
+          source_transfer_ledger: 'mock.test1.'
         }
       })
     })

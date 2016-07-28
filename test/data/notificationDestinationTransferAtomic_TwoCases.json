@@ -1,17 +1,17 @@
 {
   "id": "http://eur-ledger.example/transfers/3968e526-b5ef-4c35-8923-0e7cfd0892d3",
-  "ledger": "http://eur-ledger.example",
+  "ledger": "eur-ledger.",
   "debits":[{
     "amount":"1.00",
-    "account":"http://eur-ledger.example/accounts/mark",
+    "account":"eur-ledger.mark",
     "memo": {
-      "source_transfer_ledger": "http://usd-ledger.example",
+      "source_transfer_ledger": "usd-ledger",
       "source_transfer_id": "6851929f-5a91-4d02-b9f4-4ae6b7f1768c"
     }
   }],
   "credits":[{
     "amount":"1.00",
-    "account":"http://eur-ledger.example/accounts/bob"
+    "account":"eur-ledger.bob"
   }],
   "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
   "cancellation_condition": "cc:0:3:I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk:6",

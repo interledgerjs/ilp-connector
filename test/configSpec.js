@@ -10,15 +10,15 @@ describe('ConnectorConfig', function () {
   describe('parseConnectorConfig', function () {
     beforeEach(function () {
       process.env.CONNECTOR_LEDGERS = JSON.stringify([
-        'USD@https://usd-ledger.example',
-        'EUR@https://eur-ledger.example',
-        'AUD@https://aud-ledger.example'
+        'USD@usd-ledger.',
+        'EUR@eur-ledger.',
+        'AUD@aud-ledger.'
       ])
       process.env.CONNECTOR_PAIRS = ''
       process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-        'https://usd-ledger.example': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518',
-        'https://eur-ledger.example': 'cc:3:11:Mjmrcm06fOo-3WOEZu9YDSNfqmn0lj4iOsTVEurtCdI:518',
-        'https://aud-ledger.example': 'cc:3:11:xnTtXKlRuFnFFDTgnSxFn9mYMeimdhbWaZXPAp5Pbs0:518'
+        'usd-ledger.': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518',
+        'eur-ledger.': 'cc:3:11:Mjmrcm06fOo-3WOEZu9YDSNfqmn0lj4iOsTVEurtCdI:518',
+        'aud-ledger.': 'cc:3:11:xnTtXKlRuFnFFDTgnSxFn9mYMeimdhbWaZXPAp5Pbs0:518'
       })
     })
 
@@ -29,14 +29,14 @@ describe('ConnectorConfig', function () {
     it('should auto-generate pairs', function * () {
       const config = loadConnectorConfig()
       expect(config.get('tradingPairs')).to.deep.equal([[
-        'USD@https://usd-ledger.example',
-        'EUR@https://eur-ledger.example'
+        'USD@usd-ledger.',
+        'EUR@eur-ledger.'
       ], [
-        'USD@https://usd-ledger.example',
-        'AUD@https://aud-ledger.example'
+        'USD@usd-ledger.',
+        'AUD@aud-ledger.'
       ], [
-        'EUR@https://eur-ledger.example',
-        'AUD@https://aud-ledger.example'
+        'EUR@eur-ledger.',
+        'AUD@aud-ledger.'
       ]])
     })
 
@@ -51,7 +51,7 @@ describe('ConnectorConfig', function () {
       it('should parse ledger credentials -- deprecated format', function * () {
         const ledgerCredentials = require('./data/ledgerCredentials.json')
         const ledgerCredsModified = _.cloneDeep(ledgerCredentials)
-        const usdLedgerCreds = ledgerCredsModified['http://usd-ledger.example']
+        const usdLedgerCreds = ledgerCredsModified['usd-ledger.']
         usdLedgerCreds.account_uri = usdLedgerCreds.account
         delete usdLedgerCreds.account
         process.env.CONNECTOR_CREDENTIALS = JSON.stringify(ledgerCredsModified)
@@ -63,12 +63,12 @@ describe('ConnectorConfig', function () {
 
       it('should parse ledger credentials', function * () {
         const ledgerCredentialsEnv = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             password: 'mark'
           },
-          'http://usd-ledger.example': {
+          'usd-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
@@ -82,13 +82,13 @@ describe('ConnectorConfig', function () {
         const config = loadConnectorConfig()
 
         const ledgerCredentials = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger.': {
             type: 'bells',
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             password: 'mark'
           },
-          'http://usd-ledger.example': {
+          'usd-ledger.': {
             type: 'bells',
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
@@ -104,7 +104,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing password', () => {
         const missingPassword = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark'
           }
@@ -116,7 +116,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing username', () => {
         const missingUsername = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             password: 'mark'
           }
@@ -128,7 +128,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing key', () => {
         const missingKey = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: '/cert'
@@ -141,7 +141,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing cert', () => {
         const missingCert = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             key: '/key'
@@ -154,7 +154,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing account', () => {
         const missingAccountUri = {
-          'http://cad-ledger.example:1000': {
+          'cad-ledger.': {
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
             key: 'test/data/client1-key.pem',
@@ -168,7 +168,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing key file', function * () {
         const missingKeyFile = {
-          'http://usd-ledger.example': {
+          'usd-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
@@ -184,7 +184,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing certificate file', function * () {
         const missingCertFile = {
-          'http://usd-ledger.example': {
+          'usd-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'foo',
@@ -200,7 +200,7 @@ describe('ConnectorConfig', function () {
 
       it('throws if missing ca certificate file', function * () {
         const missingCertFile = {
-          'http://usd-ledger.example': {
+          'usd-ledger.': {
             account: 'http://cad-ledger.example:1000/accounts/mark',
             username: 'mark',
             cert: 'test/data/client1-crt.pem',
@@ -246,28 +246,28 @@ describe('ConnectorConfig', function () {
         it('throws if missing public key for any ledger', () => {
           process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
             // 'https://usd-ledger.example': 'test/data/ledger1public.pem',
-            'https://eur-ledger.example': 'test/data/ledger2public.pem',
-            'https://aud-ledger.example': 'test/data/ledger3public.pem'
+            'eur-ledger.': 'test/data/ledger2public.pem',
+            'aud-ledger.': 'test/data/ledger3public.pem'
           })
           expect(() => loadConnectorConfig()).to.throw().match(/Missing notification signing keys./)
         })
 
         it('throws if missing public key file for any ledger', () => {
           process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-            'https://usd-ledger.example': 'test/foo',
-            'https://eur-ledger.example': 'test/data/ledger2public.pem',
-            'https://aud-ledger.example': 'test/data/ledger3public.pem'
+            'usd-ledger.': 'test/foo',
+            'eur-ledger.': 'test/data/ledger2public.pem',
+            'aud-ledger.': 'test/data/ledger3public.pem'
           })
           expect(() => loadConnectorConfig())
-            .to.throw().match(/Failed to read signing key for ledger https:\/\/usd-ledger.example/)
+            .to.throw().match(/Failed to read signing key for ledger usd-ledger./)
         })
 
         it('parses keys', () => {
           const config = loadConnectorConfig()
           expect(config.get('notifications.keys')).to.deep.equal({
-            'https://usd-ledger.example': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518',
-            'https://eur-ledger.example': 'cc:3:11:Mjmrcm06fOo-3WOEZu9YDSNfqmn0lj4iOsTVEurtCdI:518',
-            'https://aud-ledger.example': 'cc:3:11:xnTtXKlRuFnFFDTgnSxFn9mYMeimdhbWaZXPAp5Pbs0:518'
+            'usd-ledger.': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518',
+            'eur-ledger.': 'cc:3:11:Mjmrcm06fOo-3WOEZu9YDSNfqmn0lj4iOsTVEurtCdI:518',
+            'aud-ledger.': 'cc:3:11:xnTtXKlRuFnFFDTgnSxFn9mYMeimdhbWaZXPAp5Pbs0:518'
           })
         })
       })
@@ -286,8 +286,8 @@ describe('ConnectorConfig', function () {
         it('does not throw if missing public key for any ledger', () => {
           process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
             // 'https://usd-ledger.example': 'test/data/ledger1public.pem',
-            'https://eur-ledger.example': 'test/data/ledger2public.pem',
-            'https://aud-ledger.example': 'test/data/ledger3public.pem'
+            'eur-ledger.': 'test/data/ledger2public.pem',
+            'aud-ledger.': 'test/data/ledger3public.pem'
           })
           expect(() => loadConnectorConfig()).to.not.throw()
         })

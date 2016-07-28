@@ -42,10 +42,10 @@ describe('Notifications', function () {
     appHelper.create(this)
 
     yield subscriptions.subscribePairs(this.config.tradingPairs,
-      this.ledgers, this.config, this.routeBuilder)
+      this.core, this.config, this.routeBuilder)
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
-    yield subscriptions.setupListeners(this.ledgers, this.config, this.routeBuilder)
+    yield subscriptions.setupListeners(this.core, this.config, this.routeBuilder)
   })
 
   afterEach(function * () {
@@ -57,16 +57,17 @@ describe('Notifications', function () {
     beforeEach(function * () {
       process.env.CONNECTOR_NOTIFICATION_VERIFY = 'true'
       process.env.CONNECTOR_NOTIFICATION_KEYS = JSON.stringify({
-        'http://eur-ledger.example': 'cc:3:11:Jd1P5DR8KKOp3OfcTfKdolh2IREIdG3LP2WU8gg6pCc:518',
-        'http://example.com': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518'
+        'eur-ledger.': 'cc:3:11:Jd1P5DR8KKOp3OfcTfKdolh2IREIdG3LP2WU8gg6pCc:518',
+        'usd-ledger.': 'cc:3:11:Jd1P5DR8KKOp3OfcTfKdolh2IREIdG3LP2WU8gg6pCc:518',
+        'example.': 'cc:3:11:VIXEKIp-38aZuievH3I3PyOobH6HW-VD4LP6w-4s3gA:518'
       })
       process.env.CONNECTOR_LEDGERS = JSON.stringify([
-        'EUR@http://eur-ledger.example',
-        'USD@http://example.com'
+        'EUR@eur-ledger.',
+        'USD@example.'
       ])
       appHelper.create(this)
       yield this.backend.connect(ratesResponse)
-      yield subscriptions.setupListeners(this.ledgers, this.config, this.routeBuilder)
+      yield subscriptions.setupListeners(this.core, this.config, this.routeBuilder)
 
       this.notificationSourceTransferPrepared =
         _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
@@ -96,12 +97,8 @@ describe('Notifications', function () {
 
   describe('POST /notifications', function () {
     beforeEach(function * () {
-      this.paymentOneToOne =
-        _.cloneDeep(require('./data/paymentOneToOne.json'))
-      this.paymentManyToOne =
-        _.cloneDeep(require('./data/paymentManyToOne.json'))
-      this.paymentSameExecutionCondition =
-        _.cloneDeep(require('./data/paymentSameExecutionCondition.json'))
+      this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
+      this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
       this.transferExecutedReceipt = require('./data/transferExecutedFulfillment.json')
       this.notificationNoConditionFulfillment =
         _.cloneDeep(require('./data/notificationNoConditionFulfillment.json'))
@@ -206,16 +203,14 @@ describe('Notifications', function () {
     })
 
     it('should return a 200 if the notification is properly formatted', function * () {
-      const payment = this.formatId(this.paymentSameExecutionCondition,
-        '/payments/')
+      const sourceTransfer = this.transferUsdPrepared
+      const destinationTransfer = this.transferEurProposed
 
-      nock(payment.destination_transfers[0].id)
+      nock(destinationTransfer.id)
         .put('')
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'prepared'
-        }))
+        .reply(201, _.assign({}, destinationTransfer, {state: 'prepared'}))
 
-      nock(payment.source_transfers[0].id)
+      nock(sourceTransfer.id)
         .put('/fulfillment', this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
         .reply(201, this.notificationWithConditionFulfillment.related_resources.execution_condition_fulfillment)
 
@@ -224,12 +219,12 @@ describe('Notifications', function () {
         .send({
           id: this.notificationSourceTransferPrepared.id,
           event: 'transfer.update',
-          resource: _.merge({}, payment.source_transfers[0], {
+          resource: _.merge({}, sourceTransfer, {
             credits: [{
               memo: { ilp_header: {
-                ledger: payment.destination_transfers[0].ledger,
-                amount: payment.destination_transfers[0].credits[0].amount,
-                account: payment.destination_transfers[0].credits[0].account
+                ledger: destinationTransfer.ledger,
+                amount: destinationTransfer.credits[0].amount,
+                account: destinationTransfer.credits[0].account
               } }
             }]
           })
@@ -243,8 +238,8 @@ describe('Notifications', function () {
           resource: {
             debits: [{
               memo: {
-                source_transfer_ledger: payment.source_transfers[0].ledger,
-                source_transfer_id: payment.source_transfers[0].id
+                source_transfer_ledger: sourceTransfer.ledger,
+                source_transfer_id: sourceTransfer.id
               }
             }]
           }
@@ -253,10 +248,10 @@ describe('Notifications', function () {
     })
 
     it('should return a 500 if the notification handler throws', function * () {
-      const payment = this.formatId(this.paymentSameExecutionCondition,
-        '/payments/')
+      const sourceTransfer = this.transferUsdPrepared
+      const destinationTransfer = this.transferEurProposed
 
-      this.ledgers.getLedger(payment.destination_transfers[0].ledger)._handleNotification =
+      this.core.getPlugin(destinationTransfer.ledger)._handleNotification =
         function * () { throw new Error() }
 
       yield this.request()
@@ -265,9 +260,9 @@ describe('Notifications', function () {
           resource: {
             debits: [{
               memo: {
-                source_transfer_ledger: payment.source_transfers[0].ledger,
-                source_transfer_id: payment.source_transfers[0].id
-                  .substring(payment.source_transfers[0].id.length - 36)
+                source_transfer_ledger: sourceTransfer.ledger,
+                source_transfer_id: sourceTransfer.id
+                  .substring(sourceTransfer.id.length - 36)
               }
             }]
           }
@@ -277,14 +272,6 @@ describe('Notifications', function () {
     })
 
     it('should not cause server error if source transfer is missing execution_condition', function * () {
-      const payment = this.formatId(this.paymentOneToOne, '/payments/')
-
-      nock(payment.destination_transfers[0].id)
-        .put('')
-        .reply(201, _.assign({}, payment.destination_transfers[0], {
-          state: 'prepared'
-        }))
-
       const notification = _.cloneDeep(this.notificationSourceTransferPrepared)
       delete notification.resource.execution_condition
 
@@ -296,7 +283,7 @@ describe('Notifications', function () {
     })
 
     it('should return 200 if the payment is not relevant to the connector', function * () {
-      this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
+      this.core.getPlugin(this.notificationSourceTransferPrepared.resource.ledger)
         ._handleNotification = function * () { throw makeError('UnrelatedNotificationError') }
 
       yield this.request()
@@ -311,7 +298,7 @@ describe('Notifications', function () {
     })
 
     it('should return 200 if the rate of the payment is worse than the one currently offered', function * () {
-      this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
+      this.core.getPlugin(this.notificationSourceTransferPrepared.resource.ledger)
         ._handleNotification = function * () { throw makeError('UnacceptableRateError') }
 
       yield this.request()
@@ -326,7 +313,7 @@ describe('Notifications', function () {
     })
 
     it('should return 200 if the payment is from an unknown source ledger', function * () {
-      this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
+      this.core.getPlugin(this.notificationSourceTransferPrepared.resource.ledger)
         ._handleNotification = function * () { throw makeError('AssetsNotTradedError') }
 
       yield this.request()
@@ -341,7 +328,7 @@ describe('Notifications', function () {
     })
 
     it('should return a 200 if the source transfer is expired', function * () {
-      this.ledgers.getLedger(this.notificationSourceTransferPrepared.resource.ledger)
+      this.core.getPlugin(this.notificationSourceTransferPrepared.resource.ledger)
         ._handleNotification = function * () { throw makeError('UnacceptableExpiryError') }
 
       yield this.request()

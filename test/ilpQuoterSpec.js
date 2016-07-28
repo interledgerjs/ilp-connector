@@ -16,22 +16,57 @@ const Backend = require('../src/backends/ilp-quoter')
 const precision = 10
 const scale = 4
 
+const env = _.cloneDeep(process.env)
+
 describe('ILPQuoter', function () {
   logHelper(logger)
 
   beforeEach(function * () {
+    process.env.UNIT_TEST_OVERRIDE = '1'
+    process.env.CONNECTOR_CREDENTIALS = JSON.stringify({
+      'localhost:3000.': {
+        type: 'mock',
+        host: 'https://localhost:3000',
+        account: 'https://localhost:3000/accounts/mark',
+        username: 'mark',
+        password: 'mark'
+      },
+      'localhost:3001.': {
+        type: 'mock',
+        host: 'https://localhost:3001',
+        account: 'https://localhost:3001/accounts/mark',
+        username: 'mark',
+        password: 'mark'
+      },
+      'localhost:4000.': {
+        type: 'mock',
+        host: 'https://localhost:4000',
+        account: 'https://localhost:4000/accounts/mark',
+        username: 'mark',
+        password: 'mark'
+      },
+      'localhost:4001.': {
+        type: 'mock',
+        host: 'https://localhost:4001',
+        account: 'https://localhost:4001/accounts/mark',
+        username: 'mark',
+        password: 'mark'
+      }
+    })
+
     appHelper.create(this)
     this.backendUri = 'http://marketmaker.quoter.com'
     this.pairs =
-      [['USD@https://localhost:3000', 'EUR@https://localhost:4001'],
-       ['EUR@https://localhost:4001', 'USD@https://localhost:3000'],
-       ['USD@https://localhost:4000', 'EUR@https://localhost:3001'],
-       ['EUR@https://localhost:3001', 'USD@https://localhost:4000']]
+      [['USD@localhost:3000.', 'EUR@localhost:4001.'],
+       ['EUR@localhost:4001.', 'USD@localhost:3000.'],
+       ['USD@localhost:4000.', 'EUR@localhost:3001.'],
+       ['EUR@localhost:3001.', 'USD@localhost:4000.']]
     this.unsupportedPairs =
-      [['USD@https://localhost:3000', 'EUR@https://localhost:4001'],
-       ['XRP@https://localhost:4001', 'USD@https://localhost:3000'],
-       ['USD@https://localhost:4000', 'EUR@https://localhost:3001'],
-       ['EUR@https://localhost:3001', 'USD@https://localhost:4000']]
+      [['USD@localhost:3000.', 'EUR@localhost:4001.'],
+       ['XRP@localhost:4001.', 'USD@localhost:3000.'],
+       ['USD@localhost:4000.', 'EUR@localhost:3001.'],
+       ['EUR@localhost:3001.', 'USD@localhost:4000.']]
+
     this.backend = new Backend({
       currencyWithLedgerPairs: this.pairs,
       backendUri: this.backendUri,
@@ -42,7 +77,7 @@ describe('ILPQuoter', function () {
     const testLedgers = _.flatMap(this.pairs, (pair) => _.map(pair, getLedger))
 
     _.each(testLedgers, (ledgerUri) => {
-      nock(ledgerUri).get('/')
+      nock('http://' + ledgerUri).get('/')
       .reply(200, {
         precision: precision,
         scale: scale
@@ -53,6 +88,7 @@ describe('ILPQuoter', function () {
   afterEach(function () {
     nock.cleanAll()
     this.infoCache.reset()
+    process.env = _.cloneDeep(env)
   })
 
   function * yieldAndAssertException (action, exception) {
@@ -90,24 +126,24 @@ describe('ILPQuoter', function () {
     })
 
     it('should fail for a quote with a missing source_ledger', function * () {
-      const quote = { source_amount: '123', destination_ledger: 'https://localhost:4000' }
+      const quote = { source_amount: '123', destination_ledger: 'localhost:4000.' }
       yield yieldAndAssertException(this.backend.getQuote(quote), AssetsNotTradedError)
     })
 
     it('should fail for a quote with a missing destination_ledger', function * () {
-      const quote = { source_amount: '123', source_ledger: 'https://localhost:4000' }
+      const quote = { source_amount: '123', source_ledger: 'localhost:4000.' }
       yield yieldAndAssertException(this.backend.getQuote(quote), AssetsNotTradedError)
     })
 
     it('should fail for a quote with a missing amount', function * () {
-      const quote = { source_ledger: 'https://localhost:3001', destination_ledger: 'https://localhost:4000' }
+      const quote = { source_ledger: 'localhost:3001.', destination_ledger: 'localhost:4000.' }
       yield yieldAndAssertException(this.backend.getQuote(quote), NoAmountSpecifiedError)
     })
 
     it('should make sure a valid quote returns with correct source amount', function * () {
       const quote = { source_amount: 123.89,
-                      source_ledger: 'https://localhost:3001',
-                      destination_ledger: 'https://localhost:4000' }
+                      source_ledger: 'localhost:3001.',
+                      destination_ledger: 'localhost:4000.' }
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/123.89/source').query({precision, scale}).reply(200, { source_amount: 123.89, destination_amount: 88.77 })
       const quoteResponse = yield this.backend.getQuote(quote)
@@ -118,8 +154,8 @@ describe('ILPQuoter', function () {
 
     it('should make sure a valid quote returns with correct destination amount', function * () {
       const quote = { destination_amount: 123.89,
-                      source_ledger: 'https://localhost:3001',
-                      destination_ledger: 'https://localhost:4000' }
+                      source_ledger: 'localhost:3001.',
+                      destination_ledger: 'localhost:4000.' }
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/123.89/destination').query({precision, scale}).reply(200, { source_amount: 99.77, destination_amount: 123.89 })
       const quoteResponse = yield this.backend.getQuote(quote)
@@ -130,8 +166,8 @@ describe('ILPQuoter', function () {
 
     it('should make sure an error is thrown if the quoter returns a 404', function * () {
       const quote = { source_amount: 123.89,
-                      source_ledger: 'https://localhost:3001',
-                      destination_ledger: 'https://localhost:4000' }
+                      source_ledger: 'localhost:3001.',
+                      destination_ledger: 'localhost:4000.' }
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/123.89/source').query({precision, scale}).reply(404)
       yield yieldAndAssertException(this.backend.getQuote(quote), ServerError)
@@ -140,8 +176,8 @@ describe('ILPQuoter', function () {
 
     it('should make sure an error is thrown if the quoter returns a 500', function * () {
       const quote = { source_amount: 123.89,
-                      source_ledger: 'https://localhost:3001',
-                      destination_ledger: 'https://localhost:4000' }
+                      source_ledger: 'localhost:3001.',
+                      destination_ledger: 'localhost:4000.' }
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/123.89/source').query({precision, scale}).reply(500)
       yield yieldAndAssertException(this.backend.getQuote(quote), ServerError)
@@ -150,8 +186,8 @@ describe('ILPQuoter', function () {
 
     it('should make sure additional information from quoter is passed in quote', function * () {
       const quote = { destination_amount: 123.89,
-                      source_ledger: 'https://localhost:3001',
-                      destination_ledger: 'https://localhost:4000' }
+                      source_ledger: 'localhost:3001.',
+                      destination_ledger: 'localhost:4000.' }
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/123.89/destination').query({precision, scale})
                                                                .reply(200, { source_amount: 99.77,

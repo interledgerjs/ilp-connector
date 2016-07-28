@@ -6,10 +6,10 @@ const RouteBroadcaster = require('five-bells-connector')._test.RouteBroadcaster
 const nock = require('nock')
 const appHelper = require('./helpers/app')
 
-const ledgerA = 'http://cad-ledger.example:1000'
-const ledgerB = 'http://usd-ledger.example'
-const ledgerC = 'http://eur-ledger.example'
-const ledgerD = 'http://cny-ledger.example'
+const ledgerA = 'cad-ledger.'
+const ledgerB = 'usd-ledger.'
+const ledgerC = 'eur-ledger.'
+const ledgerD = 'cny-ledger.'
 const baseURI = 'http://connector.example'
 
 describe('RouteBroadcaster', function () {
@@ -21,8 +21,8 @@ describe('RouteBroadcaster', function () {
       destination_ledger: ledgerB,
       connector: baseURI,
       min_message_window: 1,
-      source_account: ledgerA + '/accounts/mark',
-      destination_account: ledgerB + '/accounts/mark',
+      source_account: ledgerA + '.mark',
+      destination_account: ledgerB + '.mark',
       points: [ [0, 0], [200, 100] ],
       additional_info: {}
     }, {
@@ -30,8 +30,8 @@ describe('RouteBroadcaster', function () {
       destination_ledger: ledgerA,
       connector: baseURI,
       min_message_window: 1,
-      source_account: ledgerB + '/accounts/mark',
-      destination_account: ledgerA + '/accounts/mark',
+      source_account: ledgerB + '.mark',
+      destination_account: ledgerA + '.mark',
       points: [ [0, 0], [100, 200] ],
       additional_info: {}
     }])
@@ -42,7 +42,7 @@ describe('RouteBroadcaster', function () {
       }
     }
 
-    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.infoCache, {
+    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.core, this.infoCache, {
       tradingPairs: [
         ['USD@' + ledgerA, 'EUR@' + ledgerB],
         ['EUR@' + ledgerB, 'USD@' + ledgerA]
@@ -64,11 +64,11 @@ describe('RouteBroadcaster', function () {
 
   describe('broadcast', function () {
     it('sends the combined routes to all adjacent connectors', function * () {
-      this.ledgers.getLedger(ledgerA).getConnectors =
-      this.ledgers.getLedger(ledgerC).getConnectors =
-      this.ledgers.getLedger(ledgerD).getConnectors =
+      this.core.getPlugin(ledgerA).getConnectors =
+      this.core.getPlugin(ledgerC).getConnectors =
+      this.core.getPlugin(ledgerD).getConnectors =
         function * () { return [baseURI] }
-      this.ledgers.getLedger(ledgerB).getConnectors =
+      this.core.getPlugin(ledgerB).getConnectors =
         function * () { return [baseURI, 'http://other-connector2.example'] }
 
       nock('http://other-connector2.example').post('/routes', [
@@ -77,21 +77,21 @@ describe('RouteBroadcaster', function () {
           destination_ledger: ledgerB,
           connector: 'http://connector.example',
           min_message_window: 1,
-          source_account: ledgerA + '/accounts/mark',
+          source_account: ledgerA + '.mark',
           points: [ [0, 0], [200, 100] ]
         }, {
           source_ledger: ledgerA,
           destination_ledger: ledgerC,
           connector: 'http://connector.example',
           min_message_window: 2,
-          source_account: ledgerA + '/accounts/mark',
+          source_account: ledgerA + '.mark',
           points: [ [0, 0], [100, 60], [200, 60] ]
         }, {
           source_ledger: ledgerB,
           destination_ledger: ledgerA,
           connector: 'http://connector.example',
           min_message_window: 1,
-          source_account: ledgerB + '/accounts/mark',
+          source_account: ledgerB + '.mark',
           points: [ [0, 0], [100, 200] ]
         }
       ]).reply(200)

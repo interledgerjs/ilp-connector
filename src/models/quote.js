@@ -1,38 +1,26 @@
 'use strict'
 
-const request = require('co-request')
+const addressToLedger = require('../lib/utils').addressToLedger
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
-const ExternalError = require('../errors/external-error')
 const DEFAULT_DESTINATION_EXPIRY = 5 // seconds
 
 function * makeQuoteQuery (params) {
-  const sourceLedger = params.source_ledger ||
-    (yield getAccountLedger(params.source_account))
-  const destinationLedger = params.destination_ledger ||
-    (yield getAccountLedger(params.destination_account))
+  const sourceLedger = addressToLedger(params.source_address)
+  const destinationLedger = addressToLedger(params.destination_address)
   const explain = params.explain === 'true'
   return {
     sourceLedger,
     destinationLedger,
     sourceAmount: params.source_amount,
     destinationAmount: params.destination_amount,
+    destinationPrecisionAndScale: params.destination_precision && {
+      precision: params.destination_precision,
+      scale: params.destination_scale
+    },
     explain
   }
-}
-
-function * getAccountLedger (account) {
-  const res = yield request({
-    method: 'get',
-    uri: account,
-    json: true
-  })
-  const ledger = res.body && res.body.ledger
-  if (res.statusCode !== 200 || !ledger) {
-    throw new ExternalError('Unable to identify ledger from account: ' + account)
-  }
-  return ledger
 }
 
 /**

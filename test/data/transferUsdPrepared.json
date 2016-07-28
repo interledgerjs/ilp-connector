@@ -1,0 +1,15 @@
+{
+  "id": "http://usd-ledger.example/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
+  "ledger":"usd-ledger.",
+  "debits":[{
+    "amount":"1.07",
+    "account":"usd-ledger.alice"
+  }],
+  "credits":[{
+    "amount":"1.07",
+    "account":"usd-ledger.mark"
+  }],
+  "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
+  "expires_at": "2015-06-16T00:00:11.000Z",
+  "state": "prepared"
+}

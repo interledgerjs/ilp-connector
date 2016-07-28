@@ -22,15 +22,15 @@ describe('Pairs', function () {
           expect(res.body.length).to.equal(8)
           expect(res.body[0]).deep.equal({
             source_asset: 'USD',
-            source_ledger: 'http://usd-ledger.example',
+            source_ledger: 'usd-ledger.',
             destination_asset: 'EUR',
-            destination_ledger: 'http://eur-ledger.example'
+            destination_ledger: 'eur-ledger.'
           })
           expect(res.body[1]).deep.equal({
             source_asset: 'EUR',
-            source_ledger: 'http://eur-ledger.example',
+            source_ledger: 'eur-ledger.',
             destination_asset: 'USD',
-            destination_ledger: 'http://usd-ledger.example'
+            destination_ledger: 'usd-ledger.'
           })
         })
         .end()

@@ -17,28 +17,28 @@ function * validateExpiry (sourceTransfer, destinationTransfer, config) {
   tester.validateMaxHoldTime()
 }
 
-function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
+function * settle (sourceTransfer, destinationTransfer, config, core) {
   log.debug('Settle payment, source: ' + JSON.stringify(sourceTransfer))
   log.debug('Settle payment, destination: ' + JSON.stringify(destinationTransfer))
-  yield ledgers.getLedger(destinationTransfer.ledger).send(destinationTransfer)
+  yield core.getPlugin(destinationTransfer.ledger).send(destinationTransfer)
 }
 
-function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
+function * updateIncomingTransfer (sourceTransfer, core, config, routeBuilder) {
   validateIlpHeader(sourceTransfer)
 
   const destinationTransfer = yield routeBuilder.getDestinationTransfer(sourceTransfer)
 
   yield validateExpiry(sourceTransfer, destinationTransfer, config)
-  yield settle(sourceTransfer, destinationTransfer, config, ledgers)
+  yield settle(sourceTransfer, destinationTransfer, config, core)
 }
 
-function * processExecutionFulfillment (transfer, fulfillment, ledgers) {
+function * processExecutionFulfillment (transfer, fulfillment, core) {
   // If the destination transfer was executed, the connector should try to
   // execute the source transfer to get paid.
   if (transfer.direction === 'outgoing') {
     log.debug('Got notification about executed destination transfer with ID ' +
       transfer.id + ' on ledger ' + transfer.ledger)
-    yield executeSourceTransfer(transfer, fulfillment, ledgers)
+    yield executeSourceTransfer(transfer, fulfillment, core)
   }
 }
 

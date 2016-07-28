@@ -1,21 +1,20 @@
 {
-  "id": "http://eur-ledger.example/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d",
+  "id": "http://usd-ledger.example/subscriptions/52a42d6f-8d9c-4c05-b31c-cccc8bbdb31d",
   "event": "transfer.update",
   "resource": {
     "id": "http://usd-ledger.example/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
-    "ledger":"http://usd-ledger.example",
+    "ledger":"usd-ledger.",
     "debits":[{
       "amount":"1.07",
-      "account":"http://usd-ledger.example/accounts/alice"
+      "account":"usd-ledger.alice"
     }],
     "credits":[{
       "amount":"1.07",
-      "account":"http://usd-ledger.example/accounts/mark",
+      "account":"usd-ledger.mark",
       "memo":{
         "ilp_header": {
-          "ledger":"http://eur-ledger.example",
           "amount":"1.00",
-          "account":"http://eur-ledger.example/accounts/bob"
+          "account":"eur-ledger.bob"
         }
       }
     }],
