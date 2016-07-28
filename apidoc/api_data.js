@@ -97,15 +97,15 @@ define({ "api": [
             "group": "Parameter",
             "type": "URI",
             "optional": false,
-            "field": "source_ledger",
-            "description": "<p>Ledger where the transfer crediting the connector's account will take place</p>"
+            "field": "source_address",
+            "description": "<p>Account where the transfer crediting the connector's account will take place</p>"
           },
           {
             "group": "Parameter",
             "type": "URI",
             "optional": false,
-            "field": "destination_ledger",
-            "description": "<p>Ledger where the transfer debiting the connector's account will take place</p>"
+            "field": "destination_address",
+            "description": "<p>Account where the transfer debiting the connector's account will take place</p>"
           },
           {
             "group": "Parameter",
@@ -146,12 +146,12 @@ define({ "api": [
     "examples": [
       {
         "title": "Fixed Source Amount:",
-        "content": "curl https://connector.example? \\\n  source_amount=100.25 \\\n  &source_ledger=https://eur-ledger.example/EUR \\\n  &destination_ledger=https://usd-ledger.example/USD \\\n  &source_expiry_duration=6 \\\n  &destination_expiry_duration=5 \\",
+        "content": "curl https://connector.example? \\\n  source_amount=100.25 \\\n  &source_address=eur-ledger.alice \\\n  &destination_address=usd-ledger.bob \\\n  &source_expiry_duration=6 \\\n  &destination_expiry_duration=5 \\",
         "type": "shell"
       },
       {
         "title": "Fixed Destination Amount:",
-        "content": "curl https://connector.example? \\\n  destination_amount=105.71 \\\n  &source_ledger=https://eur-ledger.example/EUR \\\n  &destination_ledger=https://usd-ledger.example/USD \\\n  &source_expiry_duration=6000 \\\n  &destination_expiry_duration=5000 \\",
+        "content": "curl https://connector.example? \\\n  destination_amount=105.71 \\\n  &source_address=eur-ledger.alice \\\n  &destination_address=usd-ledger.bob \\\n  &source_expiry_duration=6000 \\\n  &destination_expiry_duration=5000 \\",
         "type": "shell"
       }
     ],
@@ -159,12 +159,12 @@ define({ "api": [
       "examples": [
         {
           "title": "200 Quote Response:",
-          "content": "HTTP/1.1 200 OK\n  {\n    \"source_connector_account\": \"mark\",\n    \"source_ledger\": \"http://eur-ledger.example\",\n    \"source_amount\": \"100.25\",\n    \"source_expiry_duration\": \"6000\",\n    \"destination_ledger\": \"http://usd-ledger.example\",\n    \"destination_amount\": \"105.71\",\n    \"destination_expiry_duration\": \"5000\"\n  }",
+          "content": "HTTP/1.1 200 OK\n  {\n    \"source_connector_account\": \"mark\",\n    \"source_ledger\": \"eur-ledger\",\n    \"source_amount\": \"100.25\",\n    \"source_expiry_duration\": \"6000\",\n    \"destination_ledger\": \"usd-ledger\",\n    \"destination_amount\": \"105.71\",\n    \"destination_expiry_duration\": \"5000\"\n  }",
           "type": "json"
         },
         {
           "title": "200 Quote Response:",
-          "content": "HTTP/1.1 200 OK\n  {\n    \"source_connector_account\": \"mark\",\n    \"source_ledger\": \"http://eur-ledger.example\",\n    \"source_amount\": \"100.25\",\n    \"source_expiry_duration\": \"6000\",\n    \"destination_ledger\": \"http://usd-ledger.example\",\n    \"destination_amount\": \"105.71\",\n    \"destination_expiry_duration\": \"5000\"\n  }",
+          "content": "HTTP/1.1 200 OK\n  {\n    \"source_connector_account\": \"mark\",\n    \"source_ledger\": \"eur-ledger\",\n    \"source_amount\": \"100.25\",\n    \"source_expiry_duration\": \"6000\",\n    \"destination_ledger\": \"usd-ledger\",\n    \"destination_amount\": \"105.71\",\n    \"destination_expiry_duration\": \"5000\"\n  }",
           "type": "json"
         }
       ]
