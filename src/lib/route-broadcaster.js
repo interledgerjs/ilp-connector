@@ -33,7 +33,6 @@ class RouteBroadcaster {
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
     this.adjacentConnectors = {}
-    this.routeShift = config.routeShift
   }
 
   * start () {
@@ -88,7 +87,7 @@ class RouteBroadcaster {
 
   * reloadLocalRoutes () {
     const localRoutes = yield this._getLocalRoutes()
-    this.routingTables.addLocalRoutes(localRoutes)
+    yield this.routingTables.addLocalRoutes(this.infoCache, localRoutes)
   }
 
   /**
@@ -114,7 +113,6 @@ class RouteBroadcaster {
       destination_ledger: destinationLedger,
       source_amount: 100000000
     }).then((quote) => this._quoteToLocalRoute(quote))
-      .then((route) => this.routeShift ? co(this._shiftRoute.bind(this), route) : route)
   }
 
   _quoteToLocalRoute (quote) {
@@ -131,18 +129,6 @@ class RouteBroadcaster {
         [+quote.source_amount, +quote.destination_amount]
       ]
     })
-  }
-
-  // Shift the graph down by a small amount so that precision rounding doesn't
-  // cause UnacceptableRateErrors.
-  * _shiftRoute (route) {
-    const destinationAdjustment = yield this._getScaleAdjustment(route.destinationLedger)
-    return route.shiftY(-destinationAdjustment)
-  }
-
-  * _getScaleAdjustment (ledger) {
-    const scale = (yield this.infoCache.get(ledger)).scale
-    return scale ? (1 / Math.pow(10, scale)) : 0
   }
 }
 

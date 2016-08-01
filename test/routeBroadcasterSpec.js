@@ -2,6 +2,7 @@
 
 const assert = require('assert')
 const routing = require('five-bells-routing')
+const RoutingTables = require('../src/lib/routing-tables')
 const RouteBroadcaster = require('five-bells-connector')._test.RouteBroadcaster
 const nock = require('nock')
 const appHelper = require('./helpers/app')
@@ -16,7 +17,14 @@ describe('RouteBroadcaster', function () {
   beforeEach(function * () {
     appHelper.create(this)
 
-    this.tables = new routing.RoutingTables(baseURI, [{
+    this.infoCache = {
+      get: function * (ledger) {
+        return {precision: 10, scale: 2}
+      }
+    }
+
+    this.tables = new RoutingTables(baseURI)
+    yield this.tables.addLocalRoutes(this.infoCache, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,
       connector: baseURI,
@@ -35,12 +43,6 @@ describe('RouteBroadcaster', function () {
       points: [ [0, 0], [100, 200] ],
       additional_info: {}
     }])
-
-    this.infoCache = {
-      get: function * (ledger) {
-        return {precision: 10, scale: 2}
-      }
-    }
 
     this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.core, this.infoCache, {
       tradingPairs: [
@@ -78,21 +80,21 @@ describe('RouteBroadcaster', function () {
           connector: 'http://connector.example',
           min_message_window: 1,
           source_account: ledgerA + '.mark',
-          points: [ [0, 0], [200, 100] ]
+          points: [ [0, -0.01], [200, 99.99] ]
         }, {
           source_ledger: ledgerA,
           destination_ledger: ledgerC,
           connector: 'http://connector.example',
           min_message_window: 2,
           source_account: ledgerA + '.mark',
-          points: [ [0, 0], [100, 60], [200, 60] ]
+          points: [ [0, 0], [0.02, 0], [100.02, 60], [200, 60] ]
         }, {
           source_ledger: ledgerB,
           destination_ledger: ledgerA,
           connector: 'http://connector.example',
           min_message_window: 1,
           source_account: ledgerB + '.mark',
-          points: [ [0, 0], [100, 200] ]
+          points: [ [0, -0.01], [100, 199.99] ]
         }
       ]).reply(200)
 

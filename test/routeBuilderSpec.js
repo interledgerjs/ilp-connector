@@ -1,7 +1,7 @@
 'use strict'
 
 const assert = require('assert')
-const RoutingTables = require('five-bells-routing').RoutingTables
+const RoutingTables = require('../src/lib/routing-tables')
 const RouteBuilder = require('five-bells-connector')._test.RouteBuilder
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
@@ -36,7 +36,8 @@ describe('RouteBuilder', function () {
     this.core.getPlugin(ledgerA).getAccount = function () { return markA }
     this.core.getPlugin(ledgerB).getAccount = function () { return markB }
 
-    this.tables = new RoutingTables(baseURI, [{
+    this.tables = new RoutingTables(baseURI)
+    yield this.tables.addLocalRoutes(this.infoCache, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,
       connector: 'http://mark.example',
