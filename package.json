@@ -42,7 +42,7 @@
     "eventemitter2": "^1.0.3",
     "five-bells-condition": "^3.2.0",
     "five-bells-routing": "~3.1.0",
-    "five-bells-shared": "^18.0.0",
+    "five-bells-shared": "^18.1.0",
     "ilp-core": "~5.0.0",
     "ilp-plugin-bells": "^3.0.0",
     "ilp-plugin-virtual": "^1.2.0",
