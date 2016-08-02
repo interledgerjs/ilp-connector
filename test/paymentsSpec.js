@@ -75,9 +75,10 @@ describe('Payments', function () {
     this.mockPlugin1.emit('fulfill_execution_condition', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'outgoing',
+      ledger: 'mock.test1.',
       noteToSelf: {
         source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-        source_transfer_ledger: 'test2.mock.'
+        source_transfer_ledger: 'mock.test2.'
       }
     }, 'invalid') // 'invalid' triggers error in mock plugin
   })
@@ -87,6 +88,7 @@ describe('Payments', function () {
     yield this.mockPlugin1.emitAsync('fulfill_execution_condition', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'outgoing',
+      ledger: 'mock.test1.',
       noteToSelf: {
         source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
         source_transfer_ledger: 'mock.test2.'
@@ -102,6 +104,7 @@ describe('Payments', function () {
     yield this.mockPlugin1.emitAsync('receive', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
+      ledger: 'mock.test1.',
       amount: '100',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
@@ -133,6 +136,7 @@ describe('Payments', function () {
     yield this.mockPlugin1.emitAsync('receive', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
+      ledger: 'mock.test1.',
       amount: '100',
       data: {
         ilp_header: {
@@ -161,6 +165,7 @@ describe('Payments', function () {
     yield this.mockPlugin1.emitAsync('receive', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
+      ledger: 'mock.test1.',
       amount: '100',
       data: {
         ilp_header: {
@@ -188,6 +193,7 @@ describe('Payments', function () {
       yield this.mockPlugin1.emitAsync('receive', {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'incoming',
+        ledger: 'mock.test1.',
         amount: '100',
         data: {
           ilp_header: {
@@ -208,6 +214,7 @@ describe('Payments', function () {
       yield this.mockPlugin1.emitAsync('receive', {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'incoming',
+        ledger: 'mock.test1.',
         amount: '100',
         expiresAt: (new Date(START_DATE - 1)).toISOString(),
         data: {
@@ -229,6 +236,7 @@ describe('Payments', function () {
       yield this.mockPlugin1.emitAsync('receive', {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'incoming',
+        ledger: 'mock.test1.',
         amount: '100',
         expiresAt: (new Date(START_DATE + 999)).toISOString(),
         data: {
@@ -252,6 +260,7 @@ describe('Payments', function () {
       this.transfer = {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'incoming',
+        ledger: 'mock.test1.',
         amount: '100',
         data: {
           ilp_header: {
