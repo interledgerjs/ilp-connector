@@ -377,7 +377,7 @@ describe('Quotes', function () {
           source_amount: '100.00',
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
-          destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+          destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -458,7 +458,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
-          destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+          destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -474,7 +474,7 @@ describe('Quotes', function () {
         .expect(200, {
           source_connector_account: 'mocky',
           source_ledger: 'eur-ledger.',
-          source_amount: '94.6948', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
+          source_amount: '94.6947', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
           destination_amount: '100.0000',
@@ -494,7 +494,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
-          destination_amount: '105.6023', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+          destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -511,7 +511,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'eur-ledger.',
-          destination_amount: '94.1277', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
+          destination_amount: '94.1278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -528,7 +528,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'cad-ledger.',
-          destination_amount: '127.8537', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
+          destination_amount: '127.8538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -545,7 +545,7 @@ describe('Quotes', function () {
           source_amount: '100.0000',
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
-          destination_amount: '77.7459', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
+          destination_amount: '77.7460', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
           destination_expiry_duration: '5'
         })
         .end()
@@ -661,7 +661,7 @@ describe('Quotes', function () {
             source_amount: '100.0000',
             source_expiry_duration: '7',
             destination_ledger: 'random-ledger.',
-            destination_amount: '188.2554',
+            destination_amount: '188.2556',
             destination_expiry_duration: '5'
           })
         })

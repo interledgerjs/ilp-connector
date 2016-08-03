@@ -7,7 +7,7 @@ const log = require('../../src/common').log
 
 const loadConfig = require('../../src/lib/config')
 const InfoCache = require('../../src/lib/info-cache')
-const RoutingTables = require('five-bells-routing').RoutingTables
+const RoutingTables = require('../../src/lib/routing-tables')
 const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
 const makeCore = require('../../src/lib/core')
@@ -23,7 +23,7 @@ exports.create = function (context) {
     backendUri: config.get('backendUri'),
     spread: config.get('fxSpread')
   })
-  const routingTables = new RoutingTables(config.server.base_uri, [], config.routeExpiry)
+  const routingTables = new RoutingTables(config.server.base_uri, config.routeExpiry)
   const core = makeCore({config, log, routingTables})
   const infoCache = new InfoCache(core)
   const routeBuilder = new RouteBuilder(
@@ -39,8 +39,7 @@ exports.create = function (context) {
     tradingPairs: config.tradingPairs,
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,
-    routeBroadcastInterval: config.routeBroadcastInterval,
-    routeShift: config.routeShift
+    routeBroadcastInterval: config.routeBroadcastInterval
   })
   const balanceCache = new BalanceCache(core)
   const app = createApp(config, core, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache)

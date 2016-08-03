@@ -61,7 +61,8 @@ class RouteBuilder {
       _nextHop.sourceAmount = amountWithSlippage.toString()
       info.slippage = (amount - amountWithSlippage).toString()
     }
-    // Round in our favor to ensure that the adjustments don't fall off.
+    // Round in favor of the connector (source amount up; destination amount down)
+    // to ensure it doesn't lose any money. The amount is quoted using the unshifted rate.
     const nextHop = yield this._roundHop(_nextHop, 'up', 'down',
       query.destinationPrecisionAndScale)
 
@@ -110,8 +111,10 @@ class RouteBuilder {
     const _nextHopBySourceAmount = this.routingTables.findBestHopForSourceAmount(
       sourceLedger, finalLedger, sourceTransfer.amount)
     if (!_nextHopBySourceAmount) throwAssetsNotTradedError()
-    // Round against ourselves since the quote rate was overestimated in our favor.
-    const nextHop = yield this._roundHop(_nextHopBySourceAmount, 'down', 'up')
+    // Round in favor of the connector. findBestHopForSourceAmount uses the
+    // local (unshifted) routes to compute the amounts, so the connector rounds
+    // in its own favor to ensure it won't lose money.
+    const nextHop = yield this._roundHop(_nextHopBySourceAmount, 'up', 'down')
 
     // Check if this connector can authorize the final transfer.
     if (nextHop.isFinal) {
