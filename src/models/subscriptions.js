@@ -8,9 +8,7 @@ const payments = require('../models/payments')
 function * setupListeners (core, config, routeBuilder) {
   core.on('receive', (client, transfer) => {
     return co(function * () {
-      const ledger = yield client.getPlugin().getPrefix()
-      const transferWithLedger = Object.assign({}, transfer, {ledger})
-      yield payments.updateIncomingTransfer(transferWithLedger, core, config, routeBuilder)
+      yield payments.updateIncomingTransfer(transfer, core, config, routeBuilder)
     }).catch((err) => {
       log.warn('error processing notification: ' + err)
       throw err
@@ -18,9 +16,7 @@ function * setupListeners (core, config, routeBuilder) {
   })
   core.on('fulfill_execution_condition', (client, transfer, fulfillment) => {
     return co(function * () {
-      const ledger = yield client.getPlugin().getPrefix()
-      const transferWithLedger = Object.assign({}, transfer, {ledger})
-      yield payments.processExecutionFulfillment(transferWithLedger, fulfillment, core, config)
+      yield payments.processExecutionFulfillment(transfer, fulfillment, core, config)
     }).catch((err) => {
       log.warn('error processing notification: ' + err)
       throw err

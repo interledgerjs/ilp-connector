@@ -104,6 +104,7 @@ describe('Subscriptions', function () {
       .emitAsync('receive', {
         id: sourceTransfer.id,
         direction: 'incoming',
+        ledger: sourceTransfer.ledger,
         account: sourceTransfer.debits[0].account,
         amount: sourceTransfer.debits[0].amount,
         executionCondition: sourceTransfer.debits[0].execution_condition,
@@ -123,6 +124,7 @@ describe('Subscriptions', function () {
       .emitAsync('fulfill_execution_condition', {
         id: destinationTransfer.id,
         direction: 'outgoing',
+        ledger: destinationTransfer.ledger,
         account: destinationTransfer.debits[0].account,
         amount: destinationTransfer.debits[0].amount,
         executionCondition: destinationTransfer.debits[0].execution_condition,

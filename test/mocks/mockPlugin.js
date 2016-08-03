@@ -5,7 +5,6 @@ const EventEmitter = require('eventemitter2')
 class MockPlugin extends EventEmitter {
   constructor (options) {
     super()
-    this.prefix = options.auth.prefix || 'mock.'
   }
 
   connect () {
@@ -35,10 +34,6 @@ class MockPlugin extends EventEmitter {
       return Promise.reject(new Error('invalid fulfillment'))
     }
     return Promise.resolve(null)
-  }
-
-  * getPrefix () {
-    return this.prefix
   }
 
   getAccount () {
