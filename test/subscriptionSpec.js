@@ -101,7 +101,7 @@ describe('Subscriptions', function () {
       'fulfillCondition')
 
     yield this.core.getPlugin(sourceTransfer.ledger)
-      .emitAsync('receive', {
+      .emitAsync('incoming_prepare', {
         id: sourceTransfer.id,
         direction: 'incoming',
         ledger: sourceTransfer.ledger,
@@ -121,7 +121,7 @@ describe('Subscriptions', function () {
 
     const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
     yield this.core.getPlugin(sourceTransfer.ledger)
-      .emitAsync('fulfill_execution_condition', {
+      .emitAsync('outgoing_fulfill', {
         id: destinationTransfer.id,
         direction: 'outgoing',
         ledger: destinationTransfer.ledger,

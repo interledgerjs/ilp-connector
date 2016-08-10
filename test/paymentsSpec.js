@@ -72,7 +72,7 @@ describe('Payments', function () {
   })
 
   it('should handle an invalid fulfillment', function * () {
-    this.mockPlugin1.emit('fulfill_execution_condition', {
+    this.mockPlugin1.emit('outgoing_fulfill', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'outgoing',
       ledger: 'mock.test1.',
@@ -85,7 +85,7 @@ describe('Payments', function () {
 
   it('should pass on an execution condition fulfillment', function * () {
     const fulfillSpy = sinon.spy(this.mockPlugin2, 'fulfillCondition')
-    yield this.mockPlugin1.emitAsync('fulfill_execution_condition', {
+    yield this.mockPlugin1.emitAsync('outgoing_fulfill', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'outgoing',
       ledger: 'mock.test1.',
@@ -101,7 +101,7 @@ describe('Payments', function () {
 
   it('passes on the executionCondition', function * () {
     const sendSpy = sinon.spy(this.mockPlugin2, 'send')
-    yield this.mockPlugin1.emitAsync('receive', {
+    yield this.mockPlugin1.emitAsync('incoming_prepare', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
       ledger: 'mock.test1.',
@@ -133,7 +133,7 @@ describe('Payments', function () {
 
   it('supports optimistic mode', function * () {
     const sendSpy = sinon.spy(this.mockPlugin2, 'send')
-    yield this.mockPlugin1.emitAsync('receive', {
+    yield this.mockPlugin1.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
       ledger: 'mock.test1.',
@@ -162,7 +162,7 @@ describe('Payments', function () {
   it('authorizes the payment even if the connector is also the payee of the destination transfer', function * () {
     this.mockPlugin2.FOO = 'bar'
     const sendSpy = sinon.spy(this.mockPlugin2, 'send')
-    yield this.mockPlugin1.emitAsync('receive', {
+    yield this.mockPlugin1.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
       ledger: 'mock.test1.',
@@ -190,7 +190,7 @@ describe('Payments', function () {
 
   it('throws InvalidBodyError if the incoming transfer\'s ilp_header isn\'t an IlpHeader', function * () {
     try {
-      yield this.mockPlugin1.emitAsync('receive', {
+      yield this.mockPlugin1.emitAsync('incoming_transfer', {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'incoming',
         ledger: 'mock.test1.',
@@ -211,7 +211,7 @@ describe('Payments', function () {
 
   it('throws UnacceptableExpiryError if the incoming transfer is expired', function * () {
     try {
-      yield this.mockPlugin1.emitAsync('receive', {
+      yield this.mockPlugin1.emitAsync('incoming_prepare', {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'incoming',
         ledger: 'mock.test1.',
@@ -233,7 +233,7 @@ describe('Payments', function () {
 
   it('throws UnacceptableExpiryError if the incoming transfer expires so soon we cannot create a destination transfer with a sufficient large expiry difference', function * () {
     try {
-      yield this.mockPlugin1.emitAsync('receive', {
+      yield this.mockPlugin1.emitAsync('incoming_prepare', {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'incoming',
         ledger: 'mock.test1.',
@@ -291,7 +291,7 @@ describe('Payments', function () {
       it(data.label, function * () {
         nock(this.caseId1).get('').reply(200, data.case)
         try {
-          yield this.mockPlugin1.emitAsync('receive',
+          yield this.mockPlugin1.emitAsync('incoming_prepare',
             Object.assign(this.transfer, {cases: [this.caseId1]}))
           assert(false)
         } catch (err) {
@@ -307,7 +307,7 @@ describe('Payments', function () {
       nock(this.caseId1).get('').reply(200, {expires_at: future(5000)})
       nock(this.caseId2).get('').reply(200, {expires_at: future(6000)})
       try {
-        yield this.mockPlugin1.emitAsync('receive',
+        yield this.mockPlugin1.emitAsync('incoming_prepare',
           Object.assign(this.transfer, {cases: [this.caseId1, this.caseId2]}))
         assert(false)
       } catch (err) {
@@ -321,7 +321,7 @@ describe('Payments', function () {
       nock(this.caseId2).get('').reply(200, {expires_at: future(5000)})
 
       const sendSpy = sinon.spy(this.mockPlugin2, 'send')
-      yield this.mockPlugin1.emitAsync('receive',
+      yield this.mockPlugin1.emitAsync('incoming_prepare',
         Object.assign(this.transfer, {cases: [this.caseId1, this.caseId2]}))
 
       sinon.assert.calledOnce(sendSpy)
