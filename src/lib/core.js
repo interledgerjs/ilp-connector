@@ -15,14 +15,14 @@ module.exports = function (options) {
     const store = creds.store && newSqliteStore(creds.store)
 
     creds.prefix = ledgerPrefix
-    core.addClient(ledgerPrefix, new ilpCore.Client({
-      plugin: require('ilp-plugin-' + creds.type),
-      auth: creds,
-      store: store,
-      log: makeLogger('plugin-' + creds.type),
+    core.addClient(ledgerPrefix, new ilpCore.Client(Object.assign({}, creds, {
+      debugReplyNotifications: config.features.debugReplyNotifications,
       connector: config.server.base_uri,
-      debugReplyNotifications: config.features.debugReplyNotifications
-    }))
+      // non JSON-stringifiable fields are prefixed with an underscore
+      _plugin: require('ilp-plugin-' + creds.type),
+      _store: store,
+      _log: makeLogger('plugin-' + creds.type)
+    })))
   })
   return core
 }

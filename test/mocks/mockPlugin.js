@@ -29,6 +29,10 @@ class MockPlugin extends EventEmitter {
     return Promise.resolve(null)
   }
 
+  getPrefix () {
+    return Promise.resolve('example.')
+  }
+
   fulfillCondition (transferId, conditionFulfillment) {
     if (conditionFulfillment === 'invalid') {
       return Promise.reject(new Error('invalid fulfillment'))
