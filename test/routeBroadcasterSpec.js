@@ -3,7 +3,7 @@
 const assert = require('assert')
 const routing = require('five-bells-routing')
 const RoutingTables = require('../src/lib/routing-tables')
-const RouteBroadcaster = require('five-bells-connector')._test.RouteBroadcaster
+const RouteBroadcaster = require('ilp-connector')._test.RouteBroadcaster
 const nock = require('nock')
 const appHelper = require('./helpers/app')
 

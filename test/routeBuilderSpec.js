@@ -2,10 +2,10 @@
 
 const assert = require('assert')
 const RoutingTables = require('../src/lib/routing-tables')
-const RouteBuilder = require('five-bells-connector')._test.RouteBuilder
+const RouteBuilder = require('ilp-connector')._test.RouteBuilder
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
-const logger = require('five-bells-connector')._test.logger
+const logger = require('ilp-connector')._test.logger
 const makeCore = require('../src/lib/core')
 
 const baseURI = 'http://mark.example'

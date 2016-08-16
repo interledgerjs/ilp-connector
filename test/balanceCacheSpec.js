@@ -7,9 +7,9 @@ mock('ilp-plugin-mock', mockPlugin)
 const BigNumber = require('bignumber.js')
 const nock = require('nock')
 const expect = require('chai').expect
-const logger = require('five-bells-connector')._test.logger
+const logger = require('ilp-connector')._test.logger
 const logHelper = require('./helpers/log')
-const BalanceCache = require('five-bells-connector')._test.BalanceCache
+const BalanceCache = require('ilp-connector')._test.BalanceCache
 
 describe('BalanceCache', function () {
   logHelper(logger)

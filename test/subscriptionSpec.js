@@ -5,7 +5,7 @@ const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
-const logger = require('five-bells-connector')._test.logger
+const logger = require('ilp-connector')._test.logger
 const logHelper = require('./helpers/log')
 const wsHelper = require('./helpers/ws')
 const subscriptions = require('../src/models/subscriptions')

@@ -1,7 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
-const loadConnectorConfig = require('five-bells-connector')._test.loadConnectorConfig
+const loadConnectorConfig = require('ilp-connector')._test.loadConnectorConfig
 const expect = require('chai').expect
 const fs = require('fs')
 const env = _.cloneDeep(process.env)

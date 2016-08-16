@@ -1,5 +1,5 @@
 {
-  "title": "Five Bells Connector API",
+  "title": "ILP Connector API",
   "url": "https://acme-connector.example",
   "order": [
     "Quote",
