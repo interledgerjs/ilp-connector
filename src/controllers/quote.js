@@ -28,6 +28,7 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
  * @apiParam {Number} [source_expiry_duration="(Minimum allowed based on
  *    destination_expiry_duration)"] Number of milliseconds between when the
  *    destination transfer is proposed and when it expires
+ * @apiParam {Number} [slippage] Use a slippage other than the connector's default
  *
  * @apiDescription Get a quote from the connector based on either a fixed source
  *    or fixed destination amount.

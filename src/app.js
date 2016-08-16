@@ -64,7 +64,11 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster) 
       process.exit(1)
     }
     yield subscriptions.subscribePairs(config.get('tradingPairs'), core, config, routeBuilder)
-    yield routeBroadcaster.start()
+    if (config.routeBroadcastEnabled) {
+      yield routeBroadcaster.start()
+    } else {
+      yield routeBroadcaster.reloadLocalRoutes()
+    }
   }).catch((err) => log.error(err))
 }
 

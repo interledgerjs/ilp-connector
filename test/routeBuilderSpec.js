@@ -6,6 +6,7 @@ const RouteBuilder = require('five-bells-connector')._test.RouteBuilder
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
 const logger = require('five-bells-connector')._test.logger
+const makeCore = require('../src/lib/core')
 
 const baseURI = 'http://mark.example'
 const ledgerA = 'usd-ledger.'
@@ -33,9 +34,6 @@ describe('RouteBuilder', function () {
       }
     }
 
-    this.core.getPlugin(ledgerA).getAccount = function () { return markA }
-    this.core.getPlugin(ledgerB).getAccount = function () { return markB }
-
     this.tables = new RoutingTables(baseURI)
     yield this.tables.addLocalRoutes(this.infoCache, [{
       source_ledger: ledgerA,
@@ -47,6 +45,23 @@ describe('RouteBuilder', function () {
       points: [ [0, 0], [200, 100] ],
       additional_info: { rate_info: 'someInfoAboutTheRate' }
     }])
+
+    const ledgerCredentials = {}
+    ledgerCredentials[ledgerA] = {type: 'mock'}
+    ledgerCredentials[ledgerB] = {type: 'mock'}
+    this.core = makeCore({
+      config: {
+        ledgerCredentials,
+        server: {},
+        features: {}
+      },
+      log: logger,
+      routingTables: this.tables
+    })
+
+    this.core.getPlugin(ledgerA).getAccount = function () { return markA }
+    this.core.getPlugin(ledgerB).getAccount = function () { return markB }
+
     this.builder = new RouteBuilder(this.tables, this.infoCache, this.core, {
       minMessageWindow: 1,
       slippage: 0.01
@@ -68,44 +83,66 @@ describe('RouteBuilder', function () {
     describe('fixed sourceAmount', function () {
       it('Local quote should return additional info', function * () {
         const quoteTransfer = yield this.builder.getQuote({
-          sourceLedger: ledgerA,
-          sourceAccount: aliceA,
-          destinationLedger: ledgerB,
-          destinationAccount: bobB,
+          sourceAddress: aliceA,
+          destinationAddress: bobB,
           sourceAmount: '200',
           explain: 'true'
         })
         assert.deepStrictEqual(quoteTransfer, {
-          source_connector_account: markA,
-          source_ledger: ledgerA,
-          source_amount: '200.00',
-          destination_ledger: ledgerB,
-          destination_amount: '99.00',
-          _hop: quoteTransfer._hop,
-          additional_info: { rate_info: 'someInfoAboutTheRate',
-                             slippage: '1' }
+          connectorAccount: markA,
+          sourceLedger: ledgerA,
+          sourceAmount: '200.00',
+          destinationLedger: ledgerB,
+          destinationAmount: '99.00',
+          sourceExpiryDuration: '6',
+          destinationExpiryDuration: '5',
+          additionalInfo: { rate_info: 'someInfoAboutTheRate',
+                             slippage: '1' },
+          minMessageWindow: 1,
+          nextLedger: ledgerB
         })
       })
-    })
 
-    describe('fixed sourceAmount', function () {
       it('returns a quote with slippage in the final amount', function * () {
         const quoteTransfer = yield this.builder.getQuote({
-          sourceLedger: ledgerA,
-          sourceAccount: aliceA,
-          destinationLedger: ledgerC,
-          destinationAccount: carlC,
+          sourceAddress: aliceA,
+          destinationAddress: carlC,
           sourceAmount: '100',
           explain: 'true'
         })
         assert.deepStrictEqual(quoteTransfer, {
-          source_connector_account: markA,
-          source_ledger: ledgerA,
-          source_amount: '100.00',
-          destination_ledger: ledgerC,
-          destination_amount: '24.75',
-          _hop: quoteTransfer._hop,
-          additional_info: { slippage: '0.25' }
+          connectorAccount: markA,
+          sourceLedger: ledgerA,
+          sourceAmount: '100.00',
+          destinationLedger: ledgerC,
+          destinationAmount: '24.75',
+          sourceExpiryDuration: '7',
+          destinationExpiryDuration: '5',
+          additionalInfo: { slippage: '0.25' },
+          minMessageWindow: 2,
+          nextLedger: ledgerB
+        })
+      })
+
+      it('allows a specified slippage', function * () {
+        const quoteTransfer = yield this.builder.getQuote({
+          sourceAddress: aliceA,
+          destinationAddress: carlC,
+          sourceAmount: '100',
+          slippage: '0.1',
+          explain: 'true'
+        })
+        assert.deepStrictEqual(quoteTransfer, {
+          connectorAccount: markA,
+          sourceLedger: ledgerA,
+          sourceAmount: '100.00',
+          destinationLedger: ledgerC,
+          destinationAmount: '22.5',
+          sourceExpiryDuration: '7',
+          destinationExpiryDuration: '5',
+          additionalInfo: { slippage: '2.5' },
+          minMessageWindow: 2,
+          nextLedger: ledgerB
         })
       })
     })
@@ -113,32 +150,30 @@ describe('RouteBuilder', function () {
     describe('fixed destinationAmount', function () {
       it('returns a quote with slippage in the source amount', function * () {
         const quoteTransfer = yield this.builder.getQuote({
-          sourceLedger: ledgerA,
-          sourceAccount: aliceA,
-          destinationLedger: ledgerC,
-          destinationAccount: carlC,
+          sourceAddress: aliceA,
+          destinationAddress: carlC,
           destinationAmount: '25',
           explain: 'true'
         })
         assert.deepStrictEqual(quoteTransfer, {
-          source_connector_account: markA,
-          source_ledger: ledgerA,
-          source_amount: '101.00',
-          destination_ledger: ledgerC,
-          destination_amount: '25',
-          _hop: quoteTransfer._hop,
-          additional_info: { slippage: '-1' }
+          connectorAccount: markA,
+          sourceLedger: ledgerA,
+          sourceAmount: '101.00',
+          destinationLedger: ledgerC,
+          destinationAmount: '25',
+          sourceExpiryDuration: '7',
+          destinationExpiryDuration: '5',
+          additionalInfo: { slippage: '-1' },
+          minMessageWindow: 2,
+          nextLedger: ledgerB
         })
       })
 
       it('throws if there is no path to the destination', function * () {
-        const ledgerD = 'http://ledgerD.example'
         yield assertThrows(function * () {
           yield this.builder.getQuote({
-            sourceLedger: ledgerA,
-            sourceAccount: aliceA,
-            destinationLedger: ledgerD,
-            destinationAccount: ledgerD + '.doraD',
+            sourceAddress: aliceA,
+            destinationAddress: 'ledgerD.doraD',
             destinationAmount: '25'
           })
         }.bind(this), error('This connector does not support the given asset pair'))

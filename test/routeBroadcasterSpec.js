@@ -29,8 +29,8 @@ describe('RouteBroadcaster', function () {
       destination_ledger: ledgerB,
       connector: baseURI,
       min_message_window: 1,
-      source_account: ledgerA + '.mark',
-      destination_account: ledgerB + '.mark',
+      source_account: ledgerA + 'mark',
+      destination_account: ledgerB + 'mark',
       points: [ [0, 0], [200, 100] ],
       additional_info: {}
     }, {
@@ -38,8 +38,8 @@ describe('RouteBroadcaster', function () {
       destination_ledger: ledgerA,
       connector: baseURI,
       min_message_window: 1,
-      source_account: ledgerB + '.mark',
-      destination_account: ledgerA + '.mark',
+      source_account: ledgerB + 'mark',
+      destination_account: ledgerA + 'mark',
       points: [ [0, 0], [100, 200] ],
       additional_info: {}
     }])
@@ -76,24 +76,24 @@ describe('RouteBroadcaster', function () {
       nock('http://other-connector2.example').post('/routes', [
         {
           source_ledger: ledgerA,
-          destination_ledger: ledgerB,
-          connector: 'http://connector.example',
-          min_message_window: 1,
-          source_account: ledgerA + '.mark',
-          points: [ [0, -0.01], [200, 99.99] ]
-        }, {
-          source_ledger: ledgerA,
           destination_ledger: ledgerC,
           connector: 'http://connector.example',
           min_message_window: 2,
-          source_account: ledgerA + '.mark',
+          source_account: ledgerA + 'mark',
           points: [ [0, 0], [0.02, 0], [100.02, 60], [200, 60] ]
+        }, {
+          source_ledger: ledgerA,
+          destination_ledger: ledgerB,
+          connector: 'http://connector.example',
+          min_message_window: 1,
+          source_account: ledgerA + 'mark',
+          points: [ [0, -0.01], [200, 99.99] ]
         }, {
           source_ledger: ledgerB,
           destination_ledger: ledgerA,
           connector: 'http://connector.example',
           min_message_window: 1,
-          source_account: ledgerB + '.mark',
+          source_account: ledgerB + 'mark',
           points: [ [0, -0.01], [100, 199.99] ]
         }
       ]).reply(200)
