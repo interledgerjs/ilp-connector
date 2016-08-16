@@ -1,67 +1,41 @@
 'use strict'
 
-const addressToLedger = require('../lib/utils').addressToLedger
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
-const AssetsNotTradedError = require('../errors/assets-not-traded-error')
-const DEFAULT_DESTINATION_EXPIRY = 5 // seconds
 
 function * makeQuoteQuery (params) {
-  const sourceLedger = addressToLedger(params.source_address)
-  const destinationLedger = addressToLedger(params.destination_address)
-  const explain = params.explain === 'true'
   return {
-    sourceLedger,
-    destinationLedger,
+    sourceAddress: params.source_address,
+    destinationAddress: params.destination_address,
     sourceAmount: params.source_amount,
     destinationAmount: params.destination_amount,
+    sourceExpiryDuration: params.source_expiry_duration,
+    destinationExpiryDuration: params.destination_expiry_duration,
     destinationPrecisionAndScale: params.destination_precision && {
       precision: params.destination_precision,
       scale: params.destination_scale
     },
-    explain
+    slippage: params.slippage,
+    explain: params.explain === 'true'
   }
 }
 
-/**
- * @param {String} _sourceExpiryDuration
- * @param {String} _destinationExpiryDuration
- * @param {Number} minMessageWindow
- * @param {Config} config
- * @returns {Object} {sourceExpiryDuration: Number, destinationExpiryDuration: Number}
- */
-function getQuoteExpiryDurations (_sourceExpiryDuration, _destinationExpiryDuration, minMessageWindow, config) {
-  // TODO: include the expiry duration in the quote logic
-  let destinationExpiryDuration = parseFloat(_destinationExpiryDuration)
-  let sourceExpiryDuration = parseFloat(_sourceExpiryDuration)
-
+// TODO: include the expiry duration in the quote logic
+function * validateExpiries (sourceExpiryDuration, destinationExpiryDuration, minMessageWindow, config) {
   // Check destination_expiry_duration
-  if (destinationExpiryDuration) {
-    if (destinationExpiryDuration > config.getIn(['expiry', 'maxHoldTime'])) {
-      throw new UnacceptableExpiryError('Destination expiry duration ' +
-        'is too long, destinationExpiryDuration: ' + destinationExpiryDuration +
-        ', maxHoldTime: ' + config.getIn(['expiry', 'maxHoldTime']))
-    }
-  } else if (sourceExpiryDuration) {
-    destinationExpiryDuration = sourceExpiryDuration - minMessageWindow
-  } else {
-    destinationExpiryDuration = DEFAULT_DESTINATION_EXPIRY
+  if (destinationExpiryDuration > config.expiry.maxHoldTime) {
+    throw new UnacceptableExpiryError('Destination expiry duration ' +
+      'is too long, destinationExpiryDuration: ' + destinationExpiryDuration +
+      ', maxHoldTime: ' + config.expiry.maxHoldTime)
   }
 
-  // Check difference between destination_expiry_duration
-  // and source_expiry_duration
-  if (sourceExpiryDuration) {
-    if (sourceExpiryDuration - destinationExpiryDuration < minMessageWindow) {
-      throw new UnacceptableExpiryError('The difference between the ' +
-        'destination expiry duration and the source expiry duration ' +
-        'is insufficient to ensure that we can execute the ' +
-        'source transfers')
-    }
-  } else {
-    sourceExpiryDuration = destinationExpiryDuration + minMessageWindow
+  // Check difference between destination_expiry_duration and source_expiry_duration
+  if (sourceExpiryDuration - destinationExpiryDuration < minMessageWindow) {
+    throw new UnacceptableExpiryError('The difference between the ' +
+      'destination expiry duration and the source expiry duration ' +
+      'is insufficient to ensure that we can execute the ' +
+      'source transfers')
   }
-
-  return {sourceExpiryDuration, destinationExpiryDuration}
 }
 
 function * validateBalance (balanceCache, ledger, amount) {
@@ -73,38 +47,44 @@ function * validateBalance (balanceCache, ledger, amount) {
 
 /**
  * @param {Object} params
- * @param {String} params.source_ledger
+ * @param {String} params.source_address
  * @param {String} params.source_account
  * @param {String} params.source_amount
  * @param {String} params.source_expiry_duration
- * @param {String} params.destination_ledger
+ * @param {String} params.destination_address
  * @param {String} params.destination_account
  * @param {String} params.destination_amount
  * @param {String} params.destination_expiry_duration
+ * @param {String} params.destination_precision
+ * @param {String} params.destination_scale
+ * @param {String} params.explain
+ * @param {String} params.slippage
  * @param {Object} config
+ * @param {RouteBuilder} routeBuilder
  * @param {Object} balanceCache
  * @returns {Quote}
  */
 function * getQuote (params, config, routeBuilder, balanceCache) {
   const query = yield makeQuoteQuery(params)
-  if (query.sourceLedger === query.destinationLedger) {
-    throw new AssetsNotTradedError('source_ledger must be different from destination_ledger')
-  }
-
   const quote = yield routeBuilder.getQuote(query)
-  const nextHop = quote._hop
-  delete quote._hop
 
-  const expiryDurations = getQuoteExpiryDurations(
-    params.source_expiry_duration,
-    params.destination_expiry_duration,
-    nextHop.minMessageWindow, config)
-  quote.source_expiry_duration = String(expiryDurations.sourceExpiryDuration)
-  quote.destination_expiry_duration = String(expiryDurations.destinationExpiryDuration)
+  yield validateExpiries(
+    quote.sourceExpiryDuration,
+    quote.destinationExpiryDuration,
+    quote.minMessageWindow, config)
+  // Check the balance of the next ledger (_not_ the final ledger).
+  yield validateBalance(balanceCache, quote.nextLedger, quote.destinationAmount)
 
-  // Check the balance of the next ledger (_not_ query.destinationLedger, which is the final ledger).
-  yield validateBalance(balanceCache, nextHop.destinationLedger, nextHop.destinationAmount)
-  return quote
+  return {
+    source_ledger: quote.sourceLedger,
+    destination_ledger: quote.destinationLedger,
+    source_connector_account: quote.connectorAccount,
+    source_amount: quote.sourceAmount,
+    destination_amount: quote.destinationAmount,
+    source_expiry_duration: quote.sourceExpiryDuration,
+    destination_expiry_duration: quote.destinationExpiryDuration,
+    additional_info: params.explain ? quote.additionalInfo : undefined
+  }
 }
 
 module.exports = {getQuote}

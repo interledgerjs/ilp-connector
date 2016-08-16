@@ -10,6 +10,7 @@ module.exports = new RouteBroadcaster(
   {
     tradingPairs: config.tradingPairs,
     minMessageWindow: config.expiry.minMessageWindow,
+    routeBroadcastEnabled: config.routeBroadcastEnabled,
     routeCleanupInterval: config.routeCleanupInterval,
     routeBroadcastInterval: config.routeBroadcastInterval
   })

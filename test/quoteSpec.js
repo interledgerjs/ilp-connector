@@ -668,7 +668,7 @@ describe('Quotes', function () {
         .end()
     })
 
-    it('fails on a same-ledger payment', function * () {
+    it('fails on a same-ledger quote', function * () {
       yield this.request()
         .get('/quote?source_amount=100' +
           '&source_address=usd-ledger.alice' +
@@ -676,7 +676,7 @@ describe('Quotes', function () {
         .expect(422)
         .expect(function (res) {
           expect(res.body.id).to.equal('AssetsNotTradedError')
-          expect(res.body.message).to.match(/source_ledger must be different from destination_ledger/)
+          expect(res.body.message).to.match(/This connector does not support the given asset pair/)
         })
     })
   })

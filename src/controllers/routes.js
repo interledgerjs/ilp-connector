@@ -17,7 +17,7 @@ exports.post = function * () {
     this.routeBroadcaster.addConnector(routes[0].connector)
   }
 
-  if (gotNewRoute) {
+  if (gotNewRoute && this.config.routeBroadcastEnabled) {
     co(this.routeBroadcaster.broadcast.bind(this.routeBroadcaster))
       .catch(function (err) {
         log.warn('error broadcasting routes: ' + err.message)

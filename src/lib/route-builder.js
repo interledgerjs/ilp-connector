@@ -6,7 +6,6 @@ const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
 const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 const log = require('../common/log').create('route-builder')
-const addressToLedger = require('./utils').addressToLedger
 
 class RouteBuilder {
   /**
@@ -32,55 +31,64 @@ class RouteBuilder {
   }
 
   /**
-   * @param {Object} query
-   * @param {String} query.sourceLedger
-   * @param {String} query.sourceAmount
-   * @param {String} query.destinationLedger
-   * @param {String} query.destinationAmount
-   * @param {Object} query.destinationPrecisionAndScale optional
+   * @param {Object} params
+   * @param {String} params.sourceAddress
+   * @param {String} [params.sourceAmount]
+   * @param {Number} [params.sourceExpiryDuration]
+   * @param {String} params.destinationAddress
+   * @param {String} [params.destinationAmount]
+   * @param {Number} [params.destinationExpiryDuration]
+   * @param {Object} [params.destinationPrecisionAndScale]
+   * @param {Object} [params.slippage]
    * @returns {Quote}
    */
-  * getQuote (query) {
-    log.info('creating quote sourceLedger=%s sourceAmount=%s ' +
-      'destinationLedger=%s destinationAmount=%s ' +
-      'destinationPrecisionAndScale=%s',
-      query.sourceLedger, query.sourceAmount,
-      query.destinationLedger, query.destinationAmount,
-      query.destinationPrecisionAndScale)
+  * getQuote (params) {
+    log.info('creating quote sourceAddress=%s sourceAmount=%s ' +
+      'destinationAddress=%s destinationAmount=%s ' +
+      'destinationPrecisionAndScale=%s slippage=%s',
+      params.sourceAddress, params.sourceAmount,
+      params.destinationAddress, params.destinationAmount,
+      params.destinationPrecisionAndScale, params.slippage)
     const info = {}
-    const _nextHop = this._findNextHop(query)
-    if (!_nextHop) throwAssetsNotTradedError()
-    if (query.sourceAmount) {
-      const amount = new BigNumber(_nextHop.finalAmount)
-      const amountWithSlippage = amount.times(1 - this.slippage)
-      _nextHop.finalAmount = amountWithSlippage.toString()
-      info.slippage = (amount - amountWithSlippage).toString()
+    const quote = yield this.core.quote({
+      sourceAddress: params.sourceAddress,
+      sourceAmount: params.sourceAmount,
+      destinationAddress: params.destinationAddress,
+      destinationAmount: params.destinationAmount,
+      sourceExpiryDuration: params.sourceExpiryDuration,
+      destinationExpiryDuration: params.destinationExpiryDuration,
+      destinationPrecisionAndScale: params.destinationPrecisionAndScale
+    })
+    if (!quote) throwAssetsNotTradedError()
+
+    const slippage = params.slippage ? +params.slippage : this.slippage
+    if (params.sourceAmount) {
+      const amount = new BigNumber(quote.destinationAmount)
+      const amountWithSlippage = amount.times(1 - slippage)
+      quote.destinationAmount = amountWithSlippage.toString()
+      info.slippage = amount.minus(amountWithSlippage).toString()
     } else { // fixed destinationAmount
-      const amount = new BigNumber(_nextHop.sourceAmount)
-      const amountWithSlippage = amount.times(1 + this.slippage)
-      _nextHop.sourceAmount = amountWithSlippage.toString()
-      info.slippage = (amount - amountWithSlippage).toString()
+      const amount = new BigNumber(quote.sourceAmount)
+      const amountWithSlippage = amount.times(1 + slippage)
+      quote.sourceAmount = amountWithSlippage.toString()
+      info.slippage = amount.minus(amountWithSlippage).toString()
     }
+
     // Round in favor of the connector (source amount up; destination amount down)
     // to ensure it doesn't lose any money. The amount is quoted using the unshifted rate.
-    const nextHop = yield this._roundHop(_nextHop, 'up', 'down',
-      query.destinationPrecisionAndScale)
+    const roundedSourceAmount = yield this._roundAmount(
+      'source', 'up', quote.sourceLedger, quote.sourceAmount)
+    const roundedDestinationAmount = yield this._roundAmount(
+      'destination', 'down', quote.destinationLedger, quote.destinationAmount,
+      params.destinationPrecisionAndScale)
 
-    const quote = {
-      source_connector_account:
-        this.core.getPlugin(nextHop.sourceLedger).getAccount(),
-      source_ledger: nextHop.sourceLedger,
-      source_amount: nextHop.sourceAmount,
-      destination_ledger: nextHop.finalLedger,
-      destination_amount: nextHop.finalAmount,
-      _hop: nextHop
-    }
-
-    if (query.explain) {
-      quote.additional_info = _.assign({}, nextHop.additionalInfo, info)
-    }
-
-    return quote
+    return _.omitBy(Object.assign(quote, {
+      sourceAmount: roundedSourceAmount,
+      destinationAmount: roundedDestinationAmount,
+      sourceExpiryDuration: quote.sourceExpiryDuration.toString(),
+      destinationExpiryDuration: quote.destinationExpiryDuration.toString(),
+      additionalInfo: _.assign({}, quote.additionalInfo, info)
+    }), _.isUndefined)
   }
 
   /**
@@ -106,21 +114,23 @@ class RouteBuilder {
     }
 
     const sourceLedger = sourceTransfer.ledger
-    const finalLedger = addressToLedger(ilpHeader.account)
     // Use `findBestHopForSourceAmount` since the source amount includes the slippage.
-    const _nextHopBySourceAmount = this.routingTables.findBestHopForSourceAmount(
-      sourceLedger, finalLedger, sourceTransfer.amount)
-    if (!_nextHopBySourceAmount) throwAssetsNotTradedError()
+    const nextHop = this.routingTables.findBestHopForSourceAmount(
+      sourceLedger, ilpHeader.account, sourceTransfer.amount)
+    if (!nextHop) throwAssetsNotTradedError()
     // Round in favor of the connector. findBestHopForSourceAmount uses the
     // local (unshifted) routes to compute the amounts, so the connector rounds
     // in its own favor to ensure it won't lose money.
-    const nextHop = yield this._roundHop(_nextHopBySourceAmount, 'up', 'down')
+    nextHop.destinationAmount = yield this._roundAmount('destination', 'down',
+      nextHop.destinationLedger, nextHop.destinationAmount)
 
     // Check if this connector can authorize the final transfer.
     if (nextHop.isFinal) {
+      const roundedFinalAmount = yield this._roundAmount('destination', 'down',
+        nextHop.finalLedger, nextHop.finalAmount)
       // Verify ilpHeader.amount ≤ nextHop.finalAmount
       const expectedFinalAmount = new BigNumber(ilpHeader.amount)
-      if (expectedFinalAmount.greaterThan(nextHop.finalAmount)) {
+      if (expectedFinalAmount.greaterThan(roundedFinalAmount)) {
         throw new UnacceptableRateError('Payment rate does not match the rate currently offered')
       }
       // TODO: Verify atomic mode notaries are trusted
@@ -160,32 +170,11 @@ class RouteBuilder {
     }, _.isUndefined)
   }
 
-  _findNextHop (query) {
-    return query.sourceAmount
-      ? this.routingTables.findBestHopForSourceAmount(
-          query.sourceLedger, query.destinationLedger, query.sourceAmount)
-      : this.routingTables.findBestHopForDestinationAmount(
-          query.sourceLedger, query.destinationLedger, query.destinationAmount)
-  }
-
   _getDestinationExpiry (sourceExpiry) {
     if (!sourceExpiry) return
     const sourceExpiryTime = (new Date(sourceExpiry)).getTime()
     const minMessageWindow = this.minMessageWindow * 1000
     return (new Date(sourceExpiryTime - minMessageWindow)).toISOString()
-  }
-
-  /**
-   * Round the hop's amounts according to the corresponding ledgers' scales/precisions.
-   */
-  * _roundHop (hop, sourceUpDown, destinationUpDown, destinationPrecisionAndScale) {
-    hop.sourceAmount = yield this._roundAmount('source', sourceUpDown, hop.sourceLedger, hop.sourceAmount)
-    hop.destinationAmount = yield this._roundAmount('destination', destinationUpDown, hop.destinationLedger, hop.destinationAmount, destinationPrecisionAndScale)
-    // Only round the final amount if we know the precision/scale.
-    if (hop.isFinal || destinationPrecisionAndScale) {
-      hop.finalAmount = yield this._roundAmount('destination', destinationUpDown, hop.finalLedger, hop.finalAmount, destinationPrecisionAndScale)
-    }
-    return hop
   }
 
   /**
@@ -196,10 +185,11 @@ class RouteBuilder {
    * @param {String} upOrDown "up" or "down"
    * @param {URI} ledger
    * @param {String} amount
-   * @param {Object} _precisionAndScale optional
+   * @param {Object} [_precisionAndScale]
    * @returns {String} rounded amount
    */
   * _roundAmount (sourceOrDestination, upOrDown, ledger, amount, _precisionAndScale) {
+    if (!_precisionAndScale && !this.core.getPlugin(ledger)) return amount
     const precisionAndScale = _precisionAndScale || (yield this.infoCache.get(ledger))
     const roundedAmount = new BigNumber(amount).toFixed(precisionAndScale.scale,
       upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP)

@@ -194,6 +194,9 @@ function getLocalConfig () {
   // when using the ilp-quote backend)
   const backendUri = Config.getEnv(envPrefix, 'BACKEND_URI')
 
+  const routeBroadcastEnabledString = Config.getEnv(envPrefix, 'ROUTE_BROADCAST_ENABLED')
+  const routeBroadcastEnabled =
+    routeBroadcastEnabledString ? Config.castBool(routeBroadcastEnabledString) : true
   const routeBroadcastInterval =
     Number(Config.getEnv(envPrefix, 'ROUTE_BROADCAST_INTERVAL')) || DEFAULT_ROUTE_BROADCAST_INTERVAL
   const routeCleanupInterval =
@@ -237,6 +240,7 @@ function getLocalConfig () {
     server,
     backendUri,
     notifications,
+    routeBroadcastEnabled,
     routeBroadcastInterval,
     routeCleanupInterval,
     routeExpiry,

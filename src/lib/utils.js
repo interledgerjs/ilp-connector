@@ -51,12 +51,7 @@ function getDeterministicUuid (secret, input) {
   return chars.join('')
 }
 
-function addressToLedger (address) {
-  return address.split('.').slice(0, -1).join('.') + '.'
-}
-
 module.exports = {
   getPairs,
-  getDeterministicUuid,
-  addressToLedger
+  getDeterministicUuid
 }

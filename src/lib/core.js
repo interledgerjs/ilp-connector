@@ -10,8 +10,8 @@ module.exports = function (options) {
   const routingTables = options.routingTables
 
   const core = new ilpCore.Core({routingTables})
-  Object.keys(options.config.ledgerCredentials).forEach((ledgerPrefix) => {
-    const creds = _.clone(options.config.ledgerCredentials[ledgerPrefix])
+  Object.keys(config.ledgerCredentials).forEach((ledgerPrefix) => {
+    const creds = _.clone(config.ledgerCredentials[ledgerPrefix])
     const store = creds.store && newSqliteStore(creds.store)
 
     creds.prefix = ledgerPrefix
