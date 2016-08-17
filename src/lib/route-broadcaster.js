@@ -108,22 +108,27 @@ class RouteBroadcaster {
     const sourceLedger = pair[0].split('@')[1]
     const destinationLedger = pair[1].split('@')[1]
     // TODO change the backend API to return curves, not points
-    return co(this.backend.getQuote.bind(this.backend), {
-      source_ledger: sourceLedger,
-      destination_ledger: destinationLedger,
-      source_amount: 100000000
-    }).then((quote) => this._quoteToLocalRoute(quote))
+    return co(function * () {
+      const quote = yield this.backend.getQuote({
+        source_ledger: sourceLedger,
+        destination_ledger: destinationLedger,
+        source_amount: 100000000
+      })
+      return yield this._quoteToLocalRoute(quote)
+    }.bind(this))
   }
 
-  _quoteToLocalRoute (quote) {
+  * _quoteToLocalRoute (quote) {
+    const sourcePlugin = this.core.getPlugin(quote.source_ledger)
+    const destinationPlugin = this.core.getPlugin(quote.destination_ledger)
     return Route.fromData({
       source_ledger: quote.source_ledger,
       destination_ledger: quote.destination_ledger,
       additional_info: quote.additional_info,
       connector: this.baseURI,
       min_message_window: this.minMessageWindow,
-      source_account: this.core.getPlugin(quote.source_ledger).getAccount(),
-      destination_account: this.core.getPlugin(quote.destination_ledger).getAccount(),
+      source_account: (yield sourcePlugin.getAccount()),
+      destination_account: (yield destinationPlugin.getAccount()),
       points: [
         [0, 0],
         [+quote.source_amount, +quote.destination_amount]
