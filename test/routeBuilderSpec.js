@@ -59,8 +59,8 @@ describe('RouteBuilder', function () {
       routingTables: this.tables
     })
 
-    this.core.getPlugin(ledgerA).getAccount = function () { return markA }
-    this.core.getPlugin(ledgerB).getAccount = function () { return markB }
+    this.core.getPlugin(ledgerA).getAccount = function * () { return markA }
+    this.core.getPlugin(ledgerB).getAccount = function * () { return markB }
 
     this.builder = new RouteBuilder(this.tables, this.infoCache, this.core, {
       minMessageWindow: 1,

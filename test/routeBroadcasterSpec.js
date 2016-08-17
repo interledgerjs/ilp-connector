@@ -105,7 +105,7 @@ describe('RouteBroadcaster', function () {
 
   describe('_quoteToLocalRoute', function () {
     it('returns a Route', function * () {
-      const route = this.broadcaster._quoteToLocalRoute({
+      const route = yield this.broadcaster._quoteToLocalRoute({
         source_ledger: ledgerA,
         destination_ledger: ledgerB,
         source_amount: '123',

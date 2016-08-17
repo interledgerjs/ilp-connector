@@ -41,7 +41,7 @@ class MockPlugin extends EventEmitter {
   }
 
   getAccount () {
-    return 'mocky'
+    return Promise.resolve('mocky')
   }
 
   * _handleNotification () { }
