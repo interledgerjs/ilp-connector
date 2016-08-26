@@ -102,116 +102,39 @@ describe('ConnectorConfig', function () {
           .to.deep.equal(ledgerCredentials)
       })
 
-      it('throws if missing password', () => {
-        const missingPassword = {
+      it('should parse another type of ledger\'s credentials', function * () {
+        const ledgerCredentialsEnv = {
           'cad-ledger.': {
-            account: 'http://cad-ledger.example:1000/accounts/mark',
-            username: 'mark'
-          }
-        }
-
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingPassword)
-        expect(() => loadConnectorConfig()).to.throw().match(/Missing key or password/)
-      })
-
-      it('throws if missing username', () => {
-        const missingUsername = {
-          'cad-ledger.': {
-            account: 'http://cad-ledger.example:1000/accounts/mark',
-            password: 'mark'
-          }
-        }
-
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingUsername)
-        expect(() => loadConnectorConfig()).to.throw().match(/Missing username/)
-      })
-
-      it('throws if missing key', () => {
-        const missingKey = {
-          'cad-ledger.': {
-            account: 'http://cad-ledger.example:1000/accounts/mark',
-            username: 'mark',
-            cert: '/cert'
-          }
-        }
-
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingKey)
-        expect(() => loadConnectorConfig()).to.throw().match(/Missing key or password/)
-      })
-
-      it('throws if missing cert', () => {
-        const missingCert = {
-          'cad-ledger.': {
-            account: 'http://cad-ledger.example:1000/accounts/mark',
-            username: 'mark',
-            key: '/key'
-          }
-        }
-
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingCert)
-        expect(() => loadConnectorConfig()).to.throw().match(/Missing certificate or key/)
-      })
-
-      it('throws if missing account', () => {
-        const missingAccountUri = {
-          'cad-ledger.': {
-            username: 'mark',
-            cert: 'test/data/client1-crt.pem',
-            key: 'test/data/client1-key.pem',
-            ca: 'test/data/ca-crt.pem'
-          }
-        }
-
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingAccountUri)
-        expect(() => loadConnectorConfig()).to.throw().match(/Missing account/)
-      })
-
-      it('throws if missing key file', function * () {
-        const missingKeyFile = {
+            token: 'iv8qhtm9qcmjmo8tcmjo4a',
+            account: 'mark',
+            type: 'other'
+          },
           'usd-ledger.': {
-            account: 'http://cad-ledger.example:1000/accounts/mark',
-            username: 'mark',
-            cert: 'test/data/client1-crt.pem',
-            key: 'foo',
-            ca: 'test/data/ca-crt.pem'
+            token: 'iv8qhtm9qcmjmo8tcmjo4a',
+            account: 'mark',
+            type: 'other'
           }
         }
 
         process.env.UNIT_TEST_OVERRIDE = 'true'
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingKeyFile)
-        expect(() => loadConnectorConfig()).to.throw().match(/Failed to read credentials/)
-      })
+        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(ledgerCredentialsEnv)
+        const config = loadConnectorConfig()
 
-      it('throws if missing certificate file', function * () {
-        const missingCertFile = {
+        const ledgerCredentials = {
+          'cad-ledger.': {
+            token: 'iv8qhtm9qcmjmo8tcmjo4a',
+            account: 'mark',
+            type: 'other'
+          },
           'usd-ledger.': {
-            account: 'http://cad-ledger.example:1000/accounts/mark',
-            username: 'mark',
-            cert: 'foo',
-            key: 'test/data/client1-key.pem',
-            ca: 'test/data/ca-crt.pem'
+            token: 'iv8qhtm9qcmjmo8tcmjo4a',
+            account: 'mark',
+            type: 'other'
           }
         }
 
-        process.env.UNIT_TEST_OVERRIDE = 'true'
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingCertFile)
-        expect(() => loadConnectorConfig()).to.throw().match(/Failed to read credentials/)
-      })
-
-      it('throws if missing ca certificate file', function * () {
-        const missingCertFile = {
-          'usd-ledger.': {
-            account: 'http://cad-ledger.example:1000/accounts/mark',
-            username: 'mark',
-            cert: 'test/data/client1-crt.pem',
-            key: 'test/data/client1-key.pem',
-            ca: 'foo'
-          }
-        }
-
-        process.env.UNIT_TEST_OVERRIDE = 'true'
-        process.env.CONNECTOR_CREDENTIALS = JSON.stringify(missingCertFile)
-        expect(() => loadConnectorConfig()).to.throw().match(/Failed to read credentials/)
+        expect(config.get('ledgerCredentials'))
+          .to.deep.equal(ledgerCredentials)
       })
     })
 
