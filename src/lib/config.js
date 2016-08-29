@@ -108,30 +108,6 @@ function getLogLevel () {
   }
 }
 
-function validateCredentialsEnv () {
-  const credentials = parseCredentialsEnv()
-
-  _.forEach(credentials, (credential, ledger) => {
-    if ((credential.key === undefined) && (credential.password === undefined)) {
-      throw new Error(`Missing key or password for ledger: ${ledger}`)
-    } else if (credential.username === undefined) {
-      throw new Error(`Missing username for ledger: ${ledger}`)
-    } else if ((credential.cert === undefined) !== (credential.key === undefined)) {
-      throw new Error(`Missing certificate or key for ledger: ${ledger}`)
-    } else if (credential.account === undefined && credential.account_uri === undefined) {
-      throw new Error(`Missing account for ledger: ${ledger}`)
-    }
-
-    try {
-      credential.cert && fs.accessSync(credential.cert, fs.R_OK)
-      credential.key && fs.accessSync(credential.key, fs.R_OK)
-      credential.ca && fs.accessSync(credential.ca, fs.R_OK)
-    } catch (e) {
-      throw new Error(`Failed to read credentials for ledger ${ledger}: ${e.message}`)
-    }
-  })
-}
-
 function validateNotificationEnv () {
   // Validate notification signing public keys
   const notifications = parseNotificationSignEnv()
@@ -155,7 +131,6 @@ function validateNotificationEnv () {
 
 function validateLocalEnvConfig () {
   validateNotificationEnv()
-  validateCredentialsEnv()
 }
 
 function getLocalConfig () {
