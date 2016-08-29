@@ -1,8 +1,8 @@
 {
-  "name": "five-bells-connector",
+  "name": "ilp-connector",
   "version": "9.2.1",
-  "description": "Five Bells connector reference implementation",
-  "title": "Five Bells Connector API",
+  "description": "ILP connector reference implementation",
+  "title": "ILP Connector API",
   "url": "https://acme-connector.example",
   "order": [
     "Quote",
@@ -14,7 +14,7 @@
   "apidoc": "0.2.0",
   "generator": {
     "name": "apidoc",
-    "time": "2016-08-27T01:58:10.330Z",
+    "time": "2016-08-29T17:41:07.820Z",
     "url": "http://apidocjs.com",
     "version": "0.13.2"
   }
