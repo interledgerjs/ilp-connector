@@ -1,13 +1,13 @@
-# Five Bells Connector [![npm][npm-image]][npm-url] [![circle][circle-image]][circle-url] [![codecov][codecov-image]][codecov-url]
+# ILP Connector [![npm][npm-image]][npm-url] [![circle][circle-image]][circle-url] [![codecov][codecov-image]][codecov-url]
 
-[npm-image]: https://img.shields.io/npm/v/five-bells-connector.svg?style=flat
-[npm-url]: https://npmjs.org/package/five-bells-connector
-[circle-image]: https://circleci.com/gh/interledger/five-bells-connector.svg?style=shield
-[circle-url]: https://circleci.com/gh/interledger/five-bells-connector
-[codecov-image]: https://codecov.io/gh/interledger/five-bells-connector/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/interledger/five-bells-connector
+[npm-image]: https://img.shields.io/npm/v/ilp-connector.svg?style=flat
+[npm-url]: https://npmjs.org/package/ilp-connector
+[circle-image]: https://circleci.com/gh/interledger/js-ilp-connector.svg?style=shield
+[circle-url]: https://circleci.com/gh/interledger/js-ilp-connector
+[codecov-image]: https://codecov.io/gh/interledger/js-ilp-connector/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/interledger/js-ilp-connector
 
-> A reference implementation of the Five Bells Connector API
+> A reference implementation of the ILP Connector API
 
 ## Usage
 
@@ -20,9 +20,9 @@ Note: You need two [`five-bells-ledger`](https://github.com/interledger/five-bel
 ### Step 1: Clone repo
 
 ``` sh
-git clone https://github.com/interledger/five-bells-connector.git
+git clone https://github.com/interledger/js-ilp-connector.git
 
-cd five-bells-connector
+cd js-ilp-connector
 ```
 ### Step 2: Install dependencies
 
@@ -40,11 +40,11 @@ npm start
 
 #### General
 
-* `CONNECTOR_BIND_IP` (default: `0.0.0.0`) IP that Five Bells Connector will bind to.
-* `CONNECTOR_PORT` (default: `4000`) Port that Five Bells Connector will listen on.
+* `CONNECTOR_BIND_IP` (default: `0.0.0.0`) IP that ILP Connector will bind to.
+* `CONNECTOR_PORT` (default: `4000`) Port that ILP Connector will listen on.
 * `CONNECTOR_HOSTNAME` (default: *[your hostname]*) Publicly visible hostname. This is important for things like generating globally unique IDs. Make sure this is a hostname that all your clients will be able to see. The default should be fine for local testing.
 * `CONNECTOR_PUBLIC_PORT` (default: `$PORT`) Publicly visible port. You can set this if your public port differs from the listening port, e.g. because the connector is running behind a proxy.
-* `CONNECTOR_PUBLIC_HTTPS` (default: `''`) Whether or not the publicly visible instance of Five Bells Connector is using HTTPS.
+* `CONNECTOR_PUBLIC_HTTPS` (default: `''`) Whether or not the publicly visible instance of ILP Connector is using HTTPS.
 * `CONNECTOR_LOG_LEVEL` (default: `info`) the allowed levels in order of verbosity are `fatal`, `error`, `warn`, `info`, `debug`, and `trace`
 
 #### Trading
@@ -120,12 +120,12 @@ This project can be run in a [Docker](https://www.docker.com/) container.
 
 
 ``` sh
-docker run -it --rm -e CONNECTOR_PORT=4000 interledger/five-bells-connector
+docker run -it --rm -e CONNECTOR_PORT=4000 interledger/js-ilp-connector
 ```
 
 Breaking down that command:
 
-* `-it` Run Five Bells Connector in an interactive terminal.
+* `-it` Run ILP Connector in an interactive terminal.
 * `--rm` Delete container when it's done running.
 * `-e CONNECTOR_PORT=4000` Set the connector's port to 4000. This is just an example for how to set a config option.
 

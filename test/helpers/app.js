@@ -13,7 +13,7 @@ const RouteBroadcaster = require('../../src/lib/route-broadcaster')
 const makeCore = require('../../src/lib/core')
 const BalanceCache = require('../../src/lib/balance-cache')
 
-const createApp = require('five-bells-connector').createApp
+const createApp = require('ilp-connector').createApp
 
 exports.create = function (context) {
   const config = loadConfig()
