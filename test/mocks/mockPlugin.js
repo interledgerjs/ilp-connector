@@ -40,6 +40,10 @@ class MockPlugin extends EventEmitter {
     return Promise.resolve(null)
   }
 
+  rejectIncomingTransfer (transferId, rejectionMessage) {
+    return Promise.resolve(null)
+  }
+
   getAccount () {
     return Promise.resolve('mocky')
   }
