@@ -1,6 +1,6 @@
 {
   "name": "ilp-connector",
-  "version": "9.3.0",
+  "version": "9.2.1",
   "description": "ILP connector reference implementation",
   "title": "ILP Connector API",
   "url": "https://acme-connector.example",
@@ -14,7 +14,7 @@
   "apidoc": "0.2.0",
   "generator": {
     "name": "apidoc",
-    "time": "2016-09-01T16:11:48.548Z",
+    "time": "2016-09-01T16:11:54.510Z",
     "url": "http://apidocjs.com",
     "version": "0.13.2"
   }
