@@ -9,22 +9,26 @@ function * setupListeners (core, config, routeBuilder) {
   const handleIncoming = (client, transfer) => {
     return co(function * () {
       yield payments.updateIncomingTransfer(transfer, core, config, routeBuilder)
-    }).catch((err) => {
-      log.warn('error processing notification: ' + err)
-      throw err
-    })
+    }).catch(logThenThrow)
   }
   core.on('incoming_prepare', handleIncoming)
   core.on('incoming_transfer', handleIncoming)
 
+  core.on('outgoing_cancel', (client, transfer, rejectionMessage) => {
+    return co(payments.rejectSourceTransfer, transfer, rejectionMessage, core)
+      .catch(logThenThrow)
+  })
+
   core.on('outgoing_fulfill', (client, transfer, fulfillment) => {
     return co(function * () {
       yield payments.processExecutionFulfillment(transfer, fulfillment, core, config)
-    }).catch((err) => {
-      log.warn('error processing notification: ' + err)
-      throw err
-    })
+    }).catch(logThenThrow)
   })
+}
+
+function logThenThrow (err) {
+  log.warn('error processing notification: ' + err)
+  throw err
 }
 
 function * subscribePairs (pairs, core, config, routeBuilder) {

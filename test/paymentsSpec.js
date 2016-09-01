@@ -188,6 +188,37 @@ describe('Payments', function () {
     })
   })
 
+  it('rejects the source transfer if settlement fails', function * () {
+    const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
+    this.mockPlugin2.send = function () {
+      return Promise.reject(new Error('fail!'))
+    }
+
+    try {
+      yield this.mockPlugin1.emitAsync('incoming_prepare', {
+        id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        direction: 'incoming',
+        ledger: 'mock.test1.',
+        amount: '100',
+        executionCondition: 'cc:0:',
+        expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+        data: {
+          ilp_header: {
+            account: 'mock.test2.bob',
+            amount: '50'
+          }
+        }
+      })
+    } catch (err) {
+      assert.equal(err.message, 'fail!')
+      sinon.assert.calledOnce(rejectSpy)
+      sinon.assert.calledWith(rejectSpy, '5857d460-2a46-4545-8311-1539d99e78e8',
+        'destination transfer failed: fail!')
+      return
+    }
+    assert(false)
+  })
+
   it('throws InvalidBodyError if the incoming transfer\'s ilp_header isn\'t an IlpHeader', function * () {
     try {
       yield this.mockPlugin1.emitAsync('incoming_transfer', {
@@ -251,6 +282,40 @@ describe('Payments', function () {
       assert.equal(err.name, 'UnacceptableExpiryError')
       assert.equal(err.message, 'Not enough time to send payment')
     }
+  })
+
+  describe('rejection', function () {
+    it('relays a rejection', function * () {
+      const rejectSpy = sinon.spy(this.mockPlugin2, 'rejectIncomingTransfer')
+      yield this.mockPlugin1.emitAsync('outgoing_cancel', {
+        id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        direction: 'outgoing',
+        ledger: 'mock.test1.',
+        noteToSelf: {
+          source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
+          source_transfer_ledger: 'mock.test2.'
+        }
+      }, 'error 1')
+      sinon.assert.calledOnce(rejectSpy)
+      sinon.assert.calledWith(rejectSpy, '130394ed-f621-4663-80dc-910adc66f4c6', 'error 1')
+    })
+
+    it('throws if there is no source_transfer_id', function * () {
+      const rejectSpy = sinon.spy(this.mockPlugin2, 'rejectIncomingTransfer')
+      try {
+        yield this.mockPlugin1.emitAsync('outgoing_cancel', {
+          id: '5857d460-2a46-4545-8311-1539d99e78e8',
+          direction: 'outgoing',
+          ledger: 'mock.test1.',
+          noteToSelf: { source_transfer_ledger: 'mock.test2.' }
+        }, 'error 1')
+      } catch (err) {
+        assert.equal(err.message, 'Uuid schema validation error: Invalid type: undefined (expected string)')
+        assert(!rejectSpy.called)
+        return
+      }
+      assert(false)
+    })
   })
 
   describe('atomic mode', function () {

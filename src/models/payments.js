@@ -20,7 +20,12 @@ function * validateExpiry (sourceTransfer, destinationTransfer, config) {
 function * settle (sourceTransfer, destinationTransfer, config, core) {
   log.debug('Settle payment, source: ' + JSON.stringify(sourceTransfer))
   log.debug('Settle payment, destination: ' + JSON.stringify(destinationTransfer))
-  yield core.getPlugin(destinationTransfer.ledger).send(destinationTransfer)
+  yield core.getPlugin(destinationTransfer.ledger)
+    .send(destinationTransfer)
+    .catch((err) =>
+      core.getPlugin(sourceTransfer.ledger)
+        .rejectIncomingTransfer(sourceTransfer.id, 'destination transfer failed: ' + err.message)
+        .then(() => { throw err }))
 }
 
 function * updateIncomingTransfer (sourceTransfer, core, config, routeBuilder) {
@@ -42,7 +47,22 @@ function * processExecutionFulfillment (transfer, fulfillment, core) {
   }
 }
 
+function * rejectSourceTransfer (destinationTransfer, rejectionMessage, core) {
+  const noteToSelf = destinationTransfer.noteToSelf || {}
+  const sourceTransferLedger = noteToSelf.source_transfer_ledger
+  const sourceTransferId = noteToSelf.source_transfer_id
+  validator.validate('IlpAddress', sourceTransferLedger)
+  validator.validate('Uuid', sourceTransferId)
+
+  yield core.getPlugin(sourceTransferLedger)
+    .rejectIncomingTransfer(sourceTransferId, rejectionMessage)
+    .catch(() => {
+      log.warn('Attempted to reject source transfer but it was unsucessful')
+    })
+}
+
 module.exports = {
   updateIncomingTransfer,
-  processExecutionFulfillment
+  processExecutionFulfillment,
+  rejectSourceTransfer
 }
