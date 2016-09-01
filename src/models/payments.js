@@ -47,7 +47,7 @@ function * processExecutionFulfillment (transfer, fulfillment, core) {
   }
 }
 
-function * rejectSourceTransfer (destinationTransfer, core) {
+function * rejectSourceTransfer (destinationTransfer, rejectionMessage, core) {
   const noteToSelf = destinationTransfer.noteToSelf || {}
   const sourceTransferLedger = noteToSelf.source_transfer_ledger
   const sourceTransferId = noteToSelf.source_transfer_id
@@ -55,7 +55,7 @@ function * rejectSourceTransfer (destinationTransfer, core) {
   validator.validate('Uuid', sourceTransferId)
 
   yield core.getPlugin(sourceTransferLedger)
-    .rejectIncomingTransfer(sourceTransferId, 'destination-rejected')
+    .rejectIncomingTransfer(sourceTransferId, rejectionMessage)
     .catch(() => {
       log.warn('Attempted to reject source transfer but it was unsucessful')
     })

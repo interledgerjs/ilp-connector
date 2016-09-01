@@ -14,8 +14,8 @@ function * setupListeners (core, config, routeBuilder) {
   core.on('incoming_prepare', handleIncoming)
   core.on('incoming_transfer', handleIncoming)
 
-  core.on('outgoing_cancel', (client, transfer) => {
-    return co(payments.rejectSourceTransfer, transfer, core)
+  core.on('outgoing_cancel', (client, transfer, rejectionMessage) => {
+    return co(payments.rejectSourceTransfer, transfer, rejectionMessage, core)
       .catch(logThenThrow)
   })
 
