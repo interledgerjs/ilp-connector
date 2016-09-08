@@ -90,6 +90,9 @@ npm start
 ]
 ```
 
+* `CONNECTOR_PEERS` (default: `''`) Provide a basic comma-separated list of peers.
+* `CONNECTOR_AUTOLOAD_PEERS` (default: `false`) Whether to automatically populate the list of peers by calling getConnectors on all ledger plugins
+
 * `CONNECTOR_NOTIFICATION_VERIFY` (default: `'true'` if `NODE_ENV=production` else `false`) The connector verifies  signatures on notifications.
 * `CONNECTOR_NOTIFICATION_KEYS` (default: none) The paths to files with the public key in PEM format to verify ledgers' notification signatures. Required if `CONNECTOR_NOTICATION_VERIFY='true'`
 ex.

@@ -12,5 +12,7 @@ module.exports = new RouteBroadcaster(
     minMessageWindow: config.expiry.minMessageWindow,
     routeBroadcastEnabled: config.routeBroadcastEnabled,
     routeCleanupInterval: config.routeCleanupInterval,
-    routeBroadcastInterval: config.routeBroadcastInterval
+    routeBroadcastInterval: config.routeBroadcastInterval,
+    autoloadPeers: config.autoloadPeers,
+    peers: config.peers
   })

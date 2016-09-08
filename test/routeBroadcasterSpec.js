@@ -49,7 +49,9 @@ describe('RouteBroadcaster', function () {
         ['USD@' + ledgerA, 'EUR@' + ledgerB],
         ['EUR@' + ledgerB, 'USD@' + ledgerA]
       ],
-      minMessageWindow: 1
+      minMessageWindow: 1,
+      autoloadPeers: true,
+      peers: []
     })
 
     this.tables.addRoute({
@@ -66,12 +68,21 @@ describe('RouteBroadcaster', function () {
 
   describe('broadcast', function () {
     it('sends the combined routes to all adjacent connectors', function * () {
-      this.core.getPlugin(ledgerA).getConnectors =
-      this.core.getPlugin(ledgerC).getConnectors =
-      this.core.getPlugin(ledgerD).getConnectors =
-        function * () { return [baseURI] }
-      this.core.getPlugin(ledgerB).getConnectors =
-        function * () { return [baseURI, 'http://other-connector2.example'] }
+      this.core.getPlugin(ledgerA).getInfo =
+      this.core.getPlugin(ledgerC).getInfo =
+      this.core.getPlugin(ledgerD).getInfo =
+        function () {
+          return Promise.resolve({ connectors: [{connector: baseURI}] })
+        }
+      this.core.getPlugin(ledgerB).getInfo =
+        function () {
+          return Promise.resolve({
+            connectors: [
+              {connector: baseURI},
+              {connector: 'http://other-connector2.example'}
+            ]
+          })
+        }
 
       nock('http://other-connector2.example').post('/routes', [
         {
