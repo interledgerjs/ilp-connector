@@ -285,9 +285,24 @@ describe('Payments', function () {
   })
 
   describe('rejection', function () {
-    it('relays a rejection', function * () {
+    it('relays a cancellation', function * () {
       const rejectSpy = sinon.spy(this.mockPlugin2, 'rejectIncomingTransfer')
       yield this.mockPlugin1.emitAsync('outgoing_cancel', {
+        id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        direction: 'outgoing',
+        ledger: 'mock.test1.',
+        noteToSelf: {
+          source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
+          source_transfer_ledger: 'mock.test2.'
+        }
+      }, 'error 1')
+      sinon.assert.calledOnce(rejectSpy)
+      sinon.assert.calledWith(rejectSpy, '130394ed-f621-4663-80dc-910adc66f4c6', 'error 1')
+    })
+
+    it('relays a rejection', function * () {
+      const rejectSpy = sinon.spy(this.mockPlugin2, 'rejectIncomingTransfer')
+      yield this.mockPlugin1.emitAsync('outgoing_reject', {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'outgoing',
         ledger: 'mock.test1.',
