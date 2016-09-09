@@ -179,6 +179,10 @@ function getLocalConfig () {
   const routeExpiry =
     Number(Config.getEnv(envPrefix, 'ROUTE_EXPIRY')) || DEFAULT_ROUTE_EXPIRY
 
+  const peersString = Config.getEnv(envPrefix, 'PEERS')
+  const peers = peersString ? peersString.split(',') : []
+  const autoloadPeers = Config.castBool(Config.getEnv(envPrefix, 'AUTOLOAD_PEERS'), false)
+
   // Credentials should be specified as a map of the form
   // {
   //    "<ledger_uri>": {
@@ -219,6 +223,8 @@ function getLocalConfig () {
     routeBroadcastInterval,
     routeCleanupInterval,
     routeExpiry,
+    autoloadPeers,
+    peers,
     logLevel
   }
 }

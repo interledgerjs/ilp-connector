@@ -21,10 +21,6 @@ class MockPlugin extends EventEmitter {
     return this.connected
   }
 
-  getConnectors () {
-    return Promise.resolve(['http://connector.example'])
-  }
-
   send (transfer) {
     return Promise.resolve(null)
   }
@@ -54,8 +50,12 @@ class MockPlugin extends EventEmitter {
     return '123.456'
   }
 
-  * getInfo () {
-    return {precision: 10, scale: 4}
+  getInfo () {
+    return Promise.resolve({
+      connectors: [{connector: 'http://connector.example'}],
+      precision: 10,
+      scale: 4
+    })
   }
 }
 

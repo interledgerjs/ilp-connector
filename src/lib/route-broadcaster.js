@@ -17,6 +17,8 @@ class RouteBroadcaster {
    * @param {Number} config.minMessageWindow
    * @param {Number} config.routeCleanupInterval
    * @param {Number} config.routeBroadcastInterval
+   * @param {Boolean} config.autoloadPeers
+   * @param {URI[]} config.peers
    */
   constructor (routingTables, backend, core, infoCache, config) {
     if (!core) {
@@ -32,11 +34,14 @@ class RouteBroadcaster {
     this.infoCache = infoCache
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
+
+    this.autoloadPeers = config.autoloadPeers
     this.adjacentConnectors = {}
+    config.peers.forEach(this.addConnector, this)
   }
 
   * start () {
-    yield this.crawlLedgers()
+    if (this.autoloadPeers) yield this.crawlLedgers()
     try {
       yield this.reloadLocalRoutes()
       yield this.broadcast()
@@ -81,7 +86,7 @@ class RouteBroadcaster {
   }
 
   * _crawlLedger (client) {
-    const connectors = yield client.getPlugin().getConnectors()
+    const connectors = yield client.getConnectors()
     connectors.forEach(this.addConnector, this)
   }
 
