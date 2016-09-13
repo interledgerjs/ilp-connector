@@ -19,6 +19,11 @@ function * setupListeners (core, config, routeBuilder) {
       .catch(logThenThrow)
   })
 
+  core.on('outgoing_reject', (client, transfer, rejectionMessage) => {
+    return co(payments.rejectSourceTransfer, transfer, rejectionMessage, core)
+      .catch(logThenThrow)
+  })
+
   core.on('outgoing_fulfill', (client, transfer, fulfillment) => {
     return co(function * () {
       yield payments.processExecutionFulfillment(transfer, fulfillment, core, config)
