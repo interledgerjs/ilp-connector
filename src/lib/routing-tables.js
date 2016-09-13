@@ -30,10 +30,22 @@ const routing = require('five-bells-routing')
  * broadcast to adjacent connectors.
  */
 class RoutingTables {
-  constructor (baseURI, expiryDuration) {
-    this.baseURI = baseURI
-    this.localTables = new routing.RoutingTables(baseURI, [], expiryDuration)
-    this.publicTables = new routing.RoutingTables(baseURI, [], expiryDuration)
+  /**
+   * @param {Object} config
+   * @param {String} config.baseURI
+   * @param {String} config.backend
+   * @param {Integer} config.expiryDuration
+   * @param {Number} config.fxSpread
+   * @param {Number} config.slippage
+   */
+  constructor (config) {
+    this.baseURI = config.baseURI
+    this.isTrivialRate =
+      config.backend === 'one-to-one' &&
+      config.fxSpread === 0 &&
+      config.slippage === 0
+    this.localTables = new routing.RoutingTables(config.baseURI, [], config.expiryDuration)
+    this.publicTables = new routing.RoutingTables(config.baseURI, [], config.expiryDuration)
   }
 
   * addLocalRoutes (infoCache, _localRoutes) {
@@ -43,11 +55,12 @@ class RoutingTables {
     // Shift the graph down by a small amount so that precision rounding doesn't
     // cause UnacceptableRateErrors.
     for (const localRoute of localRoutes) {
-      const destinationAdjustment =
-        yield this._getScaleAdjustment(infoCache, localRoute.destinationLedger)
-      this.publicTables.addLocalRoutes([
-        localRoute.shiftY(-destinationAdjustment)
-      ])
+      const destinationAdjustment = yield this._getScaleAdjustment(
+        infoCache, localRoute.sourceLedger, localRoute.destinationLedger)
+      const shiftedLocalRoute = destinationAdjustment
+        ? localRoute.shiftY(-destinationAdjustment)
+        : localRoute
+      this.publicTables.addLocalRoutes([shiftedLocalRoute])
     }
   }
 
@@ -75,9 +88,16 @@ class RoutingTables {
     this.publicTables.removeExpiredRoutes()
   }
 
-  * _getScaleAdjustment (infoCache, ledger) {
-    const scale = (yield infoCache.get(ledger)).scale
-    return scale ? Math.pow(10, -scale) : 0
+  * _getScaleAdjustment (infoCache, sourceLedger, destinationLedger) {
+    const sourceScale = yield this._getScale(infoCache, sourceLedger)
+    const destinationScale = yield this._getScale(infoCache, destinationLedger)
+    if (sourceScale === destinationScale && this.isTrivialRate) return 0
+    const destinationAdjustment = destinationScale ? Math.pow(10, -destinationScale) : 0
+    return destinationAdjustment
+  }
+
+  * _getScale (infoCache, ledger) {
+    return (yield infoCache.get(ledger)).scale
   }
 }
 

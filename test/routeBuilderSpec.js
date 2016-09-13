@@ -34,7 +34,11 @@ describe('RouteBuilder', function () {
       }
     }
 
-    this.tables = new RoutingTables(baseURI)
+    this.tables = new RoutingTables({
+      baseURI: baseURI,
+      fxSpread: 0.002,
+      slippage: 0.001
+    })
     yield this.tables.addLocalRoutes(this.infoCache, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,

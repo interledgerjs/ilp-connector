@@ -10,7 +10,6 @@ const appHelper = require('./helpers/app')
 const ledgerA = 'cad-ledger.'
 const ledgerB = 'usd-ledger.'
 const ledgerC = 'eur-ledger.'
-const ledgerD = 'cny-ledger.'
 const baseURI = 'http://connector.example'
 
 describe('RouteBroadcaster', function () {
@@ -23,7 +22,11 @@ describe('RouteBroadcaster', function () {
       }
     }
 
-    this.tables = new RoutingTables(baseURI)
+    this.tables = new RoutingTables({
+      baseURI: baseURI,
+      fxSpread: 0.002,
+      slippage: 0.001
+    })
     yield this.tables.addLocalRoutes(this.infoCache, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,
@@ -70,7 +73,6 @@ describe('RouteBroadcaster', function () {
     it('sends the combined routes to all adjacent connectors', function * () {
       this.core.getPlugin(ledgerA).getInfo =
       this.core.getPlugin(ledgerC).getInfo =
-      this.core.getPlugin(ledgerD).getInfo =
         function () {
           return Promise.resolve({ connectors: [{connector: baseURI}] })
         }
