@@ -23,7 +23,13 @@ exports.create = function (context) {
     backendUri: config.get('backendUri'),
     spread: config.get('fxSpread')
   })
-  const routingTables = new RoutingTables(config.server.base_uri, config.routeExpiry)
+  const routingTables = new RoutingTables({
+    baseUri: config.server.base_uri,
+    backend: config.backend,
+    expiryDuration: config.routeExpiry,
+    slippage: config.slippage,
+    fxSpread: config.fxSpread
+  })
   const core = makeCore({config, log, routingTables})
   const infoCache = new InfoCache(core)
   const routeBuilder = new RouteBuilder(
