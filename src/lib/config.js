@@ -1,7 +1,6 @@
 'use strict'
 
 const fs = require('fs')
-const cc = require('five-bells-condition')
 const Config = require('five-bells-shared').Config
 const Utils = require('../lib/utils')
 const _ = require('lodash')
@@ -81,24 +80,6 @@ function parseLedgers () {
   })
 }
 
-function parseNotificationSignEnv () {
-  // On by default in prod
-  const isProduction = process.env.NODE_ENV === 'production'
-  const mustVerify = Config.castBool(Config.getEnv(envPrefix, 'NOTIFICATION_VERIFY'), isProduction)
-
-  let keys
-  try {
-    keys = JSON.parse(Config.getEnv(envPrefix, 'NOTIFICATION_KEYS') || '{}')
-  } catch (e) {
-    throw new Error('Failed to parse CONNECTOR_NOTIFICATION_KEYS')
-  }
-
-  return {
-    must_verify: mustVerify,
-    keys
-  }
-}
-
 function getLogLevel () {
   if (useTestConfig()) {
     return 'debug'
@@ -108,34 +89,7 @@ function getLogLevel () {
   }
 }
 
-function validateNotificationEnv () {
-  // Validate notification signing public keys
-  const notifications = parseNotificationSignEnv()
-
-  if (notifications.must_verify) {
-    const ledgers = parseLedgers()
-    for (let ledgerObj of ledgers) {
-      const ledgerPrefix = ledgerObj.ledger
-      if (notifications.keys[ledgerPrefix] === undefined) {
-        throw new Error(`Missing notification signing keys for ledger: ${ledgerPrefix}`)
-      }
-
-      try {
-        cc.validateCondition(notifications.keys[ledgerPrefix])
-      } catch (e) {
-        throw new Error(`Failed to read signing key for ledger ${ledgerPrefix}: ${e.message}`)
-      }
-    }
-  }
-}
-
-function validateLocalEnvConfig () {
-  validateNotificationEnv()
-}
-
 function getLocalConfig () {
-  validateLocalEnvConfig()
-
   const ledgers = parseLedgers()
   // Currency pairs traded should be specified as
   // [["USD@http://usd-ledger.example","EUR@http://eur-ledger.example"],...]
@@ -205,7 +159,6 @@ function getLocalConfig () {
     ledgerCredentials = parseCredentials()
   }
 
-  const notifications = parseNotificationSignEnv()
   const logLevel = getLogLevel()
 
   return {
@@ -218,7 +171,6 @@ function getLocalConfig () {
     tradingPairs,
     server,
     backendUri,
-    notifications,
     routeBroadcastEnabled,
     routeBroadcastInterval,
     routeCleanupInterval,

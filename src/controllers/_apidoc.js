@@ -66,16 +66,3 @@
  *       "message": "Error description here."
  *     }
  */
-
- /**
- * @apiDefine UnrelatedNotificationError
- *
- * @apiError UnrelatedNotificationError The notification does not correspond to an event the connector is expecting.
- *
- * @apiErrorExample UnrelatedNotificationError
- *     HTTP/1.1 422 Bad Request
- *     {
- *       "id": "UnrelatedNotificationError",
- *       "message": "Error description here."
- *     }
- */
