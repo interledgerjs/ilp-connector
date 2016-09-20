@@ -93,15 +93,6 @@ npm start
 * `CONNECTOR_PEERS` (default: `''`) Provide a basic comma-separated list of peers.
 * `CONNECTOR_AUTOLOAD_PEERS` (default: `false`) Whether to automatically populate the list of peers by calling getConnectors on all ledger plugins
 
-* `CONNECTOR_NOTIFICATION_VERIFY` (default: `'true'` if `NODE_ENV=production` else `false`) The connector verifies  signatures on notifications.
-* `CONNECTOR_NOTIFICATION_KEYS` (default: none) The paths to files with the public key in PEM format to verify ledgers' notification signatures. Required if `CONNECTOR_NOTICATION_VERIFY='true'`
-ex.
-```js
-{
-  "<ledger_uri": "<path-to-file>"
-}
-```
-
 * `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.
 * `CONNECTOR_SLIPPAGE` (default: `0.001` = 0.1%) The ratio for overestimating exchange rates to prevent payment failure if the rate changes.
 * `CONNECTOR_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the connector wants to budget for getting a message to the ledgers its trading on. In seconds.

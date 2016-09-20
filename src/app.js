@@ -7,7 +7,6 @@ const health = require('./controllers/health')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
 const routes = require('./controllers/routes')
-const notifications = require('./controllers/notifications')
 const subscriptions = require('./models/subscriptions')
 const compress = require('koa-compress')
 const serve = require('koa-static')
@@ -154,8 +153,6 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
 
   koaApp.use(route.get('/quote', quote.get))
   koaApp.use(route.post('/routes', routes.post))
-
-  koaApp.use(route.post('/notifications', notifications.post))
 
   // Serve static files
   koaApp.use(serve(path.join(__dirname, 'public')))

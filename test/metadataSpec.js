@@ -25,8 +25,7 @@ describe('Metadata', function () {
               health: 'http://localhost/health',
               pairs: 'http://localhost/pairs',
               payment: 'http://localhost/payments/:uuid',
-              quote: 'http://localhost/quote',
-              notifications: 'http://localhost/notifications'
+              quote: 'http://localhost/quote'
             }
           })
         })

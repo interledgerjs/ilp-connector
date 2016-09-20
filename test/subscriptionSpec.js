@@ -76,10 +76,6 @@ describe('Subscriptions', function () {
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
-    this.notificationSourceTransferPrepared =
-      _.cloneDeep(require('./data/notificationSourceTransferPrepared.json'))
-    this.notificationWithConditionFulfillment =
-      _.cloneDeep(require('./data/notificationWithConditionFulfillment.json'))
   })
 
   afterEach(function * () {
