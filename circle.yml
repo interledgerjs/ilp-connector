@@ -1,4 +1,6 @@
 machine:
+  services:
+    - docker
   node:
     version: 4.0.0
 test:
@@ -19,8 +21,7 @@ deployment:
       - git config --global user.name "CircleCI"
       - git config --global push.default simple
       - node scripts/publish_web.js
-      - mv npmrc-env .npmrc
-      - if [ -z "$(npm info $(npm ls --depth=-1 2>/dev/null | head -1 | cut -f 1 -d " ") 2>/dev/null)" ] ; then npm publish ; fi
+      - ./scripts/ci-deploy.sh
 general:
   artifacts:
     - "coverage/lcov-report"
