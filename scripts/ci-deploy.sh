@@ -10,14 +10,15 @@ publishNpm() {
 
 pushDocker() {
   # Push Docker image tagged latest and tagged with commit descriptor
-  local REGISTRY="interledger/"
+  local REGISTRY=""
+  local NAMESPACE="interledger/"
   local REPO=$(basename $PWD)
   # rm is false because on Circle the process doesn't have permissions to delete the intermediate container
   docker build -t $REGISTRY$REPO --rm=false .
   docker login -u $DOCKER_USER -p $DOCKER_PASS -e $DOCKER_EMAIL $REGISTRY
-  docker tag $REGISTRY$REPO":latest" $REGISTRY$REPO":$(git describe)"
-  docker push $REGISTRY$REPO":latest"
-  docker push $REGISTRY$REPO":$(git describe)"
+  docker tag $NAMESPACE$REPO":latest" $NAMESPACE$REPO":$(git describe)"
+  docker push $NAMESPACE$REPO":latest"
+  docker push $NAMESPACE$REPO":$(git describe)"
 }
 
 publishNpm
