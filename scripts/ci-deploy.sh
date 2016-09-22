@@ -14,7 +14,7 @@ pushDocker() {
   local NAMESPACE="interledger/"
   local REPO=$(basename $PWD)
   # rm is false because on Circle the process doesn't have permissions to delete the intermediate container
-  docker build -t $REGISTRY$REPO --rm=false .
+  docker build -t $NAMESPACE$REPO --rm=false .
   docker login -u $DOCKER_USER -p $DOCKER_PASS -e $DOCKER_EMAIL $REGISTRY
   docker tag $NAMESPACE$REPO":latest" $NAMESPACE$REPO":$(git describe)"
   docker push $NAMESPACE$REPO":latest"
