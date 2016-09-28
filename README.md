@@ -42,9 +42,7 @@ npm start
 
 * `CONNECTOR_BIND_IP` (default: `0.0.0.0`) IP that ILP Connector will bind to.
 * `CONNECTOR_PORT` (default: `4000`) Port that ILP Connector will listen on.
-* `CONNECTOR_HOSTNAME` (default: *[your hostname]*) Publicly visible hostname. This is important for things like generating globally unique IDs. Make sure this is a hostname that all your clients will be able to see. The default should be fine for local testing.
-* `CONNECTOR_PUBLIC_PORT` (default: `$PORT`) Publicly visible port. You can set this if your public port differs from the listening port, e.g. because the connector is running behind a proxy.
-* `CONNECTOR_PUBLIC_HTTPS` (default: `''`) Whether or not the publicly visible instance of ILP Connector is using HTTPS.
+* `CONNECTOR_PUBLIC_URI` (default: `http://$HOSTNAME:$CONNECTOR_PORT`) URI prefix where the connector will be publicly visible. All IDs and URIs that that the connector outputs will be using this root URI.
 * `CONNECTOR_LOG_LEVEL` (default: `info`) the allowed levels in order of verbosity are `fatal`, `error`, `warn`, `info`, `debug`, and `trace`
 
 #### Trading
