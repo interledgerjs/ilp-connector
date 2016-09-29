@@ -2,6 +2,7 @@
 
 const co = require('co')
 const defer = require('co-defer')
+const log = require('../common').log.create('routes')
 const request = require('co-request')
 const Route = require('five-bells-routing').Route
 const SIMPLIFY_POINTS = 10
@@ -69,6 +70,12 @@ class RouteBroadcaster {
   }
 
   _broadcastTo (adjacentConnector, routes) {
+    log.info('broadcasting routes (' +
+      routes.map((e) => (
+        '"' + e.source_ledger + '" -> "' + e.destination_ledger + '"'
+      )).join(', ') +
+      ') to ' + adjacentConnector + '/routes')
+
     return request({
       method: 'POST',
       uri: adjacentConnector + '/routes',
@@ -101,6 +108,7 @@ class RouteBroadcaster {
   addConnector (connector) {
     // Don't broadcast routes to ourselves.
     if (connector === this.baseURI) return
+    log.info('adding peer ' + connector)
     this.adjacentConnectors[connector] = true
   }
 
