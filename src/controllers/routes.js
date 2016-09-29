@@ -10,7 +10,11 @@ exports.post = function * () {
 
   // TODO verify that POSTer of these routes matches route.connector.
   for (const route of routes) {
-    gotNewRoute = this.routingTables.addRoute(route) || gotNewRoute
+    if (this.routingTables.addRoute(route)) {
+      log.info('got new route: "' + route.source_ledger + '" -> "' +
+        route.destination_ledger + '"')
+      gotNewRoute = true
+    }
   }
 
   if (routes[0].connector) {
