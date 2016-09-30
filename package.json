@@ -44,7 +44,7 @@
     "five-bells-routing": "~4.0.0",
     "five-bells-shared": "^18.3.0",
     "ilp-core": "~8.0.0",
-    "ilp-plugin-bells": "^7.0.0",
+    "ilp-plugin-bells": "^7.0.3",
     "ilp-plugin-virtual": "^5.0.0",
     "koa": "^1.0.0",
     "koa-bunyan-logger": "^1.3.0",
