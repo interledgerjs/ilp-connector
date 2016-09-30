@@ -116,6 +116,28 @@ describe('RouteBroadcaster', function () {
     })
   })
 
+  it('should not throw an error even if the other connector does not respond', function * () {
+    this.core.getPlugin(ledgerA).getInfo =
+      this.core.getPlugin(ledgerC).getInfo =
+      function () {
+        return Promise.resolve({ connectors: [{connector: baseURI}] })
+      }
+    this.core.getPlugin(ledgerB).getInfo =
+      function () {
+        return Promise.resolve({
+          connectors: [
+            {connector: baseURI},
+            {connector: 'http://other-connector2.example'}
+          ]
+        })
+      }
+
+    nock('http://other-connector2.example').post('/routes').reply(404)
+
+    yield this.broadcaster.crawlLedgers()
+    yield this.broadcaster.broadcast()
+  })
+
   describe('_quoteToLocalRoute', function () {
     it('returns a Route', function * () {
       const route = yield this.broadcaster._quoteToLocalRoute({

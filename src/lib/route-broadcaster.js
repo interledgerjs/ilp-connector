@@ -83,7 +83,7 @@ class RouteBroadcaster {
       json: true
     }).then((res) => {
       if (res.statusCode !== 200) {
-        throw new Error('Unexpected status code: ' + res.statusCode)
+        log.error('Error broadcasting route to: ' + adjacentConnector, res.statusCode, res.body)
       }
     })
   }
