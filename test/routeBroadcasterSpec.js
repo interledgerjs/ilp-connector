@@ -49,8 +49,8 @@ describe('RouteBroadcaster', function () {
 
     this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.core, this.infoCache, {
       tradingPairs: [
-        ['USD@' + ledgerA, 'EUR@' + ledgerB],
-        ['EUR@' + ledgerB, 'USD@' + ledgerA]
+        [ledgerA, ledgerB],
+        [ledgerB, ledgerA]
       ],
       minMessageWindow: 1,
       autoloadPeers: true,

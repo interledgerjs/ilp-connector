@@ -47,31 +47,32 @@ npm start
 
 #### Trading
 
-* `CONNECTOR_LEDGERS` (default: `[]`) Ledgers where this connector has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
-```js
-[
-  "USD@example.usd-ledger.",
-  "EUR@example.eur-ledger."
-]
-```
-* `CONNECTOR_CREDENTIALS` (default: `{}`) Connector's login credentials for various ledgers, ex.
+* `CONNECTOR_LEDGERS` (default: `{}`) Connector's login credentials for ledgers where it has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
 ```js
 {
   // Using Basic Auth
-  "<ledger_address>": {
-    "account": "...",
-    "username": "...",
-    "password": "..."
-    "ca": "...", // Optional
+  "example.usd-ledger.": {
+    "currency": "USD", // asset on this ledger
+    "plugin": "ilp-plugin-bells", // module for this ledger plugin
+    "options": { // actual plugin options passed into plugin constructor
+      "account": "...",
+      "username": "...",
+      "password": "..."
+      "ca": "...", // Optional
+    }
   },
 
   // Using Client Certificate Auth
-  "<ledger_address_2>": {
-    "account": "...",
-    "username": "...",
-    "cert": "...",
-    "key": "...",
-    "ca": "...", // Optional
+  "example.eur-ledger.": {
+    "currency": "EUR",
+    "plugin": "ilp-plugin-bells",
+    "options": {
+      "account": "...",
+      "username": "...",
+      "cert": "...",
+      "key": "...",
+      "ca": "...", // Optional
+    }
   }
 }
 ```

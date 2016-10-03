@@ -28,23 +28,35 @@ describe('Payments', function () {
       [
         'USD@mock.test1.',
         'EUR@mock.test2.'
+      ],
+      [
+        'EUR@mock.test2.',
+        'USD@mock.test1.'
       ]
     ]
     process.env.UNIT_TEST_OVERRIDE = '1'
-    process.env.CONNECTOR_CREDENTIALS = JSON.stringify({
+    process.env.CONNECTOR_LEDGERS = JSON.stringify({
       'mock.test1.': {
-        type: 'mock',
-        host: 'http://test1.mock',
-        account: 'xyz',
-        username: 'bob',
-        password: 'bob'
+        currency: 'USD',
+        plugin: 'ilp-plugin-mock',
+        options: {
+          type: 'mock',
+          host: 'http://test1.mock',
+          account: 'xyz',
+          username: 'bob',
+          password: 'bob'
+        }
       },
       'mock.test2.': {
-        type: 'mock',
-        host: 'http://test2.mock',
-        account: 'xyz',
-        username: 'bob',
-        password: 'bob'
+        currency: 'EUR',
+        plugin: 'ilp-plugin-mock',
+        options: {
+          type: 'mock',
+          host: 'http://test2.mock',
+          account: 'xyz',
+          username: 'bob',
+          password: 'bob'
+        }
       }
     })
     process.env.CONNECTOR_PAIRS = JSON.stringify(pairs)
