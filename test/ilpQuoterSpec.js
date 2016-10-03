@@ -23,34 +23,46 @@ describe('ILPQuoter', function () {
 
   beforeEach(function * () {
     process.env.UNIT_TEST_OVERRIDE = '1'
-    process.env.CONNECTOR_CREDENTIALS = JSON.stringify({
+    process.env.CONNECTOR_LEDGERS = JSON.stringify({
       'localhost:3000.': {
-        type: 'mock',
-        host: 'https://localhost:3000',
-        account: 'https://localhost:3000/accounts/mark',
-        username: 'mark',
-        password: 'mark'
+        currency: 'USD',
+        plugin: 'ilp-plugin-mock',
+        options: {
+          host: 'https://localhost:3000',
+          account: 'https://localhost:3000/accounts/mark',
+          username: 'mark',
+          password: 'mark'
+        }
       },
       'localhost:3001.': {
-        type: 'mock',
-        host: 'https://localhost:3001',
-        account: 'https://localhost:3001/accounts/mark',
-        username: 'mark',
-        password: 'mark'
+        currency: 'EUR',
+        plugin: 'ilp-plugin-mock',
+        options: {
+          host: 'https://localhost:3001',
+          account: 'https://localhost:3001/accounts/mark',
+          username: 'mark',
+          password: 'mark'
+        }
       },
       'localhost:4000.': {
-        type: 'mock',
-        host: 'https://localhost:4000',
-        account: 'https://localhost:4000/accounts/mark',
-        username: 'mark',
-        password: 'mark'
+        currency: 'USD',
+        plugin: 'ilp-plugin-mock',
+        options: {
+          host: 'https://localhost:4000',
+          account: 'https://localhost:4000/accounts/mark',
+          username: 'mark',
+          password: 'mark'
+        }
       },
       'localhost:4001.': {
-        type: 'mock',
-        host: 'https://localhost:4001',
-        account: 'https://localhost:4001/accounts/mark',
-        username: 'mark',
-        password: 'mark'
+        currency: 'EUR',
+        plugin: 'ilp-plugin-mock',
+        options: {
+          host: 'https://localhost:4001',
+          account: 'https://localhost:4001/accounts/mark',
+          username: 'mark',
+          password: 'mark'
+        }
       }
     })
 
@@ -73,8 +85,7 @@ describe('ILPQuoter', function () {
       infoCache: this.infoCache
     })
 
-    const getLedger = (currencyLedger) => currencyLedger.split('@')[1]
-    const testLedgers = _.flatMap(this.pairs, (pair) => _.map(pair, getLedger))
+    const testLedgers = _.flatMap(this.pairs, (pair) => pair)
 
     _.each(testLedgers, (ledgerUri) => {
       nock('http://' + ledgerUri).get('/')

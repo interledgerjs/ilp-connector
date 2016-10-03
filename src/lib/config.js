@@ -35,10 +35,6 @@ function generateDefaultPairs (ledgers) {
   })
 }
 
-function parseCredentialsEnv () {
-  return JSON.parse(Config.getEnv(envPrefix, 'CREDENTIALS') || '{}')
-}
-
 function parseCredentials () {
   const credentialsEnv = parseCredentialsEnv()
 
@@ -51,8 +47,8 @@ function parseCredentials () {
     }
 
     // Apply default ledger type
-    if (!credentials.type) {
-      credentials.type = 'bells'
+    if (!credentials.options.type) {
+      credentials.options.type = 'bells'
     }
 
     const isClientCertCredential = credentials.key !== undefined
@@ -71,12 +67,52 @@ function parseCredentials () {
   })
 }
 
+function parseCredentialsEnv () {
+  // use the CONNECTOR_LEDGERS object instead of separate CREDENTIALS
+  const ret = {}
+  const ledgers = JSON.parse(Config.getEnv(envPrefix, 'LEDGERS') || '{}')
+
+  Object.keys(ledgers).forEach((k) => {
+    const ledger = ledgers[k]
+
+    if (typeof ledger.currency !== 'string') {
+      console.error('currency not specified on "' + k + '"')
+    } if (typeof ledger.plugin !== 'string') {
+      console.error('plugin module not specified on "' + k + '"')
+    } if (typeof ledger.options !== 'object') {
+      console.error('plugin options not specified on "' + k + '"')
+    }
+
+    ret[k] = {
+      currency: ledger.currency,
+      plugin: ledger.plugin,
+      options: Object.assign({}, ledger.options)
+    }
+  })
+  return ret
+}
+
 function parseLedgers () {
   // List of ledgers this connector has accounts on (used to auto-generate pairs)
-  // e.g. ["USD@http://usd-ledger.example","EUR@http://eur-ledger.example/some/path"]
-  return JSON.parse(Config.getEnv(envPrefix, 'LEDGERS') || '[]').map((ledger) => {
-    const sep = ledger.indexOf('@')
-    return { currency: ledger.substr(0, sep), ledger: ledger.substr(sep + 1) }
+  // e.g. {
+  //    "http://usd-ledger.example": {
+  //      "currency": "USD",
+  //      "plugin": 'ilp-plugin-example',
+  //      "options": {
+  //        // plugin options ...
+  //      }
+  //    },
+  //    "http://eur-ledger.example/some/path": {
+  //      "currency": "EUR",
+  //      "plugin": 'ilp-plugin-example',
+  //      "options": {
+  //        // plugin options ...
+  //      }
+  //    }
+  //  }
+  const ledgers = JSON.parse(Config.getEnv(envPrefix, 'LEDGERS') || '{}')
+  return Object.keys(ledgers).map((ledger) => {
+    return { currency: ledgers[ledger].currency, ledger }
   })
 }
 

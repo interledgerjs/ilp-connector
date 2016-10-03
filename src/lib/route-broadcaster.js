@@ -118,8 +118,8 @@ class RouteBroadcaster {
   }
 
   _tradingPairToLocalRoute (pair) {
-    const sourceLedger = pair[0].split('@')[1]
-    const destinationLedger = pair[1].split('@')[1]
+    const sourceLedger = pair[0].split('@').slice(1).join('@')
+    const destinationLedger = pair[1].split('@').slice(1).join('@')
     // TODO change the backend API to return curves, not points
     return co(function * () {
       const quote = yield this.backend.getQuote({

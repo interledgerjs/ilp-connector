@@ -51,8 +51,16 @@ describe('RouteBuilder', function () {
     }])
 
     const ledgerCredentials = {}
-    ledgerCredentials[ledgerA] = {type: 'mock'}
-    ledgerCredentials[ledgerB] = {type: 'mock'}
+    ledgerCredentials[ledgerA] = {
+      currency: 'USD',
+      plugin: 'ilp-plugin-mock',
+      options: {}
+    }
+    ledgerCredentials[ledgerB] = {
+      currency: 'USD',
+      plugin: 'ilp-plugin-mock',
+      options: {}
+    }
     this.core = makeCore({
       config: {
         ledgerCredentials,

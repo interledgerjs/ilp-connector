@@ -11,17 +11,17 @@ module.exports = function (options) {
 
   const core = new ilpCore.Core({routingTables})
   Object.keys(config.ledgerCredentials).forEach((ledgerPrefix) => {
-    const creds = _.clone(config.ledgerCredentials[ledgerPrefix])
-    const store = creds.store && newSqliteStore(creds.store)
+    const creds = _.cloneDeep(config.ledgerCredentials[ledgerPrefix])
+    const store = creds.options.store && newSqliteStore(creds.options.store)
 
-    creds.prefix = ledgerPrefix
-    core.addClient(ledgerPrefix, new ilpCore.Client(Object.assign({}, creds, {
+    creds.options.prefix = ledgerPrefix
+    core.addClient(ledgerPrefix, new ilpCore.Client(Object.assign({}, creds.options, {
       debugReplyNotifications: config.features.debugReplyNotifications,
       connector: config.server.base_uri,
       // non JSON-stringifiable fields are prefixed with an underscore
-      _plugin: require('ilp-plugin-' + creds.type),
+      _plugin: require(creds.plugin),
       _store: store,
-      _log: makeLogger('plugin-' + creds.type)
+      _log: makeLogger(creds.plugin)
     })))
   })
   return core
