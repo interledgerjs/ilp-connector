@@ -3,18 +3,19 @@
 const crypto = require('crypto')
 
 /**
- * Get all possible pair combinations from an array.
+ * Get all possible pair combinations from an array, order sensitive.
  *
  * Example:
  *   getPairs ([1, 2, 3, 4])
- *   // => [ [ 1, 2 ], [ 1, 3 ], [ 1, 4 ], [ 2, 3 ], [ 2, 4 ], [ 3, 4 ] ]
+ *   // => [ [ 1, 2 ], [ 1, 3 ], [ 1, 4 ], [ 2, 3 ], [ 2, 4 ], [ 3, 4 ],
+ *           [ 2, 1 ], [ 3, 1 ], [ 4, 1 ], [ 3, 2 ], [ 4, 2 ], [ 4, 3 ] ]
  *
  * @param {array} arr Input array
  * @return {array[]} Possible pairs
  */
 function getPairs (arr) {
   return arr.reduce((prev, cur, i) => (
-    prev.concat(arr.slice(i + 1).map((val) => [cur, val]))
+    [].concat.apply(prev, arr.slice(i + 1).map((val) => [[cur, val], [val, cur]]))
   ), [])
 }
 
