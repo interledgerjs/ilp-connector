@@ -83,6 +83,11 @@ class RoutingTables {
     return this.publicTables.toJSON(maxPoints)
   }
 
+  removeLedger (ledger) {
+    this.localTables.removeLedger(ledger)
+    this.publicTables.removeLedger(ledger)
+  }
+
   removeExpiredRoutes () {
     this.localTables.removeExpiredRoutes()
     this.publicTables.removeExpiredRoutes()
