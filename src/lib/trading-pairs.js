@@ -6,7 +6,7 @@ class TradingPairs {
     this._pairs = pairs
   }
 
-  getPairs () {
+  toArray () {
     return this._pairs
   }
 

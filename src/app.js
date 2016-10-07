@@ -51,7 +51,7 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster) 
   log.info('connector listening on ' + config.getIn(['server', 'bind_ip']) + ':' +
     config.getIn(['server', 'port']))
   log.info('public at ' + config.getIn(['server', 'base_uri']))
-  for (let pair of tradingPairs.getPairs()) {
+  for (let pair of tradingPairs.toArray()) {
     log.info('pair', pair)
   }
 
@@ -64,7 +64,7 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster) 
       log.error(error)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(tradingPairs.getPairs(), core, config, routeBuilder)
+    yield subscriptions.subscribePairs(tradingPairs.toArray(), core, config, routeBuilder)
     if (config.routeBroadcastEnabled) {
       yield routeBroadcaster.start()
     } else {
@@ -73,7 +73,7 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster) 
   }).catch((err) => log.error(err))
 }
 
-function addPlugin (config, core, backend, routeBroadcaster, id, options, tradesTo, tradesFrom) {
+function addPlugin (config, core, backend, routeBroadcaster, tradingPairs, id, options, tradesTo, tradesFrom) {
   return co(function * () {
     core.addClient(id, new ilpCore.Client(Object.assign({}, options.options, {
       connector: config.server.base_uri,
@@ -85,9 +85,13 @@ function addPlugin (config, core, backend, routeBroadcaster, id, options, trades
 
     if (tradesTo) {
       tradingPairs.addPairs(tradesTo.map((e) => [options.currency + '@' + id, e]))
-    } if (tradesFrom) {
+    }
+
+    if (tradesFrom) {
       tradingPairs.addPairs(tradesTo.map((e) => [e, options.currency + '@' + id]))
-    } if (!tradesFrom && !tradesTo) {
+    }
+
+    if (!tradesFrom && !tradesTo) {
       tradingPairs.addAll(options.currency + '@' + id)
     }
 
@@ -95,18 +99,17 @@ function addPlugin (config, core, backend, routeBroadcaster, id, options, trades
   })
 }
 
-function removePlugin (config, core, backend, routeBroadcaster, id) {
+function removePlugin (config, core, backend, routingTables, tradingPairs, id) {
   return co(function * () {
-    yield core.getClient(id).disconnect()
-    delete core.tables[id]
-
     tradingPairs.removeAll(id)
+    routingTables.removeLedger(id)
 
-    yield routeBroadcaster.reloadLocalRoutes()
+    yield core.getClient(id).disconnect()
+    delete core.clients[id]
   })
 }
 
-function createApp (config, core, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache) {
+function createApp (config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache) {
   const koaApp = koa()
 
   if (!config) {
@@ -139,6 +142,10 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
 
   if (!balanceCache) {
     balanceCache = require('./services/balance-cache')
+  }
+
+  if (!tradingPairs) {
+    tradingPairs = require('./services/trading-pairs')
   }
 
   koaApp.context.config = config
@@ -199,8 +206,8 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
     koaApp: koaApp,
     listen: _.partial(listen, koaApp, config, core, backend, routeBuilder, routeBroadcaster),
     callback: koaApp.callback.bind(koaApp),
-    addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster),
-    removePlugin: _.partial(removePlugin, config, core, backend, routeBroadcaster)
+    addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster, tradingPairs),
+    removePlugin: _.partial(removePlugin, config, core, backend, routingTables, tradingPairs)
   }
 }
 

@@ -2,7 +2,7 @@
 const tradingPairsService = require('../services/trading-pairs')
 
 function getPairs (config) {
-  const tradingPairs = tradingPairsService.getPairs()
+  const tradingPairs = tradingPairsService.toArray()
   return tradingPairs.map((pair) => {
     const currencies = pair.map(function (currencyLedgerString) {
       return currencyLedgerString.split('@')

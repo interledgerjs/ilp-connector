@@ -92,7 +92,7 @@ class FixerIoBackend {
    */
   * getQuote (params) {
     // Get ratio between currencies and apply spread
-    const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs.getPairs(),
+    const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs.toArray(),
                                                params.source_ledger, params.destination_ledger)
     const destinationRate = this.rates[currencyPair[1]]
     const sourceRate = this.rates[currencyPair[0]]

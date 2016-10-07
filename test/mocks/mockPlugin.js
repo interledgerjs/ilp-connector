@@ -15,6 +15,7 @@ class MockPlugin extends EventEmitter {
 
   disconnect () {
     this.connected = false
+    return Promise.resolve(null)
   }
 
   isConnected () {

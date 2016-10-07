@@ -12,14 +12,16 @@ const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
 const makeCore = require('../../src/lib/core')
 const BalanceCache = require('../../src/lib/balance-cache')
+const TradingPairs = require('../../src/lib/trading-pairs')
 
 const createApp = require('ilp-connector').createApp
 
 exports.create = function (context) {
   const config = loadConfig()
+  const tradingPairs = new TradingPairs(config.get('tradingPairs'))
   const Backend = require('../../src/backends/' + config.get('backend'))
   const backend = new Backend({
-    currencyWithLedgerPairs: config.get('tradingPairs'),
+    currencyWithLedgerPairs: tradingPairs,
     backendUri: config.get('backendUri'),
     spread: config.get('fxSpread')
   })
@@ -42,7 +44,7 @@ exports.create = function (context) {
     }
   )
   const routeBroadcaster = new RouteBroadcaster(routingTables, backend, core, infoCache, {
-    tradingPairs: config.tradingPairs,
+    tradingPairs: tradingPairs,
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,
     routeBroadcastInterval: config.routeBroadcastInterval,
@@ -50,9 +52,10 @@ exports.create = function (context) {
     peers: []
   })
   const balanceCache = new BalanceCache(core)
-  const app = createApp(config, core, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache)
+  const app = createApp(config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache)
   context.app = app
   context.backend = backend
+  context.tradingPairs = tradingPairs
   context.routingTables = routingTables
   context.routeBroadcaster = routeBroadcaster
   context.routeBuilder = routeBuilder
