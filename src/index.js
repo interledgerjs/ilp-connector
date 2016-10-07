@@ -6,6 +6,8 @@ const connector = createApp()
 module.exports = {
   app: connector.koaApp,
   createApp: createApp,
+  addPlugin: connector.addPlugin,
+  removePlugin: connector.removePlugin,
   listen: connector.listen,
   _test: {
     BalanceCache: require('./lib/balance-cache'),

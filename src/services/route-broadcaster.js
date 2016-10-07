@@ -8,7 +8,7 @@ module.exports = new RouteBroadcaster(
   require('./core'),
   require('./info-cache'),
   {
-    tradingPairs: config.tradingPairs,
+    tradingPairs: require('./trading-pairs'),
     minMessageWindow: config.expiry.minMessageWindow,
     routeBroadcastEnabled: config.routeBroadcastEnabled,
     routeCleanupInterval: config.routeCleanupInterval,

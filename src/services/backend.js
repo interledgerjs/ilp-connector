@@ -2,6 +2,7 @@
 
 const config = require('./config')
 const Backend = require('../backends/' + config.get('backend'))
+const tradingPairs = require('./trading-pairs')
 const infoCache = require('./info-cache')
 
 if (!Backend) {
@@ -10,7 +11,7 @@ if (!Backend) {
 }
 
 module.exports = new Backend({
-  currencyWithLedgerPairs: config.get('tradingPairs'),
+  currencyWithLedgerPairs: tradingPairs,
   backendUri: config.get('backendUri'),
   spread: config.get('fxSpread'),
   infoCache: infoCache

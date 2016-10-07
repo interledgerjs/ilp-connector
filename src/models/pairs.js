@@ -1,7 +1,8 @@
 'use strict'
+const tradingPairsService = require('../services/trading-pairs')
 
 function getPairs (config) {
-  const tradingPairs = config.get('tradingPairs')
+  const tradingPairs = tradingPairsService.getPairs()
   return tradingPairs.map((pair) => {
     const currencies = pair.map(function (currencyLedgerString) {
       return currencyLedgerString.split('@')
