@@ -113,7 +113,7 @@ class RouteBroadcaster {
   }
 
   _getLocalRoutes () {
-    return Promise.all(this.tradingPairs.map(
+    return Promise.all(this.tradingPairs.getPairs().map(
       (pair) => this._tradingPairToLocalRoute(pair)))
   }
 

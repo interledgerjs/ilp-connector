@@ -4,6 +4,7 @@ const _ = require('lodash')
 const co = require('co')
 const metadata = require('./controllers/metadata')
 const health = require('./controllers/health')
+const tradingPairs = require('./services/trading-pairs')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
 const routes = require('./controllers/routes')
@@ -16,6 +17,7 @@ const koa = require('koa')
 const path = require('path')
 const logger = require('koa-bunyan-logger')
 const Passport = require('koa-passport').KoaPassport
+const ilpCore = require('ilp-core')
 const cors = require('koa-cors')
 const log = require('./common/log')
 
@@ -49,7 +51,7 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster) 
   log.info('connector listening on ' + config.getIn(['server', 'bind_ip']) + ':' +
     config.getIn(['server', 'port']))
   log.info('public at ' + config.getIn(['server', 'base_uri']))
-  for (let pair of config.get('tradingPairs')) {
+  for (let pair of tradingPairs.getPairs()) {
     log.info('pair', pair)
   }
 
@@ -62,13 +64,46 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster) 
       log.error(error)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(config.get('tradingPairs'), core, config, routeBuilder)
+    yield subscriptions.subscribePairs(tradingPairs.getPairs(), core, config, routeBuilder)
     if (config.routeBroadcastEnabled) {
       yield routeBroadcaster.start()
     } else {
       yield routeBroadcaster.reloadLocalRoutes()
     }
   }).catch((err) => log.error(err))
+}
+
+function addPlugin (config, core, backend, routeBroadcaster, id, options, tradesTo, tradesFrom) {
+  return co(function * () {
+    core.addClient(id, new ilpCore.Client(Object.assign({}, options.options, {
+      connector: config.server.base_uri,
+      _plugin: require(options.plugin),
+      _log: log.create(options.plugin)
+    })))
+
+    yield core.getClient(id).connect()
+
+    if (tradesTo) {
+      tradingPairs.addPairs(tradesTo.map((e) => [options.currency + '@' + id, e]))
+    } if (tradesFrom) {
+      tradingPairs.addPairs(tradesTo.map((e) => [e, options.currency + '@' + id]))
+    } if (!tradesFrom && !tradesTo) {
+      tradingPairs.addAll(options.currency + '@' + id)
+    }
+
+    yield routeBroadcaster.reloadLocalRoutes()
+  })
+}
+
+function removePlugin (config, core, backend, routeBroadcaster, id) {
+  return co(function * () {
+    yield core.getClient(id).disconnect()
+    delete core.tables[id]
+
+    tradingPairs.removeAll(id)
+
+    yield routeBroadcaster.reloadLocalRoutes()
+  })
 }
 
 function createApp (config, core, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache) {
@@ -163,7 +198,9 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   return {
     koaApp: koaApp,
     listen: _.partial(listen, koaApp, config, core, backend, routeBuilder, routeBroadcaster),
-    callback: koaApp.callback.bind(koaApp)
+    callback: koaApp.callback.bind(koaApp),
+    addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster),
+    removePlugin: _.partial(removePlugin, config, core, backend, routeBroadcaster)
   }
 }
 
