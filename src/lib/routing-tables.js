@@ -1,5 +1,5 @@
 'use strict'
-const routing = require('five-bells-routing')
+const routing = require('ilp-routing')
 
 /**
  * When routing payments across multiple ledgers, each hop will round the amounts

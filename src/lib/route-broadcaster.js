@@ -4,7 +4,7 @@ const co = require('co')
 const defer = require('co-defer')
 const log = require('../common').log.create('routes')
 const request = require('co-request')
-const Route = require('five-bells-routing').Route
+const Route = require('ilp-routing').Route
 const SIMPLIFY_POINTS = 10
 
 class RouteBroadcaster {
