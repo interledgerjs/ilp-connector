@@ -4,7 +4,6 @@ const _ = require('lodash')
 const co = require('co')
 const metadata = require('./controllers/metadata')
 const health = require('./controllers/health')
-const tradingPairs = require('./services/trading-pairs')
 const pairs = require('./controllers/pairs')
 const quote = require('./controllers/quote')
 const routes = require('./controllers/routes')
@@ -21,7 +20,16 @@ const ilpCore = require('ilp-core')
 const cors = require('koa-cors')
 const log = require('./common/log')
 
-function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster) {
+const loadConfig = require('./lib/config')
+const makeCore = require('./lib/core')
+const RoutingTables = require('./lib/routing-tables')
+const TradingPairs = require('./lib/trading-pairs')
+const RouteBuilder = require('./lib/route-builder')
+const RouteBroadcaster = require('./lib/route-broadcaster')
+const InfoCache = require('./lib/info-cache')
+const BalanceCache = require('./lib/balance-cache')
+
+function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster, tradingPairs) {
   if (config.getIn(['server', 'secure'])) {
     const spdy = require('spdy')
     const tls = config.get('tls')
@@ -113,39 +121,78 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   const koaApp = koa()
 
   if (!config) {
-    config = require('./services/config')
-  }
-
-  if (!core) {
-    core = require('./services/core')
-  }
-
-  if (!backend) {
-    backend = require('./services/backend')
-  }
-
-  if (!routeBuilder) {
-    routeBuilder = require('./services/route-builder')
-  }
-
-  if (!routeBroadcaster) {
-    routeBroadcaster = require('./services/route-broadcaster')
+    config = loadConfig()
   }
 
   if (!routingTables) {
-    routingTables = require('./services/routing-tables')
+    routingTables = new RoutingTables({
+      baseURI: config.server.base_uri,
+      backend: config.backend,
+      expiryDuration: config.routeExpiry,
+      fxSpread: config.fxSpread,
+      slippage: config.slippage
+    })
   }
 
-  if (!infoCache) {
-    infoCache = require('./services/info-cache')
-  }
-
-  if (!balanceCache) {
-    balanceCache = require('./services/balance-cache')
+  if (!core) {
+    core = makeCore({config, log, routingTables})
   }
 
   if (!tradingPairs) {
-    tradingPairs = require('./services/trading-pairs')
+    tradingPairs = new TradingPairs(config.get('tradingPairs'))
+  }
+
+  if (!backend) {
+    const Backend = require('./backends/' + config.get('backend'))
+    if (!Backend) {
+      throw new Error('Backend not found. The backend ' +
+        'module specified by CONNECTOR_BACKEND was not found in /backends')
+    }
+
+    backend = new Backend({
+      currencyWithLedgerPairs: tradingPairs,
+      backendUri: config.get('backendUri'),
+      spread: config.get('fxSpread'),
+      infoCache: infoCache
+    })
+  }
+
+  if (!infoCache) {
+    infoCache = new InfoCache(core)
+  }
+
+  if (!routeBuilder) {
+    routeBuilder = new RouteBuilder(
+      routingTables,
+      infoCache,
+      core,
+      {
+        minMessageWindow: config.expiry.minMessageWindow,
+        slippage: config.slippage
+      }
+    )
+  }
+
+  if (!routeBroadcaster) {
+    routeBroadcaster = new RouteBroadcaster(
+      routingTables,
+      backend,
+      core,
+      infoCache,
+      {
+        tradingPairs: tradingPairs,
+        minMessageWindow: config.expiry.minMessageWindow,
+        routeBroadcastEnabled: config.routeBroadcastEnabled,
+        routeCleanupInterval: config.routeCleanupInterval,
+        routeBroadcastInterval: config.routeBroadcastInterval,
+        autoloadPeers: config.autoloadPeers,
+        peers: config.peers
+      }
+    )
+  }
+
+  if (!balanceCache) {
+    balanceCache = new BalanceCache(core)
   }
 
   koaApp.context.config = config
@@ -154,12 +201,13 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   koaApp.context.routeBuilder = routeBuilder
   koaApp.context.routeBroadcaster = routeBroadcaster
   koaApp.context.routingTables = routingTables
+  koaApp.context.tradingPairs = tradingPairs
   koaApp.context.infoCache = infoCache
   koaApp.context.balanceCache = balanceCache
 
   // Configure passport
   const passport = new Passport()
-  require('./services/auth')(passport, config)
+  require('./lib/auth')(passport, config)
 
   // Logger
   koaApp.use(logger(log.create('koa')))
@@ -204,7 +252,7 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
 
   return {
     koaApp: koaApp,
-    listen: _.partial(listen, koaApp, config, core, backend, routeBuilder, routeBroadcaster),
+    listen: _.partial(listen, koaApp, config, core, backend, routeBuilder, routeBroadcaster, tradingPairs),
     callback: koaApp.callback.bind(koaApp),
     addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster, tradingPairs),
     removePlugin: _.partial(removePlugin, config, core, backend, routingTables, tradingPairs)

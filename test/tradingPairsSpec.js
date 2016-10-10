@@ -1,7 +1,7 @@
 'use strict'
 const assert = require('chai').assert
 const appHelper = require('./helpers/app')
-const config = require('../src/services/config')
+const config = require('../src/lib/config')()
 const TradingPairs = require('../src/lib/trading-pairs')
 
 describe('TradingPairs', function () {
