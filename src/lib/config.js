@@ -116,15 +116,6 @@ function parseLedgers () {
   })
 }
 
-function getLogLevel () {
-  if (useTestConfig()) {
-    return 'debug'
-  } else {
-    // https://github.com/trentm/node-bunyan#levels
-    return Config.getEnv(envPrefix, 'LOG_LEVEL') || 'info'
-  }
-}
-
 function getLocalConfig () {
   const ledgers = parseLedgers()
   // Currency pairs traded should be specified as
@@ -195,8 +186,6 @@ function getLocalConfig () {
     ledgerCredentials = parseCredentials()
   }
 
-  const logLevel = getLogLevel()
-
   return {
     backend,
     ledgerCredentials,
@@ -212,8 +201,7 @@ function getLocalConfig () {
     routeCleanupInterval,
     routeExpiry,
     autoloadPeers,
-    peers,
-    logLevel
+    peers
   }
 }
 
