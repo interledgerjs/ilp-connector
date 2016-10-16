@@ -20,7 +20,7 @@ BalanceCache.prototype.get = function * (ledger) {
 
 BalanceCache.prototype.load = function * (ledger) {
   // TODO use ledger notifications to reload the cache instead
-  // see: https://github.com/interledger/five-bells-ledger/issues/111
+  // see: https://github.com/interledgerjs/five-bells-ledger/issues/111
   clearInterval(this.timer)
   this.timer = setInterval(this.reset.bind(this), 60000).unref()
 

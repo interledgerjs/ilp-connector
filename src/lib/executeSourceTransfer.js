@@ -20,7 +20,7 @@ function * executeSourceTransfer (destinationTransfer, fulfillment, core) {
   log.debug('Requesting fulfillment of source transfer: ' + sourceTransferID + ' (fulfillment: ' + JSON.stringify(fulfillment) + ')')
   // TODO check the timestamp on the response from the ledger against
   // the transfer's expiry date
-  // See https://github.com/interledger/five-bells-ledger/issues/149
+  // See https://github.com/interledgerjs/five-bells-ledger/issues/149
   yield core.getPlugin(sourceTransferLedger)
     .fulfillCondition(sourceTransferID, fulfillment)
     .catch(() => {
