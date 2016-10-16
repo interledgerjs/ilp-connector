@@ -2,10 +2,10 @@
 
 [npm-image]: https://img.shields.io/npm/v/ilp-connector.svg?style=flat
 [npm-url]: https://npmjs.org/package/ilp-connector
-[circle-image]: https://circleci.com/gh/interledger/js-ilp-connector.svg?style=shield
-[circle-url]: https://circleci.com/gh/interledger/js-ilp-connector
-[codecov-image]: https://codecov.io/gh/interledger/js-ilp-connector/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/interledger/js-ilp-connector
+[circle-image]: https://circleci.com/gh/interledgerjs/ilp-connector.svg?style=shield
+[circle-url]: https://circleci.com/gh/interledgerjs/ilp-connector
+[codecov-image]: https://codecov.io/gh/interledgerjs/ilp-connector/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/interledgerjs/ilp-connector
 
 > A reference implementation of the ILP Connector API
 
@@ -20,9 +20,9 @@ Note: You need two [`five-bells-ledger`](https://github.com/interledger/five-bel
 ### Step 1: Clone repo
 
 ``` sh
-git clone https://github.com/interledger/js-ilp-connector.git
+git clone https://github.com/interledgerjs/ilp-connector.git
 
-cd js-ilp-connector
+cd ilp-connector
 ```
 ### Step 2: Install dependencies
 
@@ -113,7 +113,7 @@ This project can be run in a [Docker](https://www.docker.com/) container.
 
 
 ``` sh
-docker run -it --rm -e CONNECTOR_PORT=4000 interledger/js-ilp-connector
+docker run -it --rm -e CONNECTOR_PORT=4000 interledgerjs/ilp-connector
 ```
 
 Breaking down that command:

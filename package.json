@@ -4,7 +4,7 @@
   "description": "ILP connector reference implementation",
   "repository": {
     "type": "git",
-    "url": "git@github.com:interledger/js-ilp-connector.git"
+    "url": "git@github.com:interledgerjs/ilp-connector.git"
   },
   "keywords": [
     "interledger",
@@ -14,7 +14,7 @@
   "author": "Ripple <info@ripple.com>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/interledger/js-ilp-connector/issues"
+    "url": "https://github.com/interledgerjs/ilp-connector/issues"
   },
   "main": "src/index.js",
   "scripts": {

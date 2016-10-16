@@ -10,7 +10,7 @@ let cwd = path.resolve(__dirname, '..')
 // Get current web branch
 console.log('\n# Cloning web branch')
 exec('rm -rf web', { cwd })
-exec('git clone git@github.com:interledger/js-ilp-connector.git --branch gh-pages --single-branch web', { cwd })
+exec('git clone git@github.com:interledgerjs/ilp-connector.git --branch gh-pages --single-branch web', { cwd })
 
 // Update apidoc
 console.log('\n# Updating API docs')
