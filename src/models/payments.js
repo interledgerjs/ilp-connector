@@ -21,7 +21,7 @@ function * settle (sourceTransfer, destinationTransfer, config, core) {
   log.debug('Settle payment, source: ' + JSON.stringify(sourceTransfer))
   log.debug('Settle payment, destination: ' + JSON.stringify(destinationTransfer))
   yield core.getPlugin(destinationTransfer.ledger)
-    .send(destinationTransfer)
+    .sendTransfer(destinationTransfer)
     .catch((err) =>
       core.getPlugin(sourceTransfer.ledger)
         .rejectIncomingTransfer(sourceTransfer.id, 'destination transfer failed: ' + err.message)

@@ -5,7 +5,7 @@ const co = require('co')
 const log = require('../common').log.create('subscriptions')
 const payments = require('../models/payments')
 
-function * setupListeners (core, config, routeBuilder) {
+function * setupListeners (core, config, routeBuilder, messageRouter) {
   const handleIncoming = (client, transfer) => {
     return co(function * () {
       yield payments.updateIncomingTransfer(transfer, core, config, routeBuilder)
@@ -29,6 +29,11 @@ function * setupListeners (core, config, routeBuilder) {
       yield payments.processExecutionFulfillment(transfer, fulfillment, core, config)
     }).catch(logThenThrow)
   })
+
+  core.on('incoming_message', (client, message) => {
+    return messageRouter.handleMessage(message)
+      .catch(logThenThrow)
+  })
 }
 
 function logThenThrow (err) {
@@ -36,8 +41,8 @@ function logThenThrow (err) {
   throw err
 }
 
-function * subscribePairs (pairs, core, config, routeBuilder) {
-  yield this.setupListeners(core, config, routeBuilder)
+function * subscribePairs (pairs, core, config, routeBuilder, messageRouter) {
+  yield this.setupListeners(core, config, routeBuilder, messageRouter)
 
   let ledgers = _(pairs)
     .flatten()
@@ -51,9 +56,9 @@ function * subscribePairs (pairs, core, config, routeBuilder) {
   yield ledgers.map((l) => subscribeLedger(l, core, config))
 }
 
-function * subscribeLedger (ledgerUri, core, config) {
-  log.info('subscribing to ' + ledgerUri)
-  const client = core.getClient(ledgerUri)
+function * subscribeLedger (ledgerPrefix, core, config) {
+  log.info('subscribing to ' + ledgerPrefix)
+  const client = core.getClient(ledgerPrefix)
 
   yield client.connect()
 }

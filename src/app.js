@@ -5,8 +5,6 @@ const co = require('co')
 const metadata = require('./controllers/metadata')
 const health = require('./controllers/health')
 const pairs = require('./controllers/pairs')
-const quote = require('./controllers/quote')
-const routes = require('./controllers/routes')
 const subscriptions = require('./models/subscriptions')
 const compress = require('koa-compress')
 const serve = require('koa-static')
@@ -28,8 +26,9 @@ const RouteBuilder = require('./lib/route-builder')
 const RouteBroadcaster = require('./lib/route-broadcaster')
 const InfoCache = require('./lib/info-cache')
 const BalanceCache = require('./lib/balance-cache')
+const MessageRouter = require('./lib/message-router')
 
-function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster, tradingPairs) {
+function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs) {
   if (config.getIn(['server', 'secure'])) {
     const spdy = require('spdy')
     const tls = config.get('tls')
@@ -72,7 +71,7 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster, 
       log.error(error)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(tradingPairs.toArray(), core, config, routeBuilder)
+    yield subscriptions.subscribePairs(tradingPairs.toArray(), core, config, routeBuilder, messageRouter)
     if (config.routeBroadcastEnabled) {
       yield routeBroadcaster.start()
     } else {
@@ -111,13 +110,11 @@ function removePlugin (config, core, backend, routingTables, tradingPairs, id) {
   return co(function * () {
     tradingPairs.removeAll(id)
     routingTables.removeLedger(id)
-
-    yield core.getClient(id).disconnect()
-    delete core.clients[id]
+    yield core.removeClient(id).disconnect()
   })
 }
 
-function createApp (config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache) {
+function createApp (config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache, messageRouter) {
   const koaApp = koa()
 
   if (!config) {
@@ -182,17 +179,28 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
       {
         tradingPairs: tradingPairs,
         minMessageWindow: config.expiry.minMessageWindow,
-        routeBroadcastEnabled: config.routeBroadcastEnabled,
         routeCleanupInterval: config.routeCleanupInterval,
         routeBroadcastInterval: config.routeBroadcastInterval,
         autoloadPeers: config.autoloadPeers,
-        peers: config.peers
+        peers: config.peers,
+        ledgerCredentials: config.ledgerCredentials
       }
     )
   }
 
   if (!balanceCache) {
     balanceCache = new BalanceCache(core)
+  }
+
+  if (!messageRouter) {
+    messageRouter = new MessageRouter({
+      config,
+      core,
+      routingTables,
+      routeBroadcaster,
+      routeBuilder,
+      balanceCache
+    })
   }
 
   koaApp.context.config = config
@@ -204,6 +212,7 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   koaApp.context.tradingPairs = tradingPairs
   koaApp.context.infoCache = infoCache
   koaApp.context.balanceCache = balanceCache
+  koaApp.context.messageRouter = messageRouter
 
   // Configure passport
   const passport = new Passport()
@@ -217,7 +226,6 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   koaApp.use(logger.requestLogger({
     updateRequestLogFields: function (fields) {
       return {
-        headers: this.req.headers,
         body: isTrace ? this.body : undefined,
         query: this.query
       }
@@ -226,7 +234,6 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
       return {
         duration: fields.duration,
         status: this.status,
-        headers: this.headers,
         body: isTrace ? this.body : undefined
       }
     }
@@ -241,9 +248,6 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   koaApp.use(route.get('/health', health.getResource))
   koaApp.use(route.get('/pairs', pairs.getCollection))
 
-  koaApp.use(route.get('/quote', quote.get))
-  koaApp.use(route.post('/routes', routes.post))
-
   // Serve static files
   koaApp.use(serve(path.join(__dirname, 'public')))
 
@@ -252,7 +256,7 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
 
   return {
     koaApp: koaApp,
-    listen: _.partial(listen, koaApp, config, core, backend, routeBuilder, routeBroadcaster, tradingPairs),
+    listen: _.partial(listen, koaApp, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs),
     callback: koaApp.callback.bind(koaApp),
     addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster, tradingPairs),
     removePlugin: _.partial(removePlugin, config, core, backend, routingTables, tradingPairs)

@@ -23,9 +23,7 @@ describe('Metadata', function () {
           expect(res.body).to.deep.equal({
             urls: {
               health: 'http://localhost/health',
-              pairs: 'http://localhost/pairs',
-              payment: 'http://localhost/payments/:uuid',
-              quote: 'http://localhost/quote'
+              pairs: 'http://localhost/pairs'
             }
           })
         })

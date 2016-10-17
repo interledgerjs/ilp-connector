@@ -22,7 +22,6 @@ class RouteBuilder {
       throw new TypeError('Must be given a valid Core instance')
     }
 
-    this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.infoCache = infoCache
     this.core = core
