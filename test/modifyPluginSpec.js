@@ -44,18 +44,17 @@ describe('Modify Plugins', function () {
     })
 
     it('should support new ledger', function * () {
-      yield this.request()
-        .get('/quote?' +
-          'source_amount=100' +
-          '&source_address=eur-ledger-2.alice' +
-          '&destination_address=usd-ledger.bob' +
-          '&destination_expiry_duration=1.001')
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('AssetsNotTradedError')
-          expect(res.body.message).to.match(/This connector does not support the given asset pair/)
-        })
-        .end()
+      yield this.messageRouter.getQuote({
+        source_amount: '100',
+        source_address: 'eur-ledger-2.alice',
+        destination_address: 'usd-ledger.bob',
+        destination_expiry_duration: '1.001'
+      }).then((quote) => {
+        throw new Error()
+      }).catch((err) => {
+        expect(err.name).to.equal('AssetsNotTradedError')
+        expect(err.message).to.match(/This connector does not support the given asset pair/)
+      })
 
       yield this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
@@ -63,14 +62,12 @@ describe('Modify Plugins', function () {
         options: {}
       })
 
-      yield this.request()
-        .get('/quote?' +
-          'source_amount=100' +
-          '&source_address=eur-ledger-2.alice' +
-          '&destination_address=usd-ledger.bob' +
-          '&destination_expiry_duration=1.001')
-        .expect(200)
-        .end()
+      yield this.messageRouter.getQuote({
+        source_amount: '100',
+        source_address: 'eur-ledger-2.alice',
+        destination_address: 'usd-ledger.bob',
+        destination_expiry_duration: '1.001'
+      })
     })
   })
 
@@ -104,29 +101,26 @@ describe('Modify Plugins', function () {
     })
 
     it('should no longer quote to that plugin', function * () {
-      yield this.request()
-        .get('/quote?' +
-          'source_amount=100' +
-          '&source_address=eur-ledger-2.alice' +
-          '&destination_address=cad-ledger.bob' +
-          '&destination_expiry_duration=1.001')
-        .expect(200)
-        .end()
+      yield this.messageRouter.getQuote({
+        source_amount: '100',
+        source_address: 'eur-ledger-2.alice',
+        destination_address: 'cad-ledger.bob',
+        destination_expiry_duration: '1.001'
+      })
 
       yield this.app.removePlugin('eur-ledger-2.')
 
-      yield this.request()
-        .get('/quote?' +
-          'source_amount=100' +
-          '&source_address=eur-ledger-2.alice' +
-          '&destination_address=usd-ledger.bob' +
-          '&destination_expiry_duration=1.001')
-        .expect(422)
-        .expect(function (res) {
-          expect(res.body.id).to.equal('AssetsNotTradedError')
-          expect(res.body.message).to.match(/This connector does not support the given asset pair/)
-        })
-        .end()
+      yield this.messageRouter.getQuote({
+        source_amount: '100',
+        source_address: 'eur-ledger-2.alice',
+        destination_address: 'usd-ledger.bob',
+        destination_expiry_duration: '1.001'
+      }).then((quote) => {
+        throw new Error()
+      }).catch((err) => {
+        expect(err.name).to.equal('AssetsNotTradedError')
+        expect(err.message).to.match(/This connector does not support the given asset pair/)
+      })
     })
   })
 })

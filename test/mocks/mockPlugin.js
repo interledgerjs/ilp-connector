@@ -5,6 +5,7 @@ const EventEmitter = require('eventemitter2')
 class MockPlugin extends EventEmitter {
   constructor (options) {
     super()
+    this._prefix = options.prefix || 'example.'
   }
 
   connect () {
@@ -22,12 +23,16 @@ class MockPlugin extends EventEmitter {
     return this.connected
   }
 
-  send (transfer) {
+  sendTransfer (transfer) {
+    return Promise.resolve(null)
+  }
+
+  sendMessage (message) {
     return Promise.resolve(null)
   }
 
   getPrefix () {
-    return Promise.resolve('example.')
+    return Promise.resolve(this._prefix)
   }
 
   fulfillCondition (transferId, conditionFulfillment) {
@@ -53,7 +58,7 @@ class MockPlugin extends EventEmitter {
 
   getInfo () {
     return Promise.resolve({
-      connectors: [{connector: 'http://connector.example'}],
+      connectors: [{name: 'mark'}],
       precision: 10,
       scale: 4
     })

@@ -2,9 +2,8 @@
 
 const co = require('co')
 const defer = require('co-defer')
-const log = require('../common').log.create('routes')
-const request = require('co-request')
 const Route = require('ilp-routing').Route
+const log = require('../common').log.create('route-broadcaster')
 const SIMPLIFY_POINTS = 10
 
 class RouteBroadcaster {
@@ -20,6 +19,7 @@ class RouteBroadcaster {
    * @param {Number} config.routeBroadcastInterval
    * @param {Boolean} config.autoloadPeers
    * @param {URI[]} config.peers
+   * @param {Object} config.ledgerCredentials
    */
   constructor (routingTables, backend, core, infoCache, config) {
     if (!core) {
@@ -28,21 +28,21 @@ class RouteBroadcaster {
 
     this.routeCleanupInterval = config.routeCleanupInterval
     this.routeBroadcastInterval = config.routeBroadcastInterval
-    this.baseURI = routingTables.baseURI
     this.routingTables = routingTables
     this.backend = backend
     this.core = core
     this.infoCache = infoCache
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
+    this.ledgerCredentials = config.ledgerCredentials
 
     this.autoloadPeers = config.autoloadPeers
-    this.adjacentConnectors = {}
-    config.peers.forEach(this.addConnector, this)
+    this.defaultPeers = config.peers
+    this.peers = {} // { connectorName ⇒ ledgerPrefix }
   }
 
   * start () {
-    if (this.autoloadPeers) yield this.crawlLedgers()
+    yield this.crawl()
     try {
       yield this.reloadLocalRoutes()
       yield this.broadcast()
@@ -63,53 +63,42 @@ class RouteBroadcaster {
   }
 
   broadcast () {
+    const adjacentConnectors = Object.keys(this.peers)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
-    return Promise.all(
-      Object.keys(this.adjacentConnectors).map(
-        (adjacentConnector) => this._broadcastTo(adjacentConnector, routes)))
+    return Promise.all(adjacentConnectors.map((adjacentConnector) => {
+      log.info('broadcasting ' + routes.length + ' routes to ' + adjacentConnector)
+      const prefix = this.peers[adjacentConnector]
+      return this.core.getPlugin(prefix).sendMessage({
+        ledger: prefix,
+        account: prefix + adjacentConnector,
+        data: {
+          method: 'broadcast_routes',
+          data: routes
+        }
+      })
+    }))
   }
 
-  _broadcastTo (adjacentConnector, routes) {
-    log.info('broadcasting routes (' +
-      routes.map((e) => (
-        '"' + e.source_ledger + '" -> "' + e.destination_ledger + '"'
-      )).join(', ') +
-      ') to ' + adjacentConnector + '/routes')
-
-    return request({
-      method: 'POST',
-      uri: adjacentConnector + '/routes',
-      body: routes,
-      json: true
-    }).then((res) => {
-      if (res.statusCode !== 200) {
-        log.error('Error broadcasting route to: ' + adjacentConnector, res.statusCode, res.body)
-      }
-    })
+  crawl () {
+    return this.core.getClients().map(this._crawlClient, this)
   }
 
-  crawlLedgers () {
-    return this.core.getClients().map(this._crawlLedger, this)
-  }
-
-  * _crawlLedger (client) {
+  * _crawlClient (client) {
+    const prefix = yield client.getPlugin().getPrefix()
     const connectors = yield client.getConnectors()
-    connectors.forEach(this.addConnector, this)
+    for (const connector of connectors) {
+      // Don't broadcast routes to ourselves.
+      if (connector === this.ledgerCredentials[prefix].username) continue
+      if (this.autoloadPeers || this.defaultPeers.indexOf(connector) !== -1) {
+        this.peers[connector] = prefix
+        log.info('adding peer ' + connector)
+      }
+    }
   }
 
   * reloadLocalRoutes () {
     const localRoutes = yield this._getLocalRoutes()
     yield this.routingTables.addLocalRoutes(this.infoCache, localRoutes)
-  }
-
-  /**
-   * @param {URI} connector
-   */
-  addConnector (connector) {
-    // Don't broadcast routes to ourselves.
-    if (connector === this.baseURI) return
-    log.info('adding peer ' + connector)
-    this.adjacentConnectors[connector] = true
   }
 
   _getLocalRoutes () {
@@ -138,7 +127,6 @@ class RouteBroadcaster {
       source_ledger: quote.source_ledger,
       destination_ledger: quote.destination_ledger,
       additional_info: quote.additional_info,
-      connector: this.baseURI,
       min_message_window: this.minMessageWindow,
       source_account: (yield sourcePlugin.getAccount()),
       destination_account: (yield destinationPlugin.getAccount()),

@@ -5,9 +5,7 @@ function getMetadata (config) {
   return {
     urls: {
       health: base + '/health',
-      pairs: base + '/pairs',
-      payment: base + '/payments/:uuid',
-      quote: base + '/quote'
+      pairs: base + '/pairs'
     }
   }
 }

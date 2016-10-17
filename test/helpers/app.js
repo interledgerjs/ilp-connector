@@ -13,6 +13,7 @@ const RouteBroadcaster = require('../../src/lib/route-broadcaster')
 const makeCore = require('../../src/lib/core')
 const BalanceCache = require('../../src/lib/balance-cache')
 const TradingPairs = require('../../src/lib/trading-pairs')
+const MessageRouter = require('../../src/lib/message-router')
 
 const createApp = require('ilp-connector').createApp
 
@@ -49,10 +50,12 @@ exports.create = function (context) {
     routeCleanupInterval: config.routeCleanupInterval,
     routeBroadcastInterval: config.routeBroadcastInterval,
     autoloadPeers: true,
-    peers: []
+    peers: [],
+    ledgerCredentials: config.ledgerCredentials
   })
   const balanceCache = new BalanceCache(core)
-  const app = createApp(config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache)
+  const messageRouter = new MessageRouter({config, core, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+  const app = createApp(config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache, messageRouter)
   context.app = app
   context.backend = backend
   context.tradingPairs = tradingPairs
@@ -63,6 +66,7 @@ exports.create = function (context) {
   context.config = config
   context.infoCache = infoCache
   context.balanceCache = balanceCache
+  context.messageRouter = messageRouter
 
   context.server = http.createServer(app.callback()).listen()
   context.port = context.server.address().port

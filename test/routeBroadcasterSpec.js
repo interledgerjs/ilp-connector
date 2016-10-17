@@ -1,16 +1,20 @@
 'use strict'
 
+const mockPlugin = require('./mocks/mockPlugin')
+const mock = require('mock-require')
+mock('ilp-plugin-mock', mockPlugin)
+
 const assert = require('assert')
 const routing = require('ilp-routing')
 const RoutingTables = require('../src/lib/routing-tables')
 const RouteBroadcaster = require('ilp-connector')._test.RouteBroadcaster
-const nock = require('nock')
+const makeCore = require('../src/lib/core')
+const log = require('../src/common').log
 const appHelper = require('./helpers/app')
 
 const ledgerA = 'cad-ledger.'
 const ledgerB = 'usd-ledger.'
 const ledgerC = 'eur-ledger.'
-const baseURI = 'http://connector.example'
 
 describe('RouteBroadcaster', function () {
   beforeEach(function * () {
@@ -22,15 +26,19 @@ describe('RouteBroadcaster', function () {
       }
     }
 
+    const ledgerCredentials = {
+      'cad-ledger.': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}},
+      'usd-ledger.': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}},
+      'eur-ledger.': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}}
+    }
+
     this.tables = new RoutingTables({
-      baseURI: baseURI,
       fxSpread: 0.002,
       slippage: 0.001
     })
     yield this.tables.addLocalRoutes(this.infoCache, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,
-      connector: baseURI,
       min_message_window: 1,
       source_account: ledgerA + 'mark',
       destination_account: ledgerB + 'mark',
@@ -39,13 +47,18 @@ describe('RouteBroadcaster', function () {
     }, {
       source_ledger: ledgerB,
       destination_ledger: ledgerA,
-      connector: baseURI,
       min_message_window: 1,
       source_account: ledgerB + 'mark',
       destination_account: ledgerA + 'mark',
       points: [ [0, 0], [100, 200] ],
       additional_info: {}
     }])
+
+    this.core = makeCore({
+      config: Object.assign({}, this.config, {ledgerCredentials}),
+      routingTables: this.tables,
+      log
+    })
 
     this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.core, this.infoCache, {
       tradingPairs: [
@@ -54,88 +67,96 @@ describe('RouteBroadcaster', function () {
       ],
       minMessageWindow: 1,
       autoloadPeers: true,
-      peers: []
+      peers: [],
+      ledgerCredentials
     })
 
     this.tables.addRoute({
       source_ledger: ledgerB,
       destination_ledger: ledgerC,
-      connector: 'http://other-connector2.example',
+      source_account: ledgerB + 'mary',
       min_message_window: 1,
       points: [ [0, 0], [50, 60] ],
       additional_info: {}
     })
   })
 
-  afterEach(function * () { assert(nock.isDone()) })
-
   describe('broadcast', function () {
+    const routes = [
+      {
+        source_ledger: ledgerA,
+        destination_ledger: ledgerC,
+        min_message_window: 2,
+        source_account: ledgerA + 'mark',
+        points: [ [0, 0], [0.02, 0], [100.02, 60], [200, 60] ]
+      }, {
+        source_ledger: ledgerA,
+        destination_ledger: ledgerB,
+        min_message_window: 1,
+        source_account: ledgerA + 'mark',
+        points: [ [0, -0.01], [200, 99.99] ]
+      }, {
+        source_ledger: ledgerB,
+        destination_ledger: ledgerA,
+        min_message_window: 1,
+        source_account: ledgerB + 'mark',
+        points: [ [0, -0.01], [100, 199.99] ]
+      }
+    ]
+
     it('sends the combined routes to all adjacent connectors', function * () {
       this.core.getPlugin(ledgerA).getInfo =
       this.core.getPlugin(ledgerC).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{connector: baseURI}] })
+          return Promise.resolve({ connectors: [{name: 'mark'}] })
         }
       this.core.getPlugin(ledgerB).getInfo =
         function () {
-          return Promise.resolve({
-            connectors: [
-              {connector: baseURI},
-              {connector: 'http://other-connector2.example'}
-            ]
-          })
+          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
 
-      nock('http://other-connector2.example').post('/routes', [
-        {
-          source_ledger: ledgerA,
-          destination_ledger: ledgerC,
-          connector: 'http://connector.example',
-          min_message_window: 2,
-          source_account: ledgerA + 'mark',
-          points: [ [0, 0], [0.02, 0], [100.02, 60], [200, 60] ]
-        }, {
-          source_ledger: ledgerA,
-          destination_ledger: ledgerB,
-          connector: 'http://connector.example',
-          min_message_window: 1,
-          source_account: ledgerA + 'mark',
-          points: [ [0, -0.01], [200, 99.99] ]
-        }, {
-          source_ledger: ledgerB,
-          destination_ledger: ledgerA,
-          connector: 'http://connector.example',
-          min_message_window: 1,
-          source_account: ledgerB + 'mark',
-          points: [ [0, -0.01], [100, 199.99] ]
-        }
-      ]).reply(200)
-
-      yield this.broadcaster.crawlLedgers()
-      yield this.broadcaster.broadcast()
-    })
-  })
-
-  it('should not throw an error even if the other connector does not respond', function * () {
-    this.core.getPlugin(ledgerA).getInfo =
-      this.core.getPlugin(ledgerC).getInfo =
-      function () {
-        return Promise.resolve({ connectors: [{connector: baseURI}] })
-      }
-    this.core.getPlugin(ledgerB).getInfo =
-      function () {
-        return Promise.resolve({
-          connectors: [
-            {connector: baseURI},
-            {connector: 'http://other-connector2.example'}
-          ]
+      let routesSent
+      this.core.getPlugin(ledgerB).sendMessage = function (message) {
+        assert.deepEqual(message, {
+          ledger: ledgerB,
+          account: ledgerB + 'mary',
+          data: { method: 'broadcast_routes', data: routes }
         })
+        routesSent = true
+        return Promise.resolve(null)
       }
 
-    nock('http://other-connector2.example').post('/routes').reply(404)
+      yield this.broadcaster.crawl()
+      yield this.broadcaster.broadcast()
+      assert(routesSent)
+    })
 
-    yield this.broadcaster.crawlLedgers()
-    yield this.broadcaster.broadcast()
+    it('should not throw an error even if the other connector does not respond', function * () {
+      this.core.getPlugin(ledgerA).getInfo =
+      this.core.getPlugin(ledgerC).getInfo =
+        function () {
+          return Promise.resolve({ connectors: [{name: 'mark'}] })
+        }
+      this.core.getPlugin(ledgerB).getInfo =
+        function () {
+          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+        }
+
+      let routesSent
+      this.core.getPlugin(ledgerB).sendMessage = function (message) {
+        assert.deepEqual(message, {
+          ledger: ledgerB,
+          account: ledgerB + 'mary',
+          data: { method: 'broadcast_routes', data: routes }
+        })
+        routesSent = true
+        return Promise.resolve(null)
+      }
+
+      yield this.broadcaster.crawl()
+      yield this.broadcaster.broadcast()
+      assert(routesSent)
+    })
   })
 
   describe('_quoteToLocalRoute', function () {

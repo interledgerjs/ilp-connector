@@ -8,7 +8,6 @@ const logHelper = require('./helpers/log')
 const logger = require('ilp-connector')._test.logger
 const makeCore = require('../src/lib/core')
 
-const baseURI = 'http://mark.example'
 const ledgerA = 'usd-ledger.'
 const ledgerB = 'eur-ledger.'
 const ledgerC = 'cny-ledger.'
@@ -35,14 +34,12 @@ describe('RouteBuilder', function () {
     }
 
     this.tables = new RoutingTables({
-      baseURI: baseURI,
       fxSpread: 0.002,
       slippage: 0.001
     })
     yield this.tables.addLocalRoutes(this.infoCache, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,
-      connector: 'http://mark.example',
       source_account: markA,
       destination_account: markB,
       min_message_window: 1,
@@ -85,7 +82,6 @@ describe('RouteBuilder', function () {
       this.tables.addRoute({
         source_ledger: ledgerB,
         destination_ledger: ledgerC,
-        connector: 'http://mary.example',
         source_account: maryB,
         min_message_window: 1,
         points: [ [0, 0], [200, 100] ]
@@ -287,7 +283,6 @@ describe('RouteBuilder', function () {
         this.tables.addRoute({
           source_ledger: ledgerB,
           destination_ledger: ledgerC,
-          connector: 'http://mary.example',
           source_account: maryB,
           min_message_window: 1,
           points: [ [0, 0], [200, 100] ]

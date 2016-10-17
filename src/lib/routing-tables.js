@@ -32,20 +32,18 @@ const routing = require('ilp-routing')
 class RoutingTables {
   /**
    * @param {Object} config
-   * @param {String} config.baseURI
    * @param {String} config.backend
    * @param {Integer} config.expiryDuration
    * @param {Number} config.fxSpread
    * @param {Number} config.slippage
    */
   constructor (config) {
-    this.baseURI = config.baseURI
     this.isTrivialRate =
       config.backend === 'one-to-one' &&
       config.fxSpread === 0 &&
       config.slippage === 0
-    this.localTables = new routing.RoutingTables(config.baseURI, [], config.expiryDuration)
-    this.publicTables = new routing.RoutingTables(config.baseURI, [], config.expiryDuration)
+    this.localTables = new routing.RoutingTables([], config.expiryDuration)
+    this.publicTables = new routing.RoutingTables([], config.expiryDuration)
   }
 
   * addLocalRoutes (infoCache, _localRoutes) {

@@ -69,7 +69,7 @@ describe('Payments', function () {
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
     yield subscriptions.subscribePairs(pairs,
-      this.core, this.config, this.routeBuilder)
+      this.core, this.config, this.routeBuilder, this.messageRouter)
 
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
@@ -112,7 +112,7 @@ describe('Payments', function () {
   })
 
   it('passes on the executionCondition', function * () {
-    const sendSpy = sinon.spy(this.mockPlugin2, 'send')
+    const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
     yield this.mockPlugin1.emitAsync('incoming_prepare', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
@@ -144,7 +144,7 @@ describe('Payments', function () {
   })
 
   it('supports optimistic mode', function * () {
-    const sendSpy = sinon.spy(this.mockPlugin2, 'send')
+    const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
     yield this.mockPlugin1.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
@@ -173,7 +173,7 @@ describe('Payments', function () {
 
   it('authorizes the payment even if the connector is also the payee of the destination transfer', function * () {
     this.mockPlugin2.FOO = 'bar'
-    const sendSpy = sinon.spy(this.mockPlugin2, 'send')
+    const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
     yield this.mockPlugin1.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
@@ -202,7 +202,7 @@ describe('Payments', function () {
 
   it('rejects the source transfer if settlement fails', function * () {
     const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
-    this.mockPlugin2.send = function () {
+    this.mockPlugin2.sendTransfer = function () {
       return Promise.reject(new Error('fail!'))
     }
 
@@ -412,7 +412,7 @@ describe('Payments', function () {
       nock(this.caseId1).get('').reply(200, {expires_at: future(5000)})
       nock(this.caseId2).get('').reply(200, {expires_at: future(5000)})
 
-      const sendSpy = sinon.spy(this.mockPlugin2, 'send')
+      const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
       yield this.mockPlugin1.emitAsync('incoming_prepare',
         Object.assign(this.transfer, {cases: [this.caseId1, this.caseId2]}))
 
