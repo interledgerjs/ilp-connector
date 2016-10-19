@@ -26,9 +26,15 @@ function MessageRouter (opts) {
   this.balanceCache = opts.balanceCache
 }
 
+/**
+ * Process an incoming message, and send a response message (if applicable) back to the sender.
+ *
+ * @param {Message} message
+ * @returns {Promise.<null>}
+ */
 MessageRouter.prototype.handleMessage = function (message) {
   if (!message.data) return Promise.resolve(null)
-  return this.handleRequest(message.data).then(
+  return this.handleRequest(message.data, message.account).then(
     (responseData) => {
       if (!responseData) return
       return this.core.getPlugin(message.ledger).sendMessage({
@@ -39,8 +45,16 @@ MessageRouter.prototype.handleMessage = function (message) {
     })
 }
 
-MessageRouter.prototype.handleRequest = function (request) {
-  return co.wrap(this._handleRequest).call(this, request)
+/**
+ * Process the payload of an incoming message.
+ * Returns the payload of a response message (if applicable).
+ *
+ * @param {MessageData} request
+ * @param {IlpAddress} sender
+ * @returns {Promise.<MessageData>} response
+ */
+MessageRouter.prototype.handleRequest = function (request, sender) {
+  return co.wrap(this._handleRequest).call(this, request, sender)
     .catch((err) => {
       return {
         id: request.id,
@@ -53,14 +67,19 @@ MessageRouter.prototype.handleRequest = function (request) {
     })
 }
 
-MessageRouter.prototype._handleRequest = function * (request) {
+/**
+ * @param {MessageData} request
+ * @param {IlpAddress} sender
+ * @returns {MessageData} response
+ */
+MessageRouter.prototype._handleRequest = function * (request, sender) {
   if (request.method === 'error') {
     log.warn('got error message: ' + JSON.stringify(request.data))
     return
   }
 
   if (request.method === 'broadcast_routes') {
-    yield this.receiveRoutes(request.data)
+    yield this.receiveRoutes(request.data, sender)
     return
   }
 
@@ -80,12 +99,20 @@ MessageRouter.prototype._handleRequest = function * (request) {
   throw new InvalidBodyError('Invalid method')
 }
 
-MessageRouter.prototype.receiveRoutes = function * (routes) {
+/**
+ * Add routes to the local routing table.
+ *
+ * @param {Route[]} routes
+ * @param {IlpAddress} sender
+ */
+MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
   validate('Routes', routes)
   let gotNewRoute = false
 
-  // TODO verify that the sender of these routes matches route.source_account.
   for (const route of routes) {
+    // We received a route from another connector, but that connector
+    // doesn't actually belong to the route, so ignore it.
+    if (route.source_account !== sender) continue
     if (this.routingTables.addRoute(route)) gotNewRoute = true
   }
 
@@ -97,6 +124,12 @@ MessageRouter.prototype.receiveRoutes = function * (routes) {
   }
 }
 
+/**
+ * Handle a quote request.
+ *
+ * @param {Object} quoteQuery
+ * @returns {Promise.<Quote>}
+ */
 MessageRouter.prototype.getQuote = function (quoteQuery) {
   return co.wrap(this._getQuote).call(this, quoteQuery)
 }

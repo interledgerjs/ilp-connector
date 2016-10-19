@@ -667,7 +667,7 @@ describe('Quotes', function () {
         min_message_window: 1,
         source_account: 'eur-ledger.mary',
         points: [ [0, 0], [10000, 20000] ]
-      }])
+      }], 'eur-ledger.mary')
 
       const quote = yield this.messageRouter.getQuote({
         source_amount: '100',
