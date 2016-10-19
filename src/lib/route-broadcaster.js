@@ -68,9 +68,10 @@ class RouteBroadcaster {
     return Promise.all(adjacentConnectors.map((adjacentConnector) => {
       log.info('broadcasting ' + routes.length + ' routes to ' + adjacentConnector)
       const prefix = this.peers[adjacentConnector]
+      const account = prefix + adjacentConnector
       return this.core.getPlugin(prefix).sendMessage({
         ledger: prefix,
-        account: prefix + adjacentConnector,
+        account: account,
         data: {
           method: 'broadcast_routes',
           data: routes
