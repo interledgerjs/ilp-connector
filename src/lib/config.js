@@ -116,12 +116,43 @@ function parseLedgers () {
   })
 }
 
+function parseRoutes () {
+  const routes = JSON.parse(Config.getEnv(envPrefix, 'ROUTES') || '[]')
+
+  for (let route of routes) {
+    if (
+      typeof route.connectorLedger !== 'string' ||
+      typeof route.connectorAccount !== 'string' ||
+      !route.connectorLedger.match(/^[a-zA-Z0-9._~-]+\.$/) ||
+      !route.connectorAccount.startsWith(route.connectorLedger) ||
+      typeof route.targetPrefix !== 'string'
+    ) {
+      throw new Error('invalid format for CONNECTOR_ROUTES: ' +
+        JSON.stringify(route))
+    }
+  }
+
+  return routes
+}
+
 function getLocalConfig () {
   const ledgers = parseLedgers()
   // Currency pairs traded should be specified as
   // [["USD@http://usd-ledger.example","EUR@http://eur-ledger.example"],...]
   let tradingPairs =
     JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(ledgers)
+
+  // Routes to add to the connector, in the form:
+  // [{
+  //  "targetPrefix": "", // match any route
+  //  "connectorLedger": "ilpdemo.red."
+  //  "connectorAccount": "ilpdemo.red.connie"
+  // }, {
+  //  "targetPrefix": "usd.",
+  //  "connectorLedger": "example.other."
+  //  "connectorAccount": "example.other.connector"
+  // }]
+  const configRoutes = parseRoutes()
 
   const features = {}
   // Debug feature: Reply to websocket notifications
@@ -188,6 +219,7 @@ function getLocalConfig () {
 
   return {
     backend,
+    configRoutes,
     ledgerCredentials,
     fxSpread,
     slippage,

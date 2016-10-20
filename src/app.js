@@ -75,6 +75,7 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster, 
     if (config.routeBroadcastEnabled) {
       yield routeBroadcaster.start()
     } else {
+      yield routeBroadcaster.addConfigRoutes()
       yield routeBroadcaster.reloadLocalRoutes()
     }
   }).catch((err) => log.error(err))
@@ -178,6 +179,7 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
       infoCache,
       {
         tradingPairs: tradingPairs,
+        configRoutes: config.configRoutes,
         minMessageWindow: config.expiry.minMessageWindow,
         routeCleanupInterval: config.routeCleanupInterval,
         routeBroadcastInterval: config.routeBroadcastInterval,
