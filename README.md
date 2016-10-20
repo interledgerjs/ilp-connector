@@ -89,6 +89,22 @@ npm start
 ]
 ```
 
+* `CONNECTOR_ROUTES` (default: `[]`) Explicitly add routes to the connector. If `targetPrefix` is the most specific
+  route name that matches a destination, then the payment will be forwarded to `connectorAccount` on `connectorLedger`. ex:
+```js
+[
+  {
+    "targetPrefix": "", // matches any destination
+    "connectorLedger": "ilpdemo.red."
+    "connectorAccount": "ilpdemo.red.connie"
+  }, {
+    "targetPrefix": "cny.",
+    "connectorLedger": "ilpdemo.red."
+    "connectorAccount": "lpdemo.red.cny_connector"
+  }
+]
+```
+
 * `CONNECTOR_PEERS` (default: `''`) Provide a basic comma-separated list of peers. Each peer is a connector's http address, on which known routes are used in order to broadcast routes, to receive routes, and to send payments.
 * `CONNECTOR_AUTOLOAD_PEERS` (default: `false`) Whether to automatically populate the list of peers by calling getConnectors on all ledger plugins
 

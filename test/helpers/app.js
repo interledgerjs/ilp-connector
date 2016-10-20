@@ -51,7 +51,8 @@ exports.create = function (context) {
     routeBroadcastInterval: config.routeBroadcastInterval,
     autoloadPeers: true,
     peers: [],
-    ledgerCredentials: config.ledgerCredentials
+    ledgerCredentials: config.ledgerCredentials,
+    configRoutes: config.configRoutes
   })
   const balanceCache = new BalanceCache(core)
   const messageRouter = new MessageRouter({config, core, routingTables, routeBroadcaster, routeBuilder, balanceCache})

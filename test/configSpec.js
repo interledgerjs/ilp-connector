@@ -3,6 +3,7 @@
 const _ = require('lodash')
 const loadConnectorConfig = require('ilp-connector')._test.loadConnectorConfig
 const expect = require('chai').expect
+const assert = require('chai').assert
 const env = _.cloneDeep(process.env)
 
 describe('ConnectorConfig', function () {
@@ -53,6 +54,82 @@ describe('ConnectorConfig', function () {
         'AUD@aud-ledger.',
         'EUR@eur-ledger.'
       ]])
+    })
+
+    describe('connector routes', () => {
+      beforeEach(function () {
+        this.routes = [{
+          targetPrefix: 'a.',
+          connectorAccount: 'example.a',
+          connectorLedger: 'example.'
+        }]
+      })
+
+      afterEach(() => {
+        process.env = _.cloneDeep(env)
+      })
+
+      it('parses routes correctly', function () {
+        process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
+        const config = loadConnectorConfig()
+        expect(config.get('configRoutes'))
+          .to.deep.equal(this.routes)
+      })
+
+      it('won\'t parse routes with invalid ledger', function () {
+        this.routes[0].connectorLedger = 'garbage'
+        process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
+        try {
+          loadConnectorConfig()
+          assert(false)
+        } catch (e) {
+          assert.isTrue(true)
+        }
+      })
+
+      it('won\'t parse routes with non-matching ledger and connector', function () {
+        this.routes[0].connectorAccount = 'other.connector'
+        process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
+        try {
+          loadConnectorConfig()
+          assert(false)
+        } catch (e) {
+          assert.isTrue(true)
+        }
+      })
+
+      it('should not parse routes missing prefix', function () {
+        this.routes[0].targetPrefix = undefined
+        process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
+        try {
+          loadConnectorConfig()
+          assert(false)
+        } catch (e) {
+          assert.isTrue(true)
+        }
+      })
+
+      it('should not parse routes missing ledger', function () {
+        this.routes[0].connectorLedger = undefined
+        process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
+        try {
+          loadConnectorConfig()
+          assert(false)
+        } catch (e) {
+          assert.isTrue(true)
+        }
+      })
+
+      it('should not parse routes missing account', function () {
+        this.routes[0].connectorAccount = undefined
+        process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
+        try {
+          loadConnectorConfig()
+          assert(false)
+        } catch (e) {
+          assert.isTrue(true)
+        }
+      })
     })
 
     describe('ledger credentials', () => {

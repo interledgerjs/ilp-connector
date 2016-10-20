@@ -32,6 +32,14 @@ describe('RouteBroadcaster', function () {
       'eur-ledger.': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}}
     }
 
+    const configRoutes = [
+      {
+        targetPrefix: 'prefix.',
+        connectorAccount: 'cad-ledger.mary',
+        connectorLedger: 'cad-ledger.'
+      }
+    ]
+
     this.tables = new RoutingTables({
       fxSpread: 0.002,
       slippage: 0.001
@@ -68,7 +76,8 @@ describe('RouteBroadcaster', function () {
       minMessageWindow: 1,
       autoloadPeers: true,
       peers: [],
-      ledgerCredentials
+      ledgerCredentials,
+      configRoutes
     })
 
     this.tables.addRoute({
@@ -78,6 +87,19 @@ describe('RouteBroadcaster', function () {
       min_message_window: 1,
       points: [ [0, 0], [50, 60] ],
       additional_info: {}
+    })
+  })
+
+  describe('addConfigRoutes', function () {
+    it('loads routes from CONNECTOR_ROUTES', function * () {
+      yield this.broadcaster.addConfigRoutes()
+      assertSubset(
+        this.tables.localTables.sources.get(ledgerB).destinations.get('prefix.').get('cad-ledger.mary'),
+        {
+          sourceLedger: ledgerB,
+          nextLedger: ledgerA,
+          sourceAccount: 'usd-ledger.mark'
+        })
     })
   })
 
@@ -173,3 +195,9 @@ describe('RouteBroadcaster', function () {
     })
   })
 })
+
+function assertSubset (actual, expect) {
+  for (const key in expect) {
+    assert.deepStrictEqual(actual[key], expect[key])
+  }
+}

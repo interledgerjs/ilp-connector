@@ -35,6 +35,7 @@ class RouteBroadcaster {
     this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
     this.ledgerCredentials = config.ledgerCredentials
+    this.configRoutes = config.configRoutes
 
     this.autoloadPeers = config.autoloadPeers
     this.defaultPeers = config.peers
@@ -45,6 +46,7 @@ class RouteBroadcaster {
     yield this.crawl()
     try {
       yield this.reloadLocalRoutes()
+      yield this.addConfigRoutes()
       yield this.broadcast()
     } catch (e) {
       if (e.name === 'SystemError' ||
@@ -105,6 +107,30 @@ class RouteBroadcaster {
   _getLocalRoutes () {
     return Promise.all(this.tradingPairs.toArray().map(
       (pair) => this._tradingPairToLocalRoute(pair)))
+  }
+
+  addConfigRoutes () {
+    for (let configRoute of this.configRoutes) {
+      const connectorLedger = configRoute.connectorLedger
+      const connector = configRoute.connectorAccount
+      const targetPrefix = configRoute.targetPrefix
+
+      const route = new Route(
+        // use a 1:1 curve as a placeholder (it will be overwritten by a remote quote)
+        [ [0, 0], [1, 1] ],
+        // the second ledger is inserted to make sure this the hop to the
+        // connectorLedger is not considered final.
+        [ connectorLedger, targetPrefix ],
+        { minMessageWindow: this.minMessageWindow,
+          sourceAccount: connector,
+          targetPrefix: targetPrefix }
+      )
+
+      this.routingTables.addRoute(route)
+    }
+
+    // returns a promise in order to be similar to reloadLocalRoutes()
+    return Promise.resolve(null)
   }
 
   _tradingPairToLocalRoute (pair) {
