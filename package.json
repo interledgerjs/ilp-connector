@@ -18,9 +18,9 @@
   },
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js | bunyan",
-    "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} src/index.js | bunyan",
-    "start:watch": "nodemon src/index.js | bunyan",
+    "start": "node src/index.js",
+    "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} src/index.js",
+    "start:watch": "nodemon src/index.js",
     "lint": "eslint .",
     "test": "istanbul test -- _mocha",
     "report-coverage": "codecov",
@@ -32,7 +32,6 @@
   },
   "dependencies": {
     "bignumber.js": "^2.0.7",
-    "bunyan": "^1.8.1",
     "co": "^4.1.0",
     "co-body": "^4.0.0",
     "co-defer": "^1.0.0",
@@ -49,6 +48,7 @@
     "moment": "^2.10.2",
     "node-uuid": "^1.4.2",
     "reconnect-core": "^1.2.0",
+    "riverpig": "^1.0.2",
     "spdy": "^3.2.3",
     "sqlite3": "^3.1.4",
     "uuid4": "^1.0.0",
