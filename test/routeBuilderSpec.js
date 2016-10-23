@@ -23,9 +23,9 @@ const markB = 'eur-ledger.mark'
 const maryB = 'eur-ledger.mary'
 
 describe('RouteBuilder', function () {
+  logHelper(logger)
   beforeEach(function * () {
     appHelper.create(this)
-    logHelper(logger)
 
     this.infoCache = {
       get: function * (ledger) {
