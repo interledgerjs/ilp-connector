@@ -4,7 +4,8 @@ const _ = require('lodash')
 const co = require('co')
 const subscriptions = require('./models/subscriptions')
 const ilpCore = require('ilp-core')
-const log = require('./common/log')
+const logger = require('./common/log')
+const log = logger.create('app')
 
 const loadConfig = require('./lib/config')
 const makeCore = require('./lib/core')
@@ -45,7 +46,7 @@ function addPlugin (config, core, backend, routeBroadcaster, tradingPairs, id, o
   return co(function * () {
     core.addClient(id, new ilpCore.Client(Object.assign({}, options.options, {
       _plugin: require(options.plugin),
-      _log: log.create(options.plugin)
+      _log: logger.create(options.plugin)
     })))
 
     yield core.getClient(id).connect()
@@ -89,7 +90,7 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   }
 
   if (!core) {
-    core = makeCore({config, log, routingTables})
+    core = makeCore({config, log: logger, routingTables})
   }
 
   if (!tradingPairs) {

@@ -2,12 +2,23 @@
 
 const riverpig = require('riverpig')
 
-const Config = require('five-bells-shared').Config
-const envPrefix = 'CONNECTOR'
-const logLevel = Config.getEnv(envPrefix, 'LOG_LEVEL')
+const logStream = require('through2')()
+logStream.pipe(process.stdout)
 
-const defaultLogger = riverpig('connector')
+const create = (namespace) => {
+  return riverpig(namespace, {
+    stream: logStream
+  })
+}
 
-defaultLogger.create = riverpig
+let outputStream = process.stdout
+const setOutputStream = (newOutputStream) => {
+  logStream.unpipe(outputStream)
+  logStream.pipe(newOutputStream)
+  outputStream = newOutputStream
+}
 
-module.exports = defaultLogger
+module.exports = {
+  create,
+  setOutputStream
+}

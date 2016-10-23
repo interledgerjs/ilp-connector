@@ -11,12 +11,16 @@ const RouteBroadcaster = require('ilp-connector')._test.RouteBroadcaster
 const makeCore = require('../src/lib/core')
 const log = require('../src/common').log
 const appHelper = require('./helpers/app')
+const logger = require('ilp-connector')._test.logger
+const logHelper = require('./helpers/log')
 
 const ledgerA = 'cad-ledger.'
 const ledgerB = 'usd-ledger.'
 const ledgerC = 'eur-ledger.'
 
 describe('RouteBroadcaster', function () {
+  logHelper(logger)
+
   beforeEach(function * () {
     appHelper.create(this)
 
