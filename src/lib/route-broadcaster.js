@@ -39,7 +39,7 @@ class RouteBroadcaster {
 
     this.autoloadPeers = config.autoloadPeers
     this.defaultPeers = config.peers
-    this.peers = {} // { connectorName ⇒ ledgerPrefix }
+    this.peersByLedger = {} // { ledgerPrefix ⇒ { connectorName ⇒ true } }
   }
 
   * start () {
@@ -65,14 +65,21 @@ class RouteBroadcaster {
   }
 
   broadcast () {
-    const adjacentConnectors = Object.keys(this.peers)
+    const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
-    return Promise.all(adjacentConnectors.map((adjacentConnector) => {
-      log.info('broadcasting ' + routes.length + ' routes to ' + adjacentConnector)
-      const prefix = this.peers[adjacentConnector]
-      const account = prefix + adjacentConnector
-      return this.core.getPlugin(prefix).sendMessage({
-        ledger: prefix,
+    return Promise.all(adjacentLedgers.map((adjacentLedger) => {
+      return this._broadcastToLedger(adjacentLedger,
+        routes.filter((route) => route.source_ledger === adjacentLedger))
+    }))
+  }
+
+  _broadcastToLedger (adjacentLedger, routes) {
+    const connectors = Object.keys(this.peersByLedger[adjacentLedger])
+    return Promise.all(connectors.map((adjacentConnector) => {
+      const account = adjacentLedger + adjacentConnector
+      log.info('broadcasting ' + routes.length + ' routes to ' + account)
+      return this.core.getPlugin(adjacentLedger).sendMessage({
+        ledger: adjacentLedger,
         account: account,
         data: {
           method: 'broadcast_routes',
@@ -91,10 +98,11 @@ class RouteBroadcaster {
     const connectors = yield client.getConnectors()
     for (const connector of connectors) {
       // Don't broadcast routes to ourselves.
-      if (connector === this.ledgerCredentials[prefix].username) continue
+      if (connector === this.ledgerCredentials[prefix].options.username) continue
       if (this.autoloadPeers || this.defaultPeers.indexOf(connector) !== -1) {
-        this.peers[connector] = prefix
-        log.info('adding peer ' + connector)
+        this.peersByLedger[prefix] = this.peersByLedger[prefix] || {}
+        this.peersByLedger[prefix][connector] = true
+        log.info('adding peer ' + connector + ' via ledger ' + prefix)
       }
     }
   }
