@@ -40,9 +40,6 @@ npm start
 
 #### General
 
-* `CONNECTOR_BIND_IP` (default: `0.0.0.0`) IP that ILP Connector will bind to.
-* `CONNECTOR_PORT` (default: `4000`) Port that ILP Connector will listen on.
-* `CONNECTOR_PUBLIC_URI` (default: `http://$HOSTNAME:$CONNECTOR_PORT`) URI prefix where the connector will be publicly visible. All IDs and URIs that that the connector outputs will be using this root URI.
 * `CONNECTOR_LOG_LEVEL` (default: `info`) the allowed levels in order of verbosity are `fatal`, `error`, `warn`, `info`, `debug`, and `trace`
 
 #### Trading
@@ -129,14 +126,14 @@ This project can be run in a [Docker](https://www.docker.com/) container.
 
 
 ``` sh
-docker run -it --rm -e CONNECTOR_PORT=4000 interledgerjs/ilp-connector
+docker run -it --rm -e CONNECTOR_SLIPPAGE='0.002' interledgerjs/ilp-connector
 ```
 
 Breaking down that command:
 
 * `-it` Run ILP Connector in an interactive terminal.
 * `--rm` Delete container when it's done running.
-* `-e CONNECTOR_PORT=4000` Set the connector's port to 4000. This is just an example for how to set a config option.
+* `-e CONNECTOR_SLIPPAGE='0.002'` Set the connector's slippage to 0.002. This is just an example for how to set a config option.
 
 ## Payments
 

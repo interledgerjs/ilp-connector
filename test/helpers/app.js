@@ -1,8 +1,5 @@
 'use strict'
 
-const _ = require('lodash')
-const http = require('http')
-const superagent = require('co-supertest')
 const log = require('../../src/common').log
 
 const loadConfig = require('../../src/lib/config')
@@ -27,7 +24,6 @@ exports.create = function (context) {
     spread: config.get('fxSpread')
   })
   const routingTables = new RoutingTables({
-    baseUri: config.server.base_uri,
     backend: config.backend,
     expiryDuration: config.routeExpiry,
     slippage: config.slippage,
@@ -68,15 +64,4 @@ exports.create = function (context) {
   context.infoCache = infoCache
   context.balanceCache = balanceCache
   context.messageRouter = messageRouter
-
-  context.server = http.createServer(app.callback()).listen()
-  context.port = context.server.address().port
-  context.request = function () {
-    return superagent(context.server)
-  }
-  context.formatId = function (sourceObj, baseUri) {
-    let obj = _.cloneDeep(sourceObj)
-    obj.id = 'http://localhost' + baseUri + sourceObj.id
-    return obj
-  }
 }

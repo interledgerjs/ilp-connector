@@ -2,20 +2,8 @@
 
 const _ = require('lodash')
 const co = require('co')
-const metadata = require('./controllers/metadata')
-const health = require('./controllers/health')
-const pairs = require('./controllers/pairs')
 const subscriptions = require('./models/subscriptions')
-const compress = require('koa-compress')
-const serve = require('koa-static')
-const route = require('koa-route')
-const errorHandler = require('five-bells-shared/middlewares/error-handler')
-const koa = require('koa')
-const path = require('path')
-const logger = require('koa-bunyan-logger')
-const Passport = require('koa-passport').KoaPassport
 const ilpCore = require('ilp-core')
-const cors = require('koa-cors')
 const log = require('./common/log')
 
 const loadConfig = require('./lib/config')
@@ -28,36 +16,7 @@ const InfoCache = require('./lib/info-cache')
 const BalanceCache = require('./lib/balance-cache')
 const MessageRouter = require('./lib/message-router')
 
-function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs) {
-  if (config.getIn(['server', 'secure'])) {
-    const spdy = require('spdy')
-    const tls = config.get('tls')
-
-    const options = {
-      port: config.getIn(['server', 'port']),
-      host: config.getIn(['server', 'bind_ip']),
-      key: tls.key,
-      cert: tls.cert,
-      ca: tls.ca,
-      crl: tls.crl,
-      requestCert: config.getIn(['auth', 'client_certificates_enabled']),
-
-      // Certificates are checked in the passport-client-cert middleware
-      // Authorization check is disabled here to allow clients to connect
-      // to some endpoints without presenting client certificates, or using a
-      // different authentication method (e.g., Basic Auth)
-      rejectUnauthorized: false
-    }
-
-    spdy.createServer(
-      options, koaApp.callback()).listen(config.getIn(['server', 'port']))
-  } else {
-    koaApp.listen(config.getIn(['server', 'port']))
-  }
-
-  log.info('connector listening on ' + config.getIn(['server', 'bind_ip']) + ':' +
-    config.getIn(['server', 'port']))
-  log.info('public at ' + config.getIn(['server', 'base_uri']))
+function listen (config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs) {
   for (let pair of tradingPairs.toArray()) {
     log.info('pair', pair)
   }
@@ -78,13 +37,13 @@ function listen (koaApp, config, core, backend, routeBuilder, routeBroadcaster, 
       yield routeBroadcaster.addConfigRoutes()
       yield routeBroadcaster.reloadLocalRoutes()
     }
+    log.info('connector ready')
   }).catch((err) => log.error(err))
 }
 
 function addPlugin (config, core, backend, routeBroadcaster, tradingPairs, id, options, tradesTo, tradesFrom) {
   return co(function * () {
     core.addClient(id, new ilpCore.Client(Object.assign({}, options.options, {
-      connector: config.server.base_uri,
       _plugin: require(options.plugin),
       _log: log.create(options.plugin)
     })))
@@ -116,15 +75,12 @@ function removePlugin (config, core, backend, routingTables, tradingPairs, id) {
 }
 
 function createApp (config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache, messageRouter) {
-  const koaApp = koa()
-
   if (!config) {
     config = loadConfig()
   }
 
   if (!routingTables) {
     routingTables = new RoutingTables({
-      baseURI: config.server.base_uri,
       backend: config.backend,
       expiryDuration: config.routeExpiry,
       fxSpread: config.fxSpread,
@@ -205,61 +161,8 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
     })
   }
 
-  koaApp.context.config = config
-  koaApp.context.core = core
-  koaApp.context.backend = backend
-  koaApp.context.routeBuilder = routeBuilder
-  koaApp.context.routeBroadcaster = routeBroadcaster
-  koaApp.context.routingTables = routingTables
-  koaApp.context.tradingPairs = tradingPairs
-  koaApp.context.infoCache = infoCache
-  koaApp.context.balanceCache = balanceCache
-  koaApp.context.messageRouter = messageRouter
-
-  // Configure passport
-  const passport = new Passport()
-  require('./lib/auth')(passport, config)
-
-  // Logger
-  koaApp.use(logger(log.create('koa')))
-  koaApp.use(logger.requestIdContext())
-
-  const isTrace = log.trace()
-  koaApp.use(logger.requestLogger({
-    updateRequestLogFields: function (fields) {
-      return {
-        body: isTrace ? this.body : undefined,
-        query: this.query
-      }
-    },
-    updateResponseLogFields: function (fields) {
-      return {
-        duration: fields.duration,
-        status: this.status,
-        body: isTrace ? this.body : undefined
-      }
-    }
-  }))
-  koaApp.use(errorHandler({log: log.create('error-handler')}))
-  koaApp.on('error', function () {})
-
-  koaApp.use(passport.initialize())
-  koaApp.use(cors({expose: ['link']}))
-
-  koaApp.use(route.get('/', metadata.getResource))
-  koaApp.use(route.get('/health', health.getResource))
-  koaApp.use(route.get('/pairs', pairs.getCollection))
-
-  // Serve static files
-  koaApp.use(serve(path.join(__dirname, 'public')))
-
-  // Compress
-  koaApp.use(compress())
-
   return {
-    koaApp: koaApp,
-    listen: _.partial(listen, koaApp, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs),
-    callback: koaApp.callback.bind(koaApp),
+    listen: _.partial(listen, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs),
     addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster, tradingPairs),
     removePlugin: _.partial(removePlugin, config, core, backend, routingTables, tradingPairs)
   }

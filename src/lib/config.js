@@ -204,10 +204,8 @@ function getLocalConfig () {
   //    }
   // }
   let ledgerCredentials = {}
-  let server = {}
 
   if (useTestConfig()) {
-    server.base_uri = 'http://localhost'
     ledgerCredentials = require('../../test/data/ledgerCredentials.json')
     if (!tradingPairs.length) {
       tradingPairs = require('../../test/data/tradingPairs.json')
@@ -226,7 +224,6 @@ function getLocalConfig () {
     expiry,
     features,
     tradingPairs,
-    server,
     backendUri,
     routeBroadcastEnabled,
     routeBroadcastInterval,

@@ -104,7 +104,7 @@ describe('RouteBroadcaster', function () {
   })
 
   describe('broadcast', function () {
-    const routes = [
+    const routesFromA = [
       {
         source_ledger: ledgerA,
         destination_ledger: ledgerC,
@@ -117,7 +117,10 @@ describe('RouteBroadcaster', function () {
         min_message_window: 1,
         source_account: ledgerA + 'mark',
         points: [ [0, -0.01], [200, 99.99] ]
-      }, {
+      }
+    ]
+    const routesFromB = [
+      {
         source_ledger: ledgerB,
         destination_ledger: ledgerA,
         min_message_window: 1,
@@ -128,29 +131,43 @@ describe('RouteBroadcaster', function () {
 
     it('sends the combined routes to all adjacent connectors', function * () {
       this.core.getPlugin(ledgerA).getInfo =
-      this.core.getPlugin(ledgerC).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}] })
+          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
       this.core.getPlugin(ledgerB).getInfo =
         function () {
           return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
+      this.core.getPlugin(ledgerC).getInfo =
+        function () {
+          return Promise.resolve({ connectors: [{name: 'mark'}] })
+        }
 
-      let routesSent
+      let routesFromASent, routesFromBSent
+      this.core.getPlugin(ledgerA).sendMessage = function (message) {
+        assert.deepEqual(message, {
+          ledger: ledgerA,
+          account: ledgerA + 'mary',
+          data: { method: 'broadcast_routes', data: routesFromA }
+        })
+        routesFromASent = true
+        return Promise.resolve(null)
+      }
+
       this.core.getPlugin(ledgerB).sendMessage = function (message) {
         assert.deepEqual(message, {
           ledger: ledgerB,
           account: ledgerB + 'mary',
-          data: { method: 'broadcast_routes', data: routes }
+          data: { method: 'broadcast_routes', data: routesFromB }
         })
-        routesSent = true
+        routesFromBSent = true
         return Promise.resolve(null)
       }
 
       yield this.broadcaster.crawl()
       yield this.broadcaster.broadcast()
-      assert(routesSent)
+      assert(routesFromASent)
+      assert(routesFromBSent)
     })
 
     it('should not throw an error even if the other connector does not respond', function * () {
@@ -169,7 +186,7 @@ describe('RouteBroadcaster', function () {
         assert.deepEqual(message, {
           ledger: ledgerB,
           account: ledgerB + 'mary',
-          data: { method: 'broadcast_routes', data: routes }
+          data: { method: 'broadcast_routes', data: routesFromB }
         })
         routesSent = true
         return Promise.resolve(null)

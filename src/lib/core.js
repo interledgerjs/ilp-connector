@@ -17,7 +17,6 @@ module.exports = function (options) {
     creds.options.prefix = ledgerPrefix
     core.addClient(ledgerPrefix, new ilpCore.Client(Object.assign({}, creds.options, {
       debugReplyNotifications: config.features.debugReplyNotifications,
-      connector: config.server.base_uri,
       // non JSON-stringifiable fields are prefixed with an underscore
       _plugin: require(creds.plugin),
       _store: store,
