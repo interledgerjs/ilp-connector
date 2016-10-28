@@ -24,7 +24,6 @@
     "lint": "eslint .",
     "test": "istanbul test -- _mocha",
     "report-coverage": "codecov",
-    "apidoc": "apidoc -o apidoc-out -i src/controllers/",
     "integration": "integration all",
     "bump": "version-bump"
   },
@@ -56,7 +55,6 @@
     "ws": "^1.1.0"
   },
   "devDependencies": {
-    "apidoc": "^0.13.1",
     "bunyan-format": "^0.2.1",
     "chai": "^3.2.0",
     "co-mocha": "^1.1.0",
