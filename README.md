@@ -102,7 +102,7 @@ npm start
 ]
 ```
 
-* `CONNECTOR_PEERS` (default: `''`) Provide a basic comma-separated list of peers. Each peer is a connector's http address, on which known routes are used in order to broadcast routes, to receive routes, and to send payments.
+* `CONNECTOR_PEERS` (default: `''`) Provide a basic comma-separated list of peers. Each peer is a connector's ILP address, on which known routes are used in order to broadcast routes, to receive routes, and to send payments.
 * `CONNECTOR_AUTOLOAD_PEERS` (default: `false`) Whether to automatically populate the list of peers by calling getConnectors on all ledger plugins
 
 * `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.

@@ -99,7 +99,7 @@ class RouteBroadcaster {
     for (const connector of connectors) {
       // Don't broadcast routes to ourselves.
       if (connector === this.ledgerCredentials[prefix].options.username) continue
-      if (this.autoloadPeers || this.defaultPeers.indexOf(connector) !== -1) {
+      if (this.autoloadPeers || this.defaultPeers.indexOf(prefix + connector) !== -1) {
         this.peersByLedger[prefix] = this.peersByLedger[prefix] || {}
         this.peersByLedger[prefix][connector] = true
         log.info('adding peer ' + connector + ' via ledger ' + prefix)
