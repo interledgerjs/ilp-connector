@@ -38,7 +38,7 @@ function listen (config, core, backend, routeBuilder, routeBroadcaster, messageR
       yield routeBroadcaster.addConfigRoutes()
       yield routeBroadcaster.reloadLocalRoutes()
     }
-    log.info('connector ready')
+    log.info('connector ready (republic attitude)')
   }).catch((err) => log.error(err))
 }
 
