@@ -5,11 +5,13 @@ const riverpig = require('riverpig')
 const logStream = require('through2')()
 logStream.pipe(process.stdout)
 
-const create = (namespace) => {
+const createRaw = (namespace) => {
   return riverpig(namespace, {
     stream: logStream
   })
 }
+
+const create = (namespace) => createRaw('connector:' + namespace)
 
 let outputStream = process.stdout
 const setOutputStream = (newOutputStream) => {
@@ -20,5 +22,6 @@ const setOutputStream = (newOutputStream) => {
 
 module.exports = {
   create,
+  createRaw,
   setOutputStream
 }

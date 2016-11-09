@@ -46,7 +46,7 @@ function addPlugin (config, core, backend, routeBroadcaster, tradingPairs, id, o
   return co(function * () {
     core.addClient(id, new ilpCore.Client(Object.assign({}, options.options, {
       _plugin: require(options.plugin),
-      _log: logger.create(options.plugin)
+      _log: logger.createRaw(options.plugin)
     })))
 
     yield core.getClient(id).connect()
