@@ -24,7 +24,7 @@
     "lint": "eslint .",
     "test": "istanbul test -- _mocha",
     "report-coverage": "codecov",
-    "integration": "integration all",
+    "integration": "integration-loader && integration all",
     "bump": "version-bump"
   },
   "engines": {
@@ -66,7 +66,7 @@
     "eslint-config-standard": "^5.1.0",
     "eslint-plugin-promise": "^1.1.0",
     "eslint-plugin-standard": "^1.3.2",
-    "five-bells-integration-test": "^4.1.1",
+    "five-bells-integration-test-loader": "^1.0.0",
     "istanbul": "^0.4.1",
     "mocha": "^2.3.2",
     "mock-require": "^1.3.0",
@@ -76,5 +76,11 @@
     "sinon": "^1.14.1",
     "spec-xunit-file": "0.0.1-3",
     "supertest": "^1.1.0"
+  },
+  "config": {
+    "five-bells-integration-test-loader": {
+      "module": "five-bells-integration-test",
+      "repo": "interledgerjs/five-bells-integration-test"
+    }
   }
 }
