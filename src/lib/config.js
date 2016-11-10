@@ -4,6 +4,8 @@ const fs = require('fs')
 const Config = require('five-bells-shared').Config
 const Utils = require('../lib/utils')
 const _ = require('lodash')
+const logger = require('../common/log')
+const log = logger.create('config')
 
 const envPrefix = 'CONNECTOR'
 
@@ -167,6 +169,14 @@ function getLocalConfig () {
   const expiry = {}
   expiry.minMessageWindow =
     +Config.getEnv(envPrefix, 'MIN_MESSAGE_WINDOW') || DEFAULT_MIN_MESSAGE_WINDOW
+
+  if (expiry.minMessageWindow < 1) {
+    log.warn('CONNECTOR_MIN_MESSAGE_WINDOW is less than the recommended value of 1 second. ' +
+      'Short message windows increase the likelihood that the connector will be unable ' +
+      'to fulfill incoming transfers before their expiries, resulting in a loss of funds. ' +
+      'For more information on this risk, see the Interledger whitepaper')
+  }
+
   expiry.maxHoldTime = +Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || DEFAULT_MAX_HOLD_TIME
 
   // The spread is added to every quoted rate
