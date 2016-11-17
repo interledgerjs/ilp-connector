@@ -41,7 +41,7 @@
     "five-bells-condition": "^3.2.0",
     "five-bells-shared": "^19.0.0",
     "ilp-core": "~9.0.0",
-    "ilp-plugin-bells": "^8.0.0",
+    "ilp-plugin-bells": "^9.0.0",
     "ilp-plugin-virtual": "^5.0.0",
     "ilp-routing": "~5.0.0",
     "lodash": "^4.6.1",
