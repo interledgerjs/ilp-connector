@@ -119,6 +119,7 @@ npm start
 * `CONNECTOR_ROUTE_BROADCAST_INTERVAL` (default: `30000`) the frequency at which the connector broadcasts its routes to adjacent connectors.
 * `CONNECTOR_ROUTE_CLEANUP_INTERVAL` (default: `1000`) the frequency at which the connector checks for expired routes.
 * `CONNECTOR_ROUTE_EXPIRY` (default: `45000`) the maximum age of a route.
+* `CONNECTOR_BACKEND` (default: `'fixerio'`) the backend used to determine rates. This can either be a module name from `src/backends/` or a different module that will be `require()`ed by the connector.
 
 ## Running with Docker
 
@@ -139,3 +140,48 @@ Breaking down that command:
 
 The connector will facilitate an interledger payment upon receiving a notification for a transfer in which it is credited. That "source" transfer must have a `ilp_header` in its credit's `memo` that specifies the payment's destination and amount.
 As soon as the source transfer is prepared, the connector will authorize the debits from its account(s) on the destination ledger.
+
+## Backend
+
+### Class: Backend
+#### Methods
+
+| `new` | [**Backend**](#new-backend) ( opts ) |
+| | [**connect**](#connect) ( ) `⇒ Promise.<null>` |
+| | [**getQuote**](#getQuote) ( params ) `⇒ Promise.<Quote>` |
+
+##### new Backend
+<code>new Backend( **opts** : Object )</code>
+
+###### Parameters
+| Name | Type | Description |
+|:--|:--|:--|
+| `opts` | `Object` | |
+| `opts.backendUri` | `URI` | (see `CONNECTOR_BACKEND_URI`) |
+| `opts.currencyWithLedgerPairs` | `TradingPairs` | currency pairs supported by the connector |
+| `opts.infoCache` | `InfoCache` | a cache of ledger metadata |
+| `opts.spread` | `Number` | (see `CONNECTOR_FX_SPREAD`) |
+
+#### connect
+<code>backend.connect() ⇒ Promise.&lt;null></code>
+
+#### getQuote
+<code>backend.getQuote( **params** : [QuoteParams](#class-quoteparams) ) ⇒ Promise.&lt;Quote></code>
+
+### Class: QuoteParams
+###### Fields
+| Type | Name | Description |
+|:--|:--|:--|
+| `String` | `source_ledger` | The URI of the source ledger |
+| `String` | `destination_ledger` | The URI of the destination ledger |
+| `String`/`Integer`/`BigNumber` | `source_amount` | The amount of the source asset we want to send (either this or the `destination_amount` must be set)
+| `String`/`Integer`/`BigNumber` | `destination_amount` | The amount of the destination asset we want to send (either this or the `source_amount` must be set) |
+
+### Class: Quote
+###### Fields
+| Type | Name | Description |
+|:--|:--|:--|
+| `String` | `source_ledger` | The URI of the source ledger |
+| `String` | `destination_ledger` | The URI of the destination ledger |
+| `String` | `source_amount` | The amount of the source asset we want to send |
+| `String` | `destination_amount` | The amount of the destination asset we want to send |
