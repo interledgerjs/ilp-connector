@@ -49,7 +49,6 @@
     "node-uuid": "^1.4.2",
     "reconnect-core": "^1.2.0",
     "riverpig": "^1.1.0",
-    "spdy": "^3.2.3",
     "sqlite3": "^3.1.4",
     "through2": "^2.0.1",
     "uuid4": "^1.0.0",

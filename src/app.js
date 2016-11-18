@@ -98,12 +98,7 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   }
 
   if (!backend) {
-    const Backend = require('./backends/' + config.get('backend'))
-    if (!Backend) {
-      throw new Error('Backend not found. The backend ' +
-        'module specified by CONNECTOR_BACKEND was not found in /backends')
-    }
-
+    const Backend = getBackend(config.get('backend'))
     backend = new Backend({
       currencyWithLedgerPairs: tradingPairs,
       backendUri: config.get('backendUri'),
@@ -166,6 +161,18 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
     listen: _.partial(listen, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs),
     addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster, tradingPairs),
     removePlugin: _.partial(removePlugin, config, core, backend, routingTables, tradingPairs)
+  }
+}
+
+function getBackend (backend) {
+  try {
+    return require('./backends/' + backend)
+  } catch (err) {
+    try {
+      return require(backend)
+    } catch (err) {
+      throw new Error('Backend not found at "' + backend + '" or "/backends/' + backend + '"')
+    }
   }
 }
 
