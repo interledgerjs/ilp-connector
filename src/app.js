@@ -165,14 +165,17 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
 }
 
 function getBackend (backend) {
+  if (moduleExists('./backends/' + backend)) return require('./backends/' + backend)
+  if (moduleExists(backend)) return require(backend)
+  throw new Error('Backend not found at "' + backend + '" or "/backends/' + backend + '"')
+}
+
+function moduleExists (path) {
   try {
-    return require('./backends/' + backend)
+    require.resolve(path)
+    return true
   } catch (err) {
-    try {
-      return require(backend)
-    } catch (err) {
-      throw new Error('Backend not found at "' + backend + '" or "/backends/' + backend + '"')
-    }
+    return false
   }
 }
 
