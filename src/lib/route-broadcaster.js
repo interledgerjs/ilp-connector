@@ -85,6 +85,9 @@ class RouteBroadcaster {
           method: 'broadcast_routes',
           data: routes
         }
+      }).catch((err) => {
+        if (err.name !== 'NoSubscriptionsError') throw err
+        log.warn('broadcasting routes to ' + account + ' failed: ' + err.message)
       })
     }))
   }
