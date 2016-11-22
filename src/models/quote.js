@@ -1,7 +1,6 @@
 'use strict'
 
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
-const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 
 function * makeQuoteQuery (params) {
   return {
@@ -38,13 +37,6 @@ function * validateExpiries (sourceExpiryDuration, destinationExpiryDuration, mi
   }
 }
 
-function * validateBalance (balanceCache, ledger, amount) {
-  const balance = yield balanceCache.get(ledger)
-  if (balance.lessThan(amount)) {
-    throw new UnacceptableAmountError('Insufficient liquidity in market maker account')
-  }
-}
-
 /**
  * @param {Object} params
  * @param {String} params.source_address
@@ -72,8 +64,6 @@ function * getQuote (params, config, routeBuilder, balanceCache) {
     quote.sourceExpiryDuration,
     quote.destinationExpiryDuration,
     quote.minMessageWindow, config)
-  // Check the balance of the next ledger (_not_ the final ledger).
-  yield validateBalance(balanceCache, quote.nextLedger, quote.destinationAmount)
 
   return {
     source_ledger: quote.sourceLedger,

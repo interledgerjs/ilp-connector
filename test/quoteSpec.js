@@ -272,19 +272,16 @@ describe('Quotes', function () {
       }).catch(done)
     })
 
-    it('should return a UnacceptableAmountError for insufficient liquidity', function (done) {
+    it('should not return an Error for insufficient liquidity', function (done) {
       this.messageRouter.getQuote({
         destination_amount: '150001',
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob',
         destination_expiry_duration: '10'
-      }).then((quote) => {
-        throw new Error()
-      }).catch((err) => {
-        expect(err.name).to.equal('UnacceptableAmountError')
-        expect(err.message).to.equal('Insufficient liquidity in market maker account')
+      }).then(() => {
         done()
-      }).catch(done)
+      })
+        .catch(done)
     })
 
     it('should return a ExternalError when unable to get precision from source_address', function (done) {
@@ -329,7 +326,7 @@ describe('Quotes', function () {
       }).catch(done)
     })
 
-    it('should return a ExternalError when unable to get balance from ledger', function (done) {
+    it('should not return an Error when unable to get balance from ledger', function (done) {
       this.infoCache.reset()
       nock.cleanAll()
       this.core.getPlugin('eur-ledger.')
@@ -344,12 +341,10 @@ describe('Quotes', function () {
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob',
         destination_expiry_duration: '10'
-      }).then((quote) => {
-        throw new Error()
-      }).catch((err) => {
-        expect(err.name).to.equal('ExternalError')
+      }).then(() => {
         done()
-      }).catch(done)
+      })
+        .catch(done)
     })
 
     it('should return a valid Quote object', function (done) {
