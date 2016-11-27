@@ -24,7 +24,7 @@ function isRunningTests () {
     process.argv[0].endsWith('mocha') ||
     (process.argv.length > 1 && process.argv[0].endsWith('node') &&
      process.argv[1].endsWith('mocha'))
-   )
+  )
 }
 
 function useTestConfig () {

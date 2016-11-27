@@ -104,8 +104,10 @@ describe('RouteBuilder', function () {
           destinationAmount: '99.00',
           sourceExpiryDuration: '6',
           destinationExpiryDuration: '5',
-          additionalInfo: { rate_info: 'someInfoAboutTheRate',
-                             slippage: '1' },
+          additionalInfo: {
+            rate_info: 'someInfoAboutTheRate',
+            slippage: '1'
+          },
           minMessageWindow: 1,
           nextLedger: ledgerB
         })

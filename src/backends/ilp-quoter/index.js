@@ -22,8 +22,10 @@ class ILPQuoter {
   constructor (opts) {
     log.debug('ILPQuoter ctor')
     this.currencyWithLedgerPairs = opts.currencyWithLedgerPairs
-    this.currencyPairs = this.currencyWithLedgerPairs.map((p) => [p[0].slice(0, 3),
-                                                                  p[1].slice(0, 3)])
+    this.currencyPairs = this.currencyWithLedgerPairs.map((p) => [
+      p[0].slice(0, 3),
+      p[1].slice(0, 3)
+    ])
     this.backendUri = opts.backendUri
     this.backendStatus = healthStatus.statusNotOk
     this.infoCache = opts.infoCache
