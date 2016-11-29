@@ -60,7 +60,8 @@ function * subscribeLedger (ledgerPrefix, core, config) {
   log.info('subscribing to ' + ledgerPrefix)
   const client = core.getClient(ledgerPrefix)
 
-  yield client.connect()
+  // Disable connect() timeout
+  yield client.connect({timeout: 0})
 }
 
 module.exports = {
