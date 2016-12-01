@@ -68,8 +68,7 @@ describe('Payments', function () {
     appHelper.create(this)
     yield this.backend.connect(ratesResponse)
     yield this.routeBroadcaster.reloadLocalRoutes()
-    yield subscriptions.subscribePairs(pairs,
-      this.core, this.config, this.routeBuilder, this.messageRouter)
+    yield subscriptions.subscribePairs(this.core, this.config, this.routeBuilder, this.messageRouter)
 
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
