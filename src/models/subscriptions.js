@@ -1,11 +1,10 @@
 'use strict'
 
-const _ = require('lodash')
 const co = require('co')
 const log = require('../common').log.create('subscriptions')
 const payments = require('../models/payments')
 
-function * setupListeners (core, config, routeBuilder, messageRouter) {
+function * subscribePairs (core, config, routeBuilder, messageRouter) {
   const handleIncoming = (client, transfer) => {
     return co(function * () {
       yield payments.updateIncomingTransfer(transfer, core, config, routeBuilder)
@@ -41,31 +40,4 @@ function logThenThrow (err) {
   throw err
 }
 
-function * subscribePairs (pairs, core, config, routeBuilder, messageRouter) {
-  yield this.setupListeners(core, config, routeBuilder, messageRouter)
-
-  let ledgers = _(pairs)
-    .flatten()
-    .map(function (d) {
-      return d.split('@').slice(1).join('@')
-    })
-    .uniq()
-    .value()
-
-  // Subscribe to all ledgers in parallel.
-  yield ledgers.map((l) => subscribeLedger(l, core, config))
-}
-
-function * subscribeLedger (ledgerPrefix, core, config) {
-  log.info('subscribing to ' + ledgerPrefix)
-  const client = core.getClient(ledgerPrefix)
-
-  // Disable connect() timeout
-  yield client.connect({timeout: Infinity})
-}
-
-module.exports = {
-  setupListeners,
-  subscribePairs,
-  subscribeLedger
-}
+module.exports = { subscribePairs }
