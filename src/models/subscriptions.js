@@ -61,7 +61,7 @@ function * subscribeLedger (ledgerPrefix, core, config) {
   const client = core.getClient(ledgerPrefix)
 
   // Disable connect() timeout
-  yield client.connect({timeout: 0})
+  yield client.connect({timeout: Infinity})
 }
 
 module.exports = {
