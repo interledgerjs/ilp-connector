@@ -49,7 +49,7 @@ function addPlugin (config, core, backend, routeBroadcaster, tradingPairs, id, o
       _log: logger.createRaw(options.plugin)
     })))
 
-    yield core.getClient(id).connect({timeout: 0})
+    yield core.getClient(id).connect({timeout: Infinity})
 
     if (tradesTo) {
       tradingPairs.addPairs(tradesTo.map((e) => [options.currency + '@' + id, e]))
