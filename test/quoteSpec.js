@@ -7,7 +7,7 @@ mock('ilp-plugin-mock', mockPlugin)
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
-const validate = require('five-bells-shared/services/validate')
+const validate = require('../src/lib/validate').validate
 const appHelper = require('./helpers/app')
 const logger = require('ilp-connector')._test.logger
 const logHelper = require('./helpers/log')
@@ -353,10 +353,7 @@ describe('Quotes', function () {
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob'
       }).then((quote) => {
-        const validation = validate('Quote', quote)
-        if (!validation.valid) {
-          throw new Error('Not a valid Quote')
-        }
+        validate('Quote', quote)
         done()
       }).catch(done)
     })
@@ -382,8 +379,7 @@ describe('Quotes', function () {
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
           destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-          destination_expiry_duration: '5',
-          additional_info: undefined
+          destination_expiry_duration: '5'
         })
         done()
       }).catch(done)
@@ -410,8 +406,7 @@ describe('Quotes', function () {
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
           destination_amount: '105.60', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-          destination_expiry_duration: '5',
-          additional_info: undefined
+          destination_expiry_duration: '5'
         })
         done()
       }).catch(done)
@@ -467,8 +462,7 @@ describe('Quotes', function () {
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
           destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-          destination_expiry_duration: '5',
-          additional_info: undefined
+          destination_expiry_duration: '5'
         })
         done()
       }).catch(done)
@@ -488,8 +482,7 @@ describe('Quotes', function () {
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
           destination_amount: '100.0000',
-          destination_expiry_duration: '5',
-          additional_info: undefined
+          destination_expiry_duration: '5'
         })
         done()
       }).catch(done)
@@ -508,8 +501,7 @@ describe('Quotes', function () {
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
           destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-          destination_expiry_duration: '5',
-          additional_info: undefined
+          destination_expiry_duration: '5'
         })
         done()
       }).catch(done)
@@ -528,8 +520,7 @@ describe('Quotes', function () {
           source_expiry_duration: '6',
           destination_ledger: 'eur-ledger.',
           destination_amount: '94.1278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
-          destination_expiry_duration: '5',
-          additional_info: undefined
+          destination_expiry_duration: '5'
         })
         done()
       }).catch(done)
@@ -548,8 +539,7 @@ describe('Quotes', function () {
           source_expiry_duration: '6',
           destination_ledger: 'cad-ledger.',
           destination_amount: '127.8538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
-          destination_expiry_duration: '5',
-          additional_info: undefined
+          destination_expiry_duration: '5'
         })
         done()
       }).catch(done)
@@ -568,8 +558,7 @@ describe('Quotes', function () {
           source_expiry_duration: '6',
           destination_ledger: 'usd-ledger.',
           destination_amount: '77.7460', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
-          destination_expiry_duration: '5',
-          additional_info: undefined
+          destination_expiry_duration: '5'
         })
         done()
       }).catch(done)
@@ -678,8 +667,7 @@ describe('Quotes', function () {
         source_expiry_duration: '7',
         destination_ledger: 'random-ledger.',
         destination_amount: '188.2556',
-        destination_expiry_duration: '5',
-        additional_info: undefined
+        destination_expiry_duration: '5'
       })
     })
 
