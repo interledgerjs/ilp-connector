@@ -1,5 +1,7 @@
 'use strict'
 
+const isUndefined = require('lodash/fp/isUndefined')
+const omitUndefined = require('lodash/fp/omitBy')(isUndefined)
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 
 function * makeQuoteQuery (params) {
@@ -65,7 +67,7 @@ function * getQuote (params, config, routeBuilder, balanceCache) {
     quote.destinationExpiryDuration,
     quote.minMessageWindow, config)
 
-  return {
+  return omitUndefined({
     source_ledger: quote.sourceLedger,
     destination_ledger: quote.destinationLedger,
     source_connector_account: quote.connectorAccount,
@@ -74,7 +76,7 @@ function * getQuote (params, config, routeBuilder, balanceCache) {
     source_expiry_duration: quote.sourceExpiryDuration,
     destination_expiry_duration: quote.destinationExpiryDuration,
     additional_info: params.explain ? quote.additionalInfo : undefined
-  }
+  })
 }
 
 module.exports = {getQuote}
