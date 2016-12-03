@@ -151,50 +151,6 @@ describe('Quotes', function () {
       }).catch(done)
     })
 
-    it('should return a UnacceptableAmountError if source_address amount is greater than source_address precision', function (done) {
-      this.infoCache.reset()
-      nock.cleanAll()
-      // Decrease precision
-      this.core.getPlugin('eur-ledger.')
-        .getInfo = function * () { return {precision: 4, scale: 2} }
-      this.core.getPlugin('usd-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 4} }
-
-      this.messageRouter.getQuote({
-        source_amount: '12345',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      }).then((quote) => {
-        throw new Error()
-      }).catch((err) => {
-        expect(err.name).to.equal('UnacceptableAmountError')
-        expect(err.message).to.equal('Amount (12345.00) exceeds ledger precision on eur-ledger.')
-        done()
-      }).catch(done)
-    })
-
-    it('should return a UnacceptableAmountError if destination_address amount is greater than destination_address precision', function (done) {
-      this.infoCache.reset()
-      nock.cleanAll()
-      // Decrease precision
-      this.core.getPlugin('eur-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.getPlugin('usd-ledger.')
-        .getInfo = function * () { return {precision: 4, scale: 4} }
-
-      this.messageRouter.getQuote({
-        destination_amount: '12345',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      }).then((quote) => {
-        throw new Error()
-      }).catch((err) => {
-        expect(err.name).to.equal('UnacceptableAmountError')
-        expect(err.message).to.equal('Amount (12345.0000) exceeds ledger precision on usd-ledger.')
-        done()
-      }).catch(done)
-    })
-
     it('should return AssetsNotTradedError when the source ledger is not supported', function (done) {
       this.messageRouter.getQuote({
         source_amount: '100',
