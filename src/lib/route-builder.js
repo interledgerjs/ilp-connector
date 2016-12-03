@@ -190,9 +190,18 @@ class RouteBuilder {
   * _roundAmount (sourceOrDestination, upOrDown, ledger, amount, _precisionAndScale) {
     if (!_precisionAndScale && !this.core.getPlugin(ledger)) return amount
     const precisionAndScale = _precisionAndScale || (yield this.infoCache.get(ledger))
-    const roundedAmount = new BigNumber(amount).toFixed(precisionAndScale.scale,
-      upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP)
-    validatePrecision(roundedAmount, precisionAndScale.precision, ledger, sourceOrDestination)
+    const roundingMode = upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP
+
+    const bnAmount = new BigNumber(amount)
+    const requiredPrecisionRounding = bnAmount.precision() - precisionAndScale.precision
+    const requiredScaleRounding = bnAmount.decimalPlaces() - precisionAndScale.scale
+
+    const roundedAmount =
+      (requiredPrecisionRounding > requiredScaleRounding)
+      ? bnAmount.toPrecision(precisionAndScale.precision, roundingMode)
+      : bnAmount.toFixed(precisionAndScale.scale, roundingMode)
+
+    validateAmount(roundedAmount, ledger, sourceOrDestination)
     return roundedAmount
   }
 }
@@ -201,12 +210,8 @@ function throwAssetsNotTradedError () {
   throw new AssetsNotTradedError('This connector does not support the given asset pair')
 }
 
-function validatePrecision (amount, precision, ledger, sourceOrDestination) {
+function validateAmount (amount, ledger, sourceOrDestination) {
   const bnAmount = new BigNumber(amount)
-  if (bnAmount.precision() > precision) {
-    throw new UnacceptableAmountError(
-      `Amount (${amount}) exceeds ledger precision on ${ledger}`)
-  }
   if (bnAmount.lte(0)) {
     throw new UnacceptableAmountError(
       `Quoted ${sourceOrDestination} is lower than minimum amount allowed`)
