@@ -98,10 +98,11 @@ class RouteBroadcaster {
 
   * _crawlClient (client) {
     const prefix = yield client.getPlugin().getPrefix()
+    const localAccount = yield client.getPlugin().getAccount()
     const connectors = yield client.getConnectors()
     for (const connector of connectors) {
       // Don't broadcast routes to ourselves.
-      if (connector === this.ledgerCredentials[prefix].options.username) continue
+      if (localAccount === prefix + connector) continue
       if (this.autoloadPeers || this.defaultPeers.indexOf(prefix + connector) !== -1) {
         this.peersByLedger[prefix] = this.peersByLedger[prefix] || {}
         this.peersByLedger[prefix][connector] = true

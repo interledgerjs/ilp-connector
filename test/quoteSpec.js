@@ -329,7 +329,7 @@ describe('Quotes', function () {
         destination_address: 'usd-ledger.bob'
       }).then((quote) => {
         expect(quote).to.deep.equal({
-          source_connector_account: 'mocky',
+          source_connector_account: 'eur-ledger.mark',
           source_ledger: 'eur-ledger.',
           source_amount: '100.00',
           source_expiry_duration: '6',
@@ -356,7 +356,7 @@ describe('Quotes', function () {
         destination_address: 'usd-ledger.bob'
       }).then((quote) => {
         expect(quote).to.deep.equal({
-          source_connector_account: 'mocky',
+          source_connector_account: 'eur-ledger.mark',
           source_ledger: 'eur-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -412,7 +412,7 @@ describe('Quotes', function () {
         destination_address: 'usd-ledger.bob'
       }).then((quote) => {
         expect(quote).to.deep.equal({
-          source_connector_account: 'mocky',
+          source_connector_account: 'eur-ledger.mark',
           source_ledger: 'eur-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -432,7 +432,7 @@ describe('Quotes', function () {
         destination_address: 'usd-ledger.bob'
       }).then((quote) => {
         expect(quote).to.deep.equal({
-          source_connector_account: 'mocky',
+          source_connector_account: 'eur-ledger.mark',
           source_ledger: 'eur-ledger.',
           source_amount: '94.6947', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
           source_expiry_duration: '6',
@@ -451,7 +451,7 @@ describe('Quotes', function () {
         destination_address: 'usd-ledger.bob'
       }).then((quote) => {
         expect(quote).to.deep.equal({
-          source_connector_account: 'mocky',
+          source_connector_account: 'eur-ledger.mark',
           source_ledger: 'eur-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -470,7 +470,7 @@ describe('Quotes', function () {
         destination_address: 'eur-ledger.alice'
       }).then((quote) => {
         expect(quote).to.deep.equal({
-          source_connector_account: 'mocky',
+          source_connector_account: 'usd-ledger.mark',
           source_ledger: 'usd-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -489,7 +489,7 @@ describe('Quotes', function () {
         destination_address: 'cad-ledger.carl'
       }).then((quote) => {
         expect(quote).to.deep.equal({
-          source_connector_account: 'mocky',
+          source_connector_account: 'usd-ledger.mark',
           source_ledger: 'usd-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -508,7 +508,7 @@ describe('Quotes', function () {
         destination_address: 'usd-ledger.bob'
       }).then((quote) => {
         expect(quote).to.deep.equal({
-          source_connector_account: 'mocky',
+          source_connector_account: 'cad-ledger.mark',
           source_ledger: 'cad-ledger.',
           source_amount: '100.0000',
           source_expiry_duration: '6',
@@ -617,7 +617,7 @@ describe('Quotes', function () {
         destination_scale: '4'
       })
       expect(quote).to.deep.equal({
-        source_connector_account: 'mocky',
+        source_connector_account: 'usd-ledger.mark',
         source_ledger: 'usd-ledger.',
         source_amount: '100.0000',
         source_expiry_duration: '7',

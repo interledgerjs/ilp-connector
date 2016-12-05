@@ -6,6 +6,7 @@ class MockPlugin extends EventEmitter {
   constructor (options) {
     super()
     this._prefix = options.prefix || 'example.'
+    this._account = this._prefix + (options.username || 'mocky')
   }
 
   connect () {
@@ -47,7 +48,7 @@ class MockPlugin extends EventEmitter {
   }
 
   getAccount () {
-    return Promise.resolve('mocky')
+    return Promise.resolve(this._account)
   }
 
   * _handleNotification () { }
