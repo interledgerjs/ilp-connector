@@ -248,7 +248,7 @@ describe('Payments', function () {
       assert(false)
     } catch (err) {
       assert.equal(err.name, 'InvalidBodyError')
-      assert.equal(err.message, 'IlpHeader schema validation error: String does not match pattern: ^[-+]?[0-9]*[.]?[0-9]+([eE][-+]?[0-9]+)?$')
+      assert.equal(err.message, 'IlpHeader schema validation error: should match pattern "^[-+]?[0-9]*[.]?[0-9]+([eE][-+]?[0-9]+)?$"')
     }
   })
 
@@ -337,7 +337,7 @@ describe('Payments', function () {
           noteToSelf: { source_transfer_ledger: 'mock.test2.' }
         }, 'error 1')
       } catch (err) {
-        assert.equal(err.message, 'Uuid schema validation error: Invalid type: undefined (expected string)')
+        assert.equal(err.message, 'Uuid schema validation error: should be string')
         assert(!rejectSpy.called)
         return
       }
