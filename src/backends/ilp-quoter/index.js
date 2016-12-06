@@ -30,9 +30,13 @@ class ILPQuoter {
 
   * putPair (uri) {
     const req = request({ method: 'PUT', uri, json: true })
-    const res = yield req
-    if (res.statusCode >= 400) {
-      throw new UnsupportedPairError(req.uri)
+    try {
+      const res = yield req
+      if (res.statusCode >= 400) {
+        throw new UnsupportedPairError(req.uri)
+      }
+    } catch (err) {
+      log.error('Unsupported Pair: ' + uri + ' ' + err.message)
     }
   }
 
