@@ -4,6 +4,7 @@ const BigNumber = require('bignumber.js')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
+const LedgerNotConnectedError = require('../errors/ledger-not-connected-error')
 const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 const log = require('../common/log').create('route-builder')
 
@@ -59,6 +60,8 @@ class RouteBuilder {
       destinationPrecisionAndScale: params.destinationPrecisionAndScale
     })
     if (!quote) throwAssetsNotTradedError()
+    this._verifyLedgerIsConnected(quote.sourceLedger)
+    this._verifyLedgerIsConnected(quote.nextLedger)
 
     const slippage = params.slippage ? +params.slippage : this.slippage
     if (params.sourceAmount) {
@@ -117,6 +120,8 @@ class RouteBuilder {
     const nextHop = this.routingTables.findBestHopForSourceAmount(
       sourceLedger, ilpHeader.account, sourceTransfer.amount)
     if (!nextHop) throwAssetsNotTradedError()
+    this._verifyLedgerIsConnected(nextHop.destinationLedger)
+
     // Round in favor of the connector. findBestHopForSourceAmount uses the
     // local (unshifted) routes to compute the amounts, so the connector rounds
     // in its own favor to ensure it won't lose money.
@@ -203,6 +208,12 @@ class RouteBuilder {
 
     validateAmount(roundedAmount, ledger, sourceOrDestination)
     return roundedAmount
+  }
+
+  _verifyLedgerIsConnected (ledger) {
+    if (!this.core.getPlugin(ledger).isConnected()) {
+      throw new LedgerNotConnectedError('No connection to ledger "' + ledger + '"')
+    }
   }
 }
 
