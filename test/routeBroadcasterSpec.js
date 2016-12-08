@@ -169,36 +169,71 @@ describe('RouteBroadcaster', function () {
       }
 
       yield this.broadcaster.crawl()
-      yield this.broadcaster.broadcast()
+      this.broadcaster.broadcast()
       assert(routesFromASent)
       assert(routesFromBSent)
     })
 
-    it('should not throw an error even if the other connector does not respond', function * () {
+    it('should send all routes even if sending one message fails', function * () {
       this.core.getPlugin(ledgerA).getInfo =
-      this.core.getPlugin(ledgerC).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}] })
+          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
       this.core.getPlugin(ledgerB).getInfo =
         function () {
           return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
+      this.core.getPlugin(ledgerC).getInfo =
+        function () {
+          return Promise.resolve({ connectors: [{name: 'mark'}] })
+        }
 
-      let routesSent
+      let routesFromASent, routesFromBSent
+      this.core.getPlugin(ledgerA).sendMessage = function (message) {
+        routesFromASent = true
+        return Promise.reject(new Error('something went wrong but the connector should continue anyway'))
+      }
       this.core.getPlugin(ledgerB).sendMessage = function (message) {
-        assert.deepEqual(message, {
-          ledger: ledgerB,
-          account: ledgerB + 'mary',
-          data: { method: 'broadcast_routes', data: routesFromB }
-        })
-        routesSent = true
+        routesFromBSent = true
         return Promise.resolve(null)
       }
 
       yield this.broadcaster.crawl()
-      yield this.broadcaster.broadcast()
-      assert(routesSent)
+      this.broadcaster.broadcast()
+      assert(routesFromASent)
+      assert(routesFromBSent)
+    })
+
+    it('should send all routes even if plugin.sendMessage hangs', function * () {
+      this.core.getPlugin(ledgerA).getInfo =
+        function () {
+          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+        }
+      this.core.getPlugin(ledgerB).getInfo =
+        function () {
+          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+        }
+      this.core.getPlugin(ledgerC).getInfo =
+        function () {
+          return Promise.resolve({ connectors: [{name: 'mark'}] })
+        }
+
+      let routesFromASent, routesFromBSent
+      this.core.getPlugin(ledgerA).sendMessage = function (message) {
+        routesFromASent = true
+        return new Promise((resolve) => {
+          setTimeout(resolve, 1000000)
+        })
+      }
+      this.core.getPlugin(ledgerB).sendMessage = function (message) {
+        routesFromBSent = true
+        return Promise.resolve(null)
+      }
+
+      yield this.broadcaster.crawl()
+      this.broadcaster.broadcast()
+      assert(routesFromASent)
+      assert(routesFromBSent)
     })
   })
 
