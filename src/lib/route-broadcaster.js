@@ -47,7 +47,7 @@ class RouteBroadcaster {
     try {
       yield this.reloadLocalRoutes()
       yield this.addConfigRoutes()
-      yield this.broadcast()
+      this.broadcast()
     } catch (e) {
       if (e.name === 'SystemError' ||
           e.name === 'ServerError') {
@@ -60,36 +60,47 @@ class RouteBroadcaster {
     setInterval(() => this.routingTables.removeExpiredRoutes(), this.routeCleanupInterval)
     defer.setInterval(function * () {
       yield this.reloadLocalRoutes()
-      yield this.broadcast()
+      this.broadcast()
     }.bind(this), this.routeBroadcastInterval)
   }
 
   broadcast () {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
-    return Promise.all(adjacentLedgers.map((adjacentLedger) => {
-      return this._broadcastToLedger(adjacentLedger,
-        routes.filter((route) => route.source_ledger === adjacentLedger))
-    }))
+    for (let adjacentLedger of adjacentLedgers) {
+      const ledgerRoutes = routes.filter((route) => route.source_ledger === adjacentLedger)
+      this._broadcastToLedger(adjacentLedger, ledgerRoutes)
+    }
   }
 
   _broadcastToLedger (adjacentLedger, routes) {
     const connectors = Object.keys(this.peersByLedger[adjacentLedger])
-    return Promise.all(connectors.map((adjacentConnector) => {
+    for (let adjacentConnector of connectors) {
       const account = adjacentLedger + adjacentConnector
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
-      return this.core.getPlugin(adjacentLedger).sendMessage({
+
+      // timeout the plugin.sendMessage Promise just so we don't have it hanging around forever
+      const timeoutPromise = new Promise((resolve, reject) => {
+        setTimeout(() => reject(new Error('route broadcast to ' + account + ' timed out')), this.routeBroadcastInterval)
+      })
+      const broadcastPromise = this.core.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
         account: account,
         data: {
           method: 'broadcast_routes',
           data: routes
         }
-      }).catch((err) => {
-        if (err.name !== 'NoSubscriptionsError') throw err
-        log.warn('broadcasting routes to ' + account + ' failed: ' + err.message)
       })
-    }))
+
+      // We are deliberately calling an async function synchronously because
+      // we do not want to wait for the routes to be broadcasted before continuing.
+      // Even if there is an error sending a specific route or a sendMessage promise hangs,
+      // we should continue sending the other broadcasts out
+      Promise.race([broadcastPromise, timeoutPromise])
+        .catch((err) => {
+          log.warn('broadcasting routes to ' + account + ' failed: ', err)
+        })
+    }
   }
 
   crawl () {
