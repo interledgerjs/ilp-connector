@@ -31,6 +31,7 @@ describe('Quotes', function () {
     this.infoCache.reset()
     this.balanceCache.reset()
     yield this.backend.connect(ratesResponse)
+    yield this.core.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
   })
 
@@ -637,6 +638,36 @@ describe('Quotes', function () {
       }).catch((err) => {
         expect(err.name).to.equal('AssetsNotTradedError')
         expect(err.message).to.equal('This connector does not support the given asset pair')
+        done()
+      }).catch(done)
+    })
+
+    it('fails when the source ledger connection is closed', function (done) {
+      this.core.getPlugin('eur-ledger.').connected = false
+      this.messageRouter.getQuote({
+        source_address: 'eur-ledger.alice',
+        destination_address: 'usd-ledger.bob',
+        destination_amount: '100'
+      }).then(() => {
+        throw new Error()
+      }).catch((err) => {
+        expect(err.name).to.equal('LedgerNotConnectedError')
+        expect(err.message).to.equal('No connection to ledger "eur-ledger."')
+        done()
+      }).catch(done)
+    })
+
+    it('fails when the destination ledger connection is closed', function (done) {
+      this.core.getPlugin('usd-ledger.').connected = false
+      this.messageRouter.getQuote({
+        source_address: 'eur-ledger.alice',
+        destination_address: 'usd-ledger.bob',
+        destination_amount: '100'
+      }).then(() => {
+        throw new Error()
+      }).catch((err) => {
+        expect(err.name).to.equal('LedgerNotConnectedError')
+        expect(err.message).to.equal('No connection to ledger "usd-ledger."')
         done()
       }).catch(done)
     })

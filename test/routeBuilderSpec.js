@@ -75,6 +75,7 @@ describe('RouteBuilder', function () {
       minMessageWindow: 1,
       slippage: 0.01
     })
+    yield this.core.connect()
   })
 
   describe('getQuote', function () {

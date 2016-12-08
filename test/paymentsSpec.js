@@ -67,6 +67,7 @@ describe('Payments', function () {
 
     appHelper.create(this)
     yield this.backend.connect(ratesResponse)
+    yield this.core.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
     yield subscriptions.subscribePairs(this.core, this.config, this.routeBuilder, this.messageRouter)
 

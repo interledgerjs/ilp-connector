@@ -29,6 +29,7 @@ describe('Modify Plugins', function () {
     this.infoCache.reset()
     this.balanceCache.reset()
     yield this.backend.connect(ratesResponse)
+    yield this.core.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
   })
 
@@ -73,20 +74,6 @@ describe('Modify Plugins', function () {
 
   describe('removePlugin', function () {
     beforeEach(function * () {
-      appHelper.create(this)
-
-      const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
-      _.map(testLedgers, (ledgerUri) => {
-        this.core.getPlugin(ledgerUri).getBalance =
-          function * () { return '150000' }
-      })
-
-      // Reset before and after just in case a test wants to change the precision.
-      this.infoCache.reset()
-      this.balanceCache.reset()
-      yield this.backend.connect(ratesResponse)
-      yield this.routeBroadcaster.reloadLocalRoutes()
-
       yield this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
