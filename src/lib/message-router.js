@@ -106,6 +106,11 @@ MessageRouter.prototype._handleRequest = function * (request, sender) {
  * @param {IlpAddress} sender
  */
 MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
+  // todo: postpone expiration of routes previously provided by sender
+  if (!routes) {
+    // this is a heartbeat
+    return
+  }
   validate('Routes', routes)
   let gotNewRoute = false
 
@@ -115,6 +120,7 @@ MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
     if (route.source_account !== sender) continue
     if (this.routingTables.addRoute(route)) gotNewRoute = true
   }
+  log.info("receiveRoutes sender:",sender," provided ",routes.length," any new?:",gotNewRoute)
 
   if (gotNewRoute && this.config.routeBroadcastEnabled) {
     co(this.routeBroadcaster.broadcast.bind(this.routeBroadcaster))
