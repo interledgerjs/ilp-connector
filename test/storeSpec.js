@@ -1,19 +1,21 @@
 'use strict'
-const newSqliteStore = require('../src/lib/sqliteStore')
+const PluginStore = require('../src/lib/pluginStore')
 const assert = require('chai').assert
 
-describe('SqliteStore', function () {
-  let obj = null
-  it('should create an object', () => {
-    obj = newSqliteStore()
-    assert.isObject(obj)
+describe('PluginStore', function () {
+  beforeEach(function * () {
+    this.obj = new PluginStore('sqlite://:memory:', 'test')
+  })
+
+  it('should create an object', function () {
+    assert.isObject(this.obj)
   })
 
   it('should support deletion', function (done) {
-    obj.put('k', 'v').then(() => {
-      return obj.del('k')
+    this.obj.put('k', 'v').then(() => {
+      return this.obj.del('k')
     }).then(() => {
-      return obj.get('k')
+      return this.obj.get('k')
     }).then((value) => {
       assert(value === undefined)
       done()
@@ -21,8 +23,8 @@ describe('SqliteStore', function () {
   })
 
   it('should support adding elements', function (done) {
-    obj.put('k', 'v').then(() => {
-      return obj.get('k')
+    this.obj.put('k', 'v').then(() => {
+      return this.obj.get('k')
     }).then((value) => {
       assert(value === 'v')
       done()

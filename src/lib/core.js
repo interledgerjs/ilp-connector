@@ -1,7 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
-const newSqliteStore = require('../lib/sqliteStore.js')
+const PluginStore = require('../lib/pluginStore.js')
 const ilpCore = require('ilp-core')
 
 module.exports = function (options) {
@@ -12,7 +12,14 @@ module.exports = function (options) {
   const core = new ilpCore.Core({routingTables})
   Object.keys(config.ledgerCredentials).forEach((ledgerPrefix) => {
     const creds = _.cloneDeep(config.ledgerCredentials[ledgerPrefix])
-    const store = creds.options.store && newSqliteStore(creds.options.store)
+    let store = null
+
+    if (creds.store) {
+      if (!config.databaseUri) {
+        throw new Error('missing DB_URI; cannot create plugin store for ' + ledgerPrefix)
+      }
+      store = new PluginStore(config.databaseUri, ledgerPrefix)
+    }
 
     creds.options.prefix = ledgerPrefix
     core.addClient(ledgerPrefix, new ilpCore.Client(Object.assign({}, creds.options, {

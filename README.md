@@ -41,6 +41,7 @@ npm start
 #### General
 
 * `CONNECTOR_LOG_LEVEL` (default: `info`) the allowed levels in order of verbosity are `fatal`, `error`, `warn`, `info`, `debug`, and `trace`
+* `DB_URI` (default: none) the database for the connector to use for plugin stores.
 
 #### Trading
 
@@ -49,6 +50,7 @@ npm start
 {
   // Using Basic Auth
   "example.usd-ledger.": {
+    "store": true // if the plugin requires a store, it should set this to true
     "currency": "USD", // asset on this ledger
     "plugin": "ilp-plugin-bells", // module for this ledger plugin
     "options": { // actual plugin options passed into plugin constructor
