@@ -29,6 +29,7 @@ class RouteBroadcaster {
     this.routeCleanupInterval = config.routeCleanupInterval
     this.routeBroadcastInterval = config.routeBroadcastInterval
     this.routingTables = routingTables
+    if (this.routingTables.publicTables.current_epoch !== 0) throw new Error("expecting a fresh routingTables with epoch support")
     this.backend = backend
     this.core = core
     this.infoCache = infoCache
@@ -40,6 +41,8 @@ class RouteBroadcaster {
     this.autoloadPeers = config.autoloadPeers
     this.defaultPeers = config.peers
     this.peersByLedger = {} // { ledgerPrefix ⇒ { connectorName ⇒ true } }
+
+    this.peerEpochs = {} // { adjacentConnector ⇒ int } the last broadcast-epoch we successfully informed a peer in
   }
 
   * start () {
@@ -64,10 +67,18 @@ class RouteBroadcaster {
     }.bind(this), this.routeBroadcastInterval)
   }
 
+  _currentEpoch() {
+    return this.routingTables.publicTables.current_epoch
+  }
+  _endEpoch() {
+    this.routingTables.publicTables.incrementEpoch()
+  }
   broadcast () {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
+    this._endEpoch()
     return Promise.all(adjacentLedgers.map((adjacentLedger) => {
+      // todo: skip routes with epochs less than the adjacentLedger has last been sent
       return this._broadcastToLedger(adjacentLedger,
         routes.filter((route) => route.source_ledger === adjacentLedger))
     }))
@@ -78,7 +89,8 @@ class RouteBroadcaster {
     return Promise.all(connectors.map((adjacentConnector) => {
       const account = adjacentLedger + adjacentConnector
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
-      return this.core.getPlugin(adjacentLedger).sendMessage({
+      // was there a reason the result of sendMessage (which looks like it should be null when successful, and throw when it's not) was returned?
+      this.core.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
         account: account,
         data: {
@@ -86,6 +98,7 @@ class RouteBroadcaster {
           data: routes
         }
       })
+      this.peerEpochs[adjacentLedger] = this._currentEpoch()
     }))
   }
 
@@ -107,6 +120,7 @@ class RouteBroadcaster {
     }
   }
 
+  // todo: remove local routes that aren't currently valid when we fail to receive a heartbeat from the relevant connector, or if that connector forwards a link-broken message (and then remove this function)
   * reloadLocalRoutes () {
     const localRoutes = yield this._getLocalRoutes()
     yield this.routingTables.addLocalRoutes(this.infoCache, localRoutes)
@@ -133,6 +147,7 @@ class RouteBroadcaster {
           sourceAccount: connector,
           targetPrefix: targetPrefix }
       )
+      log.info("addConfigRoutes adding route:", route)
 
       this.routingTables.addRoute(route)
     }
@@ -145,6 +160,7 @@ class RouteBroadcaster {
     const sourceLedger = pair[0].split('@').slice(1).join('@')
     const destinationLedger = pair[1].split('@').slice(1).join('@')
     // TODO change the backend API to return curves, not points
+    log.info("_tradingPairToLocalRoute sourceLedger:",sourceLedger," destinationLedger:",destinationLedger)
     return co(function * () {
       const quote = yield this.backend.getQuote({
         source_ledger: sourceLedger,
@@ -158,6 +174,8 @@ class RouteBroadcaster {
   * _quoteToLocalRoute (quote) {
     const sourcePlugin = this.core.getPlugin(quote.source_ledger)
     const destinationPlugin = this.core.getPlugin(quote.destination_ledger)
+    //log.info("_quoteToLocalRoute sourcePlugin:",sourcePlugin," destinationPlugin:",destinationPlugin)
+    log.info("_quoteToLocalRoute current_epoch:",this._currentEpoch())
     return Route.fromData({
       source_ledger: quote.source_ledger,
       destination_ledger: quote.destination_ledger,
@@ -169,7 +187,7 @@ class RouteBroadcaster {
         [0, 0],
         [+quote.source_amount, +quote.destination_amount]
       ]
-    })
+    },this._currentEpoch())
   }
 }
 
