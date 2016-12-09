@@ -83,10 +83,13 @@ function parseCredentialsEnv () {
       console.error('plugin module not specified on "' + k + '"')
     } if (typeof ledger.options !== 'object') {
       console.error('plugin options not specified on "' + k + '"')
+    } if (ledger.store && typeof ledger.store !== 'boolean') {
+      console.error('plugin store should be either true or false on "' + k + '"')
     }
 
     ret[k] = {
       currency: ledger.currency,
+      store: ledger.store,
       plugin: ledger.plugin,
       options: Object.assign({}, ledger.options)
     }
@@ -179,6 +182,8 @@ function getLocalConfig () {
 
   expiry.maxHoldTime = +Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || DEFAULT_MAX_HOLD_TIME
 
+  const databaseUri = Config.getEnv('DB_URI')
+
   // The spread is added to every quoted rate
   const fxSpreadString = Config.getEnv(envPrefix, 'FX_SPREAD')
   const fxSpread = fxSpreadString ? +fxSpreadString : DEFAULT_FX_SPREAD
@@ -240,7 +245,8 @@ function getLocalConfig () {
     routeCleanupInterval,
     routeExpiry,
     autoloadPeers,
-    peers
+    peers,
+    databaseUri
   }
 }
 
