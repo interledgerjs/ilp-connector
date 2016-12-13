@@ -21,6 +21,7 @@ describe('Subscriptions', function () {
   beforeEach(function * () {
     appHelper.create(this)
     yield this.backend.connect(ratesResponse)
+    yield this.core.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
 
     nock('http://usd-ledger.example').get('/')
