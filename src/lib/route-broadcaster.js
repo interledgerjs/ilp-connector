@@ -77,7 +77,10 @@ class RouteBroadcaster {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
     for (let adjacentLedger of adjacentLedgers) {
-      const ledgerRoutes = routes.filter((route) => route.source_ledger === adjacentLedger)
+      const ledgerRoutes = routes.filter((route) =>
+                                         (route.source_ledger === adjacentLedger) &&
+                                         (route.added_during_epoch > this.peerEpochs[adjacentLedger]))
+      // todo?: remove added_during_epoch? look it up some other way?
       this._broadcastToLedger(adjacentLedger, ledgerRoutes)
     }
     this._endEpoch()

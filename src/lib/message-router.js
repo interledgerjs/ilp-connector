@@ -84,6 +84,7 @@ MessageRouter.prototype._handleRequest = function * (request, sender) {
   }
 
   if (request.method === 'quote_request') {
+    log.info('_handleRequest quote_request:',request)
     return {
       id: request.id,
       method: 'quote_response',
@@ -137,6 +138,7 @@ MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
  * @returns {Promise.<Quote>}
  */
 MessageRouter.prototype.getQuote = function (quoteQuery) {
+  log.info('getQuote quoteQuery:',quoteQuery)
   return co.wrap(this._getQuote).call(this, quoteQuery)
 }
 
