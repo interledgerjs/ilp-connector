@@ -190,6 +190,43 @@ describe('RouteBuilder', function () {
         }.bind(this), error('This connector does not support the given asset pair'))
       })
     })
+
+    describe('route with precision/scale', function () {
+      beforeEach(function * () {
+        this.tables.removeLedger(ledgerC)
+        this.tables.addRoute({
+          source_ledger: ledgerB,
+          destination_ledger: ledgerC,
+          source_account: maryB,
+          min_message_window: 1,
+          points: [ [0, 0], [200, 100] ],
+          destination_precision: 4,
+          destination_scale: 0
+        })
+      })
+
+      it('Local quote should return additional info', function * () {
+        const quoteTransfer = yield this.builder.getQuote({
+          sourceAddress: aliceA,
+          destinationAddress: carlC,
+          sourceAmount: '100',
+          explain: 'true'
+        })
+        assert.deepStrictEqual(quoteTransfer, {
+          connectorAccount: markA,
+          sourceLedger: ledgerA,
+          sourceAmount: '100.00',
+          destinationLedger: ledgerC,
+          destinationAmount: '24', // rounded from 24.75
+          destinationPrecisionAndScale: {precision: 4, scale: 0},
+          sourceExpiryDuration: '7',
+          destinationExpiryDuration: '5',
+          additionalInfo: { slippage: '0.25' },
+          minMessageWindow: 2,
+          nextLedger: ledgerB
+        })
+      })
+    })
   })
 
   describe('getDestinationTransfer', function () {

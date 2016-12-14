@@ -82,7 +82,7 @@ class RouteBuilder {
       'source', 'up', quote.sourceLedger, quote.sourceAmount)
     const roundedDestinationAmount = yield this._roundAmount(
       'destination', 'down', quote.destinationLedger, quote.destinationAmount,
-      params.destinationPrecisionAndScale)
+      params.destinationPrecisionAndScale || quote.destinationPrecisionAndScale)
 
     return _.omitBy(Object.assign(quote, {
       sourceAmount: roundedSourceAmount,
