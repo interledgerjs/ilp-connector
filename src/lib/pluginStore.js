@@ -9,8 +9,8 @@ class PluginStore {
     this.db = new Database(uri)
 
     this.Store = this.db.define('plugin_store_' + name, {
-      key: { type: Sequelize.STRING, primaryKey: true },
-      value: Sequelize.STRING
+      key: { type: Sequelize.TEXT, primaryKey: true },
+      value: Sequelize.TEXT
     })
 
     this.connected = false
