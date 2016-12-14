@@ -30,4 +30,10 @@ describe('PluginStore', function () {
       done()
     }).catch((err) => { console.error(err) })
   })
+
+  it('should store a long string', function * () {
+    const str = ('long string. another ').repeat(1000)
+    yield this.obj.put('k', str)
+    assert.equal(yield this.obj.get('k'), str)
+  })
 })
