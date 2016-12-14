@@ -55,7 +55,9 @@ describe('RouteBroadcaster', function () {
       source_account: ledgerA + 'mark',
       destination_account: ledgerB + 'mark',
       points: [ [0, 0], [200, 100] ],
-      additional_info: {}
+      additional_info: {},
+      destination_precision: 10,
+      destination_scale: 2
     }, {
       source_ledger: ledgerB,
       destination_ledger: ledgerA,
@@ -63,7 +65,9 @@ describe('RouteBroadcaster', function () {
       source_account: ledgerB + 'mark',
       destination_account: ledgerA + 'mark',
       points: [ [0, 0], [100, 200] ],
-      additional_info: {}
+      additional_info: {},
+      destination_precision: 10,
+      destination_scale: 2
     }])
 
     this.core = makeCore({
@@ -90,7 +94,9 @@ describe('RouteBroadcaster', function () {
       source_account: ledgerB + 'mary',
       min_message_window: 1,
       points: [ [0, 0], [50, 60] ],
-      additional_info: {}
+      additional_info: {},
+      destination_precision: 10,
+      destination_scale: 2
     })
   })
 
@@ -111,16 +117,20 @@ describe('RouteBroadcaster', function () {
     const routesFromA = [
       {
         source_ledger: ledgerA,
-        destination_ledger: ledgerC,
-        min_message_window: 2,
-        source_account: ledgerA + 'mark',
-        points: [ [0, 0], [0.02, 0], [100.02, 60], [200, 60] ]
-      }, {
-        source_ledger: ledgerA,
         destination_ledger: ledgerB,
         min_message_window: 1,
         source_account: ledgerA + 'mark',
-        points: [ [0, -0.01], [200, 99.99] ]
+        points: [ [0, -0.01], [200, 99.99] ],
+        destination_precision: 10,
+        destination_scale: 2
+      }, {
+        source_ledger: ledgerA,
+        destination_ledger: ledgerC,
+        min_message_window: 2,
+        source_account: ledgerA + 'mark',
+        points: [ [0, 0], [0.02, 0], [100.02, 60], [200, 60] ],
+        destination_precision: 10,
+        destination_scale: 2
       }
     ]
     const routesFromB = [
@@ -129,22 +139,36 @@ describe('RouteBroadcaster', function () {
         destination_ledger: ledgerA,
         min_message_window: 1,
         source_account: ledgerB + 'mark',
-        points: [ [0, -0.01], [100, 199.99] ]
+        points: [ [0, -0.01], [100, 199.99] ],
+        destination_precision: 10,
+        destination_scale: 2
       }
     ]
 
     it('sends the combined routes to all adjacent connectors', function * () {
       this.core.getPlugin(ledgerA).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+          return Promise.resolve({
+            connectors: [{name: 'mark'}, {name: 'mary'}],
+            precision: 10,
+            scale: 2
+          })
         }
       this.core.getPlugin(ledgerB).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+          return Promise.resolve({
+            connectors: [{name: 'mark'}, {name: 'mary'}],
+            precision: 10,
+            scale: 2
+          })
         }
       this.core.getPlugin(ledgerC).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}] })
+          return Promise.resolve({
+            connectors: [{name: 'mark'}],
+            precision: 10,
+            scale: 2
+          })
         }
 
       let routesFromASent, routesFromBSent

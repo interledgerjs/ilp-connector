@@ -177,6 +177,7 @@ class RouteBroadcaster {
   * _quoteToLocalRoute (quote) {
     const sourcePlugin = this.core.getPlugin(quote.source_ledger)
     const destinationPlugin = this.core.getPlugin(quote.destination_ledger)
+    const destinationInfo = yield this.infoCache.get(quote.destination_ledger)
     return Route.fromData({
       source_ledger: quote.source_ledger,
       destination_ledger: quote.destination_ledger,
@@ -187,7 +188,9 @@ class RouteBroadcaster {
       points: [
         [0, 0],
         [+quote.source_amount, +quote.destination_amount]
-      ]
+      ],
+      destinationPrecision: destinationInfo.precision,
+      destinationScale: destinationInfo.scale
     })
   }
 }
