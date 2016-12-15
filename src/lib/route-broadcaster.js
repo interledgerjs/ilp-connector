@@ -98,7 +98,8 @@ class RouteBroadcaster {
       // we should continue sending the other broadcasts out
       Promise.race([broadcastPromise, timeoutPromise])
         .catch((err) => {
-          log.warn('broadcasting routes to ' + account + ' failed: ', err)
+          log.warn('broadcasting routes to ' + account + ' failed')
+          log.debug(err)
         })
     }
   }
