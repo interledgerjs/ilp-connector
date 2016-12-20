@@ -70,6 +70,18 @@ describe('Modify Plugins', function () {
         destination_expiry_duration: '1.001'
       })
     })
+
+    it('should get peers on the added ledger', function * () {
+      yield this.app.addPlugin('eur-ledger-2.', {
+        currency: 'EUR',
+        plugin: 'ilp-plugin-mock',
+        options: {
+          prefix: 'eur-ledger-2.'
+        }
+      })
+
+      assert.isTrue(this.routeBroadcaster.peersByLedger['eur-ledger-2.']['mark'])
+    })
   })
 
   describe('removePlugin', function () {
@@ -77,7 +89,10 @@ describe('Modify Plugins', function () {
       yield this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
-        options: {}
+        prefix: 'eur-ledger-2.',
+        options: {
+          prefix: 'eur-ledger-2.'
+        }
       })
     })
 
@@ -108,6 +123,12 @@ describe('Modify Plugins', function () {
         expect(err.name).to.equal('AssetsNotTradedError')
         expect(err.message).to.match(/This connector does not support the given asset pair/)
       })
+    })
+
+    it('should depeer the removed ledger', function * () {
+      yield this.app.removePlugin('eur-ledger-2.')
+
+      assert.isNotOk(this.routeBroadcaster.peersByLedger['eur-ledger-2.'])
     })
   })
 })

@@ -122,6 +122,10 @@ class RouteBroadcaster {
     }
   }
 
+  depeerLedger (prefix) {
+    delete this.peersByLedger[prefix]
+  }
+
   * reloadLocalRoutes () {
     const localRoutes = yield this._getLocalRoutes()
     yield this.routingTables.addLocalRoutes(this.infoCache, localRoutes)

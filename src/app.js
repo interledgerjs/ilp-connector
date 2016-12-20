@@ -65,13 +65,15 @@ function addPlugin (config, core, backend, routeBroadcaster, tradingPairs, id, o
     }
 
     yield routeBroadcaster.reloadLocalRoutes()
+    yield routeBroadcaster._crawlClient(core.getClient(id))
   })
 }
 
-function removePlugin (config, core, backend, routingTables, tradingPairs, id) {
+function removePlugin (config, core, backend, routingTables, routeBroadcaster, tradingPairs, id) {
   return co(function * () {
     tradingPairs.removeAll(id)
     routingTables.removeLedger(id)
+    routeBroadcaster.depeerLedger(id)
     yield core.removeClient(id).disconnect()
   })
 }
@@ -161,7 +163,7 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   return {
     listen: _.partial(listen, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs),
     addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster, tradingPairs),
-    removePlugin: _.partial(removePlugin, config, core, backend, routingTables, tradingPairs)
+    removePlugin: _.partial(removePlugin, config, core, backend, routingTables, routeBroadcaster, tradingPairs)
   }
 }
 
