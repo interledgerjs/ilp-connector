@@ -146,7 +146,8 @@ class RouteBuilder {
 
     const noteToSelf = {
       source_transfer_ledger: sourceTransfer.ledger,
-      source_transfer_id: sourceTransfer.id
+      source_transfer_id: sourceTransfer.id,
+      source_transfer_amount: sourceTransfer.amount
     }
 
     return _.omitBy({

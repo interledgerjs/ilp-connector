@@ -252,7 +252,8 @@ describe('RouteBuilder', function () {
         amount: '50',
         noteToSelf: {
           source_transfer_id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
-          source_transfer_ledger: ledgerA
+          source_transfer_ledger: ledgerA,
+          source_transfer_amount: '100'
         },
         data: {
           ilp_header: {
@@ -285,7 +286,8 @@ describe('RouteBuilder', function () {
         amount: '50',
         noteToSelf: {
           source_transfer_id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
-          source_transfer_ledger: ledgerA
+          source_transfer_ledger: ledgerA,
+          source_transfer_amount: '100'
         },
         data: {
           ilp_header: {
@@ -360,7 +362,8 @@ describe('RouteBuilder', function () {
           },
           noteToSelf: {
             source_transfer_id: '123',
-            source_transfer_ledger: ledgerA
+            source_transfer_ledger: ledgerA,
+            source_transfer_amount: '100'
           },
           executionCondition: 'yes',
           cancellationCondition: 'no',

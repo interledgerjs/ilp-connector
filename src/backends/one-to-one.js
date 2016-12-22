@@ -84,12 +84,12 @@ class OneToOneBackend {
    *
    * @param {String} params.source_ledger The URI of the source ledger
    * @param {String} params.destination_ledger The URI of the destination ledger
-   * @param {Integer} params.source_amount The amount of the source asset we want to send
-   * @param {Integer} params.destination_amount The amount of the destination asset we want to send
-   * @return {Payment}
+   * @param {String} params.source_amount The amount of the source asset we want to send
+   * @param {String} params.destination_amount The amount of the destination asset we want to send
+   * @return {Promise.<null>}
    */
-  * submitPayment (params) {
-    return params
+  submitPayment (params) {
+    return Promise.resolve(null)
   }
 }
 

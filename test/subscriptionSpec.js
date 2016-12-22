@@ -72,7 +72,7 @@ describe('Subscriptions', function () {
     this.wsEurLedger = new wsHelper.Server('ws://eur-ledger.example/accounts/mark/transfers')
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
-    yield subscriptions.subscribePairs(this.core, this.config, this.routeBuilder, this.messageRouter)
+    yield subscriptions.subscribePairs(this.core, this.config, this.routeBuilder, this.messageRouter, this.backend)
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
@@ -88,10 +88,10 @@ describe('Subscriptions', function () {
     const sourceTransfer = this.transferUsdPrepared
     const destinationTransfer = this.transferEurProposed
 
+    const backendSpy = sinon.spy(this.backend, 'submitPayment')
     const sendSpy = sinon.spy(
       this.core.getPlugin(destinationTransfer.ledger),
       'sendTransfer')
-
     const fulfillSpy = sinon.spy(
       this.core.getPlugin(sourceTransfer.ledger),
       'fulfillCondition')
@@ -126,11 +126,19 @@ describe('Subscriptions', function () {
         executionCondition: destinationTransfer.debits[0].execution_condition,
         noteToSelf: {
           source_transfer_ledger: sourceTransfer.ledger,
-          source_transfer_id: sourceId
+          source_transfer_id: sourceId,
+          source_transfer_amount: sourceTransfer.debits[0].amount
         }
       }, 'cf:0:')
 
     sinon.assert.calledOnce(fulfillSpy)
     sinon.assert.calledWith(fulfillSpy, sourceId, 'cf:0:')
+    sinon.assert.calledOnce(backendSpy)
+    sinon.assert.calledWith(backendSpy, {
+      source_ledger: sourceTransfer.ledger,
+      source_amount: sourceTransfer.debits[0].amount,
+      destination_ledger: destinationTransfer.ledger,
+      destination_amount: destinationTransfer.credits[0].amount
+    })
   })
 })
