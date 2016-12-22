@@ -69,7 +69,7 @@ describe('Payments', function () {
     yield this.backend.connect(ratesResponse)
     yield this.core.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
-    yield subscriptions.subscribePairs(this.core, this.config, this.routeBuilder, this.messageRouter)
+    yield subscriptions.subscribePairs(this.core, this.config, this.routeBuilder, this.messageRouter, this.backend)
 
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
@@ -90,7 +90,8 @@ describe('Payments', function () {
       ledger: 'mock.test1.',
       noteToSelf: {
         source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-        source_transfer_ledger: 'mock.test2.'
+        source_transfer_ledger: 'mock.test2.',
+        source_transfer_amount: '1.0'
       }
     }, 'invalid') // 'invalid' triggers error in mock plugin
   })
@@ -103,7 +104,8 @@ describe('Payments', function () {
       ledger: 'mock.test1.',
       noteToSelf: {
         source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-        source_transfer_ledger: 'mock.test2.'
+        source_transfer_ledger: 'mock.test2.',
+        source_transfer_amount: '1.0'
       }
     }, 'cf:0:')
 
@@ -138,7 +140,8 @@ describe('Payments', function () {
       expiresAt: (new Date(START_DATE)).toISOString(),
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'mock.test1.'
+        source_transfer_ledger: 'mock.test1.',
+        source_transfer_amount: '100'
       }
     })
   })
@@ -166,7 +169,8 @@ describe('Payments', function () {
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'mock.test1.'
+        source_transfer_ledger: 'mock.test1.',
+        source_transfer_amount: '100'
       }
     })
   })
@@ -195,7 +199,8 @@ describe('Payments', function () {
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'mock.test1.'
+        source_transfer_ledger: 'mock.test1.',
+        source_transfer_amount: '100'
       }
     })
   })
@@ -305,7 +310,8 @@ describe('Payments', function () {
         ledger: 'mock.test1.',
         noteToSelf: {
           source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-          source_transfer_ledger: 'mock.test2.'
+          source_transfer_ledger: 'mock.test2.',
+          source_transfer_amount: '1.0'
         }
       }, 'error 1')
       sinon.assert.calledOnce(rejectSpy)
@@ -320,7 +326,8 @@ describe('Payments', function () {
         ledger: 'mock.test1.',
         noteToSelf: {
           source_transfer_id: '130394ed-f621-4663-80dc-910adc66f4c6',
-          source_transfer_ledger: 'mock.test2.'
+          source_transfer_ledger: 'mock.test2.',
+          source_transfer_amount: '1.0'
         }
       }, 'error 1')
       sinon.assert.calledOnce(rejectSpy)
@@ -334,7 +341,10 @@ describe('Payments', function () {
           id: '5857d460-2a46-4545-8311-1539d99e78e8',
           direction: 'outgoing',
           ledger: 'mock.test1.',
-          noteToSelf: { source_transfer_ledger: 'mock.test2.' }
+          noteToSelf: {
+            source_transfer_ledger: 'mock.test2.',
+            source_transfer_amount: '1.0'
+          }
         }, 'error 1')
       } catch (err) {
         assert.equal(err.message, 'Uuid schema validation error: should be string')
@@ -425,7 +435,8 @@ describe('Payments', function () {
         cases: [this.caseId1, this.caseId2],
         noteToSelf: {
           source_transfer_id: this.transfer.id,
-          source_transfer_ledger: 'mock.test1.'
+          source_transfer_ledger: 'mock.test1.',
+          source_transfer_amount: '100'
         }
       })
     })

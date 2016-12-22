@@ -32,7 +32,7 @@ function listen (config, core, backend, routeBuilder, routeBroadcaster, messageR
       log.error(error)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(core, config, routeBuilder, messageRouter)
+    yield subscriptions.subscribePairs(core, config, routeBuilder, messageRouter, backend)
     yield core.connect({timeout: Infinity})
     if (config.routeBroadcastEnabled) {
       yield routeBroadcaster.start()
