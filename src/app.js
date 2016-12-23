@@ -136,6 +136,8 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
         minMessageWindow: config.expiry.minMessageWindow,
         routeCleanupInterval: config.routeCleanupInterval,
         routeBroadcastInterval: config.routeBroadcastInterval,
+        simTestingUri: config.simTestingUri,
+        routeExpiry: config.routeExpiry,
         autoloadPeers: config.autoloadPeers,
         peers: config.peers,
         ledgerCredentials: config.ledgerCredentials

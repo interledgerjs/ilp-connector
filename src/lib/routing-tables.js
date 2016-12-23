@@ -1,5 +1,6 @@
 'use strict'
 const routing = require('ilp-routing')
+const debug = require('debug')('ilp-connector:routing-tables')
 
 /**
  * When routing payments across multiple ledgers, each hop will round the amounts
@@ -88,7 +89,19 @@ class RoutingTables {
 
   removeExpiredRoutes () {
     this.localTables.removeExpiredRoutes()
-    this.publicTables.removeExpiredRoutes()
+    let removedRoutes = this.publicTables.removeExpiredRoutes()
+    if (removedRoutes.length > 0) debug('removeExpiredRoutes removedRoutes:',removedRoutes)
+    return removedRoutes
+  }
+
+  bumpConnector (connectorAccount, holdDownTime) {
+    this.localTables.bumpConnector(connectorAccount,holdDownTime)
+    this.publicTables.bumpConnector(connectorAccount,holdDownTime)
+  }
+
+  invalidateConnector (connectorAccount) {
+    this.localTables.invalidateConnector(connectorAccount)
+    return this.publicTables.invalidateConnector(connectorAccount)
   }
 
   * _getScaleAdjustment (infoCache, sourceLedger, destinationLedger) {

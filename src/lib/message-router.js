@@ -106,13 +106,26 @@ MessageRouter.prototype._handleRequest = function * (request, sender) {
  * @param {Route[]} routes
  * @param {IlpAddress} sender
  */
-MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
-  // todo: postpone expiration of routes previously provided by sender
-  if (!routes) {
-    // this is a heartbeat
+MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
+  let routes = payload.routes
+
+  let holdDownTime = payload.hold_down_time
+  this.routingTables.bumpConnector(sender,holdDownTime)
+  let potentiallyUnreachableLedgers = payload.unreachable_through_me
+  let lostLedgerLinks = []
+  if (potentiallyUnreachableLedgers.length > 0) {
+    log.info('informed of broken routes to:',potentiallyUnreachableLedgers,' through:',sender)
+    for (const ledger of potentiallyUnreachableLedgers) {
+      lostLedgerLinks.concat(this.routingTables.invalidateConnectorsRoutesTo(sender))
+    }
+  }
+
+  if (!routes && (lostLedgerLinks.length === 0)) { // just a heartbeat
+    log.info('got heartbeat from:',sender)
     return
   }
-  validate('Routes', routes)
+  // todo: strip epoch field or add it to valid route def
+  //validate('Routes', routes)
   let gotNewRoute = false
 
   for (const route of routes) {
@@ -121,9 +134,11 @@ MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
     if (route.source_account !== sender) continue
     if (this.routingTables.addRoute(route)) gotNewRoute = true
   }
-  log.info("receiveRoutes sender:",sender," provided ",routes.length," any new?:",gotNewRoute)
+  if (gotNewRoute) log.info("receiveRoutes sender:",sender," provided ",routes.length," any new?:",gotNewRoute)
 
-  if (gotNewRoute && this.config.routeBroadcastEnabled) {
+  if ((gotNewRoute || (lostLedgerLinks.length > 0))
+      && this.config.routeBroadcastEnabled) {
+    this.routeBroadcaster.markLedgersUnreachable(lostLedgerLinks)
     co(this.routeBroadcaster.broadcast.bind(this.routeBroadcaster))
       .catch(function (err) {
         log.warn('error broadcasting routes: ' + err.message)

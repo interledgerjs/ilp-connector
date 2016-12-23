@@ -14,9 +14,14 @@ const DEFAULT_MAX_HOLD_TIME = 10 // seconds
 const DEFAULT_FX_SPREAD = 0.002 // 0.2%
 const DEFAULT_SLIPPAGE = 0.001 // 0.1%
 
+// const DEFAULT_ROUTE_BROADCAST_INTERVAL = 30 * 1000 // milliseconds
+// const DEFAULT_ROUTE_CLEANUP_INTERVAL = 1000 // milliseconds
+// const DEFAULT_ROUTE_EXPIRY = 45 * 1000 // milliseconds
 const DEFAULT_ROUTE_BROADCAST_INTERVAL = 30 * 1000 // milliseconds
-const DEFAULT_ROUTE_CLEANUP_INTERVAL = 1000 // milliseconds
-const DEFAULT_ROUTE_EXPIRY = 45 * 1000 // milliseconds
+const DEFAULT_ROUTE_CLEANUP_INTERVAL = 5 * 1000 // milliseconds
+const DEFAULT_ROUTE_EXPIRY = 999 * 45 * 1000 // milliseconds
+
+const DEFAULT_SIM_TESTING_URI = "http://localhost:8042/"
 
 function isRunningTests () {
   return (
@@ -196,10 +201,14 @@ function getLocalConfig () {
     routeBroadcastEnabledString ? Config.castBool(routeBroadcastEnabledString) : true
   const routeBroadcastInterval =
     Number(Config.getEnv(envPrefix, 'ROUTE_BROADCAST_INTERVAL')) || DEFAULT_ROUTE_BROADCAST_INTERVAL
+  console.log('ROUTE_BROADCAST_INTERVAL:',Config.getEnv(envPrefix, 'ROUTE_BROADCAST_INTERVAL'))
   const routeCleanupInterval =
-    Number(Config.getEnv(envPrefix, 'ROUTE_CLEANUP_INTERVAL')) || DEFAULT_ROUTE_CLEANUP_INTERVAL
+          Number(Config.getEnv(envPrefix, 'ROUTE_CLEANUP_INTERVAL')) || DEFAULT_ROUTE_CLEANUP_INTERVAL
+  console.log('ROUTE_CLEANUP_INTERVAL:',Config.getEnv(envPrefix, 'ROUTE_CLEANUP_INTERVAL'))
   const routeExpiry =
     Number(Config.getEnv(envPrefix, 'ROUTE_EXPIRY')) || DEFAULT_ROUTE_EXPIRY
+
+  const simTestingUri = Config.getEnv(envPrefix, 'SIM_TESTING_URI') || DEFAULT_SIM_TESTING_URI
 
   const peersString = Config.getEnv(envPrefix, 'PEERS')
   const peers = peersString ? peersString.split(',') : []
@@ -239,6 +248,7 @@ function getLocalConfig () {
     routeBroadcastInterval,
     routeCleanupInterval,
     routeExpiry,
+    simTestingUri,
     autoloadPeers,
     peers
   }
