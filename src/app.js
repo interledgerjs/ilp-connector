@@ -9,6 +9,7 @@ const log = logger.create('app')
 
 const loadConfig = require('./lib/config')
 const makeCore = require('./lib/core')
+const PluginStore = require('./lib/pluginStore')
 const RoutingTables = require('./lib/routing-tables')
 const TradingPairs = require('./lib/trading-pairs')
 const RouteBuilder = require('./lib/route-builder')
@@ -45,8 +46,18 @@ function listen (config, core, backend, routeBuilder, routeBroadcaster, messageR
 
 function addPlugin (config, core, backend, routeBroadcaster, tradingPairs, id, options, tradesTo, tradesFrom) {
   return co(function * () {
+    let store = null
+    if (options.store) {
+      if (!config.databaseUri) {
+        throw new Error('missing DB_URI; cannot create plugin store for ' + id)
+      }
+      store = new PluginStore(config.databaseUri, id)
+    }
+
+    options.prefix = id
     core.addClient(id, new ilpCore.Client(Object.assign({}, options.options, {
       _plugin: require(options.plugin),
+      _store: store,
       _log: logger.createRaw(options.plugin)
     })))
 
