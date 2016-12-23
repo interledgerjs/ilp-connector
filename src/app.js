@@ -161,6 +161,7 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   }
 
   return {
+    getClient: core.getClient.bind(core),
     listen: _.partial(listen, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs),
     addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster, tradingPairs),
     removePlugin: _.partial(removePlugin, config, core, backend, routingTables, routeBroadcaster, tradingPairs)
