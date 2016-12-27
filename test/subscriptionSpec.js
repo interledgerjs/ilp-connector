@@ -82,13 +82,16 @@ describe('Subscriptions', function () {
     nock.cleanAll()
     this.clock.restore()
     process.env = _.cloneDeep(env)
+    this.wsCadLedger.close()
+    this.wsUsdLedger.close()
+    this.wsEurLedger.close()
+    this.wsCnyLedger.close()
   })
 
   it('should initiate and complete a universal mode payment', function * () {
     const sourceTransfer = this.transferUsdPrepared
     const destinationTransfer = this.transferEurProposed
 
-    const backendSpy = sinon.spy(this.backend, 'submitPayment')
     const sendSpy = sinon.spy(
       this.core.getPlugin(destinationTransfer.ledger),
       'sendTransfer')
@@ -133,6 +136,29 @@ describe('Subscriptions', function () {
 
     sinon.assert.calledOnce(fulfillSpy)
     sinon.assert.calledWith(fulfillSpy, sourceId, 'cf:0:')
+  })
+
+  it('should notify the backend of a successful payment', function * () {
+    const sourceTransfer = this.transferUsdPrepared
+    const destinationTransfer = this.transferEurProposed
+    const backendSpy = sinon.spy(this.backend, 'submitPayment')
+
+    const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
+    yield this.core.getPlugin(sourceTransfer.ledger)
+      .emitAsync('outgoing_fulfill', {
+        id: destinationTransfer.id,
+        direction: 'outgoing',
+        ledger: destinationTransfer.ledger,
+        account: destinationTransfer.debits[0].account,
+        amount: destinationTransfer.debits[0].amount,
+        executionCondition: destinationTransfer.debits[0].execution_condition,
+        noteToSelf: {
+          source_transfer_ledger: sourceTransfer.ledger,
+          source_transfer_id: sourceId,
+          source_transfer_amount: sourceTransfer.debits[0].amount
+        }
+      }, 'cf:0:')
+
     sinon.assert.calledOnce(backendSpy)
     sinon.assert.calledWith(backendSpy, {
       source_ledger: sourceTransfer.ledger,
