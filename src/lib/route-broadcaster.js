@@ -75,7 +75,7 @@ class RouteBroadcaster {
 
     }, this.routeCleanupInterval)
     // todo: one-time timer, reset until successful, rather than interval:
-    setInterval(() => this.reportToSimTestingUri(), 15000)
+    setInterval(() => this.reportToSimTestingUri(), 30000)
     log.info('broadcast interval:',this.routeBroadcastInterval)
     defer.setInterval(function * () {
       //yield this.reloadLocalRoutes()
@@ -89,6 +89,7 @@ class RouteBroadcaster {
 
   reportToSimTestingUri() {
     //log.info('reportToSimTestingUri lastNewRouteSentAt:',this.lastNewRouteSentAt)
+    //log.info('reportToSimTestingUri current routing table:',this.routingTables.toDebugStrings(),' adjacentLedgers:',Object.keys(this.peersByLedger))
     if ((Date.now() - this.lastNewRouteSentAt) > 45000) {
       this.lastNewRouteSentAt = Infinity // only report once (for now)
       let routesJson = this.routingTables.toJSON(SIMPLIFY_POINTS)
@@ -139,6 +140,7 @@ class RouteBroadcaster {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
     const unreachableLedgers = this.detectedDown.values() ; this.detectedDown.clear()
+    //log.info('broadcast unreachableLedgers:',unreachableLedgers)
     for (let adjacentLedger of adjacentLedgers) {
       const ledgerRoutes = routes.filter((route) => (route.source_ledger === adjacentLedger))
       // todo?: remove added_during_epoch? look it up some other way?
@@ -149,12 +151,12 @@ class RouteBroadcaster {
 
   _broadcastToLedger (adjacentLedger, routes, unreachableLedgers) {
     const connectors = Object.keys(this.peersByLedger[adjacentLedger])
-    log.info('_broadcastToLedger connectors:',connectors)
+    //log.info('_broadcastToLedger connectors:',connectors)
     for (let adjacentConnector of connectors) {
       const account = adjacentLedger + adjacentConnector
       const routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
 
-      log.info('broadcasting ' + routesNewToConnector.length + ' routes to ' + account)
+      //log.info('broadcasting ' + routesNewToConnector.length + ' routes to ' + account)
 
       // timeout the plugin.sendMessage Promise just so we don't have it hanging around forever
       const timeoutPromise = new Promise((resolve, reject) => {
@@ -179,15 +181,15 @@ class RouteBroadcaster {
       // we should continue sending the other broadcasts out
       Promise.race([broadcastPromise, timeoutPromise])
         .then((val) => {
-          log.info('connector:',account,' successfully broadcast to for epoch:',this._currentEpoch())
+          //log.info('connector:',account,' successfully broadcast to for epoch:',this._currentEpoch())
           this.peerEpochs[account] = this._currentEpoch()
           // for simulation testing:
           if (routesNewToConnector.length > 0) this.lastNewRouteSentAt = Date.now()
         })
         .catch((err) => {
-          log.warn('broadcasting routes to ' + account + ' failed: ', err)
+          //log.warn('broadcasting routes to ' + account + ' failed: ', err)
           let lostLedgerLinks = this.routingTables.invalidateConnector(account)
-          log.info('detectedDown! account:',account,'lostLedgerLinks:',lostLedgerLinks)
+          //log.info('detectedDown! account:',account,'lostLedgerLinks:',lostLedgerLinks)
           this.markLedgersUnreachable(lostLedgerLinks)
           this.peerEpochs[account] = -1; // todo: better would be for the possibly-just-netsplit connector to report its last seen version of this connector's ledger
         })
