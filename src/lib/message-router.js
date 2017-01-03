@@ -116,7 +116,7 @@ MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
   if (potentiallyUnreachableLedgers.length > 0) {
     log.info('informed of broken routes to:',potentiallyUnreachableLedgers,' through:',sender)
     for (const ledger of potentiallyUnreachableLedgers) {
-      lostLedgerLinks.concat(this.routingTables.invalidateConnectorsRoutesTo(sender))
+      lostLedgerLinks.concat(this.routingTables.invalidateConnectorsRoutesTo(sender, ledger))
     }
   }
 

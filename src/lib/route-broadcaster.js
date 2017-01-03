@@ -139,7 +139,7 @@ class RouteBroadcaster {
   broadcast () {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
-    const unreachableLedgers = this.detectedDown.values() ; this.detectedDown.clear()
+    const unreachableLedgers = Array.from(this.detectedDown) ; this.detectedDown.clear()
     //log.info('broadcast unreachableLedgers:',unreachableLedgers)
     for (let adjacentLedger of adjacentLedgers) {
       const ledgerRoutes = routes.filter((route) => (route.source_ledger === adjacentLedger))
@@ -162,6 +162,7 @@ class RouteBroadcaster {
       const timeoutPromise = new Promise((resolve, reject) => {
         setTimeout(() => reject(new Error('route broadcast to ' + account + ' timed out')), this.routeBroadcastInterval)
       })
+      if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:',unreachableLedgers)
       const broadcastPromise = this.core.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
         account: account,

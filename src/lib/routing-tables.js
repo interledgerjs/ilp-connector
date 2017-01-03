@@ -108,6 +108,11 @@ class RoutingTables {
     return this.publicTables.invalidateConnector(connectorAccount)
   }
 
+  invalidateConnectorsRoutesTo (connectorAccount, ledger) {
+    this.localTables.invalidateConnectorsRoutesTo(connectorAccount, ledger)
+    return this.publicTables.invalidateConnectorsRoutesTo(connectorAccount, ledger)
+  }
+
   * _getScaleAdjustment (infoCache, sourceLedger, destinationLedger) {
     const sourceScale = yield this._getScale(infoCache, sourceLedger)
     const destinationScale = yield this._getScale(infoCache, destinationLedger)
