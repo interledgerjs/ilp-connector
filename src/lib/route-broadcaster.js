@@ -84,10 +84,6 @@ class RouteBroadcaster {
       const account = adjacentLedger + adjacentConnector
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
 
-      // timeout the plugin.sendMessage Promise just so we don't have it hanging around forever
-      const timeoutPromise = new Promise((resolve, reject) => {
-        setTimeout(() => reject(new Error('route broadcast to ' + account + ' timed out')), this.routeBroadcastInterval)
-      })
       const broadcastPromise = this.core.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
         account: account,
@@ -95,6 +91,10 @@ class RouteBroadcaster {
           method: 'broadcast_routes',
           data: routes
         }
+      })
+      // timeout the plugin.sendMessage Promise just so we don't have it hanging around forever
+      const timeoutPromise = new Promise((resolve, reject) => {
+        setTimeout(() => reject(new Error('route broadcast to ' + account + ' timed out')), this.routeBroadcastInterval)
       })
 
       // We are deliberately calling an async function synchronously because
