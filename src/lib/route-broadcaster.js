@@ -69,7 +69,12 @@ class RouteBroadcaster {
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
     for (let adjacentLedger of adjacentLedgers) {
       const ledgerRoutes = routes.filter((route) => route.source_ledger === adjacentLedger)
-      this._broadcastToLedger(adjacentLedger, ledgerRoutes)
+      try {
+        this._broadcastToLedger(adjacentLedger, ledgerRoutes)
+      } catch (err) {
+        log.warn('broadcasting routes on ledger ' + adjacentLedger + ' failed')
+        log.debug(err)
+      }
     }
   }
 
