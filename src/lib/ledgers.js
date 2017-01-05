@@ -5,6 +5,7 @@ const PluginStore = require('../lib/pluginStore.js')
 const ilpCore = require('ilp-core')
 const TradingPairs = require('./trading-pairs')
 const logger = require('../common/log')
+const log = logger.create('ledgers')
 
 class Ledgers {
   constructor ({ config, routingTables }) {
@@ -59,6 +60,8 @@ class Ledgers {
   }
 
   add (ledgerPrefix, creds, tradesTo, tradesFrom) {
+    log.info('adding ledger ' + ledgerPrefix)
+
     creds = _.cloneDeep(creds)
     let store = null
 
