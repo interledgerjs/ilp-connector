@@ -11,6 +11,8 @@ module.exports = function (wallaby) {
       'test/node_modules',
       'test/data/*',
       'test/helpers/*.js',
+      'test/mocks/*.js',
+      'test/node_modules/*',
       'app.js'
     ],
 
@@ -28,6 +30,8 @@ module.exports = function (wallaby) {
       }
     },
 
-    debug: true
+    bootstrap: function () {
+      require('co-mocha')(wallaby.testFramework.constructor)
+    }
   }
 }
