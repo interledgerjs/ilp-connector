@@ -6,7 +6,7 @@ const RouteBuilder = require('../src/lib/route-builder')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
 const logger = require('../src/common/log')
-const makeCore = require('../src/lib/core')
+const Ledgers = require('../src/lib/ledgers')
 
 const ledgerA = 'usd-ledger.'
 const ledgerB = 'eur-ledger.'
@@ -58,24 +58,24 @@ describe('RouteBuilder', function () {
       plugin: 'ilp-plugin-mock',
       options: {}
     }
-    this.core = makeCore({
+    this.ledgers = new Ledgers({
       config: {
-        ledgerCredentials,
         server: {},
         features: {}
       },
       log: logger,
       routingTables: this.tables
     })
+    this.ledgers.addFromCredentialsConfig(ledgerCredentials)
 
-    this.core.getPlugin(ledgerA).getAccount = function * () { return markA }
-    this.core.getPlugin(ledgerB).getAccount = function * () { return markB }
+    this.ledgers.getPlugin(ledgerA).getAccount = function * () { return markA }
+    this.ledgers.getPlugin(ledgerB).getAccount = function * () { return markB }
 
-    this.builder = new RouteBuilder(this.tables, this.infoCache, this.core, {
+    this.builder = new RouteBuilder(this.tables, this.infoCache, this.ledgers, {
       minMessageWindow: 1,
       slippage: 0.01
     })
-    yield this.core.connect()
+    yield this.ledgers.connect()
   })
 
   describe('getQuote', function () {

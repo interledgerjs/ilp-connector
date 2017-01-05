@@ -4,7 +4,6 @@ const _ = require('lodash')
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
 const log = require('../../common').log.create('fixerio')
-const utils = require('../utils')
 const healthStatus = require('../../common/health.js')
 
 const RATES_API = 'https://api.fixer.io/latest'
@@ -29,7 +28,6 @@ class FixerIoBackend {
 
     this.rates = {}
     this.currencies = []
-    this.currencyWithLedgerPairs = opts.currencyWithLedgerPairs
   }
 
   /**
@@ -86,14 +84,14 @@ class FixerIoBackend {
    *
    * @param {String} params.source_ledger The URI of the source ledger
    * @param {String} params.destination_ledger The URI of the destination ledger
+   * @param {String} params.source_currency The source currency
+   * @param {String} params.destination_currency The destination currency
    * @returns {Object}
    */
   * getCurve (params) {
     // Get ratio between currencies and apply spread
-    const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs.toArray(),
-                                               params.source_ledger, params.destination_ledger)
-    const destinationRate = this.rates[currencyPair[1]]
-    const sourceRate = this.rates[currencyPair[0]]
+    const destinationRate = this.rates[params.destination_currency]
+    const sourceRate = this.rates[params.source_currency]
 
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than

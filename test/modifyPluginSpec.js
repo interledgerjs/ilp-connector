@@ -21,7 +21,7 @@ describe('Modify Plugins', function () {
 
     const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
     _.map(testLedgers, (ledgerUri) => {
-      this.core.getPlugin(ledgerUri).getBalance =
+      this.ledgers.getPlugin(ledgerUri).getBalance =
         function * () { return '150000' }
     })
 
@@ -29,19 +29,19 @@ describe('Modify Plugins', function () {
     this.infoCache.reset()
     this.balanceCache.reset()
     yield this.backend.connect(ratesResponse)
-    yield this.core.connect()
+    yield this.ledgers.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
   })
 
   describe('addPlugin', function () {
-    it('should add a new plugin to core', function * () {
-      assert.equal(Object.keys(this.core.clients).length, 4)
+    it('should add a new plugin to ledgers', function * () {
+      assert.equal(Object.keys(this.ledgers._core.clients).length, 4)
       yield this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {}
       })
-      assert.equal(Object.keys(this.core.clients).length, 5)
+      assert.equal(Object.keys(this.ledgers._core.clients).length, 5)
     })
 
     it('should support new ledger', function * () {
@@ -53,6 +53,7 @@ describe('Modify Plugins', function () {
       }).then((quote) => {
         throw new Error()
       }).catch((err) => {
+        console.log(err.stack)
         expect(err.name).to.equal('AssetsNotTradedError')
         expect(err.message).to.match(/This connector does not support the given asset pair/)
       })
@@ -96,10 +97,10 @@ describe('Modify Plugins', function () {
       })
     })
 
-    it('should remove a plugin from core', function * () {
-      assert.isOk(this.core.getPlugin('eur-ledger-2.'))
+    it('should remove a plugin from ledgers', function * () {
+      assert.isOk(this.ledgers.getPlugin('eur-ledger-2.'))
       yield this.app.removePlugin('eur-ledger-2.')
-      assert.isNotOk(this.core.getPlugin('eur-ledger-2.'))
+      assert.isNotOk(this.ledgers.getPlugin('eur-ledger-2.'))
     })
 
     it('should no longer quote to that plugin', function * () {

@@ -21,7 +21,7 @@ describe('Subscriptions', function () {
   beforeEach(function * () {
     appHelper.create(this)
     yield this.backend.connect(ratesResponse)
-    yield this.core.connect()
+    yield this.ledgers.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
 
     nock('http://usd-ledger.example').get('/')
@@ -72,7 +72,7 @@ describe('Subscriptions', function () {
     this.wsEurLedger = new wsHelper.Server('ws://eur-ledger.example/accounts/mark/transfers')
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
-    yield subscriptions.subscribePairs(this.core, this.config, this.routeBuilder, this.messageRouter, this.backend)
+    yield subscriptions.subscribePairs(this.ledgers.getCore(), this.config, this.routeBuilder, this.messageRouter, this.backend)
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
@@ -93,13 +93,13 @@ describe('Subscriptions', function () {
     const destinationTransfer = this.transferEurProposed
 
     const sendSpy = sinon.spy(
-      this.core.getPlugin(destinationTransfer.ledger),
+      this.ledgers.getPlugin(destinationTransfer.ledger),
       'sendTransfer')
     const fulfillSpy = sinon.spy(
-      this.core.getPlugin(sourceTransfer.ledger),
+      this.ledgers.getPlugin(sourceTransfer.ledger),
       'fulfillCondition')
 
-    yield this.core.getPlugin(sourceTransfer.ledger)
+    yield this.ledgers.getPlugin(sourceTransfer.ledger)
       .emitAsync('incoming_prepare', {
         id: sourceTransfer.id,
         direction: 'incoming',
@@ -119,7 +119,7 @@ describe('Subscriptions', function () {
     sinon.assert.calledOnce(sendSpy)
 
     const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
-    yield this.core.getPlugin(sourceTransfer.ledger)
+    yield this.ledgers.getPlugin(sourceTransfer.ledger)
       .emitAsync('outgoing_fulfill', {
         id: destinationTransfer.id,
         direction: 'outgoing',
@@ -144,7 +144,7 @@ describe('Subscriptions', function () {
     const backendSpy = sinon.spy(this.backend, 'submitPayment')
 
     const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
-    yield this.core.getPlugin(sourceTransfer.ledger)
+    yield this.ledgers.getPlugin(sourceTransfer.ledger)
       .emitAsync('outgoing_fulfill', {
         id: destinationTransfer.id,
         direction: 'outgoing',

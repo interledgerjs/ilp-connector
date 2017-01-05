@@ -11,7 +11,7 @@ const log = require('../common/log').create('message-router')
 /**
  * @param {Object} opts
  * @param {Config} opts.config
- * @param {ilp.Core} opts.core
+ * @param {Ledgers} opts.ledgers
  * @param {RoutingTables} opts.routingTables
  * @param {RouteBroadcaster} opts.routeBroadcaster
  * @param {RouteBuilder} opts.routeBuilder
@@ -19,7 +19,7 @@ const log = require('../common/log').create('message-router')
  */
 function MessageRouter (opts) {
   this.config = opts.config
-  this.core = opts.core
+  this.ledgers = opts.ledgers
   this.routingTables = opts.routingTables
   this.routeBroadcaster = opts.routeBroadcaster
   this.routeBuilder = opts.routeBuilder
@@ -37,7 +37,7 @@ MessageRouter.prototype.handleMessage = function (message) {
   return this.handleRequest(message.data, message.account).then(
     (responseData) => {
       if (!responseData) return
-      return this.core.getPlugin(message.ledger).sendMessage({
+      return this.ledgers.getPlugin(message.ledger).sendMessage({
         ledger: message.ledger,
         account: message.account,
         data: responseData

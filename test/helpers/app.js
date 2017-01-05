@@ -7,7 +7,7 @@ const InfoCache = require('../../src/lib/info-cache')
 const RoutingTables = require('../../src/lib/routing-tables')
 const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
-const makeCore = require('../../src/lib/core')
+const Ledgers = require('../../src/lib/ledgers')
 const BalanceCache = require('../../src/lib/balance-cache')
 const TradingPairs = require('../../src/lib/trading-pairs')
 const MessageRouter = require('../../src/lib/message-router')
@@ -38,19 +38,19 @@ exports.create = function (context) {
     slippage: config.slippage,
     fxSpread: config.fxSpread
   })
-  const core = makeCore({config, log, routingTables})
-  const infoCache = new InfoCache(core)
+  const ledgers = new Ledgers({config, log, routingTables})
+  ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
+  const infoCache = new InfoCache(ledgers)
   const routeBuilder = new RouteBuilder(
     routingTables,
     infoCache,
-    core,
+    ledgers,
     {
       minMessageWindow: config.expiry.minMessageWindow,
       slippage: config.slippage
     }
   )
-  const routeBroadcaster = new RouteBroadcaster(routingTables, backend, core, infoCache, {
-    tradingPairs: tradingPairs,
+  const routeBroadcaster = new RouteBroadcaster(routingTables, backend, ledgers, infoCache, {
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,
     routeBroadcastInterval: config.routeBroadcastInterval,
@@ -59,16 +59,16 @@ exports.create = function (context) {
     ledgerCredentials: config.ledgerCredentials,
     configRoutes: config.configRoutes
   })
-  const balanceCache = new BalanceCache(core)
-  const messageRouter = new MessageRouter({config, core, routingTables, routeBroadcaster, routeBuilder, balanceCache})
-  const app = createApp(config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache, messageRouter)
+  const balanceCache = new BalanceCache(ledgers)
+  const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+  const app = createApp(config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache, messageRouter)
   context.app = app
   context.backend = backend
   context.tradingPairs = tradingPairs
   context.routingTables = routingTables
   context.routeBroadcaster = routeBroadcaster
   context.routeBuilder = routeBuilder
-  context.core = core
+  context.ledgers = ledgers
   context.config = config
   context.infoCache = infoCache
   context.balanceCache = balanceCache

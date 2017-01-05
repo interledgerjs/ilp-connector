@@ -4,13 +4,13 @@
  * Cache ledger meta-information.
  */
 class InfoCache {
-  constructor (core) {
-    this.core = core
+  constructor (ledgers) {
+    this.ledgers = ledgers
     this.cache = {}
   }
 
   * getInfoUncached (ledger) {
-    return yield this.core.getPlugin(ledger).getInfo()
+    return yield this.ledgers.getPlugin(ledger).getInfo()
   }
 
   * get (ledger) {

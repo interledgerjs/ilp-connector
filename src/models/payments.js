@@ -17,44 +17,44 @@ function * validateExpiry (sourceTransfer, destinationTransfer, config) {
   tester.validateMaxHoldTime()
 }
 
-function * settle (sourceTransfer, destinationTransfer, config, core) {
+function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
   log.debug('Settle payment, source: ' + JSON.stringify(sourceTransfer))
   log.debug('Settle payment, destination: ' + JSON.stringify(destinationTransfer))
-  yield core.getPlugin(destinationTransfer.ledger)
+  yield ledgers.getPlugin(destinationTransfer.ledger)
     .sendTransfer(destinationTransfer)
     .catch((err) =>
-      core.getPlugin(sourceTransfer.ledger)
+      ledgers.getPlugin(sourceTransfer.ledger)
         .rejectIncomingTransfer(sourceTransfer.id, 'destination transfer failed: ' + err.message)
         .then(() => { throw err }))
 }
 
-function * updateIncomingTransfer (sourceTransfer, core, config, routeBuilder) {
+function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
   validateIlpHeader(sourceTransfer)
 
   const destinationTransfer = yield routeBuilder.getDestinationTransfer(sourceTransfer)
 
   yield validateExpiry(sourceTransfer, destinationTransfer, config)
-  yield settle(sourceTransfer, destinationTransfer, config, core)
+  yield settle(sourceTransfer, destinationTransfer, config, ledgers)
 }
 
-function * processExecutionFulfillment (transfer, fulfillment, core, backend) {
+function * processExecutionFulfillment (transfer, fulfillment, ledgers, backend) {
   // If the destination transfer was executed, the connector should try to
   // execute the source transfer to get paid.
   if (transfer.direction === 'outgoing') {
     log.debug('Got notification about executed destination transfer with ID ' +
       transfer.id + ' on ledger ' + transfer.ledger)
-    yield executeSourceTransfer(transfer, fulfillment, core, backend)
+    yield executeSourceTransfer(transfer, fulfillment, ledgers, backend)
   }
 }
 
-function * rejectSourceTransfer (destinationTransfer, rejectionMessage, core) {
+function * rejectSourceTransfer (destinationTransfer, rejectionMessage, ledgers) {
   const noteToSelf = destinationTransfer.noteToSelf || {}
   const sourceTransferLedger = noteToSelf.source_transfer_ledger
   const sourceTransferId = noteToSelf.source_transfer_id
   validator.validate('IlpAddress', sourceTransferLedger)
   validator.validate('Uuid', sourceTransferId)
 
-  yield core.getPlugin(sourceTransferLedger)
+  yield ledgers.getPlugin(sourceTransferLedger)
     .rejectIncomingTransfer(sourceTransferId, rejectionMessage)
     .catch(() => {
       log.warn('Attempted to reject source transfer but it was unsucessful')

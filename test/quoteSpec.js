@@ -23,7 +23,7 @@ describe('Quotes', function () {
 
     const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
     _.map(testLedgers, (ledgerUri) => {
-      this.core.getPlugin(ledgerUri).getBalance =
+      this.ledgers.getPlugin(ledgerUri).getBalance =
         function * () { return '150000' }
     })
 
@@ -31,7 +31,7 @@ describe('Quotes', function () {
     this.infoCache.reset()
     this.balanceCache.reset()
     yield this.backend.connect(ratesResponse)
-    yield this.core.connect()
+    yield this.ledgers.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
   })
 
@@ -244,9 +244,9 @@ describe('Quotes', function () {
     it('should return a ExternalError when unable to get precision from source_address', function (done) {
       this.infoCache.reset()
       nock.cleanAll()
-      this.core.getPlugin('eur-ledger.')
+      this.ledgers.getPlugin('eur-ledger.')
         .getInfo = function * () { throw new ExternalError() }
-      this.core.getPlugin('usd-ledger.')
+      this.ledgers.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
 
       this.messageRouter.getQuote({
@@ -265,9 +265,9 @@ describe('Quotes', function () {
     it('should return a ExternalError when unable to get precision from destination_address', function (done) {
       this.infoCache.reset()
       nock.cleanAll()
-      this.core.getPlugin('eur-ledger.')
+      this.ledgers.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.getPlugin('usd-ledger.')
+      this.ledgers.getPlugin('usd-ledger.')
         .getInfo = function * () { throw new ExternalError() }
 
       this.messageRouter.getQuote({
@@ -286,11 +286,11 @@ describe('Quotes', function () {
     it('should not return an Error when unable to get balance from ledger', function (done) {
       this.infoCache.reset()
       nock.cleanAll()
-      this.core.getPlugin('eur-ledger.')
+      this.ledgers.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.getPlugin('usd-ledger.')
+      this.ledgers.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.getPlugin('usd-ledger.')
+      this.ledgers.getPlugin('usd-ledger.')
         .getBalance = function * () { throw new ExternalError() }
 
       this.messageRouter.getQuote({
@@ -319,9 +319,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
-      this.core.getPlugin('eur-ledger.')
+      this.ledgers.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.core.getPlugin('usd-ledger.')
+      this.ledgers.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 4} }
 
       this.messageRouter.getQuote({
@@ -346,9 +346,9 @@ describe('Quotes', function () {
       this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
-      this.core.getPlugin('eur-ledger.')
+      this.ledgers.getPlugin('eur-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 4} }
-      this.core.getPlugin('usd-ledger.')
+      this.ledgers.getPlugin('usd-ledger.')
         .getInfo = function * () { return {precision: 10, scale: 2} }
 
       this.messageRouter.getQuote({
@@ -643,7 +643,7 @@ describe('Quotes', function () {
     })
 
     it('fails when the source ledger connection is closed', function (done) {
-      this.core.getPlugin('eur-ledger.').connected = false
+      this.ledgers.getPlugin('eur-ledger.').connected = false
       this.messageRouter.getQuote({
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob',
@@ -658,7 +658,7 @@ describe('Quotes', function () {
     })
 
     it('fails when the destination ledger connection is closed', function (done) {
-      this.core.getPlugin('usd-ledger.').connected = false
+      this.ledgers.getPlugin('usd-ledger.').connected = false
       this.messageRouter.getQuote({
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob',
