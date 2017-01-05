@@ -166,7 +166,7 @@ class RouteBuilder {
       direction: 'outgoing',
       account: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
-      data: { ilp_header: ilpHeader },
+      data: sourceTransfer.data,
       noteToSelf,
       executionCondition: sourceTransfer.executionCondition,
       cancellationCondition: sourceTransfer.cancellationCondition,

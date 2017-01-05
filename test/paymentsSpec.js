@@ -146,6 +146,33 @@ describe('Payments', function () {
     })
   })
 
+  it('passes on the data (including but not limited to the ILP header)', function * () {
+    const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
+    const packet = {
+      ilp_header: {
+        account: 'mock.test2.bob',
+        amount: '50'
+      },
+      extra_headers: [{
+        foo: 'bar'
+      }]
+    }
+    yield this.mockPlugin1.emitAsync('incoming_prepare', {
+      id: '5857d460-2a46-4545-8311-1539d99e78e8',
+      direction: 'incoming',
+      ledger: 'mock.test1.',
+      amount: '100',
+      executionCondition: 'cc:0:',
+      expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+      data: packet
+    })
+
+    sinon.assert.calledOnce(sendSpy)
+    sinon.assert.calledWithMatch(sendSpy, {
+      data: packet
+    })
+  })
+
   it('supports optimistic mode', function * () {
     const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
     yield this.mockPlugin1.emitAsync('incoming_transfer', {
