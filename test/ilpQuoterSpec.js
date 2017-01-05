@@ -2,8 +2,11 @@
 
 const _ = require('lodash')
 const nock = require('nock')
+const mock = require('mock-require')
+const mockPlugin = require('./mocks/mockPlugin')
+mock('ilp-plugin-mock', mockPlugin)
 const expect = require('chai').expect
-const logger = require('ilp-connector')._test.logger
+const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const appHelper = require('./helpers/app')
 

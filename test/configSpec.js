@@ -1,7 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
-const loadConnectorConfig = require('ilp-connector')._test.loadConnectorConfig
+const loadConnectorConfig = require('../src/lib/config')
 const expect = require('chai').expect
 const assert = require('chai').assert
 const env = _.cloneDeep(process.env)
@@ -133,20 +133,13 @@ describe('ConnectorConfig', function () {
     })
 
     describe('ledger credentials', () => {
-      it('should parse ledger credentials -- test env', function * () {
-        const config = loadConnectorConfig()
-        const ledgerCredentials = require('./data/ledgerCredentials.json')
-        expect(config.get('ledgerCredentials'))
-          .to.deep.equal(ledgerCredentials)
-      })
-
       it('should parse ledger credentials -- deprecated format', function * () {
         const ledgerCredentials = require('./data/ledgerCredentials.json')
         const ledgerCredsModified = _.cloneDeep(ledgerCredentials)
         const usdLedgerCreds = ledgerCredsModified['usd-ledger.']
         usdLedgerCreds.options.account_uri = usdLedgerCreds.account
         delete usdLedgerCreds.account
-        process.env.CONNECTOR_LEDGER = JSON.stringify(ledgerCredsModified)
+        process.env.CONNECTOR_LEDGERS = JSON.stringify(ledgerCredsModified)
 
         const config = loadConnectorConfig()
         expect(config.get('ledgerCredentials'))
@@ -186,7 +179,6 @@ describe('ConnectorConfig', function () {
             currency: 'CAD',
             plugin: 'ilp-plugin-mock',
             options: {
-              type: 'bells',
               account: 'http://cad-ledger.example:1000/accounts/mark',
               username: 'mark',
               password: 'mark'
@@ -196,7 +188,6 @@ describe('ConnectorConfig', function () {
             currency: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
-              type: 'bells',
               account: 'http://cad-ledger.example:1000/accounts/mark',
               username: 'mark',
               cert: 'test/data/client1-crt.pem',

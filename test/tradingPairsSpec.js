@@ -1,13 +1,12 @@
 'use strict'
 const assert = require('chai').assert
 const appHelper = require('./helpers/app')
-const config = require('../src/lib/config')()
 const TradingPairs = require('../src/lib/trading-pairs')
 
 describe('TradingPairs', function () {
   beforeEach(function * () {
     appHelper.create(this)
-    this.pairs = new TradingPairs(config.get('tradingPairs'))
+    this.pairs = new TradingPairs(this.config.get('tradingPairs'))
   })
 
   describe('toArray', function () {

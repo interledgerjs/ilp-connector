@@ -2,10 +2,10 @@
 
 const assert = require('assert')
 const RoutingTables = require('../src/lib/routing-tables')
-const RouteBuilder = require('ilp-connector')._test.RouteBuilder
+const RouteBuilder = require('../src/lib/route-builder')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
-const logger = require('ilp-connector')._test.logger
+const logger = require('../src/common/log')
 const makeCore = require('../src/lib/core')
 
 const ledgerA = 'usd-ledger.'

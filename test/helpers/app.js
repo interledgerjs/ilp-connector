@@ -12,9 +12,18 @@ const BalanceCache = require('../../src/lib/balance-cache')
 const TradingPairs = require('../../src/lib/trading-pairs')
 const MessageRouter = require('../../src/lib/message-router')
 
-const createApp = require('ilp-connector').createApp
+const createApp = require('../../src').createApp
 
 exports.create = function (context) {
+  // Set up test environment
+  if (!process.env.CONNECTOR_LEDGERS) {
+    process.env.CONNECTOR_LEDGERS = JSON.stringify(require('../data/ledgerCredentials.json'))
+  }
+  if (!process.env.CONNECTOR_PAIRS) {
+    process.env.CONNECTOR_PAIRS = JSON.stringify(require('../data/tradingPairs.json'))
+  }
+  process.env.CONNECTOR_DEBUG_REPLY_NOTIFICATIONS = 'true'
+
   const config = loadConfig()
   const tradingPairs = new TradingPairs(config.get('tradingPairs'))
   const Backend = require('../../src/backends/' + config.get('backend'))

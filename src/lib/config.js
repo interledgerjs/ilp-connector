@@ -18,19 +18,6 @@ const DEFAULT_ROUTE_BROADCAST_INTERVAL = 30 * 1000 // milliseconds
 const DEFAULT_ROUTE_CLEANUP_INTERVAL = 1000 // milliseconds
 const DEFAULT_ROUTE_EXPIRY = 45 * 1000 // milliseconds
 
-function isRunningTests () {
-  return (
-    process.env.NODE_ENV === 'unit' ||
-    process.argv[0].endsWith('mocha') ||
-    (process.argv.length > 1 && process.argv[0].endsWith('node') &&
-     process.argv[1].endsWith('mocha'))
-  )
-}
-
-function useTestConfig () {
-  return !Config.castBool(process.env.UNIT_TEST_OVERRIDE) && isRunningTests()
-}
-
 function generateDefaultPairs (ledgers) {
   return Utils.getPairs(ledgers).map((pair) => {
     return pair.map((desc) => desc.currency + '@' + desc.ledger)
@@ -46,11 +33,6 @@ function parseCredentials () {
       console.error('DEPRECATED: The key `account_uri` in ledger credentials has been renamed `account`')
       credentials.account = credentials.account_uri
       delete credentials.account_uri
-    }
-
-    // Apply default ledger type
-    if (!credentials.options.type) {
-      credentials.options.type = 'bells'
     }
 
     const isClientCertCredential = credentials.key !== undefined
@@ -218,17 +200,7 @@ function getLocalConfig () {
   //      "password": "..."
   //    }
   // }
-  let ledgerCredentials = {}
-
-  if (useTestConfig()) {
-    ledgerCredentials = require('../../test/data/ledgerCredentials.json')
-    if (!tradingPairs.length) {
-      tradingPairs = require('../../test/data/tradingPairs.json')
-    }
-    features.debugReplyNotifications = true
-  } else {
-    ledgerCredentials = parseCredentials()
-  }
+  const ledgerCredentials = parseCredentials()
 
   return {
     backend,

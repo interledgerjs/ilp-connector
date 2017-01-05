@@ -9,7 +9,7 @@ nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
 const validate = require('../src/lib/validate').validate
 const appHelper = require('./helpers/app')
-const logger = require('ilp-connector')._test.logger
+const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const expect = require('chai').expect
 const _ = require('lodash')
