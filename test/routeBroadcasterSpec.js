@@ -7,11 +7,11 @@ mock('ilp-plugin-mock', mockPlugin)
 const assert = require('assert')
 const routing = require('ilp-routing')
 const RoutingTables = require('../src/lib/routing-tables')
-const RouteBroadcaster = require('ilp-connector')._test.RouteBroadcaster
+const RouteBroadcaster = require('../src/lib/route-broadcaster')
 const makeCore = require('../src/lib/core')
 const log = require('../src/common').log
 const appHelper = require('./helpers/app')
-const logger = require('ilp-connector')._test.logger
+const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const ratesResponse = require('./data/fxRates.json')
 

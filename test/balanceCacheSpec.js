@@ -7,7 +7,7 @@ mock('ilp-plugin-mock', mockPlugin)
 const BigNumber = require('bignumber.js')
 const nock = require('nock')
 const expect = require('chai').expect
-const logger = require('ilp-connector')._test.logger
+const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const appHelper = require('./helpers/app')
 

@@ -6,7 +6,7 @@ const mockRequire = require('mock-require')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
-const logger = require('ilp-connector')._test.logger
+const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const _ = require('lodash')
 
