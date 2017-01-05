@@ -2,8 +2,6 @@
 
 const _ = require('lodash')
 const request = require('co-request')
-const NoAmountSpecifiedError =
-  require('../../errors/no-amount-specified-error')
 const UnsupportedPairError =
   require('../../errors/unsupported-pair-error')
 const log = require('../../common').log.create('ilpquoter')
@@ -77,28 +75,17 @@ class ILPQuoter {
    *   component specified by backendUri will be called with
    *   all amounts encoded as strings. The returned source
    *   and destination amounts must be strings.
+   *
+   * The quote is used locally to generate a liquidity curve.
    */
-  * getQuote (params) {
+  * getCurve (params) {
     log.debug('Connecting to ' + this.backendUri)
     const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs,
                                                params.source_ledger,
                                                params.destination_ledger)
-    let amount
-    let type
-    let ledger
-    if (params.source_amount) {
-      amount = params.source_amount
-      type = 'source'
-      ledger = params.destination_ledger
-    } else if (params.destination_amount) {
-      amount = params.destination_amount
-      type = 'destination'
-      ledger = params.source_ledger
-    }
-
-    if (!amount) {
-      throw new NoAmountSpecifiedError('Amount was not specified correctly')
-    }
+    const amount = 100000000
+    const type = 'source'
+    const ledger = params.destination_ledger
 
     const uri = this.backendUri + '/quote/' +
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
@@ -113,14 +100,10 @@ class ILPQuoter {
       log.error('Error getting quote: ', JSON.stringify(result.body))
       throw new ServerError('Unable to get quote from backend.')
     }
-    const quote = {
-      source_ledger: params.source_ledger,
-      destination_ledger: params.destination_ledger,
-      source_amount: result.body.source_amount,
-      destination_amount: result.body.destination_amount,
+    return {
+      points: [ [0, 0], [result.body.source_amount, result.body.destination_amount] ],
       additional_info: result.body.additional_info
     }
-    return quote
   }
 }
 

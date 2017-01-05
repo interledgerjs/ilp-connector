@@ -3,7 +3,6 @@
 const _ = require('lodash')
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
-const NoAmountSpecifiedError = require('../../errors/no-amount-specified-error')
 const log = require('../../common').log.create('fixerio')
 const utils = require('../utils')
 const healthStatus = require('../../common/health.js')
@@ -83,14 +82,13 @@ class FixerIoBackend {
   }
 
   /**
-   * Get a quote for the given parameters
+   * Get a liquidity curve for the given parameters.
    *
    * @param {String} params.source_ledger The URI of the source ledger
    * @param {String} params.destination_ledger The URI of the destination ledger
-   * @param {String|Integer|BigNumber} params.source_amount The amount of the source asset we want to send (either this or the destination_amount must be set)
-   * @param {String|Integer|BigNumber} params.destination_amount The amount of the destination asset we want to send (either this or the source_amount must be set)
+   * @returns {Object}
    */
-  * getQuote (params) {
+  * getCurve (params) {
     // Get ratio between currencies and apply spread
     const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs.toArray(),
                                                params.source_ledger, params.destination_ledger)
@@ -106,27 +104,10 @@ class FixerIoBackend {
     let rate = new BigNumber(destinationRate).div(sourceRate)
     rate = this._subtractSpread(rate)
 
-    let sourceAmount
-    let destinationAmount
-    if (params.source_amount) {
-      log.debug('creating quote with fixed source amount')
-      sourceAmount = new BigNumber(params.source_amount)
-      destinationAmount = new BigNumber(params.source_amount).times(rate)
-    } else if (params.destination_amount) {
-      log.debug('creating quote with fixed destination amount')
-      sourceAmount = new BigNumber(params.destination_amount).div(rate)
-      destinationAmount = new BigNumber(params.destination_amount)
-    } else {
-      throw new NoAmountSpecifiedError('Must specify either source ' +
-        'or destination amount to get quote')
-    }
+    const sourceAmount = 100000000
+    const destinationAmount = new BigNumber(sourceAmount).times(rate).toString()
 
-    return {
-      source_ledger: params.source_ledger,
-      destination_ledger: params.destination_ledger,
-      source_amount: sourceAmount.toString(),
-      destination_amount: destinationAmount.toString()
-    }
+    return { points: [[0, 0], [sourceAmount, +destinationAmount]] }
   }
 
   /**
