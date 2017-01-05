@@ -150,7 +150,7 @@ As soon as the source transfer is prepared, the connector will authorize the deb
 
 | `new` | [**Backend**](#new-backend) ( opts ) |
 | | [**connect**](#connect) ( ) `⇒ Promise.<null>` |
-| | [**getQuote**](#getQuote) ( params ) `⇒ Promise.<Quote>` |
+| | [**getCurve**](#getCurve) ( params ) `⇒ Promise.<Curve>` |
 
 ##### new Backend
 <code>new Backend( **opts** : Object )</code>
@@ -167,23 +167,19 @@ As soon as the source transfer is prepared, the connector will authorize the deb
 #### connect
 <code>backend.connect() ⇒ Promise.&lt;null></code>
 
-#### getQuote
-<code>backend.getQuote( **params** : [QuoteParams](#class-quoteparams) ) ⇒ Promise.&lt;Quote></code>
+#### getCurve
+<code>backend.getCurve( **params** : [CurveParams](#class-curveparams) ) ⇒ Promise.&lt;Curve></code>
 
-### Class: QuoteParams
+### Class: CurveParams
 ###### Fields
 | Type | Name | Description |
 |:--|:--|:--|
 | `String` | `source_ledger` | The URI of the source ledger |
 | `String` | `destination_ledger` | The URI of the destination ledger |
-| `String`/`Integer`/`BigNumber` | `source_amount` | The amount of the source asset we want to send (either this or the `destination_amount` must be set)
-| `String`/`Integer`/`BigNumber` | `destination_amount` | The amount of the destination asset we want to send (either this or the `source_amount` must be set) |
 
-### Class: Quote
+### Class: Curve
 ###### Fields
 | Type | Name | Description |
 |:--|:--|:--|
-| `String` | `source_ledger` | The URI of the source ledger |
-| `String` | `destination_ledger` | The URI of the destination ledger |
-| `String` | `source_amount` | The amount of the source asset we want to send |
-| `String` | `destination_amount` | The amount of the destination asset we want to send |
+| `Point[]` | `points` | A list of `[source, destination]` points representing a liquidity curve |
+| `Object` | `additional_info` | (optional) |
