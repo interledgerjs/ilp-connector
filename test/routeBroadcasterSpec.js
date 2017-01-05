@@ -13,6 +13,7 @@ const log = require('../src/common').log
 const appHelper = require('./helpers/app')
 const logger = require('ilp-connector')._test.logger
 const logHelper = require('./helpers/log')
+const ratesResponse = require('./data/fxRates.json')
 
 const ledgerA = 'cad-ledger.'
 const ledgerB = 'usd-ledger.'
@@ -22,6 +23,7 @@ describe('RouteBroadcaster', function () {
   logHelper(logger)
 
   beforeEach(function * () {
+    process.env.BACKEND = 'one-to-one'
     appHelper.create(this)
 
     this.infoCache = {
@@ -43,6 +45,8 @@ describe('RouteBroadcaster', function () {
         connectorLedger: 'cad-ledger.'
       }
     ]
+
+    yield this.backend.connect(ratesResponse)
 
     this.tables = new RoutingTables({
       fxSpread: 0.002,
@@ -98,6 +102,10 @@ describe('RouteBroadcaster', function () {
       destination_precision: 10,
       destination_scale: 2
     })
+  })
+
+  afterEach(function () {
+    delete process.env.BACKEND
   })
 
   describe('addConfigRoutes', function () {
@@ -261,17 +269,17 @@ describe('RouteBroadcaster', function () {
     })
   })
 
-  describe('_quoteToLocalRoute', function () {
+  describe('_tradingPairToLocalRoute', function () {
     it('returns a Route', function * () {
-      const route = yield this.broadcaster._quoteToLocalRoute({
-        source_ledger: ledgerA,
-        destination_ledger: ledgerB,
-        source_amount: '123',
-        destination_amount: '456'
-      })
+      const route = yield this.broadcaster._tradingPairToLocalRoute(
+        [ 'CAD@' + ledgerA, 'USD@' + ledgerB ])
       assert.ok(route instanceof routing.Route)
       assert.deepEqual(route.hops, [ledgerA, ledgerB])
-      assert.deepEqual(route.getPoints(), [ [0, 0], [123, 456] ])
+      assert.deepEqual(route.sourceLedger, ledgerA)
+      assert.deepEqual(route.destinationLedger, ledgerB)
+      assert.deepEqual(route.sourceAccount, ledgerA + 'mark')
+      assert.deepEqual(route.destinationAccount, ledgerB + 'mark')
+      assert.deepEqual(route.getPoints(), [ [0, 0], [100000000, 77823868.07038209] ])
     })
   })
 })

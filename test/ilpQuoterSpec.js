@@ -8,7 +8,6 @@ const logHelper = require('./helpers/log')
 const appHelper = require('./helpers/app')
 
 const UnsupportedPairError = require('../src/errors/unsupported-pair-error')
-const NoAmountSpecifiedError = require('../src/errors/no-amount-specified-error')
 const AssetsNotTradedError = require('../src/errors/assets-not-traded-error')
 const ServerError = require('five-bells-shared/errors/server-error')
 const Backend = require('../src/backends/ilp-quoter')
@@ -139,80 +138,68 @@ describe('ILPQuoter', function () {
     })
 
     it('should fail for a quote with a missing source_ledger', function * () {
-      const quote = { source_amount: '123', destination_ledger: 'localhost:4000.' }
-      yield yieldAndAssertException(this.backend.getQuote(quote), AssetsNotTradedError)
+      const quote = { destination_ledger: 'localhost:4000.' }
+      yield yieldAndAssertException(this.backend.getCurve(quote), AssetsNotTradedError)
     })
 
     it('should fail for a quote with a missing destination_ledger', function * () {
-      const quote = { source_amount: '123', source_ledger: 'localhost:4000.' }
-      yield yieldAndAssertException(this.backend.getQuote(quote), AssetsNotTradedError)
-    })
-
-    it('should fail for a quote with a missing amount', function * () {
-      const quote = { source_ledger: 'localhost:3001.', destination_ledger: 'localhost:4000.' }
-      yield yieldAndAssertException(this.backend.getQuote(quote), NoAmountSpecifiedError)
+      const quote = { source_ledger: 'localhost:4000.' }
+      yield yieldAndAssertException(this.backend.getCurve(quote), AssetsNotTradedError)
     })
 
     it('should make sure a valid quote returns with correct source amount', function * () {
       const quote = {
-        source_amount: 123.89,
         source_ledger: 'localhost:3001.',
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/123.89/source').query({precision, scale}).reply(200, { source_amount: 123.89, destination_amount: 88.77 })
-      const quoteResponse = yield this.backend.getQuote(quote)
-      expect(quoteResponse.source_amount).to.be.equal(123.89)
-      expect(quoteResponse.destination_amount).to.be.equal(88.77)
+                      .get('/quote/EUR/USD/100000000/source').query({precision, scale}).reply(200, { source_amount: 123.89, destination_amount: 88.77 })
+      const quoteResponse = yield this.backend.getCurve(quote)
+      expect(quoteResponse.points).to.deep.equal([ [0, 0], [123.89, 88.77] ])
       expect(scope.isDone()).to.be.true
     })
 
     it('should make sure a valid quote returns with correct destination amount', function * () {
       const quote = {
-        destination_amount: 123.89,
         source_ledger: 'localhost:3001.',
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/123.89/destination').query({precision, scale}).reply(200, { source_amount: 99.77, destination_amount: 123.89 })
-      const quoteResponse = yield this.backend.getQuote(quote)
-      expect(quoteResponse.source_amount).to.be.equal(99.77)
-      expect(quoteResponse.destination_amount).to.be.equal(123.89)
+                      .get('/quote/EUR/USD/100000000/source').query({precision, scale}).reply(200, { source_amount: 99.77, destination_amount: 123.89 })
+      const quoteResponse = yield this.backend.getCurve(quote)
+      expect(quoteResponse.points).to.deep.equal([ [0, 0], [99.77, 123.89] ])
       expect(scope.isDone()).to.be.true
     })
 
     it('should make sure an error is thrown if the quoter returns a 404', function * () {
       const quote = {
-        source_amount: 123.89,
         source_ledger: 'localhost:3001.',
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/123.89/source').query({precision, scale}).reply(404)
-      yield yieldAndAssertException(this.backend.getQuote(quote), ServerError)
+                      .get('/quote/EUR/USD/100000000/source').query({precision, scale}).reply(404)
+      yield yieldAndAssertException(this.backend.getCurve(quote), ServerError)
       expect(scope.isDone()).to.be.true
     })
 
     it('should make sure an error is thrown if the quoter returns a 500', function * () {
       const quote = {
-        source_amount: 123.89,
         source_ledger: 'localhost:3001.',
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/123.89/source').query({precision, scale}).reply(500)
-      yield yieldAndAssertException(this.backend.getQuote(quote), ServerError)
+                      .get('/quote/EUR/USD/100000000/source').query({precision, scale}).reply(500)
+      yield yieldAndAssertException(this.backend.getCurve(quote), ServerError)
       expect(scope.isDone()).to.be.true
     })
 
     it('should make sure additional information from quoter is passed in quote', function * () {
       const quote = {
-        destination_amount: 123.89,
         source_ledger: 'localhost:3001.',
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/123.89/destination').query({precision, scale})
+                      .get('/quote/EUR/USD/100000000/source').query({precision, scale})
                                                                .reply(200, {
                                                                  source_amount: 99.77,
                                                                  destination_amount: 123.89,
@@ -220,9 +207,8 @@ describe('ILPQuoter', function () {
                                                                    rate: 'somerate'
                                                                  }
                                                                })
-      const quoteResponse = yield this.backend.getQuote(quote)
-      expect(quoteResponse.source_amount).to.be.equal(99.77)
-      expect(quoteResponse.destination_amount).to.be.equal(123.89)
+      const quoteResponse = yield this.backend.getCurve(quote)
+      expect(quoteResponse.points).to.deep.equal([ [0, 0], [99.77, 123.89] ])
       expect(quoteResponse.additional_info).to.be.deep.equal({ rate: 'somerate' })
       expect(scope.isDone()).to.be.true
     })

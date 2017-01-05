@@ -139,7 +139,7 @@ class RouteBroadcaster {
 
   _getLocalRoutes () {
     return Promise.all(this.tradingPairs.toArray().map(
-      (pair) => this._tradingPairToLocalRoute(pair)))
+      (pair) => co.wrap(this._tradingPairToLocalRoute).call(this, pair)))
   }
 
   addConfigRoutes () {
@@ -166,35 +166,24 @@ class RouteBroadcaster {
     return Promise.resolve(null)
   }
 
-  _tradingPairToLocalRoute (pair) {
+  * _tradingPairToLocalRoute (pair) {
     const sourceLedger = pair[0].split('@').slice(1).join('@')
     const destinationLedger = pair[1].split('@').slice(1).join('@')
-    // TODO change the backend API to return curves, not points
-    return co(function * () {
-      const quote = yield this.backend.getQuote({
-        source_ledger: sourceLedger,
-        destination_ledger: destinationLedger,
-        source_amount: 100000000
-      })
-      return yield this._quoteToLocalRoute(quote)
-    }.bind(this))
-  }
-
-  * _quoteToLocalRoute (quote) {
-    const sourcePlugin = this.core.getPlugin(quote.source_ledger)
-    const destinationPlugin = this.core.getPlugin(quote.destination_ledger)
-    const destinationInfo = yield this.infoCache.get(quote.destination_ledger)
+    const curve = yield this.backend.getCurve({
+      source_ledger: sourceLedger,
+      destination_ledger: destinationLedger
+    })
+    const sourcePlugin = this.core.getPlugin(sourceLedger)
+    const destinationPlugin = this.core.getPlugin(destinationLedger)
+    const destinationInfo = yield this.infoCache.get(destinationLedger)
     return Route.fromData({
-      source_ledger: quote.source_ledger,
-      destination_ledger: quote.destination_ledger,
-      additional_info: quote.additional_info,
+      source_ledger: sourceLedger,
+      destination_ledger: destinationLedger,
+      additional_info: curve.additional_info,
       min_message_window: this.minMessageWindow,
       source_account: (yield sourcePlugin.getAccount()),
       destination_account: (yield destinationPlugin.getAccount()),
-      points: [
-        [0, 0],
-        [+quote.source_amount, +quote.destination_amount]
-      ],
+      points: curve.points,
       destinationPrecision: destinationInfo.precision,
       destinationScale: destinationInfo.scale
     })
