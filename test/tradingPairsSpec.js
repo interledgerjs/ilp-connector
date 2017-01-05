@@ -6,13 +6,71 @@ const TradingPairs = require('../src/lib/trading-pairs')
 describe('TradingPairs', function () {
   beforeEach(function * () {
     appHelper.create(this)
-    this.pairs = new TradingPairs(this.config.get('tradingPairs'))
+    this.pairs = new TradingPairs()
+    for (let pair of this.config.get('tradingPairs')) {
+      this.pairs.add(pair[0], pair[1])
+    }
   })
 
   describe('toArray', function () {
     it('returns an array of currency pairs', function () {
-      assert.deepEqual(this.pairs.toArray()[0], ['USD@usd-ledger.', 'EUR@eur-ledger.'])
-      assert.deepEqual(this.pairs.toArray()[1], ['EUR@eur-ledger.', 'USD@usd-ledger.'])
+      let pairs = this.pairs.toArray()
+
+      // We need to sort the array because the return order is not guaranteed
+      pairs = pairs.sort((a, b) => {
+        if (a[0] > b[0]) {
+          return 1
+        }
+
+        if (b[0] > a[0]) {
+          return -1
+        }
+
+        if (a[1] > b[1]) {
+          return 1
+        }
+
+        if (b[1] > a[1]) {
+          return -1
+        }
+
+        return 0
+      })
+
+      assert.deepEqual(pairs, [
+        [
+          'CAD@cad-ledger.',
+          'EUR@eur-ledger.'
+        ],
+        [
+          'CAD@cad-ledger.',
+          'USD@usd-ledger.'
+        ],
+        [
+          'CNY@cny-ledger.',
+          'USD@usd-ledger.'
+        ],
+        [
+          'EUR@eur-ledger.',
+          'CAD@cad-ledger.'
+        ],
+        [
+          'EUR@eur-ledger.',
+          'USD@usd-ledger.'
+        ],
+        [
+          'USD@usd-ledger.',
+          'CAD@cad-ledger.'
+        ],
+        [
+          'USD@usd-ledger.',
+          'CNY@cny-ledger.'
+        ],
+        [
+          'USD@usd-ledger.',
+          'EUR@eur-ledger.'
+        ]
+      ])
     })
   })
 
@@ -26,18 +84,10 @@ describe('TradingPairs', function () {
     })
   })
 
-  describe('addAll', function () {
-    it('adds all pairs with a new ledger to the array', function () {
-      assert.equal(this.pairs.toArray().length, 8)
-      this.pairs.addAll('BTC@btc-ledger.')
-      assert.equal(this.pairs.toArray().length, 16)
-    })
-  })
-
   describe('removeAll', function () {
     it('removes all pairs containing a ledger', function () {
       assert.equal(this.pairs.toArray().length, 8)
-      this.pairs.removeAll('usd-ledger.')
+      this.pairs.removeAll('USD@usd-ledger.')
       assert.equal(this.pairs.toArray().length, 2)
     })
   })

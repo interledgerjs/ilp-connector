@@ -67,15 +67,15 @@ describe('Payments', function () {
 
     appHelper.create(this)
     yield this.backend.connect(ratesResponse)
-    yield this.core.connect()
+    yield this.ledgers.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
-    yield subscriptions.subscribePairs(this.core, this.config, this.routeBuilder, this.messageRouter, this.backend)
+    yield subscriptions.subscribePairs(this.ledgers.getCore(), this.config, this.routeBuilder, this.messageRouter, this.backend)
 
     this.setTimeout = setTimeout
     this.clock = sinon.useFakeTimers(START_DATE)
 
-    this.mockPlugin1 = this.core.getPlugin('mock.test1.')
-    this.mockPlugin2 = this.core.getPlugin('mock.test2.')
+    this.mockPlugin1 = this.ledgers.getPlugin('mock.test1.')
+    this.mockPlugin2 = this.ledgers.getPlugin('mock.test2.')
   })
 
   afterEach(function * () {

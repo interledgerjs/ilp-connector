@@ -8,7 +8,7 @@ const assert = require('assert')
 const routing = require('ilp-routing')
 const RoutingTables = require('../src/lib/routing-tables')
 const RouteBroadcaster = require('../src/lib/route-broadcaster')
-const makeCore = require('../src/lib/core')
+const Ledgers = require('../src/lib/ledgers')
 const log = require('../src/common').log
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
@@ -74,13 +74,14 @@ describe('RouteBroadcaster', function () {
       destination_scale: 2
     }])
 
-    this.core = makeCore({
-      config: Object.assign({}, this.config, {ledgerCredentials}),
+    this.ledgers = new Ledgers({
+      config: this.config,
       routingTables: this.tables,
       log
     })
+    this.ledgers.addFromCredentialsConfig(ledgerCredentials)
 
-    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.core, this.infoCache, {
+    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.infoCache, {
       tradingPairs: [
         [ledgerA, ledgerB],
         [ledgerB, ledgerA]
@@ -154,7 +155,7 @@ describe('RouteBroadcaster', function () {
     ]
 
     it('sends the combined routes to all adjacent connectors', function * () {
-      this.core.getPlugin(ledgerA).getInfo =
+      this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
           return Promise.resolve({
             connectors: [{name: 'mark'}, {name: 'mary'}],
@@ -162,7 +163,7 @@ describe('RouteBroadcaster', function () {
             scale: 2
           })
         }
-      this.core.getPlugin(ledgerB).getInfo =
+      this.ledgers.getPlugin(ledgerB).getInfo =
         function () {
           return Promise.resolve({
             connectors: [{name: 'mark'}, {name: 'mary'}],
@@ -170,7 +171,7 @@ describe('RouteBroadcaster', function () {
             scale: 2
           })
         }
-      this.core.getPlugin(ledgerC).getInfo =
+      this.ledgers.getPlugin(ledgerC).getInfo =
         function () {
           return Promise.resolve({
             connectors: [{name: 'mark'}],
@@ -180,7 +181,7 @@ describe('RouteBroadcaster', function () {
         }
 
       let routesFromASent, routesFromBSent
-      this.core.getPlugin(ledgerA).sendMessage = function (message) {
+      this.ledgers.getPlugin(ledgerA).sendMessage = function (message) {
         assert.deepEqual(message, {
           ledger: ledgerA,
           account: ledgerA + 'mary',
@@ -190,7 +191,7 @@ describe('RouteBroadcaster', function () {
         return Promise.resolve(null)
       }
 
-      this.core.getPlugin(ledgerB).sendMessage = function (message) {
+      this.ledgers.getPlugin(ledgerB).sendMessage = function (message) {
         assert.deepEqual(message, {
           ledger: ledgerB,
           account: ledgerB + 'mary',
@@ -207,25 +208,25 @@ describe('RouteBroadcaster', function () {
     })
 
     it('should send all routes even if sending one message fails', function * () {
-      this.core.getPlugin(ledgerA).getInfo =
+      this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
           return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
-      this.core.getPlugin(ledgerB).getInfo =
+      this.ledgers.getPlugin(ledgerB).getInfo =
         function () {
           return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
-      this.core.getPlugin(ledgerC).getInfo =
+      this.ledgers.getPlugin(ledgerC).getInfo =
         function () {
           return Promise.resolve({ connectors: [{name: 'mark'}] })
         }
 
       let routesFromASent, routesFromBSent
-      this.core.getPlugin(ledgerA).sendMessage = function (message) {
+      this.ledgers.getPlugin(ledgerA).sendMessage = function (message) {
         routesFromASent = true
         return Promise.reject(new Error('something went wrong but the connector should continue anyway'))
       }
-      this.core.getPlugin(ledgerB).sendMessage = function (message) {
+      this.ledgers.getPlugin(ledgerB).sendMessage = function (message) {
         routesFromBSent = true
         return Promise.resolve(null)
       }
@@ -237,27 +238,27 @@ describe('RouteBroadcaster', function () {
     })
 
     it('should send all routes even if plugin.sendMessage hangs', function * () {
-      this.core.getPlugin(ledgerA).getInfo =
+      this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
           return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
-      this.core.getPlugin(ledgerB).getInfo =
+      this.ledgers.getPlugin(ledgerB).getInfo =
         function () {
           return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
         }
-      this.core.getPlugin(ledgerC).getInfo =
+      this.ledgers.getPlugin(ledgerC).getInfo =
         function () {
           return Promise.resolve({ connectors: [{name: 'mark'}] })
         }
 
       let routesFromASent, routesFromBSent
-      this.core.getPlugin(ledgerA).sendMessage = function (message) {
+      this.ledgers.getPlugin(ledgerA).sendMessage = function (message) {
         routesFromASent = true
         return new Promise((resolve) => {
           setTimeout(resolve, 1000000)
         })
       }
-      this.core.getPlugin(ledgerB).sendMessage = function (message) {
+      this.ledgers.getPlugin(ledgerB).sendMessage = function (message) {
         routesFromBSent = true
         return Promise.resolve(null)
       }

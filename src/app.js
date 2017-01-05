@@ -3,23 +3,20 @@
 const _ = require('lodash')
 const co = require('co')
 const subscriptions = require('./models/subscriptions')
-const ilpCore = require('ilp-core')
 const logger = require('./common/log')
 const log = logger.create('app')
 
 const loadConfig = require('./lib/config')
-const makeCore = require('./lib/core')
-const PluginStore = require('./lib/pluginStore')
 const RoutingTables = require('./lib/routing-tables')
-const TradingPairs = require('./lib/trading-pairs')
 const RouteBuilder = require('./lib/route-builder')
 const RouteBroadcaster = require('./lib/route-broadcaster')
+const Ledgers = require('./lib/ledgers')
 const InfoCache = require('./lib/info-cache')
 const BalanceCache = require('./lib/balance-cache')
 const MessageRouter = require('./lib/message-router')
 
-function listen (config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs) {
-  for (let pair of tradingPairs.toArray()) {
+function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter) {
+  for (let pair of ledgers.getPairs()) {
     log.info('pair', pair)
   }
 
@@ -32,8 +29,8 @@ function listen (config, core, backend, routeBuilder, routeBroadcaster, messageR
       log.error(error)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(core, config, routeBuilder, messageRouter, backend)
-    yield core.connect({timeout: Infinity})
+    yield subscriptions.subscribePairs(ledgers.getCore(), config, routeBuilder, messageRouter, backend)
+    yield ledgers.connect({timeout: Infinity})
     if (config.routeBroadcastEnabled) {
       yield routeBroadcaster.start()
     } else {
@@ -44,52 +41,27 @@ function listen (config, core, backend, routeBuilder, routeBroadcaster, messageR
   }).catch((err) => log.error(err))
 }
 
-function addPlugin (config, core, backend, routeBroadcaster, tradingPairs, id, options, tradesTo, tradesFrom) {
+function addPlugin (config, ledgers, backend, routeBroadcaster, infoCache, id, options, tradesTo, tradesFrom) {
   return co(function * () {
-    let store = null
-    if (options.store) {
-      if (!config.databaseUri) {
-        throw new Error('missing DB_URI; cannot create plugin store for ' + id)
-      }
-      store = new PluginStore(config.databaseUri, id)
-    }
-
     options.prefix = id
-    core.addClient(id, new ilpCore.Client(Object.assign({}, options.options, {
-      _plugin: require(options.plugin),
-      _store: store,
-      _log: logger.createRaw(options.plugin)
-    })))
+    ledgers.add(id, options, tradesTo, tradesFrom)
 
-    yield core.getClient(id).connect({timeout: Infinity})
-
-    if (tradesTo) {
-      tradingPairs.addPairs(tradesTo.map((e) => [options.currency + '@' + id, e]))
-    }
-
-    if (tradesFrom) {
-      tradingPairs.addPairs(tradesTo.map((e) => [e, options.currency + '@' + id]))
-    }
-
-    if (!tradesFrom && !tradesTo) {
-      tradingPairs.addAll(options.currency + '@' + id)
-    }
+    yield ledgers.getPlugin(id).connect({timeout: Infinity})
 
     yield routeBroadcaster.reloadLocalRoutes()
-    yield routeBroadcaster._crawlClient(core.getClient(id))
+    yield routeBroadcaster._crawlLedgerPlugin(ledgers.getPlugin(id))
   })
 }
 
-function removePlugin (config, core, backend, routingTables, routeBroadcaster, tradingPairs, id) {
+function removePlugin (config, ledgers, backend, routingTables, routeBroadcaster, id) {
   return co(function * () {
-    tradingPairs.removeAll(id)
     routingTables.removeLedger(id)
     routeBroadcaster.depeerLedger(id)
-    yield core.removeClient(id).disconnect()
+    yield ledgers.remove(id).disconnect()
   })
 }
 
-function createApp (config, core, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache, messageRouter) {
+function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache, messageRouter) {
   if (!config) {
     config = loadConfig()
   }
@@ -103,18 +75,15 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
     })
   }
 
-  if (!core) {
-    core = makeCore({config, log: logger, routingTables})
-  }
-
-  if (!tradingPairs) {
-    tradingPairs = new TradingPairs(config.get('tradingPairs'))
+  if (!ledgers) {
+    ledgers = new Ledgers({config, log: logger, routingTables})
+    ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
   }
 
   if (!backend) {
     const Backend = getBackend(config.get('backend'))
     backend = new Backend({
-      currencyWithLedgerPairs: tradingPairs,
+      currencyWithLedgerPairs: ledgers.getPairs(),
       backendUri: config.get('backendUri'),
       spread: config.get('fxSpread'),
       infoCache: infoCache
@@ -122,14 +91,14 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   }
 
   if (!infoCache) {
-    infoCache = new InfoCache(core)
+    infoCache = new InfoCache(ledgers)
   }
 
   if (!routeBuilder) {
     routeBuilder = new RouteBuilder(
       routingTables,
       infoCache,
-      core,
+      ledgers,
       {
         minMessageWindow: config.expiry.minMessageWindow,
         slippage: config.slippage
@@ -141,10 +110,9 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
     routeBroadcaster = new RouteBroadcaster(
       routingTables,
       backend,
-      core,
+      ledgers,
       infoCache,
       {
-        tradingPairs: tradingPairs,
         configRoutes: config.configRoutes,
         minMessageWindow: config.expiry.minMessageWindow,
         routeCleanupInterval: config.routeCleanupInterval,
@@ -157,13 +125,13 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   }
 
   if (!balanceCache) {
-    balanceCache = new BalanceCache(core)
+    balanceCache = new BalanceCache(ledgers)
   }
 
   if (!messageRouter) {
     messageRouter = new MessageRouter({
       config,
-      core,
+      ledgers,
       routingTables,
       routeBroadcaster,
       routeBuilder,
@@ -172,10 +140,10 @@ function createApp (config, core, backend, routeBuilder, routeBroadcaster, routi
   }
 
   return {
-    getClient: core.getClient.bind(core),
-    listen: _.partial(listen, config, core, backend, routeBuilder, routeBroadcaster, messageRouter, tradingPairs),
-    addPlugin: _.partial(addPlugin, config, core, backend, routeBroadcaster, tradingPairs),
-    removePlugin: _.partial(removePlugin, config, core, backend, routingTables, routeBroadcaster, tradingPairs)
+    getClient: ledgers.getClient.bind(ledgers),
+    listen: _.partial(listen, config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter),
+    addPlugin: _.partial(addPlugin, config, ledgers, backend, routeBroadcaster, infoCache),
+    removePlugin: _.partial(removePlugin, config, ledgers, backend, routingTables, routeBroadcaster)
   }
 }
 

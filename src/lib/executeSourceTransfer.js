@@ -5,7 +5,7 @@ const validator = require('./validate')
 
 // Add the execution_condition_fulfillment to the source transfer
 // and submit it to the source ledger
-function * executeSourceTransfer (destinationTransfer, fulfillment, core, backend) {
+function * executeSourceTransfer (destinationTransfer, fulfillment, ledgers, backend) {
   if (!fulfillment) {
     log.error('Cannot execute source transfers, no condition fulfillment found. Destination transfer: ' + JSON.stringify(destinationTransfer))
     return
@@ -23,7 +23,7 @@ function * executeSourceTransfer (destinationTransfer, fulfillment, core, backen
   // TODO check the timestamp on the response from the ledger against
   // the transfer's expiry date
   // See https://github.com/interledgerjs/five-bells-ledger/issues/149
-  yield core.getPlugin(sourceTransferLedger)
+  yield ledgers.getPlugin(sourceTransferLedger)
     .fulfillCondition(sourceTransferID, fulfillment)
     .then(() =>
       backend.submitPayment({

@@ -12,20 +12,20 @@ class RouteBuilder {
   /**
    * @param {RoutingTables} routingTables
    * @param {InfoCache} infoCache
-   * @param {ilp-client.Core} core
+   * @param {Ledgers} ledgers
    * @param {Object} config
    * @param {Integer} config.minMessageWindow seconds
    * @param {Number} config.slippage
    * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, infoCache, core, config) {
-    if (!core) {
-      throw new TypeError('Must be given a valid Core instance')
+  constructor (routingTables, infoCache, ledgers, config) {
+    if (!ledgers) {
+      throw new TypeError('Must be given a valid Ledgers instance')
     }
 
     this.routingTables = routingTables
     this.infoCache = infoCache
-    this.core = core
+    this.ledgers = ledgers
     this.minMessageWindow = config.minMessageWindow
     this.slippage = config.slippage
   }
@@ -50,7 +50,7 @@ class RouteBuilder {
       params.destinationAddress, params.destinationAmount,
       params.destinationPrecisionAndScale, params.slippage)
     const info = {}
-    const quote = yield this.core.quote({
+    const quote = yield this.ledgers.quote({
       sourceAddress: params.sourceAddress,
       sourceAmount: params.sourceAmount,
       destinationAddress: params.destinationAddress,
@@ -194,7 +194,7 @@ class RouteBuilder {
    * @returns {String} rounded amount
    */
   * _roundAmount (sourceOrDestination, upOrDown, ledger, amount, _precisionAndScale) {
-    if (!_precisionAndScale && !this.core.getPlugin(ledger)) return amount
+    if (!_precisionAndScale && !this.ledgers.getPlugin(ledger)) return amount
     const precisionAndScale = _precisionAndScale || (yield this.infoCache.get(ledger))
     const roundingMode = upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP
 
@@ -212,7 +212,7 @@ class RouteBuilder {
   }
 
   _verifyLedgerIsConnected (ledger) {
-    if (!this.core.getPlugin(ledger).isConnected()) {
+    if (!this.ledgers.getPlugin(ledger).isConnected()) {
       throw new LedgerNotConnectedError('No connection to ledger "' + ledger + '"')
     }
   }

@@ -40,6 +40,8 @@ class OneToOneBackend {
    *
    * @param {String} params.source_ledger The URI of the source ledger
    * @param {String} params.destination_ledger The URI of the destination ledger
+   * @param {String} params.source_currency The source currency
+   * @param {String} params.destination_currency The destination currency
    * @returns {Object}
    */
   * getCurve (params) {

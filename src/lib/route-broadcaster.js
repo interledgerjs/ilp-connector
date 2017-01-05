@@ -10,10 +10,9 @@ class RouteBroadcaster {
   /**
    * @param {RoutingTables} routingTables
    * @param {Backend} backend
-   * @param {ilp-core.Core} core
+   * @param {Ledgers} ledgers
    * @param {InfoCache} infoCache
    * @param {Object} config
-   * @param {Object} config.tradingPairs
    * @param {Number} config.minMessageWindow
    * @param {Number} config.routeCleanupInterval
    * @param {Number} config.routeBroadcastInterval
@@ -21,8 +20,8 @@ class RouteBroadcaster {
    * @param {URI[]} config.peers
    * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, backend, core, infoCache, config) {
-    if (!core) {
+  constructor (routingTables, backend, ledgers, infoCache, config) {
+    if (!ledgers) {
       throw new TypeError('Must be given a valid Core instance')
     }
 
@@ -30,9 +29,8 @@ class RouteBroadcaster {
     this.routeBroadcastInterval = config.routeBroadcastInterval
     this.routingTables = routingTables
     this.backend = backend
-    this.core = core
+    this.ledgers = ledgers
     this.infoCache = infoCache
-    this.tradingPairs = config.tradingPairs
     this.minMessageWindow = config.minMessageWindow
     this.ledgerCredentials = config.ledgerCredentials
     this.configRoutes = config.configRoutes
@@ -84,7 +82,7 @@ class RouteBroadcaster {
       const account = adjacentLedger + adjacentConnector
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
 
-      const broadcastPromise = this.core.getPlugin(adjacentLedger).sendMessage({
+      const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
         account: account,
         data: {
@@ -110,14 +108,18 @@ class RouteBroadcaster {
   }
 
   crawl () {
-    return this.core.getClients().map(this._crawlClient, this)
+    return this.ledgers.getClients().map(this._crawlClient, this)
   }
 
   * _crawlClient (client) {
-    const prefix = yield client.getPlugin().getPrefix()
-    const localAccount = yield client.getPlugin().getAccount()
-    const connectors = yield client.getConnectors()
-    for (const connector of connectors) {
+    yield this._crawlLedgerPlugin(client.getPlugin())
+  }
+
+  * _crawlLedgerPlugin (plugin) {
+    const prefix = yield plugin.getPrefix()
+    const localAccount = yield plugin.getAccount()
+    const info = yield plugin.getInfo()
+    for (const connector of (info.connectors || []).map(c => c.name)) {
       // Don't broadcast routes to ourselves.
       if (localAccount === prefix + connector) continue
       if (this.autoloadPeers || this.defaultPeers.indexOf(prefix + connector) !== -1) {
@@ -138,7 +140,7 @@ class RouteBroadcaster {
   }
 
   _getLocalRoutes () {
-    return Promise.all(this.tradingPairs.toArray().map(
+    return Promise.all(this.ledgers.getPairs().map(
       (pair) => co.wrap(this._tradingPairToLocalRoute).call(this, pair)))
   }
 
@@ -169,12 +171,16 @@ class RouteBroadcaster {
   * _tradingPairToLocalRoute (pair) {
     const sourceLedger = pair[0].split('@').slice(1).join('@')
     const destinationLedger = pair[1].split('@').slice(1).join('@')
+    const sourceCurrency = pair[0].split('@')[0]
+    const destinationCurrency = pair[1].split('@')[0]
     const curve = yield this.backend.getCurve({
       source_ledger: sourceLedger,
-      destination_ledger: destinationLedger
+      destination_ledger: destinationLedger,
+      source_currency: sourceCurrency,
+      destination_currency: destinationCurrency
     })
-    const sourcePlugin = this.core.getPlugin(sourceLedger)
-    const destinationPlugin = this.core.getPlugin(destinationLedger)
+    const sourcePlugin = this.ledgers.getPlugin(sourceLedger)
+    const destinationPlugin = this.ledgers.getPlugin(destinationLedger)
     const destinationInfo = yield this.infoCache.get(destinationLedger)
     return Route.fromData({
       source_ledger: sourceLedger,
