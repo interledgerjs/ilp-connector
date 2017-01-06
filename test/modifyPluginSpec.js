@@ -1,6 +1,9 @@
 'use strict'
-const assert = require('chai').assert
-const expect = require('chai').expect
+const chai = require('chai')
+const assert = chai.assert
+const expect = chai.expect
+chai.use(require('chai-as-promised'))
+
 const appHelper = require('./helpers/app')
 const mockRequire = require('mock-require')
 const nock = require('nock')
@@ -9,6 +12,7 @@ const ratesResponse = require('./data/fxRates.json')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const _ = require('lodash')
+const AssetsNotTradedError = require('../src/errors/assets-not-traded-error')
 
 const PluginMock = require('./mocks/mockPlugin')
 mockRequire('ilp-plugin-mock', PluginMock)
@@ -45,18 +49,14 @@ describe('Modify Plugins', function () {
     })
 
     it('should support new ledger', function * () {
-      yield this.messageRouter.getQuote({
+      const quotePromise = this.messageRouter.getQuote({
         source_amount: '100',
         source_address: 'eur-ledger-2.alice',
         destination_address: 'usd-ledger.bob',
         destination_expiry_duration: '1.001'
-      }).then((quote) => {
-        throw new Error()
-      }).catch((err) => {
-        console.log(err.stack)
-        expect(err.name).to.equal('AssetsNotTradedError')
-        expect(err.message).to.match(/This connector does not support the given asset pair/)
       })
+
+      yield assert.isRejected(quotePromise, AssetsNotTradedError, /This connector does not support the given asset pair/)
 
       yield this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
@@ -64,12 +64,14 @@ describe('Modify Plugins', function () {
         options: {}
       })
 
-      yield this.messageRouter.getQuote({
+      const quotePromise2 = this.messageRouter.getQuote({
         source_amount: '100',
         source_address: 'eur-ledger-2.alice',
         destination_address: 'usd-ledger.bob',
         destination_expiry_duration: '1.001'
       })
+
+      yield assert.isFulfilled(quotePromise2)
     })
 
     it('should get peers on the added ledger', function * () {
