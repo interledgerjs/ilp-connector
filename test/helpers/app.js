@@ -40,6 +40,7 @@ exports.create = function (context) {
   })
   const ledgers = new Ledgers({config, log, routingTables})
   ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
+  ledgers.setPairs(config.get('tradingPairs'))
   const infoCache = new InfoCache(ledgers)
   const routeBuilder = new RouteBuilder(
     routingTables,

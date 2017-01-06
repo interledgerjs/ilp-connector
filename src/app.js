@@ -78,6 +78,7 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
   if (!ledgers) {
     ledgers = new Ledgers({config, log: logger, routingTables})
     ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
+    ledgers.setPairs(config.get('tradingPairs'))
   }
 
   if (!backend) {

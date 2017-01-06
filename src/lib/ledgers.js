@@ -41,6 +41,11 @@ class Ledgers {
     return this._pairs.toArray()
   }
 
+  setPairs (pairs) {
+    this._pairs.empty()
+    this._pairs.addPairs(pairs)
+  }
+
   getCore () {
     return this._core
   }
