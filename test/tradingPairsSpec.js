@@ -2,8 +2,12 @@
 const assert = require('chai').assert
 const appHelper = require('./helpers/app')
 const TradingPairs = require('../src/lib/trading-pairs')
+const logHelper = require('./helpers/log')
+const logger = require('../src/common/log')
 
 describe('TradingPairs', function () {
+  logHelper(logger)
+
   beforeEach(function * () {
     appHelper.create(this)
     this.pairs = new TradingPairs()

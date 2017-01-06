@@ -3,8 +3,12 @@
 const assert = require('assert')
 const RoutingTables = require('../src/lib/routing-tables')
 const appHelper = require('./helpers/app')
+const logHelper = require('./helpers/log')
+const logger = require('../src/common/log')
 
 describe('RoutingTables', function () {
+  logHelper(logger)
+
   beforeEach(function * () {
     appHelper.create(this)
   })
