@@ -9,6 +9,7 @@ class TradingPairs {
   }
 
   toArray () {
+    // Turning the pairs into an array could be expensive, so we cache it
     if (!this._pairsCache) {
       this._pairsCache = _.flatten(Array.from(this._sources.keys()).map(from => {
         return Array.from(this._sources.get(from)).map(to => [from, to])
@@ -33,6 +34,7 @@ class TradingPairs {
     }
     source.add(to)
 
+    // Anytime we change _sources, we need to invalidate the cache
     this._pairsCache = null
   }
 
@@ -43,6 +45,12 @@ class TradingPairs {
       destinationSet.delete(id)
     }
 
+    // Anytime we change _sources, we need to invalidate the cache
+    this._pairsCache = null
+  }
+
+  empty () {
+    this._sources = new Map()
     this._pairsCache = null
   }
 }

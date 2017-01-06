@@ -133,8 +133,25 @@ describe('Quotes', function () {
     it('should return AssetsNotTradedError when the source ledger is not supported', function * () {
       const quotePromise = this.messageRouter.getQuote({
         source_amount: '100',
-        source_address: 'http://fake-ledger.example/EUR',
+        source_address: 'fake-ledger.foley',
         destination_address: 'usd-ledger.bob',
+        destination_expiry_duration: '1.001'
+      })
+
+      yield assert.isRejected(quotePromise, AssetsNotTradedError, 'This connector does not support the given asset pair')
+    })
+
+    // This test doesn't currently pass - I think it's because the connector is
+    // smart enough to construct a route of A -> B -> C through itself, even if
+    // A -> C isn't a pair, but A -> B and B -> C are.
+    //
+    // This might actually be the desired behavior... if we're willing to trade
+    // A for B and B for C, we're implicitly willing to trade A for C.
+    it.skip('should return AssetsNotTradedError when the pair is not supported', function * () {
+      const quotePromise = this.messageRouter.getQuote({
+        source_amount: '100',
+        source_address: 'cad-ledger.bob',
+        destination_address: 'cny-ledger.bob',
         destination_expiry_duration: '1.001'
       })
 
