@@ -7,6 +7,7 @@ module.exports = {
   createApp: createApp,
   addPlugin: connector.addPlugin,
   removePlugin: connector.removePlugin,
+  getPlugin: connector.getPlugin,
   listen: connector.listen
 }
 
