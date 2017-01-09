@@ -3,7 +3,6 @@
 const log = require('../../src/common').log
 
 const loadConfig = require('../../src/lib/config')
-const InfoCache = require('../../src/lib/info-cache')
 const RoutingTables = require('../../src/lib/routing-tables')
 const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
@@ -41,17 +40,15 @@ exports.create = function (context) {
   const ledgers = new Ledgers({config, log, routingTables})
   ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
   ledgers.setPairs(config.get('tradingPairs'))
-  const infoCache = new InfoCache(ledgers)
   const routeBuilder = new RouteBuilder(
     routingTables,
-    infoCache,
     ledgers,
     {
       minMessageWindow: config.expiry.minMessageWindow,
       slippage: config.slippage
     }
   )
-  const routeBroadcaster = new RouteBroadcaster(routingTables, backend, ledgers, infoCache, {
+  const routeBroadcaster = new RouteBroadcaster(routingTables, backend, ledgers, {
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,
     routeBroadcastInterval: config.routeBroadcastInterval,
@@ -62,7 +59,7 @@ exports.create = function (context) {
   })
   const balanceCache = new BalanceCache(ledgers)
   const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
-  const app = createApp(config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, infoCache, balanceCache, messageRouter)
+  const app = createApp(config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, balanceCache, messageRouter)
   context.app = app
   context.backend = backend
   context.tradingPairs = tradingPairs
@@ -71,7 +68,6 @@ exports.create = function (context) {
   context.routeBuilder = routeBuilder
   context.ledgers = ledgers
   context.config = config
-  context.infoCache = infoCache
   context.balanceCache = balanceCache
   context.messageRouter = messageRouter
 }

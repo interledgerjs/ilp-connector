@@ -27,25 +27,10 @@ describe('RouteBuilder', function () {
   beforeEach(function * () {
     appHelper.create(this)
 
-    this.infoCache = {
-      get: function * (ledger) {
-        return {precision: 10, scale: 2}
-      }
-    }
-
     this.tables = new RoutingTables({
       fxSpread: 0.002,
       slippage: 0.001
     })
-    yield this.tables.addLocalRoutes(this.infoCache, [{
-      source_ledger: ledgerA,
-      destination_ledger: ledgerB,
-      source_account: markA,
-      destination_account: markB,
-      min_message_window: 1,
-      points: [ [0, 0], [200, 100] ],
-      additional_info: { rate_info: 'someInfoAboutTheRate' }
-    }])
 
     const ledgerCredentials = {}
     ledgerCredentials[ledgerA] = {
@@ -67,11 +52,24 @@ describe('RouteBuilder', function () {
       routingTables: this.tables
     })
     this.ledgers.addFromCredentialsConfig(ledgerCredentials)
+    this.ledgers.getPlugin(ledgerA).getInfo =
+    this.ledgers.getPlugin(ledgerB).getInfo =
+      function () { return {precision: 10, scale: 2} }
 
-    this.ledgers.getPlugin(ledgerA).getAccount = function * () { return markA }
-    this.ledgers.getPlugin(ledgerB).getAccount = function * () { return markB }
+    this.tables.addLocalRoutes(this.ledgers, [{
+      source_ledger: ledgerA,
+      destination_ledger: ledgerB,
+      source_account: markA,
+      destination_account: markB,
+      min_message_window: 1,
+      points: [ [0, 0], [200, 100] ],
+      additional_info: { rate_info: 'someInfoAboutTheRate' }
+    }])
 
-    this.builder = new RouteBuilder(this.tables, this.infoCache, this.ledgers, {
+    this.ledgers.getPlugin(ledgerA).getAccount = function () { return markA }
+    this.ledgers.getPlugin(ledgerB).getAccount = function () { return markB }
+
+    this.builder = new RouteBuilder(this.tables, this.ledgers, {
       minMessageWindow: 1,
       slippage: 0.01
     })

@@ -6,6 +6,9 @@ const BigNumber = require('bignumber.js')
 const log = require('../../common').log.create('fixerio')
 const ServerError = require('five-bells-shared/errors/server-error')
 const healthStatus = require('../../common/health.js')
+// This simple backend uses a fixed (large) source amount and a rate to generate
+// the destination amount for the curve.
+const PROBE_SOURCE_AMOUNT = 100000000
 
 const RATES_API = 'https://api.fixer.io/latest'
 
@@ -111,7 +114,7 @@ class FixerIoBackend {
     let rate = new BigNumber(destinationRate).div(sourceRate)
     rate = this._subtractSpread(rate)
 
-    const sourceAmount = 100000000
+    const sourceAmount = PROBE_SOURCE_AMOUNT
     const destinationAmount = new BigNumber(sourceAmount).times(rate).toString()
 
     return { points: [[0, 0], [sourceAmount, +destinationAmount]] }

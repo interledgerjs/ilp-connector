@@ -32,10 +32,6 @@ class MockPlugin extends EventEmitter {
     return Promise.resolve(null)
   }
 
-  getPrefix () {
-    return Promise.resolve(this._prefix)
-  }
-
   fulfillCondition (transferId, conditionFulfillment) {
     if (conditionFulfillment === 'invalid') {
       return Promise.reject(new Error('invalid fulfillment'))
@@ -48,7 +44,7 @@ class MockPlugin extends EventEmitter {
   }
 
   getAccount () {
-    return Promise.resolve(this._account)
+    return this._account
   }
 
   * _handleNotification () { }
@@ -58,11 +54,12 @@ class MockPlugin extends EventEmitter {
   }
 
   getInfo () {
-    return Promise.resolve({
-      connectors: [{name: 'mark'}],
+    return {
+      prefix: this._prefix,
+      connectors: ['mark'],
       precision: 10,
       scale: 4
-    })
+    }
   }
 }
 

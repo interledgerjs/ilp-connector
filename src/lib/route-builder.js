@@ -11,20 +11,18 @@ const log = require('../common/log').create('route-builder')
 class RouteBuilder {
   /**
    * @param {RoutingTables} routingTables
-   * @param {InfoCache} infoCache
    * @param {Ledgers} ledgers
    * @param {Object} config
    * @param {Integer} config.minMessageWindow seconds
    * @param {Number} config.slippage
    * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, infoCache, ledgers, config) {
+  constructor (routingTables, ledgers, config) {
     if (!ledgers) {
       throw new TypeError('Must be given a valid Ledgers instance')
     }
 
     this.routingTables = routingTables
-    this.infoCache = infoCache
     this.ledgers = ledgers
     this.minMessageWindow = config.minMessageWindow
     this.slippage = config.slippage
@@ -78,9 +76,9 @@ class RouteBuilder {
 
     // Round in favor of the connector (source amount up; destination amount down)
     // to ensure it doesn't lose any money. The amount is quoted using the unshifted rate.
-    const roundedSourceAmount = yield this._roundAmount(
+    const roundedSourceAmount = this._roundAmount(
       'source', 'up', quote.sourceLedger, quote.sourceAmount)
-    const roundedDestinationAmount = yield this._roundAmount(
+    const roundedDestinationAmount = this._roundAmount(
       'destination', 'down', quote.destinationLedger, quote.destinationAmount,
       params.destinationPrecisionAndScale || quote.destinationPrecisionAndScale)
 
@@ -125,12 +123,12 @@ class RouteBuilder {
     // Round in favor of the connector. findBestHopForSourceAmount uses the
     // local (unshifted) routes to compute the amounts, so the connector rounds
     // in its own favor to ensure it won't lose money.
-    nextHop.destinationAmount = yield this._roundAmount('destination', 'down',
+    nextHop.destinationAmount = this._roundAmount('destination', 'down',
       nextHop.destinationLedger, nextHop.destinationAmount)
 
     // Check if this connector can authorize the final transfer.
     if (nextHop.isFinal) {
-      const roundedFinalAmount = yield this._roundAmount('destination', 'down',
+      const roundedFinalAmount = this._roundAmount('destination', 'down',
         nextHop.finalLedger, nextHop.finalAmount)
       // Verify ilpHeader.amount ≤ nextHop.finalAmount
       const expectedFinalAmount = new BigNumber(ilpHeader.amount)
@@ -188,14 +186,15 @@ class RouteBuilder {
    *
    * @param {String} sourceOrDestination "source" or "destination"
    * @param {String} upOrDown "up" or "down"
-   * @param {URI} ledger
+   * @param {IlpAddress} ledger
    * @param {String} amount
    * @param {Object} [_precisionAndScale]
    * @returns {String} rounded amount
    */
-  * _roundAmount (sourceOrDestination, upOrDown, ledger, amount, _precisionAndScale) {
-    if (!_precisionAndScale && !this.ledgers.getPlugin(ledger)) return amount
-    const precisionAndScale = _precisionAndScale || (yield this.infoCache.get(ledger))
+  _roundAmount (sourceOrDestination, upOrDown, ledger, amount, _precisionAndScale) {
+    const plugin = this.ledgers.getPlugin(ledger)
+    if (!_precisionAndScale && !plugin) return amount
+    const precisionAndScale = _precisionAndScale || plugin.getInfo()
     const roundingMode = upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP
 
     const bnAmount = new BigNumber(amount)

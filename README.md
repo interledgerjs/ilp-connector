@@ -161,7 +161,7 @@ As soon as the source transfer is prepared, the connector will authorize the deb
 | `opts` | `Object` | |
 | `opts.backendUri` | `URI` | (see `CONNECTOR_BACKEND_URI`) |
 | `opts.currencyWithLedgerPairs` | `TradingPairs` | currency pairs supported by the connector |
-| `opts.infoCache` | `InfoCache` | a cache of ledger metadata |
+| `opts.getInfo` | `Function(ledger) → LedgerInfo` | a function to retrieve ledger metadata |
 | `opts.spread` | `Number` | (see `CONNECTOR_FX_SPREAD`) |
 
 #### connect
