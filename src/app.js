@@ -61,6 +61,10 @@ function removePlugin (config, ledgers, backend, routingTables, routeBroadcaster
   })
 }
 
+function getPlugin (ledgers, id) {
+  return ledgers.getPlugin(id)
+}
+
 function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, infoCache, balanceCache, messageRouter) {
   if (!config) {
     config = loadConfig()
@@ -144,7 +148,8 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
     getClient: ledgers.getClient.bind(ledgers),
     listen: _.partial(listen, config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter),
     addPlugin: _.partial(addPlugin, config, ledgers, backend, routeBroadcaster, infoCache),
-    removePlugin: _.partial(removePlugin, config, ledgers, backend, routingTables, routeBroadcaster)
+    removePlugin: _.partial(removePlugin, config, ledgers, backend, routingTables, routeBroadcaster),
+    getPlugin: _.partial(getPlugin, ledgers)
   }
 }
 
