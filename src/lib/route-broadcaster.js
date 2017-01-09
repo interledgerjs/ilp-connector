@@ -53,30 +53,41 @@ class RouteBroadcaster {
         throw e
       }
     }
-    setInterval(() => this.routingTables.removeExpiredRoutes(), this.routeCleanupInterval)
-    defer.setInterval(function * () {
+    this.removeExpiredRoutesSoon()
+    this.broadcastSoon()
+  }
+
+  removeExpiredRoutesSoon () {
+    setTimeout(() => {
+      this.routingTables.removeExpiredRoutes()
+      this.removeExpiredRoutesSoon()
+    }, this.routeCleanupInterval)
+  }
+
+  broadcastSoon () {
+    defer.setTimeout(function * () {
       yield this.reloadLocalRoutes()
-      this.broadcast()
-    }.bind(this), this.routeBroadcastInterval)
+      yield this.broadcast()
+      this.broadcastSoon()
+    }, this.routeBroadcastInterval)
   }
 
   broadcast () {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
-    for (let adjacentLedger of adjacentLedgers) {
+    return Promise.all(adjacentLedgers.map((adjacentLedger) => {
       const ledgerRoutes = routes.filter((route) => route.source_ledger === adjacentLedger)
-      try {
-        this._broadcastToLedger(adjacentLedger, ledgerRoutes)
-      } catch (err) {
-        log.warn('broadcasting routes on ledger ' + adjacentLedger + ' failed')
-        log.debug(err)
-      }
-    }
+      return this._broadcastToLedger(adjacentLedger, ledgerRoutes)
+        .catch((err) => {
+          log.warn('broadcasting routes on ledger ' + adjacentLedger + ' failed')
+          log.debug(err)
+        })
+    }))
   }
 
   _broadcastToLedger (adjacentLedger, routes) {
     const connectors = Object.keys(this.peersByLedger[adjacentLedger])
-    for (const account of connectors) {
+    return Promise.all(connectors.map((account) => {
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
 
       const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
@@ -96,12 +107,12 @@ class RouteBroadcaster {
       // we do not want to wait for the routes to be broadcasted before continuing.
       // Even if there is an error sending a specific route or a sendMessage promise hangs,
       // we should continue sending the other broadcasts out
-      Promise.race([broadcastPromise, timeoutPromise])
+      return Promise.race([broadcastPromise, timeoutPromise])
         .catch((err) => {
           log.warn('broadcasting routes to ' + account + ' failed')
           log.debug(err)
         })
-    }
+    }))
   }
 
   crawl () {
