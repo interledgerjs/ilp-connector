@@ -11,7 +11,6 @@ class RouteBroadcaster {
    * @param {RoutingTables} routingTables
    * @param {Backend} backend
    * @param {Ledgers} ledgers
-   * @param {InfoCache} infoCache
    * @param {Object} config
    * @param {Number} config.minMessageWindow
    * @param {Number} config.routeCleanupInterval
@@ -20,9 +19,9 @@ class RouteBroadcaster {
    * @param {URI[]} config.peers
    * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, backend, ledgers, infoCache, config) {
+  constructor (routingTables, backend, ledgers, config) {
     if (!ledgers) {
-      throw new TypeError('Must be given a valid Core instance')
+      throw new TypeError('Must be given a valid Ledgers instance')
     }
 
     this.routeCleanupInterval = config.routeCleanupInterval
@@ -30,14 +29,13 @@ class RouteBroadcaster {
     this.routingTables = routingTables
     this.backend = backend
     this.ledgers = ledgers
-    this.infoCache = infoCache
     this.minMessageWindow = config.minMessageWindow
     this.ledgerCredentials = config.ledgerCredentials
     this.configRoutes = config.configRoutes
 
     this.autoloadPeers = config.autoloadPeers
     this.defaultPeers = config.peers
-    this.peersByLedger = {} // { ledgerPrefix ⇒ { connectorName ⇒ true } }
+    this.peersByLedger = {} // { ledgerPrefix ⇒ { connectorAddress ⇒ true } }
   }
 
   * start () {
@@ -78,8 +76,7 @@ class RouteBroadcaster {
 
   _broadcastToLedger (adjacentLedger, routes) {
     const connectors = Object.keys(this.peersByLedger[adjacentLedger])
-    for (let adjacentConnector of connectors) {
-      const account = adjacentLedger + adjacentConnector
+    for (const account of connectors) {
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
 
       const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
@@ -116,13 +113,13 @@ class RouteBroadcaster {
   }
 
   * _crawlLedgerPlugin (plugin) {
-    const prefix = yield plugin.getPrefix()
-    const localAccount = yield plugin.getAccount()
-    const info = yield plugin.getInfo()
-    for (const connector of (info.connectors || []).map(c => c.name)) {
+    const localAccount = plugin.getAccount()
+    const info = plugin.getInfo()
+    const prefix = info.prefix
+    for (const connector of (info.connectors || [])) {
       // Don't broadcast routes to ourselves.
-      if (localAccount === prefix + connector) continue
-      if (this.autoloadPeers || this.defaultPeers.indexOf(prefix + connector) !== -1) {
+      if (localAccount === connector) continue
+      if (this.autoloadPeers || this.defaultPeers.indexOf(connector) !== -1) {
         this.peersByLedger[prefix] = this.peersByLedger[prefix] || {}
         this.peersByLedger[prefix][connector] = true
         log.info('adding peer ' + connector + ' via ledger ' + prefix)
@@ -136,7 +133,7 @@ class RouteBroadcaster {
 
   * reloadLocalRoutes () {
     const localRoutes = yield this._getLocalRoutes()
-    yield this.routingTables.addLocalRoutes(this.infoCache, localRoutes)
+    this.routingTables.addLocalRoutes(this.ledgers, localRoutes)
   }
 
   _getLocalRoutes () {
@@ -181,14 +178,14 @@ class RouteBroadcaster {
     })
     const sourcePlugin = this.ledgers.getPlugin(sourceLedger)
     const destinationPlugin = this.ledgers.getPlugin(destinationLedger)
-    const destinationInfo = yield this.infoCache.get(destinationLedger)
+    const destinationInfo = destinationPlugin.getInfo()
     return Route.fromData({
       source_ledger: sourceLedger,
       destination_ledger: destinationLedger,
       additional_info: curve.additional_info,
       min_message_window: this.minMessageWindow,
-      source_account: (yield sourcePlugin.getAccount()),
-      destination_account: (yield destinationPlugin.getAccount()),
+      source_account: sourcePlugin.getAccount(),
+      destination_account: destinationPlugin.getAccount(),
       points: curve.points,
       destinationPrecision: destinationInfo.precision,
       destinationScale: destinationInfo.scale

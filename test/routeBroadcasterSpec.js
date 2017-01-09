@@ -26,12 +26,6 @@ describe('RouteBroadcaster', function () {
     process.env.BACKEND = 'one-to-one'
     appHelper.create(this)
 
-    this.infoCache = {
-      get: function * (ledger) {
-        return {precision: 10, scale: 2}
-      }
-    }
-
     const ledgerCredentials = {
       'cad-ledger.': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}},
       'usd-ledger.': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}},
@@ -52,7 +46,18 @@ describe('RouteBroadcaster', function () {
       fxSpread: 0.002,
       slippage: 0.001
     })
-    yield this.tables.addLocalRoutes(this.infoCache, [{
+
+    this.ledgers = new Ledgers({
+      config: this.config,
+      routingTables: this.tables,
+      log
+    })
+    this.ledgers.addFromCredentialsConfig(ledgerCredentials)
+    this.ledgers.getPlugin(ledgerA).getInfo =
+    this.ledgers.getPlugin(ledgerB).getInfo =
+      function () { return {precision: 10, scale: 2} }
+
+    this.tables.addLocalRoutes(this.ledgers, [{
       source_ledger: ledgerA,
       destination_ledger: ledgerB,
       min_message_window: 1,
@@ -74,14 +79,7 @@ describe('RouteBroadcaster', function () {
       destination_scale: 2
     }])
 
-    this.ledgers = new Ledgers({
-      config: this.config,
-      routingTables: this.tables,
-      log
-    })
-    this.ledgers.addFromCredentialsConfig(ledgerCredentials)
-
-    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.infoCache, {
+    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, {
       tradingPairs: [
         [ledgerA, ledgerB],
         [ledgerB, ledgerA]
@@ -157,27 +155,30 @@ describe('RouteBroadcaster', function () {
     it('sends the combined routes to all adjacent connectors', function * () {
       this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
-          return Promise.resolve({
-            connectors: [{name: 'mark'}, {name: 'mary'}],
+          return {
+            prefix: ledgerA,
+            connectors: [ledgerA + 'mark', ledgerA + 'mary'],
             precision: 10,
             scale: 2
-          })
+          }
         }
       this.ledgers.getPlugin(ledgerB).getInfo =
         function () {
-          return Promise.resolve({
-            connectors: [{name: 'mark'}, {name: 'mary'}],
+          return {
+            prefix: ledgerB,
+            connectors: [ledgerB + 'mark', ledgerB + 'mary'],
             precision: 10,
             scale: 2
-          })
+          }
         }
       this.ledgers.getPlugin(ledgerC).getInfo =
         function () {
-          return Promise.resolve({
-            connectors: [{name: 'mark'}],
+          return {
+            prefix: ledgerC,
+            connectors: [ledgerC + 'mark'],
             precision: 10,
             scale: 2
-          })
+          }
         }
 
       let routesFromASent, routesFromBSent
@@ -210,15 +211,15 @@ describe('RouteBroadcaster', function () {
     it('should send all routes even if sending one message fails', function * () {
       this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+          return { prefix: ledgerA, connectors: [ledgerA + 'mark', ledgerA + 'mary'] }
         }
       this.ledgers.getPlugin(ledgerB).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+          return { prefix: ledgerB, connectors: [ledgerB + 'mark', ledgerB + 'mary'] }
         }
       this.ledgers.getPlugin(ledgerC).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}] })
+          return { prefix: ledgerC, connectors: [ledgerC + 'mark'] }
         }
 
       let routesFromASent, routesFromBSent
@@ -240,15 +241,15 @@ describe('RouteBroadcaster', function () {
     it('should send all routes even if plugin.sendMessage hangs', function * () {
       this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+          return { prefix: ledgerA, connectors: [ledgerA + 'mark', ledgerA + 'mary'] }
         }
       this.ledgers.getPlugin(ledgerB).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}, {name: 'mary'}] })
+          return { prefix: ledgerB, connectors: [ledgerB + 'mark', ledgerB + 'mary'] }
         }
       this.ledgers.getPlugin(ledgerC).getInfo =
         function () {
-          return Promise.resolve({ connectors: [{name: 'mark'}] })
+          return { prefix: ledgerC, connectors: [ledgerC + 'mark'] }
         }
 
       let routesFromASent, routesFromBSent

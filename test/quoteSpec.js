@@ -38,7 +38,6 @@ describe('Quotes', function () {
     })
 
     // Reset before and after just in case a test wants to change the precision.
-    this.infoCache.reset()
     this.balanceCache.reset()
     yield this.backend.connect(ratesResponse)
     yield this.ledgers.connect()
@@ -215,49 +214,12 @@ describe('Quotes', function () {
       yield assert.isFulfilled(quotePromise)
     })
 
-    it('should return a ExternalError when unable to get precision from source_address', function * () {
-      this.infoCache.reset()
-      nock.cleanAll()
-      this.ledgers.getPlugin('eur-ledger.')
-        .getInfo = function * () { throw new ExternalError() }
-      this.ledgers.getPlugin('usd-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 2} }
-
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '1500001',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '10'
-      })
-
-      yield assert.isRejected(quotePromise, ExternalError)
-    })
-
-    it('should return a ExternalError when unable to get precision from destination_address', function * () {
-      this.infoCache.reset()
-      nock.cleanAll()
-      this.ledgers.getPlugin('eur-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 2} }
-      this.ledgers.getPlugin('usd-ledger.')
-        .getInfo = function * () { throw new ExternalError() }
-
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '1500001',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '10'
-      })
-
-      yield assert.isRejected(quotePromise, ExternalError)
-    })
-
     it('should not return an Error when unable to get balance from ledger', function * () {
-      this.infoCache.reset()
       nock.cleanAll()
       this.ledgers.getPlugin('eur-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 2} }
+        .getInfo = function () { return {precision: 10, scale: 2} }
       this.ledgers.getPlugin('usd-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 2} }
+        .getInfo = function () { return {precision: 10, scale: 2} }
       this.ledgers.getPlugin('usd-ledger.')
         .getBalance = function * () { throw new ExternalError() }
 
@@ -282,13 +244,12 @@ describe('Quotes', function () {
     })
 
     it('should return quotes for fixed source amounts -- lower precision source_address', function * () {
-      this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
       this.ledgers.getPlugin('eur-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 2} }
+        .getInfo = function () { return {precision: 10, scale: 2} }
       this.ledgers.getPlugin('usd-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 4} }
+        .getInfo = function () { return {precision: 10, scale: 4} }
 
       const quote = yield this.messageRouter.getQuote({
         source_amount: '100',
@@ -308,13 +269,12 @@ describe('Quotes', function () {
     })
 
     it('should return quotes for fixed source amounts -- lower precision destination_address', function * () {
-      this.infoCache.reset()
       nock.cleanAll()
       // Increase scale
       this.ledgers.getPlugin('eur-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 4} }
+        .getInfo = function () { return {precision: 10, scale: 4} }
       this.ledgers.getPlugin('usd-ledger.')
-        .getInfo = function * () { return {precision: 10, scale: 2} }
+        .getInfo = function () { return {precision: 10, scale: 2} }
 
       const quote = yield this.messageRouter.getQuote({
         source_amount: '100',
@@ -333,7 +293,6 @@ describe('Quotes', function () {
     })
 
     it('caches source and destination ledger precision', function * () {
-      this.infoCache.reset()
       nock.cleanAll()
       nock('http://eur-ledger.example')
         .get('/').reply(200, {precision: 10, scale: 4})

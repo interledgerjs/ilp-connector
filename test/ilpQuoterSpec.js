@@ -86,7 +86,7 @@ describe('ILPQuoter', function () {
     this.backend = new Backend({
       currencyWithLedgerPairs: this.pairs,
       backendUri: this.backendUri,
-      infoCache: this.infoCache
+      getInfo: (ledger) => this.ledgers.getPlugin(ledger).getInfo()
     })
 
     const testLedgers = _.flatMap(this.pairs, (pair) => pair)
@@ -102,7 +102,6 @@ describe('ILPQuoter', function () {
 
   afterEach(function () {
     nock.cleanAll()
-    this.infoCache.reset()
     process.env = _.cloneDeep(env)
   })
 
@@ -129,7 +128,7 @@ describe('ILPQuoter', function () {
       this.backend = new Backend({
         currencyWithLedgerPairs: this.unsupportedPairs,
         backendUri: this.backendUri,
-        infoCache: this.infoCache
+        getInfo: (ledger) => this.ledgers.getPlugin(ledger).getInfo()
       })
 
       const scope = nock(this.backendUri)

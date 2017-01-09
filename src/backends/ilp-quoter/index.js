@@ -8,6 +8,9 @@ const log = require('../../common').log.create('ilpquoter')
 const ServerError = require('five-bells-shared/errors/server-error')
 const utils = require('../utils')
 const healthStatus = require('../../common/health.js')
+// This simple backend uses a fixed (large) source amount and a rate to generate
+// the destination amount for the curve.
+const PROBE_SOURCE_AMOUNT = 100000000
 
 /**
  * Example backend that connects to an external component to get
@@ -26,7 +29,7 @@ class ILPQuoter {
     ])
     this.backendUri = opts.backendUri
     this.backendStatus = healthStatus.statusNotOk
-    this.infoCache = opts.infoCache
+    this.getInfo = opts.getInfo
   }
 
   * putPair (uri) {
@@ -83,7 +86,7 @@ class ILPQuoter {
     const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs,
                                                params.source_ledger,
                                                params.destination_ledger)
-    const amount = 100000000
+    const amount = PROBE_SOURCE_AMOUNT
     const type = 'source'
     const ledger = params.destination_ledger
 
@@ -91,7 +94,7 @@ class ILPQuoter {
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
                 '/' + type
 
-    const ledgerInfo = yield this.infoCache.get(ledger)
+    const ledgerInfo = this.getInfo(ledger)
     const precision = ledgerInfo.precision
     const scale = ledgerInfo.scale
 

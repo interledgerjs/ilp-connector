@@ -46,15 +46,15 @@ class RoutingTables {
     this.publicTables = new routing.RoutingTables([], config.expiryDuration)
   }
 
-  * addLocalRoutes (infoCache, _localRoutes) {
+  addLocalRoutes (ledgers, _localRoutes) {
     const localRoutes = _localRoutes.map(routing.Route.fromData)
     this.localTables.addLocalRoutes(localRoutes)
 
     // Shift the graph down by a small amount so that precision rounding doesn't
     // cause UnacceptableRateErrors.
     for (const localRoute of localRoutes) {
-      const destinationAdjustment = yield this._getScaleAdjustment(
-        infoCache, localRoute.sourceLedger, localRoute.destinationLedger)
+      const destinationAdjustment = this._getScaleAdjustment(
+        ledgers, localRoute.sourceLedger, localRoute.destinationLedger)
       const shiftedLocalRoute = destinationAdjustment
         ? localRoute.shiftY(-destinationAdjustment)
         : localRoute
@@ -91,16 +91,12 @@ class RoutingTables {
     this.publicTables.removeExpiredRoutes()
   }
 
-  * _getScaleAdjustment (infoCache, sourceLedger, destinationLedger) {
-    const sourceScale = yield this._getScale(infoCache, sourceLedger)
-    const destinationScale = yield this._getScale(infoCache, destinationLedger)
+  _getScaleAdjustment (ledgers, sourceLedger, destinationLedger) {
+    const sourceScale = ledgers.getPlugin(sourceLedger).getInfo().scale
+    const destinationScale = ledgers.getPlugin(destinationLedger).getInfo().scale
     if (sourceScale === destinationScale && this.isTrivialRate) return 0
     const destinationAdjustment = destinationScale ? Math.pow(10, -destinationScale) : 0
     return destinationAdjustment
-  }
-
-  * _getScale (infoCache, ledger) {
-    return (yield infoCache.get(ledger)).scale
   }
 }
 
