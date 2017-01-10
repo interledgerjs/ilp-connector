@@ -4,6 +4,7 @@ const _ = require('lodash')
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
 const log = require('../../common').log.create('fixerio')
+const ServerError = require('five-bells-shared/errors/server-error')
 const healthStatus = require('../../common/health.js')
 
 const RATES_API = 'https://api.fixer.io/latest'
@@ -92,6 +93,14 @@ class FixerIoBackend {
     // Get ratio between currencies and apply spread
     const destinationRate = this.rates[params.destination_currency]
     const sourceRate = this.rates[params.source_currency]
+
+    if (!sourceRate) {
+      throw new ServerError('No rate available for currency ' + params.source_currency)
+    }
+
+    if (!destinationRate) {
+      throw new ServerError('No rate available for currency ' + params.destination_currency)
+    }
 
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
