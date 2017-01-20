@@ -59,15 +59,26 @@ class RouteBroadcaster {
 
   removeExpiredRoutesSoon () {
     setTimeout(() => {
-      this.routingTables.removeExpiredRoutes()
+      try {
+        this.routingTables.removeExpiredRoutes()
+      } catch (err) {
+        log.warn('removing expired routes failed')
+        log.debug(err)
+      }
       this.removeExpiredRoutesSoon()
     }, this.routeCleanupInterval)
   }
 
   broadcastSoon () {
     defer.setTimeout(function * () {
-      yield this.reloadLocalRoutes()
-      yield this.broadcast()
+      try {
+        this.routingTables.removeExpiredRoutes()
+        yield this.reloadLocalRoutes()
+        yield this.broadcast()
+      } catch (err) {
+        log.warn('broadcasting routes failed')
+        log.debug(err)
+      }
       this.broadcastSoon()
     }, this.routeBroadcastInterval)
   }
