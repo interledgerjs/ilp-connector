@@ -36,7 +36,7 @@
     "co-defer": "^1.0.0",
     "co-request": "^1.0.0",
     "eventemitter2": "^2.2.1",
-    "five-bells-shared": "^21.1.0",
+    "five-bells-shared": "~21.1.0",
     "ilp-core": "~10.1.0",
     "ilp-plugin-bells": "^9.3.0",
     "ilp-routing": "~5.3.0",
