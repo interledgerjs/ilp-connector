@@ -264,7 +264,8 @@ describe('Quotes', function () {
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
         destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.1, 0], [100000000, 105708159.89429183] ]
       })
     })
 
@@ -288,7 +289,8 @@ describe('Quotes', function () {
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
         destination_amount: '105.60', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.1, 0], [100000000, 105708159.89429183] ]
       })
     })
 
@@ -342,7 +344,8 @@ describe('Quotes', function () {
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
         destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.1, 0], [100000000, 105708159.89429183] ]
       })
     })
 
@@ -360,7 +363,8 @@ describe('Quotes', function () {
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
         destination_amount: '100.0000',
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.09460007628550152, 0], [100000000.09460008, 105708160] ]
       })
     })
 
@@ -377,7 +381,8 @@ describe('Quotes', function () {
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
         destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.1, 0], [100000000, 105708159.89429183] ]
       })
     })
 
@@ -394,7 +399,8 @@ describe('Quotes', function () {
         source_expiry_duration: '6',
         destination_ledger: 'eur-ledger.',
         destination_amount: '94.1278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.09999999999999999, 0], [100000000, 94222054.2864426] ]
       })
     })
 
@@ -411,7 +417,8 @@ describe('Quotes', function () {
         source_expiry_duration: '6',
         destination_ledger: 'cad-ledger.',
         destination_amount: '127.8538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.1, 0], [100000000, 127981816.33727498] ]
       })
     })
 
@@ -428,7 +435,8 @@ describe('Quotes', function () {
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
         destination_amount: '77.7460', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.1, 0], [100000000, 77823867.99255823] ]
       })
     })
 
@@ -519,7 +527,8 @@ describe('Quotes', function () {
         source_expiry_duration: '7',
         destination_ledger: 'random-ledger.',
         destination_amount: '188.2556',
-        destination_expiry_duration: '5'
+        destination_expiry_duration: '5',
+        liquidity_curve: [ [0.1, 0], [10613.226452905812, 19999.81155589124] ]
       })
     })
 

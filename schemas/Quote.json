@@ -29,6 +29,10 @@
       "$ref": "NonNegativeDuration.json"
     },
     "destination_expiry_duration": { "$ref": "NonNegativeDuration.json" },
+    "liquidity_curve": {
+      "$ref": "LiquidityCurve.json",
+      "description": "A list of points describing the exchange rate curve"
+    },
     "additional_info": {
       "description": "Additional information related to the quote",
       "type": "object"

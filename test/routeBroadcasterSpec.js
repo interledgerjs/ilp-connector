@@ -127,7 +127,7 @@ describe('RouteBroadcaster', function () {
         destination_ledger: ledgerB,
         min_message_window: 1,
         source_account: ledgerA + 'mark',
-        points: [ [0, -0.01], [200, 99.99] ],
+        points: [ [0.02, 0], [200, 99.99] ],
         destination_precision: 10,
         destination_scale: 2
       }, {
@@ -135,7 +135,7 @@ describe('RouteBroadcaster', function () {
         destination_ledger: ledgerC,
         min_message_window: 2,
         source_account: ledgerA + 'mark',
-        points: [ [0, 0], [0.02, 0], [100.02, 60], [200, 60] ],
+        points: [ [0.02, 0], [100.02, 60] ],
         destination_precision: 10,
         destination_scale: 2
       }
@@ -146,7 +146,7 @@ describe('RouteBroadcaster', function () {
         destination_ledger: ledgerA,
         min_message_window: 1,
         source_account: ledgerB + 'mark',
-        points: [ [0, -0.01], [100, 199.99] ],
+        points: [ [0.005, 0], [100, 199.99] ],
         destination_precision: 10,
         destination_scale: 2
       }
