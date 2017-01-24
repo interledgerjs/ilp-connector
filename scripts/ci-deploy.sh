@@ -3,7 +3,7 @@
 publishNpm() {
   # Push NPM package if not yet published
   mv npmrc-env .npmrc
-  if [ "$(npm info $(npm ls --depth=-1 2>/dev/null | head -1 | cut -f 1 -d " ") 2>/dev/null)" = "undefined" ]; then
+  if [ "$(npm show ilp-connector version)" != "$(npm ls --depth=-1 2>/dev/null | head -1 | cut -f 1 -d " " | cut -f 2 -d @)" ]; then
     npm publish
   fi
 }
