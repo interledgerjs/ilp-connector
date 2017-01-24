@@ -1,6 +1,7 @@
 'use strict'
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
+const routing = require('ilp-routing')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
@@ -62,16 +63,20 @@ class RouteBuilder {
     this._verifyLedgerIsConnected(quote.nextLedger)
 
     const slippage = params.slippage ? +params.slippage : this.slippage
+    // "curve" may or may not be provided on the quote.
+    const curve = quote.liquidityCurve && new routing.LiquidityCurve(quote.liquidityCurve)
     if (params.sourceAmount) {
       const amount = new BigNumber(quote.destinationAmount)
       const amountWithSlippage = amount.times(1 - slippage)
       quote.destinationAmount = amountWithSlippage.toString()
       info.slippage = amount.minus(amountWithSlippage).toString()
+      quote.liquidityCurve = curve && curve.shiftY(-info.slippage).getPoints()
     } else { // fixed destinationAmount
       const amount = new BigNumber(quote.sourceAmount)
       const amountWithSlippage = amount.times(1 + slippage)
       quote.sourceAmount = amountWithSlippage.toString()
       info.slippage = amount.minus(amountWithSlippage).toString()
+      quote.liquidityCurve = curve && curve.shiftX(-info.slippage).getPoints()
     }
 
     // Round in favor of the connector (source amount up; destination amount down)

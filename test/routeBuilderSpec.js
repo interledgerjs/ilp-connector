@@ -108,7 +108,8 @@ describe('RouteBuilder', function () {
             slippage: '1'
           },
           minMessageWindow: 1,
-          nextLedger: ledgerB
+          nextLedger: ledgerB,
+          liquidityCurve: [ [2, 0], [200, 99] ]
         })
       })
 
@@ -129,7 +130,8 @@ describe('RouteBuilder', function () {
           destinationExpiryDuration: '5',
           additionalInfo: { slippage: '0.25' },
           minMessageWindow: 2,
-          nextLedger: ledgerB
+          nextLedger: ledgerB,
+          liquidityCurve: [ [1, 0], [200, 49.75] ]
         })
       })
 
@@ -151,7 +153,8 @@ describe('RouteBuilder', function () {
           destinationExpiryDuration: '5',
           additionalInfo: { slippage: '2.5' },
           minMessageWindow: 2,
-          nextLedger: ledgerB
+          nextLedger: ledgerB,
+          liquidityCurve: [ [10, 0], [200, 47.5] ]
         })
       })
     })
@@ -174,7 +177,8 @@ describe('RouteBuilder', function () {
           destinationExpiryDuration: '5',
           additionalInfo: { slippage: '-1' },
           minMessageWindow: 2,
-          nextLedger: ledgerB
+          nextLedger: ledgerB,
+          liquidityCurve: [ [1, 0], [201, 50] ]
         })
       })
 
@@ -221,7 +225,8 @@ describe('RouteBuilder', function () {
           destinationExpiryDuration: '5',
           additionalInfo: { slippage: '0.25' },
           minMessageWindow: 2,
-          nextLedger: ledgerB
+          nextLedger: ledgerB,
+          liquidityCurve: [ [1, 0], [200, 49.75] ]
         })
       })
     })

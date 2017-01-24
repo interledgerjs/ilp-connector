@@ -75,6 +75,7 @@ function * getQuote (params, config, routeBuilder, balanceCache) {
     destination_amount: quote.destinationAmount,
     source_expiry_duration: quote.sourceExpiryDuration,
     destination_expiry_duration: quote.destinationExpiryDuration,
+    liquidity_curve: quote.liquidityCurve,
     additional_info: params.explain ? quote.additionalInfo : undefined
   })
 }
