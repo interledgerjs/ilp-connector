@@ -8,6 +8,7 @@ const assert = require('assert')
 const routing = require('ilp-routing')
 const RoutingTables = require('../src/lib/routing-tables')
 const RouteBroadcaster = require('../src/lib/route-broadcaster')
+const MessageRouter = require('../src/lib/message-router')
 const Ledgers = require('../src/lib/ledgers')
 const log = require('../src/common').log
 const appHelper = require('./helpers/app')
@@ -88,7 +89,8 @@ describe('RouteBroadcaster', function () {
       autoloadPeers: true,
       peers: [],
       ledgerCredentials,
-      configRoutes
+      configRoutes,
+      routeExpiry: 1234
     })
 
     this.tables.addRoute({
@@ -186,7 +188,12 @@ describe('RouteBroadcaster', function () {
         assert.deepEqual(message, {
           ledger: ledgerA,
           account: ledgerA + 'mary',
-          data: { method: 'broadcast_routes', data: routesFromA }
+          data:
+          { method: 'broadcast_routes',
+            data:
+            { hold_down_time: 1234,
+              unreachable_through_me: [],
+              new_routes: routesFromA } }
         })
         routesFromASent = true
         return Promise.resolve(null)
@@ -196,7 +203,12 @@ describe('RouteBroadcaster', function () {
         assert.deepEqual(message, {
           ledger: ledgerB,
           account: ledgerB + 'mary',
-          data: { method: 'broadcast_routes', data: routesFromB }
+          data:
+          { method: 'broadcast_routes',
+            data:
+            { hold_down_time: 1234,
+              unreachable_through_me: [],
+              new_routes: routesFromB } }
         })
         routesFromBSent = true
         return Promise.resolve(null)
@@ -206,6 +218,39 @@ describe('RouteBroadcaster', function () {
       this.broadcaster.broadcast()
       assert(routesFromASent)
       assert(routesFromBSent)
+    })
+
+    it('invalidates routes', function * () {
+      const config = this.config
+      const ledgers = this.ledgers
+      const routingTables = this.tables
+      const routeBroadcaster = this.routeBroadcaster
+      const routeBuilder = this.routeBuilder
+      const balanceCache = this.balanceCache
+      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+      const ledgerD = 'xrp.ledger.'
+      const newRoutes = [{
+        source_ledger: ledgerB,
+        destination_ledger: ledgerD,
+        source_account: ledgerB + 'mark',
+        min_message_window: 1,
+        points: [ [0, 0], [50, 60] ],
+        destination_precision: 10,
+        destination_scale: 2
+      }]
+      assert.equal(this.tables.toJSON(2).length, 3)
+      yield messageRouter.receiveRoutes({
+        new_routes: newRoutes,
+        hold_down_time: 1234,
+        unreachable_through_me: []
+      }, ledgerB + 'mark')
+      assert.equal(this.tables.toJSON(2).length, 4)
+      yield messageRouter.receiveRoutes({
+        new_routes: [],
+        hold_down_time: 1234,
+        unreachable_through_me: [ledgerD]
+      }, ledgerB + 'mark')
+      assert.equal(this.tables.toJSON(2).length, 3)
     })
 
     it('should send all routes even if sending one message fails', function * () {

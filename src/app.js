@@ -115,6 +115,7 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
         minMessageWindow: config.expiry.minMessageWindow,
         routeCleanupInterval: config.routeCleanupInterval,
         routeBroadcastInterval: config.routeBroadcastInterval,
+        routeExpiry: config.routeExpiry,
         autoloadPeers: config.autoloadPeers,
         peers: config.peers,
         ledgerCredentials: config.ledgerCredentials

@@ -81,6 +81,10 @@ class RoutingTables {
     return this.publicTables.toJSON(maxPoints)
   }
 
+  toDebugStrings () {
+    return this.publicTables.toDebugStrings()
+  }
+
   removeLedger (ledger) {
     this.localTables.removeLedger(ledger)
     this.publicTables.removeLedger(ledger)
@@ -88,7 +92,23 @@ class RoutingTables {
 
   removeExpiredRoutes () {
     this.localTables.removeExpiredRoutes()
-    this.publicTables.removeExpiredRoutes()
+    let removedRoutes = this.publicTables.removeExpiredRoutes()
+    return removedRoutes
+  }
+
+  bumpConnector (connectorAccount, holdDownTime) {
+    this.localTables.bumpConnector(connectorAccount, holdDownTime)
+    this.publicTables.bumpConnector(connectorAccount, holdDownTime)
+  }
+
+  invalidateConnector (connectorAccount) {
+    this.localTables.invalidateConnector(connectorAccount)
+    return this.publicTables.invalidateConnector(connectorAccount)
+  }
+
+  invalidateConnectorsRoutesTo (connectorAccount, ledger) {
+    this.localTables.invalidateConnectorsRoutesTo(connectorAccount, ledger)
+    return this.publicTables.invalidateConnectorsRoutesTo(connectorAccount, ledger)
   }
 
   _getScaleAdjustment (ledgers, sourceLedger, destinationLedger) {

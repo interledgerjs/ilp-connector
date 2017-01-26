@@ -112,8 +112,8 @@ describe('RouteBuilder', function () {
           liquidityCurve: [ [2, 0], [200, 99] ]
         })
       })
-
-      it('returns a quote with slippage in the final amount', function * () {
+      // disabled because of reduced quoting functionality for improved-route-broadcast
+      it.skip('returns a quote with slippage in the final amount', function * () {
         const quoteTransfer = yield this.builder.getQuote({
           sourceAddress: aliceA,
           destinationAddress: carlC,
@@ -134,8 +134,8 @@ describe('RouteBuilder', function () {
           liquidityCurve: [ [1, 0], [200, 49.75] ]
         })
       })
-
-      it('allows a specified slippage', function * () {
+      // disabled because of reduced quoting functionality for improved-route-broadcast
+      it.skip('allows a specified slippage', function * () {
         const quoteTransfer = yield this.builder.getQuote({
           sourceAddress: aliceA,
           destinationAddress: carlC,
@@ -160,7 +160,8 @@ describe('RouteBuilder', function () {
     })
 
     describe('fixed destinationAmount', function () {
-      it('returns a quote with slippage in the source amount', function * () {
+      // disabled because of reduced quoting functionality for improved-route-broadcast
+      it.skip('returns a quote with slippage in the source amount', function * () {
         const quoteTransfer = yield this.builder.getQuote({
           sourceAddress: aliceA,
           destinationAddress: carlC,
@@ -206,8 +207,8 @@ describe('RouteBuilder', function () {
           destination_scale: 0
         })
       })
-
-      it('Local quote should return additional info', function * () {
+      // disabled because of reduced quoting functionality for improved-route-broadcast
+      it.skip('Local quote should return additional info', function * () {
         const quoteTransfer = yield this.builder.getQuote({
           sourceAddress: aliceA,
           destinationAddress: carlC,

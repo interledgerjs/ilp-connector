@@ -52,6 +52,7 @@ exports.create = function (context) {
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,
     routeBroadcastInterval: config.routeBroadcastInterval,
+    routeExpiry: config.routeExpiry,
     autoloadPeers: true,
     peers: [],
     ledgerCredentials: config.ledgerCredentials,

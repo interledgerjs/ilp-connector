@@ -36,6 +36,17 @@ class RouteBroadcaster {
     this.autoloadPeers = config.autoloadPeers
     this.defaultPeers = config.peers
     this.peersByLedger = {} // { ledgerPrefix ⇒ { connectorAddress ⇒ true } }
+
+    this.peerEpochs = {} // { adjacentConnector ⇒ int } the last broadcast-epoch we successfully informed a peer in
+    this.holdDownTime = config.routeExpiry // todo? replace 'expiry' w/ hold-down or just reappropriate the term?
+    if (!this.holdDownTime) {
+      throw new Error('no holdDownTime')
+    }
+    if (this.routeBroadcastInterval >= this.holdDownTime) {
+      throw new Error('holdDownTime must be greater than routeBroadcastInterval or routes will expire between broadcasts!')
+    }
+    this.detectedDown = new Set()
+    this.lastNewRouteSentAt = Date.now()
   }
 
   * start () {
@@ -60,13 +71,24 @@ class RouteBroadcaster {
   removeExpiredRoutesSoon () {
     setTimeout(() => {
       try {
-        this.routingTables.removeExpiredRoutes()
+        let lostLedgerLinks = this.routingTables.removeExpiredRoutes()
+        this.markLedgersUnreachable(lostLedgerLinks)
       } catch (err) {
         log.warn('removing expired routes failed')
         log.debug(err)
       }
-      this.removeExpiredRoutesSoon()
     }, this.routeCleanupInterval)
+  }
+
+  markLedgersUnreachable (lostLedgerLinks) {
+    if (lostLedgerLinks.length > 0) log.info('detected lostLedgerLinks:', lostLedgerLinks)
+    lostLedgerLinks.forEach((unreachableLedger) => { this.detectedDown.add(unreachableLedger) })
+  }
+  _currentEpoch () {
+    return this.routingTables.publicTables.currentEpoch
+  }
+  _endEpoch () {
+    this.routingTables.publicTables.incrementEpoch()
   }
 
   broadcastSoon () {
@@ -75,6 +97,7 @@ class RouteBroadcaster {
         this.routingTables.removeExpiredRoutes()
         yield this.reloadLocalRoutes()
         yield this.broadcast()
+        this._endEpoch()
       } catch (err) {
         log.warn('broadcasting routes failed')
         log.debug(err)
@@ -87,9 +110,13 @@ class RouteBroadcaster {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
     log.debug('broadcasting to %d adjacent ledgers', adjacentLedgers.length)
+    const unreachableLedgers = Array.from(this.detectedDown)
+    this.detectedDown.clear()
+    log.debug('broadcast unreachableLedgers:', unreachableLedgers)
+
     return Promise.all(adjacentLedgers.map((adjacentLedger) => {
       const ledgerRoutes = routes.filter((route) => route.source_ledger === adjacentLedger)
-      return this._broadcastToLedger(adjacentLedger, ledgerRoutes)
+      return this._broadcastToLedger(adjacentLedger, ledgerRoutes, unreachableLedgers)
         .catch((err) => {
           log.warn('broadcasting routes on ledger ' + adjacentLedger + ' failed')
           log.debug(err)
@@ -97,17 +124,23 @@ class RouteBroadcaster {
     }))
   }
 
-  _broadcastToLedger (adjacentLedger, routes) {
+  _broadcastToLedger (adjacentLedger, routes, unreachableLedgers) {
     const connectors = Object.keys(this.peersByLedger[adjacentLedger])
     return Promise.all(connectors.map((account) => {
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
-
+      let routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
+      routesNewToConnector.forEach((r) => delete r.added_during_epoch)
+      if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:', unreachableLedgers)
       const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
         account: account,
         data: {
           method: 'broadcast_routes',
-          data: routes
+          data: {
+            new_routes: routesNewToConnector,
+            hold_down_time: this.holdDownTime,
+            unreachable_through_me: unreachableLedgers
+          }
         }
       })
       // timeout the plugin.sendMessage Promise just so we don't have it hanging around forever
@@ -120,7 +153,15 @@ class RouteBroadcaster {
       // Even if there is an error sending a specific route or a sendMessage promise hangs,
       // we should continue sending the other broadcasts out
       return Promise.race([broadcastPromise, timeoutPromise])
+        .then((val) => {
+          this.peerEpochs[account] = this._currentEpoch()
+        })
         .catch((err) => {
+          let lostLedgerLinks = this.routingTables.invalidateConnector(account)
+          log.info('detectedDown! account:', account, 'lostLedgerLinks:', lostLedgerLinks)
+          this.markLedgersUnreachable(lostLedgerLinks)
+          // todo: it would be better for the possibly-just-netsplit connector to report its last seen version of this connector's ledger
+          this.peerEpochs[account] = -1
           log.warn('broadcasting routes to ' + account + ' failed')
           log.debug(err)
         })
@@ -212,7 +253,7 @@ class RouteBroadcaster {
       points: curve.points,
       destinationPrecision: destinationInfo.precision,
       destinationScale: destinationInfo.scale
-    })
+    }, this._currentEpoch())
   }
 }
 

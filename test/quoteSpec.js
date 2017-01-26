@@ -504,7 +504,8 @@ describe('Quotes', function () {
       yield assert.isRejected(quotePromise, InvalidBodyError, 'Missing required parameter: destination_address')
     })
 
-    it('quotes a multi-hop route', function * () {
+    // the functionality this tests has been disabled, maybe only temporarily
+    it.skip('quotes a multi-hop route', function * () {
       yield this.messageRouter.receiveRoutes([{
         source_ledger: 'eur-ledger.',
         destination_ledger: 'random-ledger.',

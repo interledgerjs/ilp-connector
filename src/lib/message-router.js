@@ -7,6 +7,7 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
 const validate = require('./validate').validate
 const quoteModel = require('../models/quote')
 const log = require('../common/log').create('message-router')
+const debug = require('debug')('ilp-connector')
 
 /**
  * @param {Object} opts
@@ -105,18 +106,39 @@ MessageRouter.prototype._handleRequest = function * (request, sender) {
  * @param {Route[]} routes
  * @param {IlpAddress} sender
  */
-MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
-  validate('Routes', routes)
-  let gotNewRoute = false
+MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
+  validate('RoutingUpdate', payload)
+  debug('receiveRoutes sender:', sender)
+  let routes = payload.new_routes
 
+  let holdDownTime = payload.hold_down_time
+  this.routingTables.bumpConnector(sender, holdDownTime)
+  let potentiallyUnreachableLedgers = payload.unreachable_through_me
+  let lostLedgerLinks = []
+  if (potentiallyUnreachableLedgers.length > 0) {
+    log.info('informed of broken routes to:', potentiallyUnreachableLedgers, ' through:', sender)
+    for (const ledger of potentiallyUnreachableLedgers) {
+      lostLedgerLinks.push(...this.routingTables.invalidateConnectorsRoutesTo(sender, ledger))
+    }
+  }
+
+  if (routes.length === 0 && lostLedgerLinks.length === 0) { // just a heartbeat
+    log.info('got heartbeat from:', sender)
+    return
+  }
+
+  let gotNewRoute = false
   for (const route of routes) {
     // We received a route from another connector, but that connector
     // doesn't actually belong to the route, so ignore it.
     if (route.source_account !== sender) continue
     if (this.routingTables.addRoute(route)) gotNewRoute = true
   }
+  debug('receiveRoutes sender:', sender, ' provided ', routes.length, ' any new?:', gotNewRoute)
 
-  if (gotNewRoute && this.config.routeBroadcastEnabled) {
+  if ((gotNewRoute || (lostLedgerLinks.length > 0)) &&
+      this.config.routeBroadcastEnabled) {
+    this.routeBroadcaster.markLedgersUnreachable(lostLedgerLinks)
     co(this.routeBroadcaster.broadcast.bind(this.routeBroadcaster))
       .catch(function (err) {
         log.warn('error broadcasting routes: ' + err.message)
