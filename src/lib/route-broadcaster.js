@@ -80,7 +80,7 @@ class RouteBroadcaster {
         log.debug(err)
       }
       this.broadcastSoon()
-    }, this.routeBroadcastInterval)
+    }.bind(this), this.routeBroadcastInterval)
   }
 
   broadcast () {
