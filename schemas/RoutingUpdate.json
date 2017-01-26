@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "RoutingUpdate",
+  "description": "A routing update object",
+  "type": "object",
+  "properties": {
+    "hold_down_time": {
+      "description": "Time in milliseconds for which the sending connector claims its routes to be fresh, without another heartbeat",
+      "type": "integer",
+      "minimum": 1
+    },
+    "unreachable_through_me": {
+      "description": "A list of ledgers that have become unreachable through the sending connector",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "IlpAddress.json"
+      }
+    },
+    "new_routes": {
+      "description": "A list of Routes that have been added to the sending connector's table since the last update it has sent you.  May replace previously broadcast routes.",
+      "$ref": "Routes.json"
+    }
+  },
+  "required": [
+    "hold_down_time",
+    "unreachable_through_me",
+    "new_routes"
+  ],
+  "additionalProperties": false
+}
