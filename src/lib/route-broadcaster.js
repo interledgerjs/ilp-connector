@@ -86,6 +86,7 @@ class RouteBroadcaster {
   broadcast () {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
+    log.debug('broadcasting to %d adjacent ledgers', adjacentLedgers.length)
     return Promise.all(adjacentLedgers.map((adjacentLedger) => {
       const ledgerRoutes = routes.filter((route) => route.source_ledger === adjacentLedger)
       return this._broadcastToLedger(adjacentLedger, ledgerRoutes)
