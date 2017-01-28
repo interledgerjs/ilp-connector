@@ -4,6 +4,7 @@ const testPaymentExpiry = require('../lib/testPaymentExpiry')
 const log = require('../common').log.create('payments')
 const executeSourceTransfer = require('../lib/executeSourceTransfer')
 const validator = require('../lib/validate')
+const startsWith = require('lodash/startsWith')
 
 function validateIlpHeader (sourceTransfer) {
   validator.validate('IlpHeader', sourceTransfer.data.ilp_header)
@@ -31,6 +32,19 @@ function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
 function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
   validateIlpHeader(sourceTransfer)
 
+  const destinationAddress = sourceTransfer.data.ilp_header.account
+  const myAddress = ledgers.getPlugin(sourceTransfer.ledger).getAccount()
+  if (startsWith(destinationAddress, myAddress)) {
+    log.debug(
+      'cannot process transfer addressed to destination which starts with my address destination=%s me=%s',
+      destinationAddress,
+      myAddress
+    )
+    yield rejectIncomingTransfer(sourceTransfer, 'transfer addressed to me', ledgers)
+
+    return
+  }
+
   const destinationTransfer = yield routeBuilder.getDestinationTransfer(sourceTransfer)
 
   yield validateExpiry(sourceTransfer, destinationTransfer, config)
@@ -44,6 +58,23 @@ function * processExecutionFulfillment (transfer, fulfillment, ledgers, backend)
     log.debug('Got notification about executed destination transfer with ID ' +
       transfer.id + ' on ledger ' + transfer.ledger)
     yield executeSourceTransfer(transfer, fulfillment, ledgers, backend)
+  }
+}
+
+function * rejectIncomingTransfer (sourceTransfer, rejectionMessage, ledgers) {
+  if (sourceTransfer.executionCondition) {
+    log.debug(
+      'rejecting incoming transfer id=%s reason=%s',
+      sourceTransfer.id,
+      rejectionMessage
+    )
+    yield ledgers.getPlugin(sourceTransfer.ledger).rejectIncomingTransfer(sourceTransfer.id, 'transfer addressed to me')
+  } else {
+    log.debug(
+      'ignoring incoming optimistic transfer id=%s reason=%s',
+      sourceTransfer.id,
+      rejectionMessage
+    )
   }
 }
 
@@ -64,5 +95,6 @@ function * rejectSourceTransfer (destinationTransfer, rejectionMessage, ledgers)
 module.exports = {
   updateIncomingTransfer,
   processExecutionFulfillment,
+  rejectIncomingTransfer,
   rejectSourceTransfer
 }
