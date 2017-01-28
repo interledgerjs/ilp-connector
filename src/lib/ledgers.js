@@ -115,6 +115,7 @@ class Ledgers {
     const plugin = this.getPlugin(ledgerPrefix)
     this._pairs.removeAll(this.getCurrencyForLedger(ledgerPrefix) + '@' + ledgerPrefix)
     this._core.removeClient(ledgerPrefix)
+    this._ledgers.delete(ledgerPrefix)
     return plugin
   }
 }
