@@ -96,7 +96,7 @@ MessageRouter.prototype._handleRequest = function * (request, sender) {
     return
   }
 
-  throw new InvalidBodyError('Invalid method')
+  log.debug('ignoring unkown request method', request.method)
 }
 
 /**
