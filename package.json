@@ -31,6 +31,7 @@
     "node": ">=6.6.0"
   },
   "dependencies": {
+    "asyncawait": "^1.0.6",
     "bignumber.js": "^3.0.1",
     "co": "^4.1.0",
     "co-defer": "^1.0.0",
@@ -45,9 +46,11 @@
     "moment": "^2.10.2",
     "riverpig": "^1.1.0",
     "sequelize": "^3.27.0",
-    "through2": "^2.0.1"
+    "through2": "^2.0.1",
+    "zeromq": "^4.2.0"
   },
   "devDependencies": {
+    "@types/node": "^7.0.4",
     "chai": "^3.2.0",
     "chai-as-promised": "^6.0.0",
     "co-mocha": "^1.1.0",
