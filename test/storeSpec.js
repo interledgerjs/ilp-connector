@@ -36,4 +36,14 @@ describe('PluginStore', function () {
     yield this.obj.put('k', str)
     assert.equal(yield this.obj.get('k'), str)
   })
+
+  it('should not create a store with an invalid name', function * () {
+    const name = ('"; drop table "Users; --')
+    try {
+      const store = new PluginStore('sqlite://:memory:', name)
+      assert(!store, 'constructor should have thrown an error')
+    } catch (e) {
+      assert.match(e.message, new RegExp(name))
+    }
+  })
 })
