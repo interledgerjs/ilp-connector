@@ -8,6 +8,10 @@ class PluginStore {
     this.name = name
     this.db = new Database(uri)
 
+    if (!name.match(/^[A-Za-z0-9_-~]+$/)) {
+      throw new Error('"' + name + '" includes forbidden characters.')
+    }
+
     this.Store = this.db.define('plugin_store_' + name, {
       key: { type: Sequelize.TEXT, primaryKey: true },
       value: Sequelize.TEXT
