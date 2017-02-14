@@ -1,6 +1,6 @@
 {
   "name": "ilp-connector",
-  "version": "14.0.0",
+  "version": "14.0.1",
   "description": "ILP connector reference implementation",
   "repository": {
     "type": "git",
