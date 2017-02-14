@@ -36,6 +36,18 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       yield routeBroadcaster.addConfigRoutes()
       yield routeBroadcaster.reloadLocalRoutes()
     }
+    log.info('integrationTestUri:',config.integrationTestUri)
+    if (config.integrationTestUri) {
+      const IntegrationTestClient = require('./lib/integration-test-client')
+      const itc = new IntegrationTestClient(config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter)
+      itc.start()
+    }
+    if (config.integrationTestPort) {
+      log.info('integrationTestPort:',config.integrationTestPort)
+      const IntegrationTestServer = require('./lib/integration-test-server')
+      const its = new IntegrationTestServer(config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter)
+      its.start()
+    }
     log.info('connector ready (republic attitude)')
   }).catch((err) => log.error(err))
 }
@@ -115,6 +127,7 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
         minMessageWindow: config.expiry.minMessageWindow,
         routeCleanupInterval: config.routeCleanupInterval,
         routeBroadcastInterval: config.routeBroadcastInterval,
+        routeExpiry: config.routeExpiry,
         autoloadPeers: config.autoloadPeers,
         peers: config.peers,
         ledgerCredentials: config.ledgerCredentials

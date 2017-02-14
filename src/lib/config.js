@@ -178,6 +178,14 @@ function getLocalConfig () {
   // when using the ilp-quote backend)
   const backendUri = Config.getEnv(envPrefix, 'BACKEND_URI')
 
+  // when CONNECTOR_INTEGRATION_TEST_URI is defined, hooks may be added, resulting in POSTs to this URI.
+  const integrationTestUri = Config.getEnv(envPrefix, 'INTEGRATION_TEST_URI')
+  // when CONNECTOR_INTEGRATION_TEST_PORT is defined, a http server will be started, to provide access to connector internals
+  const integrationTestPort = Config.getEnv(envPrefix, 'INTEGRATION_TEST_PORT')
+  // when either INTEGRATION_TEST var is set, name should be too
+  const integrationTestName = Config.getEnv(envPrefix, 'INTEGRATION_TEST_NAME')
+  // TODO: assert proper combination of integration test vars and their types
+
   const routeBroadcastEnabledString = Config.getEnv(envPrefix, 'ROUTE_BROADCAST_ENABLED')
   const routeBroadcastEnabled =
     routeBroadcastEnabledString ? Config.castBool(routeBroadcastEnabledString) : true
@@ -212,6 +220,9 @@ function getLocalConfig () {
     features,
     tradingPairs,
     backendUri,
+    integrationTestName,
+    integrationTestUri,
+    integrationTestPort,
     routeBroadcastEnabled,
     routeBroadcastInterval,
     routeCleanupInterval,

@@ -7,6 +7,7 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
 const validate = require('./validate').validate
 const quoteModel = require('../models/quote')
 const log = require('../common/log').create('message-router')
+const debug = require('debug')('ilp-connector:message-router')
 
 /**
  * @param {Object} opts
@@ -106,6 +107,7 @@ MessageRouter.prototype._handleRequest = function * (request, sender) {
  * @param {IlpAddress} sender
  */
 MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
+  debug('receiveRoutes this:',this)
   validate('Routes', routes)
   let gotNewRoute = false
 
@@ -115,7 +117,6 @@ MessageRouter.prototype.receiveRoutes = function * (routes, sender) {
     if (route.source_account !== sender) continue
     if (this.routingTables.addRoute(route)) gotNewRoute = true
   }
-
   if (gotNewRoute && this.config.routeBroadcastEnabled) {
     co(this.routeBroadcaster.broadcast.bind(this.routeBroadcaster))
       .catch(function (err) {
