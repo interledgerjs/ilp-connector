@@ -4,8 +4,8 @@ const BigNumber = require('bignumber.js')
 const routing = require('ilp-routing')
 const AssetsNotTradedError = require('../errors/assets-not-traded-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
-const UnacceptableRateError = require('../errors/unacceptable-rate-error')
 const LedgerNotConnectedError = require('../errors/ledger-not-connected-error')
+const IlpError = require('../errors/ilp-error')
 const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 const log = require('../common/log').create('route-builder')
 
@@ -115,14 +115,24 @@ class RouteBuilder {
       sourceTransfer.data && JSON.stringify(sourceTransfer.data.ilp_header))
     const ilpHeader = sourceTransfer.data && sourceTransfer.data.ilp_header
     if (!ilpHeader) {
-      throw new Error('source transfer is missing ilp_header in memo')
+      throw new IlpError({
+        code: 'S01',
+        name: 'Invalid Packet',
+        message: 'source transfer is missing ilp_header in memo'
+      })
     }
 
     const sourceLedger = sourceTransfer.ledger
     // Use `findBestHopForSourceAmount` since the source amount includes the slippage.
     const nextHop = this.routingTables.findBestHopForSourceAmount(
       sourceLedger, ilpHeader.account, sourceTransfer.amount)
-    if (!nextHop) throwAssetsNotTradedError()
+    if (!nextHop) {
+      throw new IlpError({
+        code: 'S02',
+        name: 'Unreachable',
+        message: 'This connector does not support the given asset pair'
+      })
+    }
     this._verifyLedgerIsConnected(nextHop.destinationLedger)
 
     // Round in favor of the connector. findBestHopForSourceAmount uses the
@@ -138,7 +148,11 @@ class RouteBuilder {
       // Verify ilpHeader.amount ≤ nextHop.finalAmount
       const expectedFinalAmount = new BigNumber(ilpHeader.amount)
       if (expectedFinalAmount.greaterThan(roundedFinalAmount)) {
-        throw new UnacceptableRateError('Payment rate does not match the rate currently offered')
+        throw new IlpError({
+          code: 'R02',
+          name: 'Insufficient Source Amount',
+          message: 'Payment rate does not match the rate currently offered'
+        })
       }
       // TODO: Verify atomic mode notaries are trusted
       // TODO: Verify expiry is acceptable
