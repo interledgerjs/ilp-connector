@@ -2,7 +2,7 @@
 const _ = require('lodash')
 const moment = require('moment')
 const request = require('co-request')
-const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
+const IlpError = require('../errors/ilp-error')
 
 /**
  * In atomic mode, transfers shouldn't have an `expires_at` property.
@@ -45,7 +45,11 @@ TransferTester.prototype.getExpiry = function (transfer) {
     this.expiryByCase, getTransferCases(transfer))))
   if (expiries.length === 0) return undefined
   if (expiries.length === 1) return expiries[0]
-  throw new UnacceptableExpiryError('Case expiries don\'t agree')
+  throw new IlpError({
+    code: 'S00',
+    name: 'Bad Request',
+    message: 'Case expiries don\'t agree'
+  })
 }
 
 TransferTester.prototype.isAtomic = function () {
@@ -61,13 +65,21 @@ TransferTester.prototype.validateNotExpired = function () {
   {
     const expiresAt = this.getExpiry(this.sourceTransfer)
     if (expiresAt && moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
-      throw new UnacceptableExpiryError('Transfer has already expired')
+      throw new IlpError({
+        code: 'R03',
+        name: 'Insufficient Timeout',
+        message: 'Transfer has already expired'
+      })
     }
   }
   {
     const expiresAt = this.getExpiry(this.destinationTransfer)
     if (expiresAt && moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
-      throw new UnacceptableExpiryError('Not enough time to send payment')
+      throw new IlpError({
+        code: 'R03',
+        name: 'Insufficient Timeout',
+        message: 'Not enough time to send payment'
+      })
     }
   }
 }
@@ -87,17 +99,25 @@ TransferTester.prototype.validateMaxHoldTime = function () {
   if (expiresAt) {
     this.validateExpiryHoldTime(expiresAt)
   } else {
-    throw new UnacceptableExpiryError('Destination transfers with ' +
-      'execution conditions must have an expires_at field for connector ' +
-      'to agree to authorize them')
+    throw new IlpError({
+      code: 'S00',
+      name: 'Bad Request',
+      message: 'Destination transfers with ' +
+        'execution conditions must have an expires_at field for connector ' +
+        'to agree to authorize them'
+    })
   }
 }
 
 TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
   if (moment(expiresAt, moment.ISO_8601).diff(moment()) > this.maxHoldTime) {
-    throw new UnacceptableExpiryError('Destination transfer expiry is ' +
-      "too far in the future. The connector's money would need to be " +
-      'held for too long')
+    throw new IlpError({
+      code: 'R03',
+      name: 'Insufficient Timeout',
+      message: 'Destination transfer expiry is ' +
+        "too far in the future. The connector's money would need to be " +
+        'held for too long'
+    })
   }
 }
 
@@ -125,13 +145,21 @@ TransferTester.prototype.loadCaseExpiry = function * (caseID) {
     json: true
   })
   if (caseRes.statusCode !== 200) {
-    throw new UnacceptableExpiryError('Unexpected remote error: ' + caseRes.statusCode + ' ' + caseRes.body)
+    throw new IlpError({
+      code: 'T00',
+      name: 'Internal Error',
+      message: 'Unexpected remote error: ' + caseRes.statusCode + ' ' + caseRes.body
+    })
   }
   const expiry = caseRes.body.expires_at
   if (expiry) {
     this.expiryByCase[caseID] = expiry
   } else {
-    throw new UnacceptableExpiryError('Cases must have an expiry.')
+    throw new IlpError({
+      code: 'S00',
+      name: 'Bad Request',
+      message: 'Cases must have an expiry.'
+    })
   }
 }
 
