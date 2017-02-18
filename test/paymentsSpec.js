@@ -107,10 +107,10 @@ describe('Payments', function () {
         source_transfer_ledger: 'mock.test2.',
         source_transfer_amount: '1.0'
       }
-    }, 'cf:0:')
+    }, 'oAKAAA')
 
     sinon.assert.calledOnce(fulfillSpy)
-    sinon.assert.calledWith(fulfillSpy, '130394ed-f621-4663-80dc-910adc66f4c6', 'cf:0:')
+    sinon.assert.calledWith(fulfillSpy, '130394ed-f621-4663-80dc-910adc66f4c6', 'oAKAAA')
   })
 
   it('passes on the executionCondition', function * () {
@@ -120,7 +120,7 @@ describe('Payments', function () {
       direction: 'incoming',
       ledger: 'mock.test1.',
       amount: '100',
-      executionCondition: 'cc:0:',
+      executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
       data: {
         ilp_header: {
@@ -136,7 +136,7 @@ describe('Payments', function () {
       ledger: 'mock.test2.',
       account: 'mock.test2.bob',
       amount: '50',
-      executionCondition: 'cc:0:',
+      executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
       expiresAt: (new Date(START_DATE)).toISOString(),
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
@@ -217,7 +217,7 @@ describe('Payments', function () {
         direction: 'incoming',
         ledger: 'mock.test1.',
         amount: '100',
-        executionCondition: 'cc:0:',
+        executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
         expiresAt: (new Date(START_DATE + 1000)).toISOString(),
         data: {
           ilp_header: {

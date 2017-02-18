@@ -132,10 +132,10 @@ describe('Subscriptions', function () {
           source_transfer_id: sourceId,
           source_transfer_amount: sourceTransfer.debits[0].amount
         }
-      }, 'cf:0:')
+      }, 'oAKAAA')
 
     sinon.assert.calledOnce(fulfillSpy)
-    sinon.assert.calledWith(fulfillSpy, sourceId, 'cf:0:')
+    sinon.assert.calledWith(fulfillSpy, sourceId, 'oAKAAA')
   })
 
   it('should notify the backend of a successful payment', function * () {
@@ -157,7 +157,7 @@ describe('Subscriptions', function () {
           source_transfer_id: sourceId,
           source_transfer_amount: sourceTransfer.debits[0].amount
         }
-      }, 'cf:0:')
+      }, 'oAKAAA')
 
     sinon.assert.calledOnce(backendSpy)
     sinon.assert.calledWith(backendSpy, {
