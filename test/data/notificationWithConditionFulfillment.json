@@ -12,10 +12,10 @@
       "amount":"1.00",
       "account":"eur-ledger.bob"
     }],
-    "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
+    "execution_condition": "ni:///sha-256;vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI?fpt=preimage-sha-256&cost=7",
     "state": "executed"
   },
   "related_resources": {
-    "execution_condition_fulfillment": "cf:0:ZXhlY3V0ZQ"
+    "execution_condition_fulfillment": "oAmAB2V4ZWN1dGU"
   }
 }

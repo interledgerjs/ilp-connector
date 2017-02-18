@@ -13,7 +13,7 @@
     "amount":"1.00",
     "account":"eur-ledger.bob"
   }],
-  "execution_condition": "cc:0:3:vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI:7",
+  "execution_condition": "ni:///sha-256;vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI?fpt=preimage-sha-256&cost=7",
   "expires_at": "2015-06-16T00:00:02.000Z",
   "state": "proposed"
 }
