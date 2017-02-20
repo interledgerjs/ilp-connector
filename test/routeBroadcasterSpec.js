@@ -117,7 +117,7 @@ describe('RouteBroadcaster', function () {
       this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.config)
       yield this.broadcaster.crawl()
       console.log(this.broadcaster.peersByLedger)
-      assert(this.broadcaster.peersByLedger['eur-ledger.']['margery'])
+      assert(this.broadcaster.peersByLedger['eur-ledger.']['eur-ledger.margery'])
     })
   })
 

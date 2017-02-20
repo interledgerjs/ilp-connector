@@ -35,7 +35,9 @@ class RouteBroadcaster {
 
     this.autoloadPeers = config.autoloadPeers
     this.defaultPeers = config.peers
-    this.peersByLedger = {} // { ledgerPrefix ⇒ { connectorAddress ⇒ true } }
+    // peersByLedger is stored in the form { ledgerPrefix ⇒ { connectorAddress ⇒ true } }
+    // Note that the connectorAddress must be the full ILP address, including the ledgerPrefix
+    this.peersByLedger = {}
 
     this.peerEpochs = {} // { adjacentConnector ⇒ int } the last broadcast-epoch we successfully informed a peer in
     this.holdDownTime = config.routeExpiry // todo? replace 'expiry' w/ hold-down or just reappropriate the term?
@@ -190,9 +192,8 @@ class RouteBroadcaster {
 
     // Add peers from config if their prefixes match the ledger,
     // even if they are not returned in the ledger info
-    for (const connectorAddress of this.defaultPeers) {
-      if (connectorAddress.indexOf(prefix) === 0) {
-        const connector = connectorAddress.replace(prefix, '')
+    for (const connector of this.defaultPeers) {
+      if (connector.indexOf(prefix) === 0) {
         this._addPeer(prefix, connector)
       }
     }
