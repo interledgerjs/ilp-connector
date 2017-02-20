@@ -184,11 +184,30 @@ class RouteBroadcaster {
       // Don't broadcast routes to ourselves.
       if (localAccount === connector) continue
       if (this.autoloadPeers || this.defaultPeers.indexOf(connector) !== -1) {
-        this.peersByLedger[prefix] = this.peersByLedger[prefix] || {}
-        this.peersByLedger[prefix][connector] = true
-        log.info('adding peer ' + connector + ' via ledger ' + prefix)
+        this._addPeer(prefix, connector)
       }
     }
+
+    // Add peers from config if their prefixes match the ledger,
+    // even if they are not returned in the ledger info
+    for (const connectorAddress of this.defaultPeers) {
+      if (connectorAddress.indexOf(prefix) === 0) {
+        const connector = connectorAddress.replace(prefix, '')
+        this._addPeer(prefix, connector)
+      }
+    }
+  }
+
+  _addPeer (prefix, connector) {
+    if (!this.peersByLedger[prefix]) {
+      this.peersByLedger[prefix] = {}
+    }
+    if (this.peersByLedger[prefix][connector]) {
+      // don't log duplicates
+      return
+    }
+    this.peersByLedger[prefix][connector] = true
+    log.info('adding peer ' + connector + ' via ledger ' + prefix)
   }
 
   depeerLedger (prefix) {

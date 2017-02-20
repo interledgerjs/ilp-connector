@@ -80,7 +80,7 @@ describe('RouteBroadcaster', function () {
       destination_scale: 2
     }])
 
-    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, {
+    this.config = {
       tradingPairs: [
         [ledgerA, ledgerB],
         [ledgerB, ledgerA]
@@ -91,7 +91,9 @@ describe('RouteBroadcaster', function () {
       ledgerCredentials,
       configRoutes,
       routeExpiry: 1234
-    })
+    }
+
+    this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.config)
 
     this.tables.addRoute({
       source_ledger: ledgerB,
@@ -107,6 +109,16 @@ describe('RouteBroadcaster', function () {
 
   afterEach(function () {
     delete process.env.BACKEND
+  })
+
+  describe('crawl', function () {
+    it('loads peers from CONNECTOR_PEERS even if they are not returned in the ledger info', function * () {
+      this.config.peers.push('eur-ledger.margery')
+      this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.config)
+      yield this.broadcaster.crawl()
+      console.log(this.broadcaster.peersByLedger)
+      assert(this.broadcaster.peersByLedger['eur-ledger.']['margery'])
+    })
   })
 
   describe('addConfigRoutes', function () {
