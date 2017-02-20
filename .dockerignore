@@ -1,2 +1,4 @@
 .npmrc
+/integration-test/*
+/coverage/*
 
