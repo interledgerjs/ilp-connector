@@ -180,6 +180,10 @@ class RouteBroadcaster {
   }
 
   * _crawlLedgerPlugin (plugin) {
+    if (!plugin.isConnected()) {
+      plugin.once('connect', () => this._crawlLedgerPlugin(plugin))
+      return
+    }
     const localAccount = plugin.getAccount()
     const info = plugin.getInfo()
     const prefix = info.prefix
