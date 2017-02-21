@@ -29,12 +29,25 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       process.exit(1)
     }
     yield subscriptions.subscribePairs(ledgers.getCore(), config, routeBuilder, messageRouter, backend)
-    yield ledgers.connect({timeout: Infinity})
+
+    let allLedgersConnected
+    try {
+      yield ledgers.connect({timeout: 10000})
+      allLedgersConnected = true
+    } catch (err) {
+      allLedgersConnected = false
+      log.warn('one or more ledgers failed to connect; broadcasting routes anyway; error=', err.message)
+    }
+
     if (config.routeBroadcastEnabled) {
       yield routeBroadcaster.start()
     } else {
       yield routeBroadcaster.addConfigRoutes()
       yield routeBroadcaster.reloadLocalRoutes()
+    }
+
+    if (!allLedgersConnected) {
+      yield ledgers.connect({timeout: Infinity})
     }
     log.info('connector ready (republic attitude)')
   }).catch((err) => log.error(err))

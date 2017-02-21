@@ -105,6 +105,7 @@ describe('RouteBroadcaster', function () {
       destination_precision: 10,
       destination_scale: 2
     })
+    yield this.ledgers.connect()
   })
 
   afterEach(function () {
