@@ -132,10 +132,10 @@ describe('Subscriptions', function () {
           source_transfer_id: sourceId,
           source_transfer_amount: sourceTransfer.debits[0].amount
         }
-      }, 'oAKAAA')
+      }, 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
 
     sinon.assert.calledOnce(fulfillSpy)
-    sinon.assert.calledWith(fulfillSpy, sourceId, 'oAKAAA')
+    sinon.assert.calledWith(fulfillSpy, sourceId, 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
   })
 
   it('should notify the backend of a successful payment', function * () {
@@ -157,7 +157,7 @@ describe('Subscriptions', function () {
           source_transfer_id: sourceId,
           source_transfer_amount: sourceTransfer.debits[0].amount
         }
-      }, 'oAKAAA')
+      }, 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
 
     sinon.assert.calledOnce(backendSpy)
     sinon.assert.calledWith(backendSpy, {

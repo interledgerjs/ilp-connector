@@ -13,7 +13,7 @@
     "amount":"1.00",
     "account":"eur-ledger.bob"
   }],
-  "execution_condition": "ni:///sha-256;vmvf6B7EpFalN6RGDx9F4f4z0wtOIgsIdCmbgv06ceI?fpt=preimage-sha-256&cost=7",
+  "execution_condition": "uzoYx3K6u-Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U",
   "cancellation_condition": "ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6",
   "additional_info": {
     "cases": [
