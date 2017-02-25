@@ -1,5 +1,6 @@
 'use strict'
 
+const _ = require('lodash')
 const co = require('co')
 const defer = require('co-defer')
 const Route = require('ilp-routing').Route
@@ -89,9 +90,6 @@ class RouteBroadcaster {
   _currentEpoch () {
     return this.routingTables.publicTables.currentEpoch
   }
-  _endEpoch () {
-    this.routingTables.publicTables.incrementEpoch()
-  }
 
   broadcastSoon () {
     defer.setTimeout(function * () {
@@ -99,7 +97,6 @@ class RouteBroadcaster {
         this.routingTables.removeExpiredRoutes()
         yield this.reloadLocalRoutes()
         yield this.broadcast()
-        this._endEpoch()
       } catch (err) {
         log.warn('broadcasting routes failed')
         log.debug(err)
@@ -133,14 +130,15 @@ class RouteBroadcaster {
     return Promise.all(connectors.map((account) => {
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
       let routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
-      routesNewToConnector.forEach((r) => delete r.added_during_epoch)
+      const newRoutes = routesNewToConnector.map((route) => _.omit(route, ['added_during_epoch']))
+      if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:', unreachableLedgers)
       const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
         account: account,
         data: {
           method: 'broadcast_routes',
           data: {
-            new_routes: routesNewToConnector,
+            new_routes: newRoutes,
             hold_down_time: this.holdDownTime,
             unreachable_through_me: unreachableLedgers
           }
