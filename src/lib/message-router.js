@@ -34,6 +34,7 @@ function MessageRouter (opts) {
  */
 MessageRouter.prototype.handleMessage = function (message) {
   if (!message.data) return Promise.resolve(null)
+  if (this.integrationTestClient) this.integrationTestClient.messageReceived(message.data, message.account)
   return this.handleRequest(message.data, message.account).then(
     (responseData) => {
       if (!responseData) return
@@ -165,6 +166,9 @@ MessageRouter.prototype._getQuote = function * (quoteQuery) {
     throw new InvalidBodyError('Missing required parameter: destination_address')
   }
   return yield quoteModel.getQuote(quoteQuery, this.config, this.routeBuilder, this.balanceCache)
+}
+MessageRouter.prototype.addHooks = function (integrationTestClient) {
+  this.integrationTestClient = integrationTestClient
 }
 
 function validateAmounts (sourceAmount, destinationAmount) {

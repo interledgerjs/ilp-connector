@@ -50,6 +50,19 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       yield ledgers.connect({timeout: Infinity})
       yield routeBroadcaster.reloadLocalRoutes()
     }
+    log.info('integrationTestUri:', config.integrationTestUri)
+    if (config.integrationTestUri) {
+      const IntegrationTestClient = require('./lib/integration-test-client')
+      const itc = new IntegrationTestClient(config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter)
+      itc.start()
+      messageRouter.addHooks(itc)
+      if (config.integrationTestPort) {
+        log.info('integrationTestPort:', config.integrationTestPort)
+        const IntegrationTestServer = require('./lib/integration-test-server')
+        const its = new IntegrationTestServer(config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter, itc)
+        its.start()
+      }
+    }
     log.info('connector ready (republic attitude)')
   }).catch((err) => log.error(err))
 }

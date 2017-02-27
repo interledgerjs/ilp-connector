@@ -246,7 +246,7 @@ class RouteBroadcaster {
         { minMessageWindow: this.minMessageWindow,
           sourceAccount: connector,
           targetPrefix: targetPrefix }
-      )
+        , 0) // todo: actually determine if they've changed (I assume they're expected to, since they're continually reloaded)
 
       this.routingTables.addRoute(route)
     }
@@ -279,7 +279,7 @@ class RouteBroadcaster {
       source_account: sourcePlugin.getAccount(),
       destination_account: destinationPlugin.getAccount(),
       points: curve.points
-    }, this._currentEpoch())
+    }, 0) // this._currentEpoch()) // see addConfigRoutes comment (todo: versioning)
   }
 }
 
