@@ -241,11 +241,9 @@ describe('RouteBuilder', function () {
         direction: 'incoming',
         account: aliceA,
         amount: '100',
-        data: {
-          ilp_header: {
-            account: bobB,
-            amount: '50'
-          }
+        ilp: {
+          account: bobB,
+          amount: '50'
         }
       })
       assert.deepEqual(destinationTransfer, {
@@ -259,11 +257,9 @@ describe('RouteBuilder', function () {
           source_transfer_ledger: ledgerA,
           source_transfer_amount: '100'
         },
-        data: {
-          ilp_header: {
-            account: bobB,
-            amount: '50'
-          }
+        ilp: {
+          account: bobB,
+          amount: '50'
         }
       })
     })
@@ -275,11 +271,9 @@ describe('RouteBuilder', function () {
         direction: 'incoming',
         account: aliceA,
         amount: '100',
-        data: {
-          ilp_header: {
-            account: bobB,
-            amount: '50'
-          }
+        ilp: {
+          account: bobB,
+          amount: '50'
         }
       })
       assert.deepEqual(destinationTransfer, {
@@ -293,34 +287,28 @@ describe('RouteBuilder', function () {
           source_transfer_ledger: ledgerA,
           source_transfer_amount: '100'
         },
-        data: {
-          ilp_header: {
-            account: bobB,
-            amount: '50'
-          }
+        ilp: {
+          account: bobB,
+          amount: '50'
         }
       })
     })
 
-    it('passes on the ilp_header', function * () {
+    it('passes on the ILP header', function * () {
       const destinationTransfer = yield this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
         direction: 'incoming',
         account: aliceA,
         amount: '100',
-        data: {
-          ilp_header: {
-            account: bobB,
-            amount: '50'
-          }
-        }
-      })
-      assert.deepEqual(destinationTransfer.data, {
-        ilp_header: {
+        ilp: {
           account: bobB,
           amount: '50'
         }
+      })
+      assert.deepEqual(destinationTransfer.ilp, {
+        account: bobB,
+        amount: '50'
       })
     })
 
@@ -342,11 +330,9 @@ describe('RouteBuilder', function () {
           direction: 'incoming',
           account: aliceA,
           amount: '100',
-          data: {
-            ilp_header: {
-              account: carlC,
-              amount: '25'
-            }
+          ilp: {
+            account: carlC,
+            amount: '25'
           },
           executionCondition: 'yes',
           cancellationCondition: 'no',
@@ -358,11 +344,9 @@ describe('RouteBuilder', function () {
           direction: 'outgoing',
           account: maryB,
           amount: '50.00',
-          data: {
-            ilp_header: {
-              account: carlC,
-              amount: '25'
-            }
+          ilp: {
+            account: carlC,
+            amount: '25'
           },
           noteToSelf: {
             source_transfer_id: '123',
@@ -384,11 +368,9 @@ describe('RouteBuilder', function () {
           direction: 'incoming',
           account: aliceA,
           amount: '100',
-          data: {
-            ilp_header: {
-              account: carlC,
-              amount: '50'
-            }
+          ilp: {
+            account: carlC,
+            amount: '50'
           }
         })
       }.bind(this), error('No route found from: usd-ledger. to: cny-ledger.carl'))
@@ -403,7 +385,7 @@ describe('RouteBuilder', function () {
           amount: '100',
           data: {}
         })
-      }.bind(this), error('source transfer is missing ilp_header in memo'))
+      }.bind(this), error('source transfer is missing "ilp"'))
     })
   })
 })

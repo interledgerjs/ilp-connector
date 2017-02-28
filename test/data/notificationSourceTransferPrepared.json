@@ -12,7 +12,7 @@
       "amount":"1.07",
       "account":"usd-ledger.mark",
       "memo":{
-        "ilp_header": {
+        "ilp": {
           "amount":"1.00",
           "account":"eur-ledger.bob"
         }

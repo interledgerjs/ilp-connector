@@ -116,13 +116,13 @@ class RouteBuilder {
     log.info('constructing destination transfer ' +
       'sourceLedger=%s sourceAmount=%s ilpHeader=%s',
       sourceTransfer.ledger, sourceTransfer.amount,
-      sourceTransfer.data && JSON.stringify(sourceTransfer.data.ilp_header))
-    const ilpHeader = sourceTransfer.data && sourceTransfer.data.ilp_header
+      JSON.stringify(sourceTransfer.ilp))
+    const ilpHeader = sourceTransfer.ilp
     if (!ilpHeader) {
       throw new IlpError({
         code: 'S01',
         name: 'Invalid Packet',
-        message: 'source transfer is missing ilp_header in memo'
+        message: 'source transfer is missing "ilp"'
       })
     }
 
@@ -189,7 +189,7 @@ class RouteBuilder {
       direction: 'outgoing',
       account: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
-      data: { ilp_header: ilpHeader },
+      ilp: ilpHeader,
       noteToSelf,
       executionCondition: sourceTransfer.executionCondition,
       cancellationCondition: sourceTransfer.cancellationCondition,
