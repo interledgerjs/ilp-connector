@@ -8,7 +8,7 @@ const startsWith = require('lodash/startsWith')
 const IlpError = require('../errors/ilp-error')
 
 function validateIlpHeader (sourceTransfer) {
-  validator.validate('IlpHeader', sourceTransfer.data.ilp_header)
+  validator.validate('IlpHeader', sourceTransfer.ilp)
 }
 
 function * validateExpiry (sourceTransfer, destinationTransfer, config) {
@@ -57,7 +57,7 @@ function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder
     return
   }
 
-  const destinationAddress = sourceTransfer.data.ilp_header.account
+  const destinationAddress = sourceTransfer.ilp.account
   const myAddress = ledgers.getPlugin(sourceTransfer.ledger).getAccount()
   if (startsWith(destinationAddress, myAddress)) {
     log.debug(

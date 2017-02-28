@@ -122,11 +122,9 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
-      data: {
-        ilp_header: {
-          account: 'mock.test2.bob',
-          amount: '50'
-        }
+      ilp: {
+        account: 'mock.test2.bob',
+        amount: '50'
       }
     })
 
@@ -153,11 +151,9 @@ describe('Payments', function () {
       direction: 'incoming',
       ledger: 'mock.test1.',
       amount: '100',
-      data: {
-        ilp_header: {
-          account: 'mock.test2.bob',
-          amount: '50'
-        }
+      ilp: {
+        account: 'mock.test2.bob',
+        amount: '50'
       }
     })
 
@@ -183,11 +179,9 @@ describe('Payments', function () {
       direction: 'incoming',
       ledger: 'mock.test1.',
       amount: '100',
-      data: {
-        ilp_header: {
-          account: 'mock.test2.mark',
-          amount: '50'
-        }
+      ilp: {
+        account: 'mock.test2.mark',
+        amount: '50'
       }
     })
 
@@ -219,11 +213,9 @@ describe('Payments', function () {
         amount: '100',
         executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
         expiresAt: (new Date(START_DATE + 1000)).toISOString(),
-        data: {
-          ilp_header: {
-            account: 'mock.test2.bob',
-            amount: '50'
-          }
+        ilp: {
+          account: 'mock.test2.bob',
+          amount: '50'
         }
       })
     } catch (err) {
@@ -241,7 +233,7 @@ describe('Payments', function () {
     assert(false)
   })
 
-  it('throws InvalidBodyError if the incoming transfer\'s ilp_header isn\'t an IlpHeader', function * () {
+  it('throws InvalidBodyError if the incoming transfer\'s ILP header isn\'t an IlpHeader', function * () {
     const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
     yield this.mockPlugin1.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
@@ -250,11 +242,9 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
-      data: {
-        ilp_header: {
-          account: 'mock.test2.bob',
-          amount: 'woot'
-        }
+      ilp: {
+        account: 'mock.test2.bob',
+        amount: 'woot'
       }
     })
     sinon.assert.calledOnce(rejectSpy)
@@ -276,11 +266,9 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE - 1)).toISOString(),
-      data: {
-        ilp_header: {
-          account: 'mock.test2.bob',
-          amount: '50'
-        }
+      ilp: {
+        account: 'mock.test2.bob',
+        amount: '50'
       }
     })
     sinon.assert.calledOnce(rejectSpy)
@@ -302,11 +290,9 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE + 999)).toISOString(),
-      data: {
-        ilp_header: {
-          account: 'mock.test2.bob',
-          amount: '50'
-        }
+      ilp: {
+        account: 'mock.test2.bob',
+        amount: '50'
       }
     })
     sinon.assert.calledOnce(rejectSpy)
@@ -408,11 +394,9 @@ describe('Payments', function () {
         direction: 'incoming',
         ledger: 'mock.test1.',
         amount: '100',
-        data: {
-          ilp_header: {
-            account: 'mock.test2.bob',
-            amount: '50'
-          }
+        ilp: {
+          account: 'mock.test2.bob',
+          amount: '50'
         }
       }
     })

@@ -108,11 +108,9 @@ describe('Subscriptions', function () {
         amount: sourceTransfer.debits[0].amount,
         executionCondition: sourceTransfer.debits[0].execution_condition,
         expiresAt: sourceTransfer.debits[0].expires_at,
-        data: {
-          ilp_header: {
-            amount: destinationTransfer.credits[0].amount,
-            account: destinationTransfer.credits[0].account
-          }
+        ilp: {
+          amount: destinationTransfer.credits[0].amount,
+          account: destinationTransfer.credits[0].account
         }
       })
 
