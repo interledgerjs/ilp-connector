@@ -12,7 +12,7 @@ const ratesResponse = require('./data/fxRates.json')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const _ = require('lodash')
-const AssetsNotTradedError = require('../src/errors/assets-not-traded-error')
+const NoRouteFoundError = require('../src/errors/no-route-found-error')
 
 const PluginMock = require('./mocks/mockPlugin')
 mockRequire('ilp-plugin-mock', PluginMock)
@@ -55,7 +55,7 @@ describe('Modify Plugins', function () {
         destination_expiry_duration: '1.001'
       })
 
-      yield assert.isRejected(quotePromise, AssetsNotTradedError, /This connector does not support the given asset pair/)
+      yield assert.isRejected(quotePromise, NoRouteFoundError, /No route found from: eur-ledger-2\.alice to: usd-ledger\.bob/)
 
       yield this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
@@ -122,8 +122,8 @@ describe('Modify Plugins', function () {
       }).then((quote) => {
         throw new Error()
       }).catch((err) => {
-        expect(err.name).to.equal('AssetsNotTradedError')
-        expect(err.message).to.match(/This connector does not support the given asset pair/)
+        expect(err.name).to.equal('NoRouteFoundError')
+        expect(err.message).to.match(/No route found from: eur-ledger-2\.alice to: usd-ledger\.bob/)
       })
     })
 

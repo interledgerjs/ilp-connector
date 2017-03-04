@@ -114,7 +114,9 @@ class RouteBroadcaster {
     log.debug('broadcasting to %d adjacent ledgers', adjacentLedgers.length)
     const unreachableLedgers = Array.from(this.detectedDown)
     this.detectedDown.clear()
-    log.debug('broadcast unreachableLedgers:', unreachableLedgers)
+    if (unreachableLedgers.length > 0) {
+      log.info('broadcast unreachableLedgers:', unreachableLedgers)
+    }
 
     return Promise.all(adjacentLedgers.map((adjacentLedger) => {
       const ledgerRoutes = routes.filter((route) => route.source_ledger === adjacentLedger)
@@ -132,7 +134,6 @@ class RouteBroadcaster {
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
       let routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
       routesNewToConnector.forEach((r) => delete r.added_during_epoch)
-      if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:', unreachableLedgers)
       const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
         account: account,

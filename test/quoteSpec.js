@@ -20,6 +20,7 @@ const ExternalError = require('../src/errors/external-error')
 const InvalidAmountSpecifiedError = require('../src/errors/invalid-amount-specified-error')
 const NoAmountSpecifiedError = require('../src/errors/no-amount-specified-error')
 const AssetsNotTradedError = require('../src/errors/assets-not-traded-error')
+const NoRouteFoundError = require('../src/errors/no-route-found-error')
 const UnacceptableAmountError = require('../src/errors/unacceptable-amount-error')
 const UnacceptableExpiryError = require('../src/errors/unacceptable-expiry-error')
 const LedgerNotConnectedError = require('../src/errors/ledger-not-connected-error')
@@ -129,7 +130,7 @@ describe('Quotes', function () {
       yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'destination_amount must be finite and positive')
     })
 
-    it('should return AssetsNotTradedError when the source ledger is not supported', function * () {
+    it('should return NoRouteFoundError when the source ledger is not supported', function * () {
       const quotePromise = this.messageRouter.getQuote({
         source_amount: '100',
         source_address: 'fake-ledger.foley',
@@ -137,7 +138,7 @@ describe('Quotes', function () {
         destination_expiry_duration: '1.001'
       })
 
-      yield assert.isRejected(quotePromise, AssetsNotTradedError, 'This connector does not support the given asset pair')
+      yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: fake-ledger.foley to: usd-ledger.bob')
     })
 
     // This test doesn't currently pass - I think it's because the connector is
@@ -167,15 +168,15 @@ describe('Quotes', function () {
       yield assert.isRejected(quotePromise, UnacceptableAmountError, 'Quoted destination is lower than minimum amount allowed')
     })
 
-    it('should return AssetsNotTradedError when the destination ledger is not supported', function * () {
+    it('should return NoRouteFoundError when the destination ledger is not supported', function * () {
       const quotePromise = this.messageRouter.getQuote({
         source_amount: '100',
         source_address: 'eur-ledger.alice',
-        destination_address: 'http://fake-ledger.example/USD',
+        destination_address: 'example.fake.blah',
         destination_expiry_duration: '1.001'
       })
 
-      yield assert.isRejected(quotePromise, AssetsNotTradedError, 'This connector does not support the given asset pair')
+      yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: eur-ledger.alice to: example.fake.blah')
     })
 
     it('should return a UnacceptableExpiryError if the destination_expiry_duration is too long', function * () {
@@ -540,7 +541,7 @@ describe('Quotes', function () {
         destination_address: 'usd-ledger.bob'
       })
 
-      yield assert.isRejected(quotePromise, AssetsNotTradedError, 'This connector does not support the given asset pair')
+      yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: usd-ledger.alice to: usd-ledger.bob')
     })
 
     it('fails when the source ledger connection is closed', function * () {

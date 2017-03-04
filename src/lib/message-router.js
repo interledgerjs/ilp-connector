@@ -7,7 +7,6 @@ const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-
 const validate = require('./validate').validate
 const quoteModel = require('../models/quote')
 const log = require('../common/log').create('message-router')
-const debug = require('debug')('ilp-connector')
 
 /**
  * @param {Object} opts
@@ -108,7 +107,7 @@ MessageRouter.prototype._handleRequest = function * (request, sender) {
  */
 MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
   validate('RoutingUpdate', payload)
-  debug('receiveRoutes sender:', sender)
+  log.debug('receiveRoutes sender:', sender)
   let routes = payload.new_routes
 
   let holdDownTime = payload.hold_down_time
@@ -134,7 +133,7 @@ MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
     if (route.source_account !== sender) continue
     if (this.routingTables.addRoute(route)) gotNewRoute = true
   }
-  debug('receiveRoutes sender:', sender, ' provided ', routes.length, ' any new?:', gotNewRoute)
+  log.debug('receiveRoutes sender:', sender, ' provided ', routes.length, ' any new?:', gotNewRoute)
 
   if ((gotNewRoute || (lostLedgerLinks.length > 0)) &&
       this.config.routeBroadcastEnabled) {
