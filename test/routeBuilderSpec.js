@@ -190,7 +190,7 @@ describe('RouteBuilder', function () {
             destinationAddress: 'ledgerD.doraD',
             destinationAmount: '25'
           })
-        }.bind(this), error('This connector does not support the given asset pair'))
+        }.bind(this), error('No route found from: usd-ledger.alice to: ledgerD.doraD'))
       })
     })
 
@@ -391,7 +391,7 @@ describe('RouteBuilder', function () {
             }
           }
         })
-      }.bind(this), error('This connector does not support the given asset pair'))
+      }.bind(this), error('No route found from: usd-ledger. to: cny-ledger.carl'))
     })
 
     it('throws when the source transfer has no destination transfer', function * () {

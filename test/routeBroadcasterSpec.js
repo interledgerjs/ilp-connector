@@ -116,7 +116,6 @@ describe('RouteBroadcaster', function () {
       this.config.peers.push('eur-ledger.margery')
       this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.config)
       yield this.broadcaster.crawl()
-      console.log(this.broadcaster.peersByLedger)
       assert(this.broadcaster.peersByLedger['eur-ledger.']['eur-ledger.margery'])
     })
   })

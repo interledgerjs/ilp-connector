@@ -2,7 +2,7 @@
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const routing = require('ilp-routing')
-const AssetsNotTradedError = require('../errors/assets-not-traded-error')
+const NoRouteFoundError = require('../errors/no-route-found-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const UnacceptableRateError = require('../errors/unacceptable-rate-error')
 const LedgerNotConnectedError = require('../errors/ledger-not-connected-error')
@@ -58,7 +58,11 @@ class RouteBuilder {
       destinationExpiryDuration: params.destinationExpiryDuration,
       destinationPrecisionAndScale: params.destinationPrecisionAndScale
     })
-    if (!quote) throwAssetsNotTradedError()
+    if (!quote) {
+      log.info('no quote found for params: ' + JSON.stringify(params))
+      log.debug('current routing tables (simplified to 10 points): ' + JSON.stringify(this.routingTables.toJSON(10)))
+      throw new NoRouteFoundError('No route found from: ' + params.sourceAddress + ' to: ' + params.destinationAddress)
+    }
     this._verifyLedgerIsConnected(quote.sourceLedger)
     this._verifyLedgerIsConnected(quote.nextLedger)
 
@@ -122,7 +126,11 @@ class RouteBuilder {
     // Use `findBestHopForSourceAmount` since the source amount includes the slippage.
     const nextHop = this.routingTables.findBestHopForSourceAmount(
       sourceLedger, ilpHeader.account, sourceTransfer.amount)
-    if (!nextHop) throwAssetsNotTradedError()
+    if (!nextHop) {
+      log.info('could not find route for source transfer: ' + JSON.stringify(sourceTransfer))
+      log.debug('current routing tables (simplified to 10 points): ' + JSON.stringify(this.routingTables.toJSON(10)))
+      throw new NoRouteFoundError('No route found from: ' + sourceLedger + ' to: ' + ilpHeader.account)
+    }
     this._verifyLedgerIsConnected(nextHop.destinationLedger)
 
     // Round in favor of the connector. findBestHopForSourceAmount uses the
@@ -220,10 +228,6 @@ class RouteBuilder {
       throw new LedgerNotConnectedError('No connection to ledger "' + ledger + '"')
     }
   }
-}
-
-function throwAssetsNotTradedError () {
-  throw new AssetsNotTradedError('This connector does not support the given asset pair')
 }
 
 function validateAmount (amount, ledger, sourceOrDestination) {
