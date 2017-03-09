@@ -140,7 +140,7 @@ Breaking down that command:
 
 ## Payments
 
-The connector will facilitate an interledger payment upon receiving a notification for a transfer in which it is credited. That "source" transfer must have an `IlpHeader` in its credit's `memo.ilp` that specifies the payment's destination and amount.
+The connector will facilitate an interledger payment upon receiving a notification for a transfer in which it is credited. That "source" transfer must have an `IlpPayment` in its credit's `memo.ilp` that specifies the payment's destination and amount.
 As soon as the source transfer is prepared, the connector will authorize the debits from its account(s) on the destination ledger.
 
 ## Backend

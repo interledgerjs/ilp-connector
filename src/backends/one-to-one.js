@@ -21,6 +21,7 @@ class OneToOneBackend {
     }
 
     this.spread = opts.spread || 0
+    this.getInfo = opts.getInfo
   }
 
   /**
@@ -55,9 +56,13 @@ class OneToOneBackend {
     //   SourceAmount * (1 - Spread) = DestinationAmount
     //
     const rate = new BigNumber(1).minus(this.spread)
-    const sourceAmount = PROBE_SOURCE_AMOUNT
-    const destinationAmount = new BigNumber(sourceAmount).times(rate).toString()
-    return { points: [[0, 0], [ sourceAmount, +destinationAmount ]] }
+    const sourceScale = this.getInfo(params.source_ledger).scale
+    const destinationScale = this.getInfo(params.destination_ledger).scale
+    const sourceAmount = new BigNumber(PROBE_SOURCE_AMOUNT).shift(sourceScale)
+    const destinationAmount = new BigNumber(sourceAmount)
+      .times(rate)
+      .shift(destinationScale - sourceScale)
+    return { points: [[0, 0], [ sourceAmount.toNumber(), destinationAmount.toNumber() ]] }
   }
 
   /**

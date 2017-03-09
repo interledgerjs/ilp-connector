@@ -1,6 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
+const BigNumber = require('bignumber.js')
 const request = require('co-request')
 const UnsupportedPairError =
   require('../../errors/unsupported-pair-error')
@@ -88,23 +89,32 @@ class ILPQuoter {
                                                params.destination_ledger)
     const amount = PROBE_SOURCE_AMOUNT
     const type = 'source'
-    const ledger = params.destination_ledger
 
     const uri = this.backendUri + '/quote/' +
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
                 '/' + type
 
-    const ledgerInfo = this.getInfo(ledger)
-    const precision = ledgerInfo.precision
-    const scale = ledgerInfo.scale
+    const sourceScale = this.getInfo(params.source_ledger).scale
+    const destinationInfo = this.getInfo(params.destination_ledger)
+    const destinationPrecision = destinationInfo.precision
+    const destinationScale = destinationInfo.scale
 
-    const result = yield request({uri, json: true, qs: {precision, scale}})
+    const result = yield request({uri, json: true, qs: {
+      precision: destinationPrecision,
+      scale: destinationScale
+    }})
     if (result.statusCode >= 400) {
       log.error('Error getting quote: ', JSON.stringify(result.body))
       throw new ServerError('Unable to get quote from backend.')
     }
     return {
-      points: [ [0, 0], [result.body.source_amount, result.body.destination_amount] ],
+      points: [
+        [0, 0],
+        [
+          new BigNumber(result.body.source_amount).shift(sourceScale).toNumber(),
+          new BigNumber(result.body.destination_amount).shift(destinationScale).toNumber()
+        ]
+      ],
       additional_info: result.body.additional_info
     }
   }

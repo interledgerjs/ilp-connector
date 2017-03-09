@@ -12,10 +12,6 @@ function * makeQuoteQuery (params) {
     destinationAmount: params.destination_amount,
     sourceExpiryDuration: params.source_expiry_duration,
     destinationExpiryDuration: params.destination_expiry_duration,
-    destinationPrecisionAndScale: params.destination_precision && {
-      precision: params.destination_precision,
-      scale: params.destination_scale
-    },
     slippage: params.slippage,
     explain: params.explain === 'true'
   }
@@ -49,8 +45,6 @@ function * validateExpiries (sourceExpiryDuration, destinationExpiryDuration, mi
  * @param {String} params.destination_account
  * @param {String} params.destination_amount
  * @param {String} params.destination_expiry_duration
- * @param {String} params.destination_precision
- * @param {String} params.destination_scale
  * @param {String} params.explain
  * @param {String} params.slippage
  * @param {Object} config

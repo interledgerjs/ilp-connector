@@ -2,6 +2,7 @@
 
 const _ = require('lodash')
 const nock = require('nock')
+const packet = require('ilp-packet')
 nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
@@ -108,10 +109,10 @@ describe('Subscriptions', function () {
         amount: sourceTransfer.debits[0].amount,
         executionCondition: sourceTransfer.debits[0].execution_condition,
         expiresAt: sourceTransfer.debits[0].expires_at,
-        ilp: {
+        ilp: packet.serializeIlpPayment({
           amount: destinationTransfer.credits[0].amount,
           account: destinationTransfer.credits[0].account
-        }
+        }).toString('base64')
       })
 
     sinon.assert.calledOnce(sendSpy)

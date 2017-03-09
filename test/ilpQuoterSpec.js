@@ -157,7 +157,7 @@ describe('ILPQuoter', function () {
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/100000000/source').query({precision, scale}).reply(200, { source_amount: 123.89, destination_amount: 88.77 })
       const quoteResponse = yield this.backend.getCurve(quote)
-      expect(quoteResponse.points).to.deep.equal([ [0, 0], [123.89, 88.77] ])
+      expect(quoteResponse.points).to.deep.equal([ [0, 0], [1238900, 887700] ])
       expect(scope.isDone()).to.be.true
     })
 
@@ -169,7 +169,7 @@ describe('ILPQuoter', function () {
       const scope = nock(this.backendUri)
                       .get('/quote/EUR/USD/100000000/source').query({precision, scale}).reply(200, { source_amount: 99.77, destination_amount: 123.89 })
       const quoteResponse = yield this.backend.getCurve(quote)
-      expect(quoteResponse.points).to.deep.equal([ [0, 0], [99.77, 123.89] ])
+      expect(quoteResponse.points).to.deep.equal([ [0, 0], [997700, 1238900] ])
       expect(scope.isDone()).to.be.true
     })
 
@@ -210,7 +210,7 @@ describe('ILPQuoter', function () {
                                                                  }
                                                                })
       const quoteResponse = yield this.backend.getCurve(quote)
-      expect(quoteResponse.points).to.deep.equal([ [0, 0], [99.77, 123.89] ])
+      expect(quoteResponse.points).to.deep.equal([ [0, 0], [997700, 1238900] ])
       expect(quoteResponse.additional_info).to.be.deep.equal({ rate: 'somerate' })
       expect(scope.isDone()).to.be.true
     })

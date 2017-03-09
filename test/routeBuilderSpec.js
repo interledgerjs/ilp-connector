@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('assert')
+const packet = require('ilp-packet')
 const RoutingTables = require('../src/lib/routing-tables')
 const RouteBuilder = require('../src/lib/route-builder')
 const appHelper = require('./helpers/app')
@@ -98,9 +99,9 @@ describe('RouteBuilder', function () {
         assert.deepStrictEqual(quoteTransfer, {
           connectorAccount: markA,
           sourceLedger: ledgerA,
-          sourceAmount: '200.00',
+          sourceAmount: '200',
           destinationLedger: ledgerB,
-          destinationAmount: '99.00',
+          destinationAmount: '99',
           sourceExpiryDuration: '6',
           destinationExpiryDuration: '5',
           additionalInfo: {
@@ -235,16 +236,17 @@ describe('RouteBuilder', function () {
 
   describe('getDestinationTransfer', function () {
     it('returns the original destination transfer when the connector can settle it', function * () {
+      const ilpPacket = packet.serializeIlpPayment({
+        account: bobB,
+        amount: '50'
+      }).toString('base64')
       const destinationTransfer = yield this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
         direction: 'incoming',
         account: aliceA,
         amount: '100',
-        ilp: {
-          account: bobB,
-          amount: '50'
-        }
+        ilp: ilpPacket
       })
       assert.deepEqual(destinationTransfer, {
         id: 'd9600d94-f171-4443-83f5-c4c685fa70cd',
@@ -257,10 +259,7 @@ describe('RouteBuilder', function () {
           source_transfer_ledger: ledgerA,
           source_transfer_amount: '100'
         },
-        ilp: {
-          account: bobB,
-          amount: '50'
-        }
+        ilp: ilpPacket
       })
     })
 
@@ -271,10 +270,10 @@ describe('RouteBuilder', function () {
         direction: 'incoming',
         account: aliceA,
         amount: '100',
-        ilp: {
+        ilp: packet.serializeIlpPayment({
           account: bobB,
           amount: '50'
-        }
+        }).toString('base64')
       })
       assert.deepEqual(destinationTransfer, {
         id: '628cc7c4-4046-4815-897d-78895741efd9',
@@ -287,29 +286,27 @@ describe('RouteBuilder', function () {
           source_transfer_ledger: ledgerA,
           source_transfer_amount: '100'
         },
-        ilp: {
+        ilp: packet.serializeIlpPayment({
           account: bobB,
           amount: '50'
-        }
+        }).toString('base64')
       })
     })
 
-    it('passes on the ILP header', function * () {
+    it('passes on the ILP packet', function * () {
+      const ilpPacket = packet.serializeIlpPayment({
+        account: bobB,
+        amount: '50'
+      }).toString('base64')
       const destinationTransfer = yield this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
         direction: 'incoming',
         account: aliceA,
         amount: '100',
-        ilp: {
-          account: bobB,
-          amount: '50'
-        }
+        ilp: ilpPacket
       })
-      assert.deepEqual(destinationTransfer.ilp, {
-        account: bobB,
-        amount: '50'
-      })
+      assert.deepEqual(destinationTransfer.ilp, ilpPacket)
     })
 
     describe('with a route from ledgerB → ledgerC', function () {
@@ -324,16 +321,17 @@ describe('RouteBuilder', function () {
       })
 
       it('returns an intermediate destination transfer when the connector knows a route to the destination', function * () {
+        const ilpPacket = packet.serializeIlpPayment({
+          account: carlC,
+          amount: '25'
+        }).toString('base64')
         const destinationTransfer = yield this.builder.getDestinationTransfer({
           id: '123',
           ledger: ledgerA,
           direction: 'incoming',
           account: aliceA,
           amount: '100',
-          ilp: {
-            account: carlC,
-            amount: '25'
-          },
+          ilp: ilpPacket,
           executionCondition: 'yes',
           cancellationCondition: 'no',
           expiresAt: '2015-06-16T00:00:01.000Z'
@@ -343,11 +341,8 @@ describe('RouteBuilder', function () {
           ledger: ledgerB,
           direction: 'outgoing',
           account: maryB,
-          amount: '50.00',
-          ilp: {
-            account: carlC,
-            amount: '25'
-          },
+          amount: '50',
+          ilp: ilpPacket,
           noteToSelf: {
             source_transfer_id: '123',
             source_transfer_ledger: ledgerA,
@@ -368,10 +363,10 @@ describe('RouteBuilder', function () {
           direction: 'incoming',
           account: aliceA,
           amount: '100',
-          ilp: {
+          ilp: packet.serializeIlpPayment({
             account: carlC,
             amount: '50'
-          }
+          }).toString('base64')
         })
       }.bind(this), error('No route found from: usd-ledger. to: cny-ledger.carl'))
     })
