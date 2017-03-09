@@ -157,7 +157,6 @@ MessageRouter.prototype.getQuote = function (quoteQuery) {
 
 MessageRouter.prototype._getQuote = function * (quoteQuery) {
   validateAmounts(quoteQuery.source_amount, quoteQuery.destination_amount)
-  validatePrecisionAndScale(quoteQuery.destination_precision, quoteQuery.destination_scale)
   if (!quoteQuery.source_address) {
     // TODO use a different error message
     throw new InvalidBodyError('Missing required parameter: source_address')
@@ -186,12 +185,6 @@ function validateAmounts (sourceAmount, destinationAmount) {
       throw new InvalidAmountSpecifiedError('destination_amount must be finite and positive')
     }
   }
-}
-
-function validatePrecisionAndScale (precision, scale) {
-  if (precision && scale) return
-  if (!precision && !scale) return
-  throw new InvalidBodyError('Either both or neither of "precision" and "scale" must be specified')
 }
 
 module.exports = MessageRouter

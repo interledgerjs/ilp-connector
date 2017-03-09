@@ -7,10 +7,6 @@ const validator = require('../lib/validate')
 const startsWith = require('lodash/startsWith')
 const IlpError = require('../errors/ilp-error')
 
-function validateIlpHeader (sourceTransfer) {
-  validator.validate('IlpHeader', sourceTransfer.ilp)
-}
-
 function * validateExpiry (sourceTransfer, destinationTransfer, config) {
   // TODO tie the maxHoldTime to the fx rate
   // TODO bring all these loops into one to speed this up
@@ -46,17 +42,6 @@ function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
 }
 
 function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
-  try {
-    validateIlpHeader(sourceTransfer)
-  } catch (err) {
-    yield rejectIncomingTransfer(sourceTransfer, {
-      code: 'S01',
-      name: 'Invalid Packet',
-      message: err.message
-    }, ledgers)
-    return
-  }
-
   const destinationAddress = sourceTransfer.ilp.account
   const myAddress = ledgers.getPlugin(sourceTransfer.ledger).getAccount()
   if (startsWith(destinationAddress, myAddress)) {

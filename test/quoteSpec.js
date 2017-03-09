@@ -253,7 +253,7 @@ describe('Quotes', function () {
         .getInfo = function () { return {precision: 10, scale: 4} }
 
       const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
+        source_amount: '1000000',
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob'
       })
@@ -261,12 +261,12 @@ describe('Quotes', function () {
       expect(quote).to.deep.equal({
         source_connector_account: 'eur-ledger.mark',
         source_ledger: 'eur-ledger.',
-        source_amount: '100.00',
+        source_amount: '1000000',
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
-        destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+        destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [0.1, 0], [100000000, 105708159.89429183] ]
+        liquidity_curve: [ [1000, 0], [1000000000000, 1057081598942.9185] ]
       })
     })
 
@@ -279,19 +279,19 @@ describe('Quotes', function () {
         .getInfo = function () { return {precision: 10, scale: 2} }
 
       const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
+        source_amount: '10000',
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob'
       })
       expect(quote).to.deep.equal({
         source_connector_account: 'eur-ledger.mark',
         source_ledger: 'eur-ledger.',
-        source_amount: '100.0000',
+        source_amount: '10000',
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
-        destination_amount: '105.60', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+        destination_amount: '10560', // EUR/USD Rate of 1.0592 - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [0.1, 0], [100000000, 105708159.89429183] ]
+        liquidity_curve: [ [10.000000000000002, 0], [1000000000000, 1057081599989.4292] ]
       })
     })
 
@@ -333,7 +333,7 @@ describe('Quotes', function () {
 
     it('should return quotes for fixed source amounts', function * () {
       const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
+        source_amount: '1000000',
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob'
       })
@@ -341,12 +341,12 @@ describe('Quotes', function () {
       expect(quote).to.deep.equal({
         source_connector_account: 'eur-ledger.mark',
         source_ledger: 'eur-ledger.',
-        source_amount: '100.0000',
+        source_amount: '1000000',
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
-        destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+        destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [0.1, 0], [100000000, 105708159.89429183] ]
+        liquidity_curve: [ [1000, 0], [1000000000000, 1057081598942.9185] ]
       })
     })
 
@@ -354,90 +354,90 @@ describe('Quotes', function () {
     it('should return quotes for fixed destination amounts', function * () {
       const quote = yield this.messageRouter.getQuote({
         source_address: 'eur-ledger.alice',
-        destination_amount: '100',
+        destination_amount: '1000000',
         destination_address: 'usd-ledger.bob'
       })
       expect(quote).to.deep.equal({
         source_connector_account: 'eur-ledger.mark',
         source_ledger: 'eur-ledger.',
-        source_amount: '94.6947', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
+        source_amount: '946947', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
-        destination_amount: '100.0000',
+        destination_amount: '1000000',
         destination_expiry_duration: '5',
-        liquidity_curve: [ [0.09460007628550152, 0], [100000000.09460008, 105708160] ]
+        liquidity_curve: [ [946.0007628550152, 0], [1000000000946.0007, 1057081600000] ]
       })
     })
 
     it('should return a payment object with the source and destination amounts filled in as debits and credits', function * () {
       const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
+        source_amount: '1000000',
         source_address: 'eur-ledger.alice',
         destination_address: 'usd-ledger.bob'
       })
       expect(quote).to.deep.equal({
         source_connector_account: 'eur-ledger.mark',
         source_ledger: 'eur-ledger.',
-        source_amount: '100.0000',
+        source_amount: '1000000',
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
-        destination_amount: '105.6024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
+        destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [0.1, 0], [100000000, 105708159.89429183] ]
+        liquidity_curve: [ [1000, 0], [1000000000000, 1057081598942.9185] ]
       })
     })
 
     it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', function * () {
       const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
+        source_amount: '1000000',
         source_address: 'usd-ledger.bob',
         destination_address: 'eur-ledger.alice'
       })
       expect(quote).to.deep.equal({
         source_connector_account: 'usd-ledger.mark',
         source_ledger: 'usd-ledger.',
-        source_amount: '100.0000',
+        source_amount: '1000000',
         source_expiry_duration: '6',
         destination_ledger: 'eur-ledger.',
-        destination_amount: '94.1278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
+        destination_amount: '941278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [0.09999999999999999, 0], [100000000, 94222054.2864426] ]
+        liquidity_curve: [ [1000, 0], [1000000000000, 942220542864.4259] ]
       })
     })
 
     it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates', function * () {
       const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
+        source_amount: '1000000',
         source_address: 'usd-ledger.bob',
         destination_address: 'cad-ledger.carl'
       })
       expect(quote).to.deep.equal({
         source_connector_account: 'usd-ledger.mark',
         source_ledger: 'usd-ledger.',
-        source_amount: '100.0000',
+        source_amount: '1000000',
         source_expiry_duration: '6',
         destination_ledger: 'cad-ledger.',
-        destination_amount: '127.8538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
+        destination_amount: '1278538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [0.1, 0], [100000000, 127981816.33727498] ]
+        liquidity_curve: [ [999.9999999999999, 0], [1000000000000, 1279818163372.7498] ]
       })
     })
 
     it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates and the rate must be flipped', function * () {
       const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
+        source_amount: '1000000',
         source_address: 'cad-ledger.carl',
         destination_address: 'usd-ledger.bob'
       })
       expect(quote).to.deep.equal({
         source_connector_account: 'cad-ledger.mark',
         source_ledger: 'cad-ledger.',
-        source_amount: '100.0000',
+        source_amount: '1000000',
         source_expiry_duration: '6',
         destination_ledger: 'usd-ledger.',
-        destination_amount: '77.7460', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
+        destination_amount: '777460', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [0.1, 0], [100000000, 77823867.99255823] ]
+        liquidity_curve: [ [1000.0000000000002, 0], [1000000000000, 778238679925.5823] ]
       })
     })
 

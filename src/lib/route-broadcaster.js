@@ -267,7 +267,6 @@ class RouteBroadcaster {
     })
     const sourcePlugin = this.ledgers.getPlugin(sourceLedger)
     const destinationPlugin = this.ledgers.getPlugin(destinationLedger)
-    const destinationInfo = destinationPlugin.getInfo()
     return Route.fromData({
       source_ledger: sourceLedger,
       destination_ledger: destinationLedger,
@@ -275,9 +274,7 @@ class RouteBroadcaster {
       min_message_window: this.minMessageWindow,
       source_account: sourcePlugin.getAccount(),
       destination_account: destinationPlugin.getAccount(),
-      points: curve.points,
-      destinationPrecision: destinationInfo.precision,
-      destinationScale: destinationInfo.scale
+      points: curve.points
     }, this._currentEpoch())
   }
 }

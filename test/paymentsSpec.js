@@ -11,6 +11,7 @@ const mockPlugin = require('./mocks/mockPlugin')
 const nock = require('nock')
 const sinon = require('sinon')
 const mock = require('mock-require')
+const packet = require('ilp-packet')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -122,10 +123,10 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
-      ilp: {
+      ilp: packet.serializeIlpPayment({
         account: 'mock.test2.bob',
         amount: '50'
-      }
+      }).toString('base64')
     })
 
     sinon.assert.calledOnce(sendSpy)
@@ -151,10 +152,10 @@ describe('Payments', function () {
       direction: 'incoming',
       ledger: 'mock.test1.',
       amount: '100',
-      ilp: {
+      ilp: packet.serializeIlpPayment({
         account: 'mock.test2.bob',
         amount: '50'
-      }
+      }).toString('base64')
     })
 
     sinon.assert.calledOnce(sendSpy)
@@ -179,10 +180,10 @@ describe('Payments', function () {
       direction: 'incoming',
       ledger: 'mock.test1.',
       amount: '100',
-      ilp: {
+      ilp: packet.serializeIlpPayment({
         account: 'mock.test2.mark',
         amount: '50'
-      }
+      }).toString('base64')
     })
 
     sinon.assert.calledOnce(sendSpy)
@@ -213,10 +214,10 @@ describe('Payments', function () {
         amount: '100',
         executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
         expiresAt: (new Date(START_DATE + 1000)).toISOString(),
-        ilp: {
+        ilp: packet.serializeIlpPayment({
           account: 'mock.test2.bob',
           amount: '50'
-        }
+        }).toString('base64')
       })
     } catch (err) {
       assert.equal(err.message, 'fail!')
@@ -233,7 +234,7 @@ describe('Payments', function () {
     assert(false)
   })
 
-  it('throws InvalidBodyError if the incoming transfer\'s ILP header isn\'t an IlpHeader', function * () {
+  it('rejects with Invalid Packet if the incoming transfer\'s ILP packet isn\'t valid', function * () {
     const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
     yield this.mockPlugin1.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
@@ -242,16 +243,13 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
-      ilp: {
-        account: 'mock.test2.bob',
-        amount: 'woot'
-      }
+      ilp: 'junk'
     })
     sinon.assert.calledOnce(rejectSpy)
     sinon.assert.calledWith(rejectSpy, '5857d460-2a46-4545-8311-1539d99e78e8', sinon.match({
       code: 'S01',
       name: 'Invalid Packet',
-      message: 'IlpHeader schema validation error: should match pattern "^[-+]?[0-9]*[.]?[0-9]+([eE][-+]?[0-9]+)?$"',
+      message: 'source transfer has invalid ILP packet',
       triggered_by: 'mock.test1.bob',
       additional_info: {}
     }))
@@ -266,10 +264,10 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE - 1)).toISOString(),
-      ilp: {
+      ilp: packet.serializeIlpPayment({
         account: 'mock.test2.bob',
         amount: '50'
-      }
+      }).toString('base64')
     })
     sinon.assert.calledOnce(rejectSpy)
     sinon.assert.calledWith(rejectSpy, '5857d460-2a46-4545-8311-1539d99e78e8', sinon.match({
@@ -290,10 +288,10 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'cc:0:',
       expiresAt: (new Date(START_DATE + 999)).toISOString(),
-      ilp: {
+      ilp: packet.serializeIlpPayment({
         account: 'mock.test2.bob',
         amount: '50'
-      }
+      }).toString('base64')
     })
     sinon.assert.calledOnce(rejectSpy)
     sinon.assert.calledWith(rejectSpy, '5857d460-2a46-4545-8311-1539d99e78e8', sinon.match({
@@ -394,10 +392,10 @@ describe('Payments', function () {
         direction: 'incoming',
         ledger: 'mock.test1.',
         amount: '100',
-        ilp: {
+        ilp: packet.serializeIlpPayment({
           account: 'mock.test2.bob',
           amount: '50'
-        }
+        }).toString('base64')
       }
     })
 

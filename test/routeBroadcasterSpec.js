@@ -65,9 +65,7 @@ describe('RouteBroadcaster', function () {
       source_account: ledgerA + 'mark',
       destination_account: ledgerB + 'mark',
       points: [ [0, 0], [200, 100] ],
-      additional_info: {},
-      destination_precision: 10,
-      destination_scale: 2
+      additional_info: {}
     }, {
       source_ledger: ledgerB,
       destination_ledger: ledgerA,
@@ -75,9 +73,7 @@ describe('RouteBroadcaster', function () {
       source_account: ledgerB + 'mark',
       destination_account: ledgerA + 'mark',
       points: [ [0, 0], [100, 200] ],
-      additional_info: {},
-      destination_precision: 10,
-      destination_scale: 2
+      additional_info: {}
     }])
 
     this.config = {
@@ -101,9 +97,7 @@ describe('RouteBroadcaster', function () {
       source_account: ledgerB + 'mary',
       min_message_window: 1,
       points: [ [0, 0], [50, 60] ],
-      additional_info: {},
-      destination_precision: 10,
-      destination_scale: 2
+      additional_info: {}
     })
     yield this.ledgers.connect()
   })
@@ -141,17 +135,13 @@ describe('RouteBroadcaster', function () {
         destination_ledger: ledgerB,
         min_message_window: 1,
         source_account: ledgerA + 'mark',
-        points: [ [0.02, 0], [200, 99.99] ],
-        destination_precision: 10,
-        destination_scale: 2
+        points: [ [0.02, 0], [200, 99.99] ]
       }, {
         source_ledger: ledgerA,
         destination_ledger: ledgerC,
         min_message_window: 2,
         source_account: ledgerA + 'mark',
-        points: [ [0.02, 0], [100.02, 60] ],
-        destination_precision: 10,
-        destination_scale: 2
+        points: [ [0.02, 0], [100.02, 60] ]
       }
     ]
     const routesFromB = [
@@ -160,9 +150,7 @@ describe('RouteBroadcaster', function () {
         destination_ledger: ledgerA,
         min_message_window: 1,
         source_account: ledgerB + 'mark',
-        points: [ [0.005, 0], [100, 199.99] ],
-        destination_precision: 10,
-        destination_scale: 2
+        points: [ [0.005, 0], [100, 199.99] ]
       }
     ]
 
@@ -246,9 +234,7 @@ describe('RouteBroadcaster', function () {
         destination_ledger: ledgerD,
         source_account: ledgerB + 'mark',
         min_message_window: 1,
-        points: [ [0, 0], [50, 60] ],
-        destination_precision: 10,
-        destination_scale: 2
+        points: [ [0, 0], [50, 60] ]
       }]
       assert.equal(this.tables.toJSON(2).length, 3)
       yield messageRouter.receiveRoutes({
@@ -338,7 +324,7 @@ describe('RouteBroadcaster', function () {
       assert.deepEqual(route.destinationLedger, ledgerB)
       assert.deepEqual(route.sourceAccount, ledgerA + 'mark')
       assert.deepEqual(route.destinationAccount, ledgerB + 'mark')
-      assert.deepEqual(route.getPoints(), [ [0, 0], [100000000, 77823868.07038209] ])
+      assert.deepEqual(route.getPoints(), [ [0, 0], [1000000000000, 778238680703.8209] ])
     })
   })
 })
