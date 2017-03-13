@@ -172,14 +172,16 @@ As soon as the source transfer is prepared, the connector will authorize the deb
 
 ### Class: CurveParams
 ###### Fields
-| Type | Name | Description |
-|:--|:--|:--|
-| `String` | `source_ledger` | The URI of the source ledger |
-| `String` | `destination_ledger` | The URI of the destination ledger |
+| Type     | Name                   | Description |
+|:---------|:-----------------------|:--|
+| `String` | `source_ledger`        | The ILP prefix of the source ledger |
+| `String` | `destination_ledger`   | The ILP prefix of the destination ledger |
+| `String` | `source_currency`      | The source currency |
+| `String` | `destination_currency` | The destination currency |
 
 ### Class: Curve
 ###### Fields
-| Type | Name | Description |
-|:--|:--|:--|
-| `Point[]` | `points` | A list of `[source, destination]` points representing a liquidity curve |
-| `Object` | `additional_info` | (optional) |
+| Type      | Name              | Description |
+|:----------|:------------------|:--|
+| `Point[]` | `points`          | A list of `[sourceAmount:Number, destinationAmount:Number]` points representing a liquidity curve |
+| `Object`  | `additional_info` | Extra (optional) data to attach to the `Route` |
