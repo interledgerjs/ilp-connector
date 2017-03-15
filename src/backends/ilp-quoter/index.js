@@ -99,10 +99,14 @@ class ILPQuoter {
     const destinationPrecision = destinationInfo.precision
     const destinationScale = destinationInfo.scale
 
-    const result = yield request({uri, json: true, qs: {
-      precision: destinationPrecision,
-      scale: destinationScale
-    }})
+    const result = yield request({
+      uri,
+      json: true,
+      qs: {
+        precision: destinationPrecision,
+        scale: destinationScale
+      }
+    })
     if (result.statusCode >= 400) {
       log.error('Error getting quote: ', JSON.stringify(result.body))
       throw new ServerError('Unable to get quote from backend.')
