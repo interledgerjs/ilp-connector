@@ -227,7 +227,10 @@ class RouteBroadcaster {
 
   _getLocalRoutes () {
     return Promise.all(this.ledgers.getPairs().map(
-      (pair) => co.wrap(this._tradingPairToLocalRoute).call(this, pair)))
+      (pair) => co.wrap(this._tradingPairToLocalRoute).call(this, pair)
+    )).then(
+      (localRoutes) => localRoutes.filter((route) => !!route)
+    )
   }
 
   addConfigRoutes () {
@@ -259,14 +262,17 @@ class RouteBroadcaster {
     const destinationLedger = pair[1].split('@').slice(1).join('@')
     const sourceCurrency = pair[0].split('@')[0]
     const destinationCurrency = pair[1].split('@')[0]
+    const sourcePlugin = this.ledgers.getPlugin(sourceLedger)
+    const destinationPlugin = this.ledgers.getPlugin(destinationLedger)
+    // `backend.getCurve()` may need `plugin.getInfo()`
+    if (!sourcePlugin.isConnected() || !destinationPlugin.isConnected()) return
+
     const curve = yield this.backend.getCurve({
       source_ledger: sourceLedger,
       destination_ledger: destinationLedger,
       source_currency: sourceCurrency,
       destination_currency: destinationCurrency
     })
-    const sourcePlugin = this.ledgers.getPlugin(sourceLedger)
-    const destinationPlugin = this.ledgers.getPlugin(destinationLedger)
     return Route.fromData({
       source_ledger: sourceLedger,
       destination_ledger: destinationLedger,
