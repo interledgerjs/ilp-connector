@@ -56,8 +56,8 @@ class OneToOneBackend {
     //   SourceAmount * (1 - Spread) = DestinationAmount
     //
     const rate = new BigNumber(1).minus(this.spread)
-    const sourceScale = this.getInfo(params.source_ledger).scale
-    const destinationScale = this.getInfo(params.destination_ledger).scale
+    const sourceScale = this.getInfo(params.source_ledger).currencyScale
+    const destinationScale = this.getInfo(params.destination_ledger).currencyScale
     const sourceAmount = new BigNumber(PROBE_SOURCE_AMOUNT).shift(sourceScale)
     const destinationAmount = new BigNumber(sourceAmount)
       .times(rate)
