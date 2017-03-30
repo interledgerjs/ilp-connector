@@ -18,7 +18,10 @@ const PROBE_SOURCE_AMOUNT = 100000000
  *   the source and destination amounts
  * The ILP quoter doesn't do any arithmetic -- it's up to the external
  *   component to compute the correct amounts with the required
- *   precision. So amounts are passed using JSON strings
+ *   precision. So amounts are passed using JSON strings.
+ * Quote precision is a constructor option of this Backend.
+ * Currency codes are specified in construction option currencyWithLedgerPairs
+ * Currency scale is specified by the ledger plugin for each legder.
  */
 class ILPQuoter {
   constructor (opts) {
@@ -31,6 +34,7 @@ class ILPQuoter {
     this.backendUri = opts.backendUri
     this.backendStatus = healthStatus.statusNotOk
     this.getInfo = opts.getInfo
+    this.quotePrecision = opts.quotePrecision
   }
 
   * putPair (uri) {
@@ -94,16 +98,15 @@ class ILPQuoter {
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
                 '/' + type
 
-    const sourceScale = this.getInfo(params.source_ledger).scale
+    const sourceScale = this.getInfo(params.source_ledger).currencyScale
     const destinationInfo = this.getInfo(params.destination_ledger)
-    const destinationPrecision = destinationInfo.precision
-    const destinationScale = destinationInfo.scale
+    const destinationScale = destinationInfo.currencyScale
 
     const result = yield request({
       uri,
       json: true,
       qs: {
-        precision: destinationPrecision,
+        precision: this.quotePrecision,
         scale: destinationScale
       }
     })

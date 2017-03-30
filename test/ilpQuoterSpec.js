@@ -86,16 +86,19 @@ describe('ILPQuoter', function () {
     this.backend = new Backend({
       currencyWithLedgerPairs: this.pairs,
       backendUri: this.backendUri,
+      quotePrecision: precision,
       getInfo: (ledger) => this.ledgers.getPlugin(ledger).getInfo()
     })
 
     const testLedgers = _.flatMap(this.pairs, (pair) => pair)
 
+    // note that this ledger API is imaginary, just for the purpose of this test.
+    // It's different from the fivebells ledger's API, for instance.
     _.each(testLedgers, (ledgerUri) => {
       nock('http://' + ledgerUri).get('/')
       .reply(200, {
-        precision: precision,
-        scale: scale
+        currency_code: 'doesn\'t matter, the connector will ignore this',
+        currency_scale: scale
       }).persist()
     })
   })
@@ -128,6 +131,7 @@ describe('ILPQuoter', function () {
       this.backend = new Backend({
         currencyWithLedgerPairs: this.unsupportedPairs,
         backendUri: this.backendUri,
+        quotePrecision: precision,
         getInfo: (ledger) => this.ledgers.getPlugin(ledger).getInfo()
       })
 

@@ -27,14 +27,14 @@ describe('Subscriptions', function () {
 
     nock('http://usd-ledger.example').get('/')
       .reply(200, {
-        precision: 10,
-        scale: 4
+        currency_code: 'doesn\'t matter, the connector will ignore this',
+        currency_scale: 4
       })
 
     nock('http://eur-ledger.example').get('/')
       .reply(200, {
-        precision: 10,
-        scale: 4
+        currency_code: 'doesn\'t matter, the connector will ignore this',
+        currency_scale: 4
       })
 
     nock('http://usd-ledger.example').get('/accounts/mark')
