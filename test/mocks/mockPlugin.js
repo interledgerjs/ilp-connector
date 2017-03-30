@@ -57,8 +57,8 @@ class MockPlugin extends EventEmitter {
     return {
       prefix: this._prefix,
       connectors: ['mark'],
-      precision: 10,
-      scale: 4
+      currencyCode: 'doesn\'t matter, the connector will ignore this',
+      currencyScale: 4
     }
   }
 }

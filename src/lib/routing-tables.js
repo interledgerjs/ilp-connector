@@ -112,8 +112,8 @@ class RoutingTables {
   }
 
   _getScaleAdjustment (ledgers, sourceLedger, destinationLedger) {
-    const sourceScale = ledgers.getPlugin(sourceLedger).getInfo().scale
-    const destinationScale = ledgers.getPlugin(destinationLedger).getInfo().scale
+    const sourceScale = ledgers.getPlugin(sourceLedger).getInfo().currencyScale
+    const destinationScale = ledgers.getPlugin(destinationLedger).getInfo().currencyScale
     if (sourceScale === destinationScale && this.isTrivialRate) return 0
     const destinationAdjustment = destinationScale ? Math.pow(10, -destinationScale) : 0
     return destinationAdjustment

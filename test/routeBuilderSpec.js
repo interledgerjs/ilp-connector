@@ -53,9 +53,12 @@ describe('RouteBuilder', function () {
       routingTables: this.tables
     })
     this.ledgers.addFromCredentialsConfig(ledgerCredentials)
-    this.ledgers.getPlugin(ledgerA).getInfo =
-    this.ledgers.getPlugin(ledgerB).getInfo =
-      function () { return {precision: 10, scale: 2} }
+    this.ledgers.getPlugin(ledgerA).getInfo = this.ledgers.getPlugin(ledgerB).getInfo = function () {
+      return {
+        currencyCode: 'doesn\'t matter, the connector will ignore this',
+        currencyScale: 2
+      }
+    }
 
     this.tables.addLocalRoutes(this.ledgers, [{
       source_ledger: ledgerA,
