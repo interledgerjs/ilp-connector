@@ -353,6 +353,9 @@ class FBMEBackend {
     _.forEach( paymentDirectonIsSourceToDestination ? asks : bids, pricelevel => { 
       const price = new BigNumber(pricelevel.price)
       const size =  new BigNumber(pricelevel.size)
+      if ( size === 0 ) {
+        return { points: curvePoints }
+      }
       srcSum = new BigNumber(srcSum).plus(size)
       dstSum = new BigNumber(dstSum.plus(size.times(price)))
       curvePoints.push([srcSum, dstSum])
@@ -442,6 +445,7 @@ class FBMEBackend {
     this.multicastsub.connect(this.backendUri + ':36000')
     // Subscribe to all topics
     this.multicastsub.subscribe('')
+    this.sock.send('8=FIX.4.4|35=n')
 
 		this.multicastsub.on('message', message => {
       //console.log('<<< ' + message)
