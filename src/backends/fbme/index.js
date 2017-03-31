@@ -353,9 +353,10 @@ class FBMEBackend {
     _.forEach( paymentDirectonIsSourceToDestination ? asks : bids, pricelevel => { 
       const price = new BigNumber(pricelevel.price)
       const size =  new BigNumber(pricelevel.size)
-      if ( pricelevel.size === 0 ) {
-        return 
-      }
+
+      // Ignore this one
+      if (size.equals(new BigNumber(0))) return
+      
       srcSum = new BigNumber(srcSum).plus(size)
       dstSum = new BigNumber(dstSum.plus(size.times(price)))
       curvePoints.push([srcSum.toNumber(), dstSum.toNumber()])
