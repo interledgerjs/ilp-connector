@@ -353,7 +353,7 @@ class FBMEBackend {
     _.forEach( paymentDirectonIsSourceToDestination ? asks : bids, pricelevel => { 
       const price = new BigNumber(pricelevel.price)
       const size =  new BigNumber(pricelevel.size)
-      if ( size === 0 ) {
+      if ( pricelevel.size === 0 ) {
         return 
       }
       srcSum = new BigNumber(srcSum).plus(size)
