@@ -354,7 +354,7 @@ class FBMEBackend {
       const price = new BigNumber(pricelevel.price)
       const size =  new BigNumber(pricelevel.size)
       if ( size === 0 ) {
-        return { points: curvePoints }
+        return 
       }
       srcSum = new BigNumber(srcSum).plus(size)
       dstSum = new BigNumber(dstSum.plus(size.times(price)))

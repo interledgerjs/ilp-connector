@@ -79,8 +79,6 @@ const send = function (message) {
   fbme.sock.send(message)
 }
 
-send('8=FIX.4.4|35=n')
-
 setTimeout(testbatch, 1000);
 
 function testbatch () {
