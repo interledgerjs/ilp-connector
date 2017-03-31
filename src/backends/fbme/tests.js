@@ -25,7 +25,6 @@ fbme2.bids[1] = {}
 fbme2.asks[1] = {}
   
 fbme2.bids[1] = [{price: 1.0, size: 1.0}, {price: 2.0, size: 2.0}]
-
 fbme2.asks[1] = [{price: 0.75, size: 1.0}, {price:0.5, size : 1.0}]
 
 let params = { 
@@ -53,7 +52,7 @@ var limitorder = {
   currencyPairID: 2,
   orderstatus: fbme.OrderStatus.Submitted,
   clientissuedorderID: 4,
-  account: 1,
+  account: 2,
   acklevel: fbme.AckLevel.SOFT_writtenToRAM,
   orderheld: fbme.OrderHeld.False,
   paymenteligible: fbme.PaymentEligible.True,
@@ -79,18 +78,16 @@ const send = function (message) {
   fbme.sock.send(message)
 }
 
-send('8=FIX.4.4|35=n')
-
 setTimeout(testbatch, 1000);
 
 function testbatch () {
   log('ENTERED TESTBATCH')
 
     let params = { 
-    source_currency: 'XRP',
-    source_ledger: 'g.us.nexus',
+    source_currency: 'USD',
+    source_ledger: 'peer.HqMOm.usd.9.',
     destination_currency: 'USD',
-    destination_ledger: 'g.us.nexus'
+    destination_ledger: 'peer.eoAIJ.usd.9.'
   }
 
   let curve = co(fbme.getCurve(params))
@@ -103,9 +100,9 @@ function testbatch () {
 
   params = { 
     source_currency: 'USD',
-    source_ledger: 'g.us.nexus',
-    destination_currency: 'XRP',
-    destination_ledger: 'g.us.nexus'
+    source_ledger: 'peer.HqMOm.usd.9.',
+    destination_currency: 'USD',
+    destination_ledger: 'peer.eoAIJ.usd.9.'
   }
 
   curve = co(fbme.getCurve(params)).then(function (value) {
@@ -116,9 +113,9 @@ function testbatch () {
 
 params = {
   source_currency: 'USD',
-  source_ledger: 'g.us.nexus',
-  destination_currency: 'XRP',
-  destination_ledger: 'g.us.nexus',
+  source_ledger: 'wallet1.',
+  destination_currency: 'USD',
+  destination_ledger: 'peer.327le.usd.9.',
   source_amount: '4',
   destination_amount: '2'
 }

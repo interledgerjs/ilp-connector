@@ -438,20 +438,24 @@ class FBMEBackend {
    * Mock data can be provided for testing purposes
    */
   * connect(mockData) {
-    this.sock.connect(this.backendUri + ':36002')
+    this.sock.connect(this.backendUri + ':36003')
     this.multicastsub.connect(this.backendUri + ':36000')
     // Subscribe to all topics
     this.multicastsub.subscribe('')
 
+    this.sock.send('8=FIX.4.4|35=n')
+
 		this.multicastsub.on('message', message => {
-      //console.log('<<< ' + message)
+      console.log('<<< ' + message)
 			this._handleFIX(message)
 		})
 
 		this.sock.on('message', message => {
-      //console.log('<<< ' + message)
+      console.log('<<< ' + message)
 			this._handleFIX(message)
 		})
+
+    // Add wait for logon complete message
   }
 
   /**
