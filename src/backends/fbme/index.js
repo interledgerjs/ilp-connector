@@ -456,6 +456,11 @@ class FBMEBackend {
       //console.log('<<< ' + message)
 			this._handleFIX(message)
 		})
+    
+    // TODO actually wait for the orderbook to populate
+    return new Promise(resolve => {
+      setTimeout(resolve, 4000)
+    })
   }
 
   /**
