@@ -345,7 +345,7 @@ class FBMEBackend {
       throw new ServerError('No rate available for currency ' + params.destination_currency)
     }
 
-    const curvePoints = [[new BigNumber(0), new BigNumber(0)]]
+    const curvePoints = [[0, 0]]
 
     let srcSum = new BigNumber(0)
     let dstSum = new BigNumber(0)
@@ -358,7 +358,7 @@ class FBMEBackend {
       }
       srcSum = new BigNumber(srcSum).plus(size)
       dstSum = new BigNumber(dstSum.plus(size.times(price)))
-      curvePoints.push([srcSum, dstSum])
+      curvePoints.push([srcSum.toNumber(), dstSum.toNumber()])
     })
 
     return { points: curvePoints }
