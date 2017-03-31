@@ -81,7 +81,7 @@ const send = function (message) {
 
 send('8=FIX.4.4|35=n')
 
-setTimeout(testbatch, 100);
+setTimeout(testbatch, 1000);
 
 function testbatch () {
   log('ENTERED TESTBATCH')

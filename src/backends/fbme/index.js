@@ -444,12 +444,12 @@ class FBMEBackend {
     this.multicastsub.subscribe('')
 
 		this.multicastsub.on('message', message => {
-      console.log('<<< ' + message)
+      //console.log('<<< ' + message)
 			this._handleFIX(message)
 		})
 
 		this.sock.on('message', message => {
-      console.log('<<< ' + message)
+      //console.log('<<< ' + message)
 			this._handleFIX(message)
 		})
   }
