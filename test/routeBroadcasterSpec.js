@@ -5,6 +5,7 @@ const mock = require('mock-require')
 mock('ilp-plugin-mock', mockPlugin)
 
 const assert = require('assert')
+const path = require('path')
 const routing = require('ilp-routing')
 const RoutingTables = require('../src/lib/routing-tables')
 const RouteBroadcaster = require('../src/lib/route-broadcaster')
@@ -249,6 +250,22 @@ describe('RouteBroadcaster', function () {
         unreachable_through_me: [ledgerD]
       }, ledgerB + 'mark')
       assert.equal(this.tables.toJSON(2).length, 3)
+    })
+
+    it('handles problematic (non-increasing Y) message log', function * () {
+      const config = this.config
+      const ledgers = this.ledgers
+      const routingTables = this.tables
+      const routeBroadcaster = this.routeBroadcaster
+      const routeBuilder = this.routeBuilder
+      const balanceCache = this.balanceCache
+      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+      const messageLog = require(path.resolve(__dirname, '../test/data/' + 'problematic_message_log.json'))
+      for (let i = 0; i < messageLog.length; i++) {
+        const m = messageLog[i]
+        yield messageRouter.receiveRoutes(m.message.data, m.message.sender)
+      }
+      assert.doesNotThrow(() => this.tables.toJSON(10))
     })
 
     it('should send all routes even if sending one message fails', function * () {
