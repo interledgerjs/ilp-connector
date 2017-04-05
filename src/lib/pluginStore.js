@@ -62,6 +62,19 @@ class PluginStore {
       return null
     })
   }
+
+  dump () {
+    return this.connect().then(() => {
+      return this.Store.findAll({
+        attributes: [ 'key', 'value' ]
+      })
+    }).then((values) => {
+      return values.reduce((aggregator, entry) => {
+        aggregator[entry.key] = entry.value
+        return aggregator
+      }, {})
+    })
+  }
 }
 
 module.exports = PluginStore
