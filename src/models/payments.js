@@ -71,13 +71,13 @@ function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder
   yield settle(sourceTransfer, destinationTransfer, config, ledgers)
 }
 
-function * processExecutionFulfillment (transfer, fulfillment, ledgers, backend) {
+function * processExecutionFulfillment (transfer, fulfillment, ledgers, backend, config) {
   // If the destination transfer was executed, the connector should try to
   // execute the source transfer to get paid.
   if (transfer.direction === 'outgoing') {
     log.debug('Got notification about executed destination transfer with ID ' +
       transfer.id + ' on ledger ' + transfer.ledger)
-    yield executeSourceTransfer(transfer, fulfillment, ledgers, backend)
+    yield executeSourceTransfer(transfer, fulfillment, ledgers, backend, config)
   }
 }
 

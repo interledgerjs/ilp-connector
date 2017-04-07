@@ -25,7 +25,7 @@ function * subscribePairs (core, config, routeBuilder, messageRouter, backend) {
 
   core.on('outgoing_fulfill', (client, transfer, fulfillment) => {
     return co(function * () {
-      yield payments.processExecutionFulfillment(transfer, fulfillment, core, backend)
+      yield payments.processExecutionFulfillment(transfer, fulfillment, core, backend, config)
     }).catch(logThenThrow)
   })
 
