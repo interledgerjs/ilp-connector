@@ -132,9 +132,11 @@ class RouteBroadcaster {
       let routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
       const newRoutes = routesNewToConnector.map((route) => _.omit(route, ['added_during_epoch']))
       if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:', unreachableLedgers)
+
       const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
         ledger: adjacentLedger,
-        account: account,
+        from: this.ledgers.getPlugin(adjacentLedger).getAccount(),
+        to: account,
         data: {
           method: 'broadcast_routes',
           data: {

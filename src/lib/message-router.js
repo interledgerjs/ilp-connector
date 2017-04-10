@@ -34,12 +34,13 @@ function MessageRouter (opts) {
  */
 MessageRouter.prototype.handleMessage = function (message) {
   if (!message.data) return Promise.resolve(null)
-  return this.handleRequest(message.data, message.account).then(
+  return this.handleRequest(message.data, message.from).then(
     (responseData) => {
       if (!responseData) return
       return this.ledgers.getPlugin(message.ledger).sendMessage({
         ledger: message.ledger,
-        account: message.account,
+        from: message.to,
+        to: message.from,
         data: responseData
       })
     })

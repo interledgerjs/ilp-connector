@@ -190,7 +190,8 @@ describe('RouteBroadcaster', function () {
       this.ledgers.getPlugin(ledgerA).sendMessage = function (message) {
         assert.deepEqual(message, {
           ledger: ledgerA,
-          account: ledgerA + 'mary',
+          from: ledgerA + 'mark',
+          to: ledgerA + 'mary',
           data:
           { method: 'broadcast_routes',
             data:
@@ -205,7 +206,8 @@ describe('RouteBroadcaster', function () {
       this.ledgers.getPlugin(ledgerB).sendMessage = function (message) {
         assert.deepEqual(message, {
           ledger: ledgerB,
-          account: ledgerB + 'mary',
+          from: ledgerB + 'mark',
+          to: ledgerB + 'mary',
           data:
           { method: 'broadcast_routes',
             data:
