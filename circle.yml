@@ -2,7 +2,7 @@ machine:
   services:
     - docker
   node:
-    version: 6.9.4
+    version: 7.7.1
 test:
   override:
     - npm run lint
