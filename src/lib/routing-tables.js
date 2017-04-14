@@ -62,9 +62,9 @@ class RoutingTables {
     }
   }
 
-  addRoute (route) {
-    this.localTables.addRoute(route)
-    return this.publicTables.addRoute(route)
+  addRoute (route, noExpire) {
+    this.localTables.addRoute(route, noExpire)
+    return this.publicTables.addRoute(route, noExpire)
   }
 
   findBestHopForSourceAmount (sourceLedger, destinationLedger, sourceAmount) {
