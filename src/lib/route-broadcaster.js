@@ -241,7 +241,7 @@ class RouteBroadcaster {
 
       const route = new Route(
         // use a 1:1 curve as a placeholder (it will be overwritten by a remote quote)
-        [ [0, 0], [1, 1] ],
+        [ [0, 0], [Number.MAX_VALUE, Number.MAX_VALUE] ],
         // the second ledger is inserted to make sure this the hop to the
         // connectorLedger is not considered final.
         [ connectorLedger, targetPrefix ],
@@ -250,7 +250,8 @@ class RouteBroadcaster {
           targetPrefix: targetPrefix }
       )
 
-      this.routingTables.addRoute(route)
+      // set the noExpire option to true when adding config routes
+      this.routingTables.addRoute(route, true)
     }
 
     // returns a promise in order to be similar to reloadLocalRoutes()
