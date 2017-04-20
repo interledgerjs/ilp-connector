@@ -40,7 +40,7 @@
     "ilp-core": "^14.0.0",
     "ilp-packet": "~1.1.1",
     "ilp-plugin-bells": "^13.0.0",
-    "ilp-routing": "~7.0.2",
+    "ilp-routing": "~7.1.0",
     "lodash": "^4.6.1",
     "moment": "^2.10.2",
     "riverpig": "^1.1.0",
