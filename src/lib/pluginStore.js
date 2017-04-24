@@ -8,7 +8,7 @@ class PluginStore {
     this.name = name
     this.db = new Database(uri)
 
-    if (!name.match(/^[A-Za-z0-9_-~.]+$/)) {
+    if (!name.match(/^[A-Za-z0-9_\-~.]+$/)) {
       throw new Error('"' + name + '" includes forbidden characters.')
     }
 
