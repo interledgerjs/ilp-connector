@@ -102,6 +102,15 @@ describe('RouteBroadcaster', function () {
       points: [ [0, 0], [50, 60] ],
       additional_info: {}
     })
+
+    this.tables.addRoute({
+      source_ledger: ledgerB,
+      destination_ledger: 'peer.dont.broadcast.me.', // ledgers that start with `peer.` should not be broadcast
+      source_account: ledgerB + 'mary',
+      min_message_window: 1,
+      points: [ [0, 0], [50, 60] ],
+      additional_info: {}
+    })
     yield this.ledgers.connect()
   })
 
@@ -241,19 +250,43 @@ describe('RouteBroadcaster', function () {
         min_message_window: 1,
         points: [ [0, 0], [50, 60] ]
       }]
-      assert.equal(this.tables.toJSON(2).length, 3)
+      assert.equal(this.tables.toJSON(2).length, 4)
+      yield messageRouter.receiveRoutes({
+        new_routes: newRoutes,
+        hold_down_time: 1234,
+        unreachable_through_me: []
+      }, ledgerB + 'mark')
+      assert.equal(this.tables.toJSON(2).length, 5)
+      yield messageRouter.receiveRoutes({
+        new_routes: [],
+        hold_down_time: 1234,
+        unreachable_through_me: [ledgerD]
+      }, ledgerB + 'mark')
+      assert.equal(this.tables.toJSON(2).length, 4)
+    })
+
+    it('does not add peer routes', function * () {
+      const config = this.config
+      const ledgers = this.ledgers
+      const routingTables = this.tables
+      const routeBroadcaster = this.routeBroadcaster
+      const routeBuilder = this.routeBuilder
+      const balanceCache = this.balanceCache
+      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+      const newRoutes = [{
+        source_ledger: ledgerB,
+        destination_ledger: 'peer.do.not.add.me',
+        source_account: ledgerB + 'mark',
+        min_message_window: 1,
+        points: [ [0, 0], [50, 60] ]
+      }]
+      assert.equal(this.tables.toJSON(2).length, 4)
       yield messageRouter.receiveRoutes({
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: []
       }, ledgerB + 'mark')
       assert.equal(this.tables.toJSON(2).length, 4)
-      yield messageRouter.receiveRoutes({
-        new_routes: [],
-        hold_down_time: 1234,
-        unreachable_through_me: [ledgerD]
-      }, ledgerB + 'mark')
-      assert.equal(this.tables.toJSON(2).length, 3)
     })
 
     it('should send all routes even if sending one message fails', function * () {
