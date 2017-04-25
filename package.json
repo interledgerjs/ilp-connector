@@ -39,7 +39,7 @@
     "five-bells-shared": "^22.0.0",
     "ilp-core": "~12.0.1",
     "ilp-plugin-bells": "^11.0.0",
-    "ilp-routing": "~6.0.0",
+    "ilp-routing": "interledgerjs/ilp-routing#bs-backport-config-routes",
     "lodash": "^4.6.1",
     "moment": "^2.10.2",
     "riverpig": "^1.1.0",
