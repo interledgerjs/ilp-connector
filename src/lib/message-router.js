@@ -8,6 +8,8 @@ const validate = require('./validate').validate
 const quoteModel = require('../models/quote')
 const log = require('../common/log').create('message-router')
 
+const PEER_LEDGER_PREFIX = 'peer.'
+
 /**
  * @param {Object} opts
  * @param {Config} opts.config
@@ -132,6 +134,8 @@ MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
     // We received a route from another connector, but that connector
     // doesn't actually belong to the route, so ignore it.
     if (route.source_account !== sender) continue
+    // The destination_ledger can be any ledger except one that starts with `peer.`.
+    if (route.destination_ledger.startsWith(PEER_LEDGER_PREFIX)) continue
     if (this.routingTables.addRoute(route)) gotNewRoute = true
   }
   log.debug('receiveRoutes sender:', sender, ' provided ', routes.length, ' any new?:', gotNewRoute)
