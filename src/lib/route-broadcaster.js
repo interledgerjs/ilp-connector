@@ -6,6 +6,7 @@ const defer = require('co-defer')
 const Route = require('ilp-routing').Route
 const log = require('../common').log.create('route-broadcaster')
 const SIMPLIFY_POINTS = 10
+const PEER_LEDGER_PREFIX = 'peer.'
 
 class RouteBroadcaster {
   /**
@@ -107,7 +108,10 @@ class RouteBroadcaster {
 
   broadcast () {
     const adjacentLedgers = Object.keys(this.peersByLedger)
-    const routes = this.routingTables.toJSON(SIMPLIFY_POINTS)
+    const routes = this.routingTables.toJSON(SIMPLIFY_POINTS).filter(route => {
+      const isPeerRoute = (route.destination_ledger.startsWith(PEER_LEDGER_PREFIX))
+      return !isPeerRoute
+    })
     log.debug('broadcasting to %d adjacent ledgers', adjacentLedgers.length)
     const unreachableLedgers = Array.from(this.detectedDown)
     this.detectedDown.clear()

@@ -21,7 +21,7 @@
     "start": "node src/index.js",
     "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} src/index.js",
     "start:watch": "nodemon src/index.js",
-    "lint": "eslint .",
+    "lint": "eslint src test scripts schemas",
     "test": "istanbul test -- _mocha",
     "report-coverage": "codecov",
     "integration": "integration-loader && integration all",
