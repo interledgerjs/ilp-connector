@@ -141,28 +141,31 @@ describe('RouteBroadcaster', function () {
   })
 
   describe('broadcast', function () {
-    const routesFromA = [
+    const routesWithSourceLedgerA = [
       {
         source_ledger: ledgerA,
         destination_ledger: ledgerB,
         min_message_window: 1,
         source_account: ledgerA + 'mark',
-        points: [ [0.02, 0], [200, 99.99] ]
+        points: [ [0.02, 0], [200, 99.99] ],
+        paths: [ [] ]
       }, {
         source_ledger: ledgerA,
         destination_ledger: ledgerC,
         min_message_window: 2,
         source_account: ledgerA + 'mark',
-        points: [ [0.02, 0], [100.02, 60] ]
+        points: [ [0.02, 0], [100.02, 60] ],
+        paths: [ [] ]
       }
     ]
-    const routesFromB = [
+    const routesWithSourceLedgerB = [
       {
         source_ledger: ledgerB,
         destination_ledger: ledgerA,
         min_message_window: 1,
         source_account: ledgerB + 'mark',
-        points: [ [0.005, 0], [100, 199.99] ]
+        points: [ [0.005, 0], [100, 199.99] ],
+        paths: [ [] ]
       }
     ]
 
@@ -195,7 +198,7 @@ describe('RouteBroadcaster', function () {
           }
         }
 
-      let routesFromASent, routesFromBSent
+      let routesWithSourceLedgerASent, routesWithSourceLedgerBSent
       this.ledgers.getPlugin(ledgerA).sendMessage = function (message) {
         assert.deepEqual(message, {
           ledger: ledgerA,
@@ -206,9 +209,9 @@ describe('RouteBroadcaster', function () {
             data:
             { hold_down_time: 1234,
               unreachable_through_me: [],
-              new_routes: routesFromA } }
+              new_routes: routesWithSourceLedgerA } }
         })
-        routesFromASent = true
+        routesWithSourceLedgerASent = true
         return Promise.resolve(null)
       }
 
@@ -222,16 +225,16 @@ describe('RouteBroadcaster', function () {
             data:
             { hold_down_time: 1234,
               unreachable_through_me: [],
-              new_routes: routesFromB } }
+              new_routes: routesWithSourceLedgerB } }
         })
-        routesFromBSent = true
+        routesWithSourceLedgerBSent = true
         return Promise.resolve(null)
       }
 
       yield this.broadcaster.crawl()
       this.broadcaster.broadcast()
-      assert(routesFromASent)
-      assert(routesFromBSent)
+      assert(routesWithSourceLedgerASent)
+      assert(routesWithSourceLedgerBSent)
     })
 
     it('invalidates routes', function * () {
@@ -289,6 +292,30 @@ describe('RouteBroadcaster', function () {
       assert.equal(this.tables.toJSON(2).length, 4)
     })
 
+    it('ignores routes where source_ledger does not match source_account', function * () {
+      const config = this.config
+      const ledgers = this.ledgers
+      const routingTables = this.tables
+      const routeBroadcaster = this.routeBroadcaster
+      const routeBuilder = this.routeBuilder
+      const balanceCache = this.balanceCache
+      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+      const newRoutes = [{
+        source_ledger: ledgerA,
+        destination_ledger: ledgerC,
+        source_account: ledgerB + 'mark',
+        min_message_window: 1,
+        points: [ [0, 0], [50, 60] ]
+      }]
+      assert.equal(this.tables.toJSON(2).length, 4)
+      yield messageRouter.receiveRoutes({
+        new_routes: newRoutes,
+        hold_down_time: 1234,
+        unreachable_through_me: []
+      }, ledgerB + 'mark')
+      assert.equal(this.tables.toJSON(2).length, 4)
+    })
+
     it('should send all routes even if sending one message fails', function * () {
       this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
@@ -303,20 +330,20 @@ describe('RouteBroadcaster', function () {
           return { prefix: ledgerC, connectors: [ledgerC + 'mark'] }
         }
 
-      let routesFromASent, routesFromBSent
+      let routesWithSourceLedgerASent, routesWithSourceLedgerBSent
       this.ledgers.getPlugin(ledgerA).sendMessage = function (message) {
-        routesFromASent = true
+        routesWithSourceLedgerASent = true
         return Promise.reject(new Error('something went wrong but the connector should continue anyway'))
       }
       this.ledgers.getPlugin(ledgerB).sendMessage = function (message) {
-        routesFromBSent = true
+        routesWithSourceLedgerBSent = true
         return Promise.resolve(null)
       }
 
       yield this.broadcaster.crawl()
       this.broadcaster.broadcast()
-      assert(routesFromASent)
-      assert(routesFromBSent)
+      assert(routesWithSourceLedgerASent)
+      assert(routesWithSourceLedgerBSent)
     })
 
     it('should send all routes even if plugin.sendMessage hangs', function * () {
@@ -333,22 +360,22 @@ describe('RouteBroadcaster', function () {
           return { prefix: ledgerC, connectors: [ledgerC + 'mark'] }
         }
 
-      let routesFromASent, routesFromBSent
+      let routesWithSourceLedgerASent, routesWithSourceLedgerBSent
       this.ledgers.getPlugin(ledgerA).sendMessage = function (message) {
-        routesFromASent = true
+        routesWithSourceLedgerASent = true
         return new Promise((resolve) => {
           setTimeout(resolve, 1000000)
         })
       }
       this.ledgers.getPlugin(ledgerB).sendMessage = function (message) {
-        routesFromBSent = true
+        routesWithSourceLedgerBSent = true
         return Promise.resolve(null)
       }
 
       yield this.broadcaster.crawl()
       this.broadcaster.broadcast()
-      assert(routesFromASent)
-      assert(routesFromBSent)
+      assert(routesWithSourceLedgerASent)
+      assert(routesWithSourceLedgerBSent)
     })
   })
 
@@ -357,8 +384,8 @@ describe('RouteBroadcaster', function () {
       const route = yield this.broadcaster._tradingPairToLocalRoute(
         [ 'CAD@' + ledgerA, 'USD@' + ledgerB ])
       assert.ok(route instanceof routing.Route)
-      assert.deepEqual(route.hops, [ledgerA, ledgerB])
       assert.deepEqual(route.sourceLedger, ledgerA)
+      assert.deepEqual(route.nextLedger, ledgerB)
       assert.deepEqual(route.destinationLedger, ledgerB)
       assert.deepEqual(route.sourceAccount, ledgerA + 'mark')
       assert.deepEqual(route.destinationAccount, ledgerB + 'mark')
