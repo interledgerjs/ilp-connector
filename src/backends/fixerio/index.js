@@ -136,6 +136,9 @@ class FixerIoBackend {
     if (limit === undefined) {
       return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] ] }
     }
+    if (limit[0] >= PROBE_SOURCE_AMOUNT) {
+      return { points: [ [0, 0], limit ] }
+    }
     return { points: [ [0, 0], limit, [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
   }
 

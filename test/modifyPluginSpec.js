@@ -1,4 +1,5 @@
 'use strict'
+const co = require('co')
 const chai = require('chai')
 const assert = chai.assert
 const expect = chai.expect
@@ -48,12 +49,12 @@ describe('Modify Plugins', function () {
     })
 
     it('should support new ledger', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger-2.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '1.001'
-      })
+      const quotePromise = co(this.routeBuilder.quoteBySource({
+        sourceAmount: '100',
+        sourceAccount: 'eur-ledger-2.alice',
+        destinationAccount: 'usd-ledger.bob',
+        destinationHoldDuration: 5000
+      }))
 
       yield assert.isRejected(quotePromise, NoRouteFoundError, /No route found from: eur-ledger-2\.alice to: usd-ledger\.bob/)
 
@@ -63,12 +64,12 @@ describe('Modify Plugins', function () {
         options: {}
       })
 
-      const quotePromise2 = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger-2.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '1.001'
-      })
+      const quotePromise2 = co(this.routeBuilder.quoteBySource({
+        sourceAmount: '100',
+        sourceAccount: 'eur-ledger-2.alice',
+        destinationAccount: 'usd-ledger.bob',
+        destinationHoldDuration: 5000
+      }))
 
       yield assert.isFulfilled(quotePromise2)
     })
@@ -105,21 +106,21 @@ describe('Modify Plugins', function () {
     })
 
     it('should no longer quote to that plugin', function * () {
-      yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger-2.alice',
-        destination_address: 'cad-ledger.bob',
-        destination_expiry_duration: '1.001'
+      yield this.routeBuilder.quoteBySource({
+        sourceAmount: '100',
+        sourceAccount: 'eur-ledger-2.alice',
+        destinationAccount: 'cad-ledger.bob',
+        destinationHoldDuration: 1.001
       })
 
       yield this.app.removePlugin('eur-ledger-2.')
 
-      yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger-2.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '1.001'
-      }).then((quote) => {
+      yield co(this.routeBuilder.quoteBySource({
+        sourceAmount: '100',
+        sourceAccount: 'eur-ledger-2.alice',
+        destinationAccount: 'usd-ledger.bob',
+        destinationHoldDuration: 1.001
+      })).then((quote) => {
         throw new Error()
       }).catch((err) => {
         expect(err.name).to.equal('NoRouteFoundError')

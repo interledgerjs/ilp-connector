@@ -10,6 +10,7 @@ const loadConfig = require('./lib/config')
 const RoutingTables = require('./lib/routing-tables')
 const RouteBuilder = require('./lib/route-builder')
 const RouteBroadcaster = require('./lib/route-broadcaster')
+const Quoter = require('./lib/quoter')
 const Ledgers = require('./lib/ledgers')
 const BalanceCache = require('./lib/balance-cache')
 const MessageRouter = require('./lib/message-router')
@@ -28,7 +29,7 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       log.error(error)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(ledgers.getCore(), config, routeBuilder, messageRouter, backend)
+    yield subscriptions.subscribePairs(ledgers.getCore(), config, routeBuilder, backend)
 
     let allLedgersConnected
     try {
@@ -78,7 +79,11 @@ function getPlugin (ledgers, id) {
   return ledgers.getPlugin(id)
 }
 
-function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, balanceCache, messageRouter) {
+function registerRequestHandler (ledgers, fn) {
+  return ledgers.registerExternalRequestHandler(fn)
+}
+
+function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, balanceCache, messageRouter) {
   if (!config) {
     config = loadConfig()
   }
@@ -98,6 +103,10 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
     ledgers.setPairs(config.get('tradingPairs'))
   }
 
+  if (!quoter) {
+    quoter = new Quoter(ledgers)
+  }
+
   if (!backend) {
     const Backend = getBackend(config.get('backend'))
     backend = new Backend({
@@ -111,10 +120,11 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
 
   if (!routeBuilder) {
     routeBuilder = new RouteBuilder(
-      routingTables,
       ledgers,
+      quoter,
       {
         minMessageWindow: config.expiry.minMessageWindow,
+        maxHoldTime: config.expiry.maxHoldTime,
         slippage: config.slippage
       }
     )
@@ -158,7 +168,8 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
     listen: _.partial(listen, config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter),
     addPlugin: _.partial(addPlugin, config, ledgers, backend, routeBroadcaster),
     removePlugin: _.partial(removePlugin, config, ledgers, backend, routingTables, routeBroadcaster),
-    getPlugin: _.partial(getPlugin, ledgers)
+    getPlugin: _.partial(getPlugin, ledgers),
+    registerRequestHandler: _.partial(registerRequestHandler, ledgers)
   }
 }
 
