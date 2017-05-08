@@ -2,97 +2,101 @@
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const packet = require('ilp-packet')
-const routing = require('ilp-routing')
 const NoRouteFoundError = require('../errors/no-route-found-error')
+const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const LedgerNotConnectedError = require('../errors/ledger-not-connected-error')
-const IlpError = require('../errors/ilp-error')
+const IncomingTransferError = require('../errors/incoming-transfer-error')
 const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 const log = require('../common/log').create('route-builder')
 const startsWith = require('lodash/startsWith')
 
 class RouteBuilder {
   /**
-   * @param {RoutingTables} routingTables
    * @param {Ledgers} ledgers
+   * @param {Quoter} quoter
    * @param {Object} config
    * @param {Integer} config.minMessageWindow seconds
+   * @param {Integer} config.maxHoldTime seconds
    * @param {Number} config.slippage
-   * @param {Object} config.ledgerCredentials
    */
-  constructor (routingTables, ledgers, config) {
+  constructor (ledgers, quoter, config) {
     if (!ledgers) {
       throw new TypeError('Must be given a valid Ledgers instance')
     }
 
-    this.routingTables = routingTables
     this.ledgers = ledgers
-    this.minMessageWindow = config.minMessageWindow
+    this.routingTables = ledgers.tables
+    this.quoter = quoter
+    this.minMessageWindow = config.minMessageWindow * 1000 // millseconds
+    this.maxHoldTime = config.maxHoldTime * 1000 // millseconds
     this.slippage = config.slippage
   }
 
   /**
    * @param {Object} params
-   * @param {String} params.sourceAddress
-   * @param {String} [params.sourceAmount]
-   * @param {Number} [params.sourceExpiryDuration]
-   * @param {String} params.destinationAddress
-   * @param {String} [params.destinationAmount]
-   * @param {Number} [params.destinationExpiryDuration]
-   * @param {Object} [params.slippage]
-   * @returns {Quote}
+   * @param {String} params.sourceAccount
+   * @param {String} params.destinationAccount
+   * @param {Number} params.destinationHoldDuration
+   * @param {String} params.sourceAmount
+   * @returns {QuoteBySourceResponse}
    */
-  * getQuote (params) {
-    log.info('creating quote sourceAddress=%s sourceAmount=%s ' +
-      'destinationAddress=%s destinationAmount=%s slippage=%s',
-      params.sourceAddress, params.sourceAmount,
-      params.destinationAddress, params.destinationAmount, params.slippage)
-    const info = {}
-    const quote = yield this.ledgers.quote({
-      sourceAddress: params.sourceAddress,
-      sourceAmount: params.sourceAmount,
-      destinationAddress: params.destinationAddress,
-      destinationAmount: params.destinationAmount,
-      sourceExpiryDuration: params.sourceExpiryDuration,
-      destinationExpiryDuration: params.destinationExpiryDuration
+  * quoteBySource (params) {
+    log.info('creating quote sourceAccount=%s destinationAccount=%s sourceAmount=%s',
+      params.sourceAccount, params.destinationAccount, params.sourceAmount)
+    const quote = yield this.quoter.quoteBySourceAmount({
+      sourceAccount: params.sourceAccount,
+      destinationAccount: params.destinationAccount,
+      destinationHoldDuration: params.destinationHoldDuration,
+      sourceAmount: params.sourceAmount
     })
     if (!quote) {
       log.info('no quote found for params: ' + JSON.stringify(params))
-      log.debug('current routing tables (simplified to 10 points): ' + JSON.stringify(this.routingTables.toJSON(10)))
-      throw new NoRouteFoundError('No route found from: ' + params.sourceAddress + ' to: ' + params.destinationAddress)
+      throw new NoRouteFoundError('No route found from: ' + params.sourceAccount + ' to: ' + params.destinationAccount)
+    }
+    if (quote.destinationAmount === '0') {
+      throw new UnacceptableAmountError('Quoted destination is lower than minimum amount allowed')
     }
     this._verifyLedgerIsConnected(quote.sourceLedger)
     this._verifyLedgerIsConnected(quote.nextLedger)
-
-    const slippage = params.slippage ? +params.slippage : this.slippage
-    // "curve" may or may not be provided on the quote.
-    const curve = quote.liquidityCurve && new routing.LiquidityCurve(quote.liquidityCurve)
-    if (params.sourceAmount) {
-      const amount = new BigNumber(quote.destinationAmount)
-      const amountWithSlippage = amount.times(1 - slippage)
-      quote.destinationAmount = amountWithSlippage.toString()
-      info.slippage = amount.minus(amountWithSlippage).toString()
-      quote.liquidityCurve = curve && curve.shiftY(-info.slippage).getPoints()
-    } else { // fixed destinationAmount
-      const amount = new BigNumber(quote.sourceAmount)
-      const amountWithSlippage = amount.times(1 + slippage)
-      quote.sourceAmount = amountWithSlippage.toString()
-      info.slippage = amount.minus(amountWithSlippage).toString()
-      quote.liquidityCurve = curve && curve.shiftX(-info.slippage).getPoints()
+    this._validateHoldDurations(quote.sourceHoldDuration, quote.destinationHoldDuration)
+    return {
+      destinationAmount: quote.destinationAmount,
+      sourceHoldDuration: quote.sourceHoldDuration
     }
+  }
 
-    // Round in favor of the connector (source amount up; destination amount down)
-    // to ensure it doesn't lose any money. The amount is quoted using the unshifted rate.
-    const roundedSourceAmount = this._roundAmount('source', 'up', quote.sourceAmount)
-    const roundedDestinationAmount = this._roundAmount('destination', 'down', quote.destinationAmount)
-
-    return _.omitBy(Object.assign(quote, {
-      sourceAmount: roundedSourceAmount,
-      destinationAmount: roundedDestinationAmount,
-      sourceExpiryDuration: quote.sourceExpiryDuration.toString(),
-      destinationExpiryDuration: quote.destinationExpiryDuration.toString(),
-      additionalInfo: _.assign({}, quote.additionalInfo, info)
-    }), _.isUndefined)
+  /**
+   * @param {Object} params
+   * @param {String} params.sourceAccount
+   * @param {String} params.destinationAccount
+   * @param {Number} params.destinationHoldDuration
+   * @param {String} params.destinationAmount
+   * @returns {QuoteByDestinationResponse}
+   */
+  * quoteByDestination (params) {
+    log.info('creating quote sourceAccount=%s destinationAccount=%s destinationAmount=%s',
+      params.sourceAccount, params.destinationAccount, params.destinationAmount)
+    const quote = yield this.quoter.quoteByDestinationAmount({
+      sourceAccount: params.sourceAccount,
+      destinationAccount: params.destinationAccount,
+      destinationHoldDuration: params.destinationHoldDuration,
+      destinationAmount: params.destinationAmount
+    })
+    if (!quote) {
+      log.info('no quote found for params: ' + JSON.stringify(params))
+      throw new NoRouteFoundError('No route found from: ' + params.sourceAccount + ' to: ' + params.destinationAccount)
+    }
+    if (quote.sourceAmount === '0') {
+      throw new UnacceptableAmountError('Quoted source is lower than minimum amount allowed')
+    }
+    this._verifyLedgerIsConnected(quote.sourceLedger)
+    this._verifyLedgerIsConnected(quote.nextLedger)
+    this._validateHoldDurations(quote.sourceHoldDuration, quote.destinationHoldDuration)
+    return {
+      sourceAmount: quote.sourceAmount,
+      sourceHoldDuration: quote.sourceHoldDuration
+    }
   }
 
   /**
@@ -112,7 +116,7 @@ class RouteBuilder {
       'sourceLedger=%s sourceAmount=%s ilpPacket=%s',
       sourceTransfer.ledger, sourceTransfer.amount, sourceTransfer.ilp)
     if (!sourceTransfer.ilp) {
-      throw new IlpError({
+      throw new IncomingTransferError({
         code: 'S01',
         name: 'Invalid Packet',
         message: 'source transfer is missing "ilp"'
@@ -123,7 +127,7 @@ class RouteBuilder {
       ilpPacket = packet.deserializeIlpPayment(Buffer.from(sourceTransfer.ilp, 'base64'))
     } catch (err) {
       log.debug('error parsing ILP packet: ' + sourceTransfer.ilp)
-      throw new IlpError({
+      throw new IncomingTransferError({
         code: 'S01',
         name: 'Invalid Packet',
         message: 'source transfer has invalid ILP packet'
@@ -144,13 +148,12 @@ class RouteBuilder {
       ilpPacket.account, ilpPacket.amount)
 
     const sourceLedger = sourceTransfer.ledger
-    // Use `findBestHopForSourceAmount` since the source amount includes the slippage.
     const nextHop = this.routingTables.findBestHopForSourceAmount(
       sourceLedger, ilpPacket.account, sourceTransfer.amount)
     if (!nextHop) {
       log.info('could not find route for source transfer: ' + JSON.stringify(sourceTransfer))
       log.debug('current routing tables (simplified to 10 points): ' + JSON.stringify(this.routingTables.toJSON(10)))
-      throw new IlpError({
+      throw new IncomingTransferError({
         code: 'S02',
         name: 'Unreachable',
         message: 'No route found from: ' + sourceLedger + ' to: ' + ilpPacket.account
@@ -158,18 +161,13 @@ class RouteBuilder {
     }
     this._verifyLedgerIsConnected(nextHop.destinationLedger)
 
-    // Round in favor of the connector. findBestHopForSourceAmount uses the
-    // local (unshifted) routes to compute the amounts, so the connector rounds
-    // in its own favor to ensure it won't lose money.
-    nextHop.destinationAmount = this._roundAmount('destination', 'down', nextHop.destinationAmount)
-
     // Check if this connector can authorize the final transfer.
     if (nextHop.isFinal) {
-      const roundedFinalAmount = this._roundAmount('destination', 'down', nextHop.finalAmount)
-      // Verify ilpPacket.amount ≤ nextHop.finalAmount
-      const expectedFinalAmount = new BigNumber(ilpPacket.amount)
-      if (expectedFinalAmount.greaterThan(roundedFinalAmount)) {
-        throw new IlpError({
+      // Verify expectedFinalAmount ≤ actualFinalAmount
+      // As long as the fxSpread > slippage, the connector won't lose money.
+      const expectedFinalAmount = new BigNumber(ilpPacket.amount).times(1 - this.slippage)
+      if (expectedFinalAmount.greaterThan(nextHop.finalAmount)) {
+        throw new IncomingTransferError({
           code: 'R02',
           name: 'Insufficient Source Amount',
           message: 'Payment rate does not match the rate currently offered'
@@ -216,25 +214,7 @@ class RouteBuilder {
   _getDestinationExpiry (sourceExpiry) {
     if (!sourceExpiry) return
     const sourceExpiryTime = (new Date(sourceExpiry)).getTime()
-    const minMessageWindow = this.minMessageWindow * 1000
-    return (new Date(sourceExpiryTime - minMessageWindow)).toISOString()
-  }
-
-  /**
-   * Round amounts against the connector's favor. This cancels out part of the
-   * connector's rate curve shift by 1/10^scale.
-   *
-   * @param {String} sourceOrDestination "source" or "destination"
-   * @param {String} upOrDown "up" or "down"
-   * @param {String} amount
-   * @returns {String} rounded amount
-   */
-  _roundAmount (sourceOrDestination, upOrDown, amount) {
-    const roundingMode = upOrDown === 'down' ? BigNumber.ROUND_DOWN : BigNumber.ROUND_UP
-    const bnAmount = new BigNumber(amount)
-    const roundedAmount = bnAmount.toFixed(0, roundingMode)
-    validateAmount(roundedAmount, sourceOrDestination)
-    return roundedAmount
+    return (new Date(sourceExpiryTime - this.minMessageWindow)).toISOString()
   }
 
   _verifyLedgerIsConnected (ledger) {
@@ -242,13 +222,23 @@ class RouteBuilder {
       throw new LedgerNotConnectedError('No connection to ledger "' + ledger + '"')
     }
   }
-}
 
-function validateAmount (amount, sourceOrDestination) {
-  const bnAmount = new BigNumber(amount)
-  if (bnAmount.lte(0)) {
-    throw new UnacceptableAmountError(
-      `Quoted ${sourceOrDestination} is lower than minimum amount allowed`)
+  // TODO: include the expiry duration in the quote logic
+  _validateHoldDurations (sourceHoldDuration, destinationHoldDuration) {
+    // Check destination_expiry_duration
+    if (destinationHoldDuration > this.maxHoldTime) {
+      throw new UnacceptableExpiryError('Destination expiry duration ' +
+        'is too long, destinationHoldDuration: ' + destinationHoldDuration +
+        ', maxHoldTime: ' + this.maxHoldTime)
+    }
+
+    // Check difference between destination_expiry_duration and source_expiry_duration
+    if (sourceHoldDuration - destinationHoldDuration < this.minMessageWindow) {
+      throw new UnacceptableExpiryError('The difference between the ' +
+        'destination expiry duration and the source expiry duration ' +
+        'is insufficient to ensure that we can execute the ' +
+        'source transfers')
+    }
   }
 }
 

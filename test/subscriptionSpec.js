@@ -77,7 +77,7 @@ describe('Subscriptions', function () {
     this.wsEurLedger = new wsHelper.Server('ws://eur-ledger.example/accounts/mark/transfers')
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
-    yield subscriptions.subscribePairs(this.ledgers.getCore(), this.config, this.routeBuilder, this.messageRouter, this.backend)
+    yield subscriptions.subscribePairs(this.ledgers.getCore(), this.config, this.routeBuilder, this.backend)
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
@@ -96,6 +96,8 @@ describe('Subscriptions', function () {
   it('should initiate and complete a universal mode payment', function * () {
     const sourceTransfer = this.transferUsdPrepared
     const destinationTransfer = this.transferEurProposed
+    const sourceAmount = '10700'
+    const destinationAmount = '10000'
 
     const sendSpy = sinon.spy(
       this.ledgers.getPlugin(destinationTransfer.ledger),
@@ -110,11 +112,11 @@ describe('Subscriptions', function () {
         direction: 'incoming',
         ledger: sourceTransfer.ledger,
         account: sourceTransfer.debits[0].account,
-        amount: sourceTransfer.debits[0].amount,
+        amount: sourceAmount,
         executionCondition: sourceTransfer.debits[0].execution_condition,
         expiresAt: sourceTransfer.debits[0].expires_at,
         ilp: packet.serializeIlpPayment({
-          amount: destinationTransfer.credits[0].amount,
+          amount: destinationAmount,
           account: destinationTransfer.credits[0].account
         }).toString('base64')
       })
@@ -128,12 +130,12 @@ describe('Subscriptions', function () {
         direction: 'outgoing',
         ledger: destinationTransfer.ledger,
         account: destinationTransfer.debits[0].account,
-        amount: destinationTransfer.debits[0].amount,
+        amount: destinationAmount,
         executionCondition: destinationTransfer.debits[0].execution_condition,
         noteToSelf: {
           source_transfer_ledger: sourceTransfer.ledger,
           source_transfer_id: sourceId,
-          source_transfer_amount: sourceTransfer.debits[0].amount
+          source_transfer_amount: sourceAmount
         }
       }, 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
 

@@ -4,7 +4,7 @@ const BigNumber = require('bignumber.js')
 const healthStatus = require('../common/health.js')
 // This simple backend uses a fixed (large) source amount and a rate to generate
 // the destination amount for the curve.
-const PROBE_SOURCE_AMOUNT = 100000000
+const PROBE_SOURCE_AMOUNT = 1000000000000
 
 /**
  * Backend which charges no spread and trades everything one-to-one.
@@ -77,6 +77,9 @@ class OneToOneBackend {
     }
     if (limit === undefined) {
       return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] ] }
+    }
+    if (limit[0] >= PROBE_SOURCE_AMOUNT) {
+      return { points: [ [0, 0], limit ] }
     }
     return { points: [ [0, 0], limit, [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
   }

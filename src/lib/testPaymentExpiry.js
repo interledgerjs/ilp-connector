@@ -2,7 +2,7 @@
 const _ = require('lodash')
 const moment = require('moment')
 const request = require('co-request')
-const IlpError = require('../errors/ilp-error')
+const IncomingTransferError = require('../errors/incoming-transfer-error')
 
 /**
  * In atomic mode, transfers shouldn't have an `expires_at` property.
@@ -45,7 +45,7 @@ TransferTester.prototype.getExpiry = function (transfer) {
     this.expiryByCase, getTransferCases(transfer))))
   if (expiries.length === 0) return undefined
   if (expiries.length === 1) return expiries[0]
-  throw new IlpError({
+  throw new IncomingTransferError({
     code: 'S00',
     name: 'Bad Request',
     message: 'Case expiries don\'t agree'
@@ -65,7 +65,7 @@ TransferTester.prototype.validateNotExpired = function () {
   {
     const expiresAt = this.getExpiry(this.sourceTransfer)
     if (expiresAt && moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
-      throw new IlpError({
+      throw new IncomingTransferError({
         code: 'R03',
         name: 'Insufficient Timeout',
         message: 'Transfer has already expired'
@@ -75,7 +75,7 @@ TransferTester.prototype.validateNotExpired = function () {
   {
     const expiresAt = this.getExpiry(this.destinationTransfer)
     if (expiresAt && moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
-      throw new IlpError({
+      throw new IncomingTransferError({
         code: 'R03',
         name: 'Insufficient Timeout',
         message: 'Not enough time to send payment'
@@ -99,7 +99,7 @@ TransferTester.prototype.validateMaxHoldTime = function () {
   if (expiresAt) {
     this.validateExpiryHoldTime(expiresAt)
   } else {
-    throw new IlpError({
+    throw new IncomingTransferError({
       code: 'S00',
       name: 'Bad Request',
       message: 'Destination transfers with ' +
@@ -111,7 +111,7 @@ TransferTester.prototype.validateMaxHoldTime = function () {
 
 TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
   if (moment(expiresAt, moment.ISO_8601).diff(moment()) > this.maxHoldTime) {
-    throw new IlpError({
+    throw new IncomingTransferError({
       code: 'R03',
       name: 'Insufficient Timeout',
       message: 'Destination transfer expiry is ' +
@@ -145,7 +145,7 @@ TransferTester.prototype.loadCaseExpiry = function * (caseID) {
     json: true
   })
   if (caseRes.statusCode !== 200) {
-    throw new IlpError({
+    throw new IncomingTransferError({
       code: 'T00',
       name: 'Internal Error',
       message: 'Unexpected remote error: ' + caseRes.statusCode + ' ' + caseRes.body
@@ -155,7 +155,7 @@ TransferTester.prototype.loadCaseExpiry = function * (caseID) {
   if (expiry) {
     this.expiryByCase[caseID] = expiry
   } else {
-    throw new IlpError({
+    throw new IncomingTransferError({
       code: 'S00',
       name: 'Bad Request',
       message: 'Cases must have an expiry.'

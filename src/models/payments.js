@@ -4,7 +4,7 @@ const testPaymentExpiry = require('../lib/testPaymentExpiry')
 const log = require('../common').log.create('payments')
 const executeSourceTransfer = require('../lib/executeSourceTransfer')
 const validator = require('../lib/validate')
-const IlpError = require('../errors/ilp-error')
+const IncomingTransferError = require('../errors/incoming-transfer-error')
 
 function * validateExpiry (sourceTransfer, destinationTransfer, config) {
   // TODO tie the maxHoldTime to the fx rate
@@ -47,7 +47,7 @@ function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder
     if (!destinationTransfer) return // in case the connector is the payee there is no destinationTransfer
     yield validateExpiry(sourceTransfer, destinationTransfer, config)
   } catch (err) {
-    if (!(err instanceof IlpError)) throw err
+    if (!(err instanceof IncomingTransferError)) throw err
     yield rejectIncomingTransfer(sourceTransfer, err.rejectionMessage, ledgers)
     return
   }

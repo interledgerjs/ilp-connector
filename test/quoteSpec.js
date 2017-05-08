@@ -4,10 +4,13 @@ const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
 mock('ilp-plugin-mock', mockPlugin)
 
+const LiquidityCurve = require('ilp-routing').LiquidityCurve
+const co = require('co')
+const sinon = require('sinon')
 const nock = require('nock')
+const IlpPacket = require('ilp-packet')
 nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
-const validate = require('../src/lib/validate').validate
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
@@ -16,21 +19,22 @@ const assert = chai.assert
 const expect = chai.expect
 chai.use(require('chai-as-promised'))
 const _ = require('lodash')
+const IlpError = require('../src/errors/ilp-error')
 const ExternalError = require('../src/errors/external-error')
 const InvalidAmountSpecifiedError = require('../src/errors/invalid-amount-specified-error')
-const NoAmountSpecifiedError = require('../src/errors/no-amount-specified-error')
 const AssetsNotTradedError = require('../src/errors/assets-not-traded-error')
 const NoRouteFoundError = require('../src/errors/no-route-found-error')
 const UnacceptableAmountError = require('../src/errors/unacceptable-amount-error')
 const UnacceptableExpiryError = require('../src/errors/unacceptable-expiry-error')
 const LedgerNotConnectedError = require('../src/errors/ledger-not-connected-error')
-const InvalidBodyError = require('five-bells-shared').InvalidBodyError
+const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
 describe('Quotes', function () {
   logHelper(logger)
 
   beforeEach(function * () {
     appHelper.create(this)
+    this.clock = sinon.useFakeTimers(START_DATE)
 
     const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
     _.map(testLedgers, (ledgerUri) => {
@@ -46,524 +50,344 @@ describe('Quotes', function () {
   })
 
   afterEach(function () {
+    this.clock.restore()
     nock.cleanAll()
   })
 
-  describe('MessageRouter#getQuote', function () {
-    it('should return a NoAmountSpecifiedError if no amount is specified', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
+  it('should return a InvalidAmountSpecifiedError if sourceAmount is zero', function * () {
+    const quotePromise = co(this.routeBuilder.quoteBySource({
+      sourceAmount: '0',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob'
+    }))
 
-      yield assert.isRejected(quotePromise, NoAmountSpecifiedError, 'Exactly one of source_amount or destination_amount must be specified')
+    yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'sourceAmount must be positive')
+  })
+
+  it('should return a InvalidAmountSpecifiedError if destinationAmount is zero', function * () {
+    const quotePromise = co(this.routeBuilder.quoteByDestination({
+      destinationAmount: '0',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob'
+    }))
+
+    yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'destinationAmount must be positive')
+  })
+
+  it('should return NoRouteFoundError when the source ledger is not supported', function * () {
+    const quotePromise = co(this.routeBuilder.quoteBySource({
+      sourceAmount: '100',
+      sourceAccount: 'fake-ledger.foley',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 1.001
+    }))
+
+    yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: fake-ledger.foley to: usd-ledger.bob')
+  })
+
+  // This test doesn't currently pass - I think it's because the connector is
+  // smart enough to construct a route of A -> B -> C through itself, even if
+  // A -> C isn't a pair, but A -> B and B -> C are.
+  //
+  // This might actually be the desired behavior... if we're willing to trade
+  // A for B and B for C, we're implicitly willing to trade A for C.
+  it.skip('should return AssetsNotTradedError when the pair is not supported', function * () {
+    const quotePromise = this.routeBuilder.quoteBySource({
+      sourceAmount: '100',
+      sourceAccount: 'cad-ledger.bob',
+      destinationAccount: 'cny-ledger.bob',
+      destinationHoldDuration: 1.001
     })
 
-    it('should return a InvalidBodyError if both source_amount and destination_amount are specified', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        destination_amount: '100',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
+    yield assert.isRejected(quotePromise, AssetsNotTradedError, 'This connector does not support the given asset pair')
+  })
 
-      yield assert.isRejected(quotePromise, InvalidBodyError, 'Exactly one of source_amount or destination_amount must be specified')
+  // Skipping because it needs to use an alternate curve to get a 0.
+  it.skip('should return a UnacceptableAmountError if the quoted destinationAmount is 0', function * () {
+    const quotePromise = co(this.routeBuilder.quoteBySource({
+      sourceAmount: '0.00001',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob'
+    }))
+
+    yield assert.isRejected(quotePromise, UnacceptableAmountError, 'Quoted destination is lower than minimum amount allowed')
+  })
+
+  it('should return NoRouteFoundError when the destination ledger is not supported', function * () {
+    const quotePromise = co(this.routeBuilder.quoteBySource({
+      sourceAmount: '100',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'example.fake.blah',
+      destinationHoldDuration: 1.001
+    }))
+
+    yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: eur-ledger.alice to: example.fake.blah')
+  })
+
+  it('should return a UnacceptableExpiryError if the destinationHoldDuration is too long', function * () {
+    const quotePromise = co(this.routeBuilder.quoteBySource({
+      sourceAmount: '100',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 10001
+    }))
+
+    yield assert.isRejected(quotePromise, UnacceptableExpiryError, /Destination expiry duration is too long/)
+  })
+
+  it('should not return an Error for insufficient liquidity', function * () {
+    const quotePromise = co(this.routeBuilder.quoteByDestination({
+      destinationAmount: '150001',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 10
+    }))
+
+    yield assert.isFulfilled(quotePromise)
+  })
+
+  it('should not return an Error when unable to get balance from ledger', function * () {
+    nock.cleanAll()
+    this.ledgers.getPlugin('usd-ledger.')
+      .getBalance = function * () { throw new ExternalError() }
+
+    const quotePromise = co(this.routeBuilder.quoteBySource({
+      sourceAmount: '1500001',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 10
+    }))
+
+    yield assert.isFulfilled(quotePromise)
+  })
+
+  it('should return quotes for fixed source amounts', function * () {
+    const quote = yield this.routeBuilder.quoteBySource({
+      sourceAmount: '1000000',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 5000
     })
 
-    it('should return a InvalidAmountSpecifiedError if source_amount is zero', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '0',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'source_amount must be finite and positive')
+    expect(quote).to.deep.equal({
+      sourceHoldDuration: 6000,
+      destinationAmount: '1057081' // EUR/USD Rate of 1.0592 - .2% spread
     })
+  })
 
-    it('should return a InvalidAmountSpecifiedError if destination_amount is zero', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        destination_amount: '0',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'destination_amount must be finite and positive')
+  // TODO: make sure we're calculating the rates correctly and in our favor
+  it('should return quotes for fixed destination amounts', function * () {
+    const quote = yield this.routeBuilder.quoteByDestination({
+      sourceAccount: 'eur-ledger.alice',
+      destinationAmount: '1000000',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 5000
     })
-
-    it('should return a InvalidAmountSpecifiedError if source_amount isNan', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: 'foo',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'source_amount must be finite and positive')
+    expect(quote).to.deep.equal({
+      sourceAmount: '946001', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate
+      sourceHoldDuration: 6000
     })
+  })
 
-    it('should return a InvalidAmountSpecifiedError if destination_amount isNan', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        destination_amount: 'foo',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'destination_amount must be finite and positive')
+  it.skip('should return local liquidity curve quotes', function * () {
+    const quote = yield this.routeBuilder.quoteLiquidity({
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 5000
     })
-
-    it('should return a InvalidAmountSpecifiedError if source_amount is negative', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '-1.3',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'source_amount must be finite and positive')
+    expect(quote).to.deep.equal({
+      liquidityCurve: new LiquidityCurve([ [0, 0], [1000000000000, 1057081600000] ]).toBuffer().toString('base64'),
+      appliesToPrefix: 'usd-ledger.',
+      sourceHoldDuration: 6000,
+      expiresAt: new Date(START_DATE + 10 * 1000)
     })
+  })
 
-    it('should return a InvalidAmountSpecifiedError if destination_amount is negative', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        destination_amount: '-1.4',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'destination_amount must be finite and positive')
-    })
-
-    it('should return NoRouteFoundError when the source ledger is not supported', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'fake-ledger.foley',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '1.001'
-      })
-
-      yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: fake-ledger.foley to: usd-ledger.bob')
-    })
-
-    // This test doesn't currently pass - I think it's because the connector is
-    // smart enough to construct a route of A -> B -> C through itself, even if
-    // A -> C isn't a pair, but A -> B and B -> C are.
-    //
-    // This might actually be the desired behavior... if we're willing to trade
-    // A for B and B for C, we're implicitly willing to trade A for C.
-    it.skip('should return AssetsNotTradedError when the pair is not supported', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'cad-ledger.bob',
-        destination_address: 'cny-ledger.bob',
-        destination_expiry_duration: '1.001'
-      })
-
-      yield assert.isRejected(quotePromise, AssetsNotTradedError, 'This connector does not support the given asset pair')
-    })
-
-    it('should return a UnacceptableAmountError if destination_address rounded amount is less than or equal to 0', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '0.00001',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      yield assert.isRejected(quotePromise, UnacceptableAmountError, 'Quoted destination is lower than minimum amount allowed')
-    })
-
-    it('should return NoRouteFoundError when the destination ledger is not supported', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'example.fake.blah',
-        destination_expiry_duration: '1.001'
-      })
-
-      yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: eur-ledger.alice to: example.fake.blah')
-    })
-
-    it('should return a UnacceptableExpiryError if the destination_expiry_duration is too long', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '10.001'
-      })
-
-      yield assert.isRejected(quotePromise, UnacceptableExpiryError, /Destination expiry duration is too long/)
-    })
-
-    it('should return a UnacceptableExpiryError if the difference between the source_expiry_duration and destination_expiry_duration is less than the minMessageWindow', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '10',
-        source_expiry_duration: '10.999'
-      })
-
-      yield assert.isRejected(quotePromise, UnacceptableExpiryError, 'The difference between the ' +
-          'destination expiry duration and the source expiry duration is ' +
-          'insufficient to ensure that we can execute the source transfers')
-    })
-
-    it('should not return an Error for insufficient liquidity', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        destination_amount: '150001',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '10'
-      })
-
-      yield assert.isFulfilled(quotePromise)
-    })
-
-    it('should not return an Error when unable to get balance from ledger', function * () {
-      nock.cleanAll()
-      this.ledgers.getPlugin('eur-ledger.')
-        .getInfo = function () { return {precision: 10, scale: 2} }
-      this.ledgers.getPlugin('usd-ledger.')
-        .getInfo = function () { return {precision: 10, scale: 2} }
-      this.ledgers.getPlugin('usd-ledger.')
-        .getBalance = function * () { throw new ExternalError() }
-
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '1500001',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '10'
-      })
-
-      yield assert.isFulfilled(quotePromise)
-    })
-
-    it('should return a valid Quote object', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      validate('Quote', quote)
-    })
-
-    it('should return quotes for fixed source amounts -- lower precision source_address', function * () {
-      nock.cleanAll()
-      // Increase scale
-      this.ledgers.getPlugin('eur-ledger.')
-        .getInfo = function () { return {precision: 10, scale: 2} }
-      this.ledgers.getPlugin('usd-ledger.')
-        .getInfo = function () { return {precision: 10, scale: 4} }
-
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '1000000',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      expect(quote).to.deep.equal({
-        source_connector_account: 'eur-ledger.mark',
-        source_ledger: 'eur-ledger.',
-        source_amount: '1000000',
-        source_expiry_duration: '6',
-        destination_ledger: 'usd-ledger.',
-        destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [999.9999999999999, 0], [1000000000000, 1057081598942.9186] ]
-      })
-    })
-
-    it('should return quotes for fixed source amounts -- lower precision destination_address', function * () {
-      nock.cleanAll()
-      // Increase scale
-      this.ledgers.getPlugin('eur-ledger.')
-        .getInfo = function () { return {precision: 10, scale: 4} }
-      this.ledgers.getPlugin('usd-ledger.')
-        .getInfo = function () { return {precision: 10, scale: 2} }
-
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '10000',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-      expect(quote).to.deep.equal({
-        source_connector_account: 'eur-ledger.mark',
-        source_ledger: 'eur-ledger.',
-        source_amount: '10000',
-        source_expiry_duration: '6',
-        destination_ledger: 'usd-ledger.',
-        destination_amount: '10560', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [10, 0], [1000000000000, 1057081599989.4293] ]
-      })
-    })
-
-    it('caches source and destination ledger precision', function * () {
-      nock.cleanAll()
-      nock('http://eur-ledger.example')
-        .get('/').reply(200, {precision: 10, scale: 4})
-        .get('/').reply(500, 'Invalid request')
-
-      nock('http://usd-ledger.example')
-        .get('/').reply(200, {precision: 10, scale: 4})
-        .get('/').reply(500, 'Invalid request')
-
-      nock('http://eur-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://eur-ledger.example/accounts/mark',
-          balance: 150000
-        })
-      nock('http://usd-ledger.example/accounts/mark').get('')
-        .reply(200, {
-          name: 'mark',
-          ledger: 'http://usd-ledger.example/accounts/mark',
-          balance: 150000
-        })
-
-      yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-    })
-
-    it('should return quotes for fixed source amounts', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '1000000',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-
-      expect(quote).to.deep.equal({
-        source_connector_account: 'eur-ledger.mark',
-        source_ledger: 'eur-ledger.',
-        source_amount: '1000000',
-        source_expiry_duration: '6',
-        destination_ledger: 'usd-ledger.',
-        destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [999.9999999999999, 0], [1000000000000, 1057081598942.9186] ]
-      })
-    })
-
-    // TODO: make sure we're calculating the rates correctly and in our favor
-    it('should return quotes for fixed destination amounts', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_address: 'eur-ledger.alice',
-        destination_amount: '1000000',
-        destination_address: 'usd-ledger.bob'
-      })
-      expect(quote).to.deep.equal({
-        source_connector_account: 'eur-ledger.mark',
-        source_ledger: 'eur-ledger.',
-        source_amount: '946947', // (1/ EUR/USD Rate of 1.0592) + .2% spread + round up to overestimate + slippage
-        source_expiry_duration: '6',
-        destination_ledger: 'usd-ledger.',
-        destination_amount: '1000000',
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [946.0007628550151, 0], [1000000000946.0007, 1057081600000.0001] ]
-      })
-    })
-
-    it('should return a payment object with the source and destination amounts filled in as debits and credits', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '1000000',
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
-      expect(quote).to.deep.equal({
-        source_connector_account: 'eur-ledger.mark',
-        source_ledger: 'eur-ledger.',
-        source_amount: '1000000',
-        source_expiry_duration: '6',
-        destination_ledger: 'usd-ledger.',
-        destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [999.9999999999999, 0], [1000000000000, 1057081598942.9186] ]
-      })
-    })
-
-    it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '1000000',
-        source_address: 'usd-ledger.bob',
-        destination_address: 'eur-ledger.alice'
-      })
-      expect(quote).to.deep.equal({
-        source_connector_account: 'usd-ledger.mark',
-        source_ledger: 'usd-ledger.',
-        source_amount: '1000000',
-        source_expiry_duration: '6',
-        destination_ledger: 'eur-ledger.',
-        destination_amount: '941278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [1000.0000000000001, 0], [1000000000000, 942220542864.426] ]
-      })
-    })
-
-    it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '1000000',
-        source_address: 'usd-ledger.bob',
-        destination_address: 'cad-ledger.carl'
-      })
-      expect(quote).to.deep.equal({
-        source_connector_account: 'usd-ledger.mark',
-        source_ledger: 'usd-ledger.',
-        source_amount: '1000000',
-        source_expiry_duration: '6',
-        destination_ledger: 'cad-ledger.',
-        destination_amount: '1278538', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread - slippage
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [999.9999999999999, 0], [1000000000000, 1279818163372.7498] ]
-      })
-    })
-
-    it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates and the rate must be flipped', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '1000000',
-        source_address: 'cad-ledger.carl',
-        destination_address: 'usd-ledger.bob'
-      })
-      expect(quote).to.deep.equal({
-        source_connector_account: 'cad-ledger.mark',
-        source_ledger: 'cad-ledger.',
-        source_amount: '1000000',
-        source_expiry_duration: '6',
-        destination_ledger: 'usd-ledger.',
-        destination_amount: '777460', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread) - slippage
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [1000.0000000000002, 0], [1000000000000, 778238679925.5823] ]
-      })
-    })
-
-    it('should fill in default values if no expiry_durations are specified', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'cad-ledger.carl',
-        destination_address: 'usd-ledger.bob'
-      })
-      expect(quote.source_expiry_duration).to.equal('6')
-      expect(quote.destination_expiry_duration).to.equal('5')
-    })
-
-    it('should return the specified expiry_durations if they are acceptable', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'cad-ledger.carl',
-        destination_address: 'usd-ledger.bob',
-        source_expiry_duration: '6',
-        destination_expiry_duration: '5'
-      })
-      expect(quote.source_expiry_duration).to.equal('6')
-      expect(quote.destination_expiry_duration).to.equal('5')
-    })
-
-    it('should set the source_expiry_duration if only the destination_expiry_duration is specified', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'cad-ledger.carl',
-        destination_address: 'usd-ledger.bob',
-        destination_expiry_duration: '5'
-      })
-      expect(quote.source_expiry_duration).to.equal('6')
-      expect(quote.destination_expiry_duration).to.equal('5')
-    })
-
-    it('should set the destination_expiry_duration if only the source_expiry_duration is specified', function * () {
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'cad-ledger.carl',
-        destination_address: 'usd-ledger.bob',
-        source_expiry_duration: '6'
-      })
-      expect(quote.source_expiry_duration).to.equal('6')
-      expect(quote.destination_expiry_duration).to.equal('5')
-    })
-
-    it('returns InvalidBodyError if no source is specified', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        destination_address: 'usd-ledger.foo',
-        source_expiry_duration: '6'
-      })
-
-      yield assert.isRejected(quotePromise, InvalidBodyError, 'Missing required parameter: source_address')
-    })
-
-    it('returns InvalidBodyError if no destination is specified', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'cad-ledger.foo',
-        source_expiry_duration: '6'
-      })
-
-      yield assert.isRejected(quotePromise, InvalidBodyError, 'Missing required parameter: destination_address')
-    })
-
-    // the functionality this tests has been disabled, maybe only temporarily
-    it.skip('quotes a multi-hop route', function * () {
-      yield this.messageRouter.receiveRoutes([{
+  it.skip('should return remote liquidity curve quotes', function * () {
+    const curve = new LiquidityCurve([ [0, 0], [10000, 20000] ]).toBuffer()
+    this.config.routeBroadcastEnabled = false
+    yield this.messageRouter.receiveRoutes({
+      new_routes: [{
         source_ledger: 'eur-ledger.',
         destination_ledger: 'random-ledger.',
         min_message_window: 1,
         source_account: 'eur-ledger.mary',
-        points: [ [0, 0], [10000, 20000] ]
-      }], 'eur-ledger.mary')
+        points: curve.toString('base64')
+      }],
+      hold_down_time: 1234,
+      unreachable_through_me: []
+    }, 'eur-ledger.mary')
+    this.config.routeBroadcastEnabled = true
 
-      const quote = yield this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'usd-ledger.alice',
-        destination_address: 'random-ledger.bob',
-        destination_precision: '10',
-        destination_scale: '4'
+    this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
+      return Promise.resolve({
+        ilp: IlpPacket.serializeIlqpLiquidityResponse({
+          liquidityCurve: curve,
+          appliesToPrefix: 'random-ledger.',
+          sourceHoldDuration: 6000,
+          expiresAt: new Date(Date.now() + 10000)
+        })
+      })
+    }
+
+    const quote = yield this.routeBuilder.quoteLiquidity({
+      sourceAccount: 'usd-ledger.alice',
+      destinationAccount: 'random-ledger.carl',
+      destinationHoldDuration: 5000
+    })
+    expect(quote).to.deep.equal({
+      liquidityCurve: new LiquidityCurve([ [0, 0], [10613, 20000] ]).toBuffer().toString('base64'),
+      appliesToPrefix: 'random-ledger.',
+      sourceHoldDuration: 7000,
+      expiresAt: new Date(START_DATE + 10 * 1000)
+    })
+  })
+
+  it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', function * () {
+    const quote = yield this.routeBuilder.quoteBySource({
+      sourceAmount: '1000000',
+      sourceAccount: 'usd-ledger.bob',
+      destinationAccount: 'eur-ledger.alice',
+      destinationHoldDuration: 5000
+    })
+    expect(quote).to.deep.equal({
+      destinationAmount: '942220', // 1 / (EUR/USD Rate of 1.0592 + .2% spread)
+      sourceHoldDuration: 6000
+    })
+  })
+
+  it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates', function * () {
+    const quote = yield this.routeBuilder.quoteBySource({
+      sourceAmount: '1000000',
+      sourceAccount: 'usd-ledger.bob',
+      destinationAccount: 'cad-ledger.carl',
+      destinationHoldDuration: 5000
+    })
+    expect(quote).to.deep.equal({
+      destinationAmount: '1279818', // USD/CAD Rate (1.3583 / 1.0592) - .2% spread
+      sourceHoldDuration: 6000
+    })
+  })
+
+  it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates and the rate must be flipped', function * () {
+    const quote = yield this.routeBuilder.quoteBySource({
+      sourceAmount: '1000000',
+      sourceAccount: 'cad-ledger.carl',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 5000
+    })
+    expect(quote).to.deep.equal({
+      destinationAmount: '778238', // 1/(USD/CAD Rate (1.3583 / 1.0592) + .2% spread)
+      sourceHoldDuration: 6000
+    })
+  })
+
+  describe('quotes a multi-hop route', function () {
+    beforeEach(function * () {
+      const curve = new LiquidityCurve([ [0, 0], [10000, 20000] ]).toBuffer()
+      this.config.routeBroadcastEnabled = false
+      yield this.messageRouter.receiveRoutes({
+        new_routes: [{
+          source_ledger: 'eur-ledger.',
+          destination_ledger: 'random-ledger.',
+          min_message_window: 1,
+          source_account: 'eur-ledger.mary',
+          points: curve.toString('base64')
+        }],
+        hold_down_time: 1234,
+        unreachable_through_me: []
+      }, 'eur-ledger.mary')
+      this.config.routeBroadcastEnabled = true
+    })
+
+    it('returns a quote', function * () {
+      this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
+        assert.deepEqual(IlpPacket.deserializeIlqpBySourceRequest(Buffer.from(request.ilp, 'base64')), {
+          destinationAccount: 'random-ledger.bob',
+          destinationHoldDuration: 5000,
+          sourceAmount: '94'
+        })
+        return Promise.resolve({
+          ilp: IlpPacket.serializeIlqpBySourceResponse({
+            destinationAmount: '12345',
+            sourceHoldDuration: 6000
+          })
+        })
+      }
+
+      const quote = yield this.routeBuilder.quoteBySource({
+        sourceAmount: '100',
+        sourceAccount: 'usd-ledger.alice',
+        destinationAccount: 'random-ledger.bob',
+        destinationHoldDuration: 5000
       })
       expect(quote).to.deep.equal({
-        source_connector_account: 'usd-ledger.mark',
-        source_ledger: 'usd-ledger.',
-        source_amount: '100.0000',
-        source_expiry_duration: '7',
-        destination_ledger: 'random-ledger.',
-        destination_amount: '188.2556',
-        destination_expiry_duration: '5',
-        liquidity_curve: [ [0.1, 0], [10613.226452905812, 19999.81155589124] ]
+        destinationAmount: '12345',
+        sourceHoldDuration: 7000
       })
     })
 
-    it('fails on a same-ledger quote', function * () {
-      const quotePromise = this.messageRouter.getQuote({
-        source_amount: '100',
-        source_address: 'usd-ledger.alice',
-        destination_address: 'usd-ledger.bob'
-      })
+    it('relays an error packet', function * () {
+      const errorPacket = {
+        code: 'F01',
+        name: 'Invalid Packet',
+        triggeredBy: 'example.us.ledger3.bob',
+        forwardedBy: [ 'foo' ],
+        triggeredAt: new Date(),
+        data: JSON.stringify({ foo: 'bar' })
+      }
+      this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
+        return Promise.resolve({ ilp: IlpPacket.serializeIlpError(errorPacket) })
+      }
 
-      yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: usd-ledger.alice to: usd-ledger.bob')
+      try {
+        yield this.routeBuilder.quoteBySource({
+          sourceAmount: '100',
+          sourceAccount: 'usd-ledger.alice',
+          destinationAccount: 'random-ledger.bob',
+          destinationHoldDuration: 5000
+        })
+      } catch (err) {
+        expect(err).to.be.instanceof(IlpError)
+        expect(err.packet).to.deep.equal(errorPacket)
+        return
+      }
+      assert(false)
     })
+  })
 
-    it('fails when the source ledger connection is closed', function * () {
-      this.ledgers.getPlugin('eur-ledger.').connected = false
-      const quotePromise = this.messageRouter.getQuote({
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_amount: '100'
-      })
+  it('fails on a same-ledger quote', function * () {
+    const quotePromise = co(this.routeBuilder.quoteBySource({
+      sourceAmount: '100',
+      sourceAccount: 'usd-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 5
+    }))
 
-      yield assert.isRejected(quotePromise, LedgerNotConnectedError, 'No connection to ledger "eur-ledger."')
-    })
+    yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: usd-ledger.alice to: usd-ledger.bob')
+  })
 
-    it('fails when the destination ledger connection is closed', function * () {
-      this.ledgers.getPlugin('usd-ledger.').connected = false
-      const quotePromise = this.messageRouter.getQuote({
-        source_address: 'eur-ledger.alice',
-        destination_address: 'usd-ledger.bob',
-        destination_amount: '100'
-      })
+  it('fails when the source ledger connection is closed', function * () {
+    this.ledgers.getPlugin('eur-ledger.').connected = false
+    const quotePromise = co(this.routeBuilder.quoteByDestination({
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationAmount: '100',
+      destinationHoldDuration: 5
+    }))
 
-      yield assert.isRejected(quotePromise, LedgerNotConnectedError, 'No connection to ledger "usd-ledger."')
-    })
+    yield assert.isRejected(quotePromise, LedgerNotConnectedError, 'No connection to ledger "eur-ledger."')
+  })
+
+  it('fails when the destination ledger connection is closed', function * () {
+    this.ledgers.getPlugin('usd-ledger.').connected = false
+    const quotePromise = co(this.routeBuilder.quoteByDestination({
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationAmount: '100',
+      destinationHoldDuration: 5
+    }))
+
+    yield assert.isRejected(quotePromise, LedgerNotConnectedError, 'No connection to ledger "usd-ledger."')
   })
 })
