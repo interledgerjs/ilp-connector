@@ -4,7 +4,6 @@ const testPaymentExpiry = require('../lib/testPaymentExpiry')
 const log = require('../common').log.create('payments')
 const executeSourceTransfer = require('../lib/executeSourceTransfer')
 const validator = require('../lib/validate')
-const startsWith = require('lodash/startsWith')
 const IlpError = require('../errors/ilp-error')
 
 function * validateExpiry (sourceTransfer, destinationTransfer, config) {
@@ -42,26 +41,10 @@ function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
 }
 
 function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
-  const destinationAddress = sourceTransfer.ilp.account
-  const myAddress = ledgers.getPlugin(sourceTransfer.ledger).getAccount()
-  if (startsWith(destinationAddress, myAddress)) {
-    log.debug(
-      'cannot process transfer addressed to destination which starts with my address destination=%s me=%s',
-      destinationAddress,
-      myAddress
-    )
-    yield rejectIncomingTransfer(sourceTransfer, {
-      code: 'S06',
-      name: 'Unexpected Payment',
-      message: 'cannot process transfer addressed to destination which starts with my address'
-    }, ledgers)
-
-    return
-  }
-
   let destinationTransfer
   try {
     destinationTransfer = yield routeBuilder.getDestinationTransfer(sourceTransfer)
+    if (!destinationTransfer) return // in case the connector is the payee there is no destinationTransfer
     yield validateExpiry(sourceTransfer, destinationTransfer, config)
   } catch (err) {
     if (!(err instanceof IlpError)) throw err
