@@ -9,6 +9,7 @@ const LedgerNotConnectedError = require('../errors/ledger-not-connected-error')
 const IlpError = require('../errors/ilp-error')
 const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 const log = require('../common/log').create('route-builder')
+const startsWith = require('lodash/startsWith')
 
 class RouteBuilder {
   /**
@@ -128,6 +129,17 @@ class RouteBuilder {
         message: 'source transfer has invalid ILP packet'
       })
     }
+    const destinationAddress = ilpPacket.account
+    const myAddress = this.ledgers.getPlugin(sourceTransfer.ledger).getAccount()
+    if (startsWith(destinationAddress, myAddress)) {
+      log.debug(
+        'ignoring transfer addressed to destination which starts with my address destination=%s me=%s',
+        destinationAddress,
+        myAddress
+      )
+      return
+    }
+
     log.debug('constructing transfer for ILP packet with account=%s amount=%s',
       ilpPacket.account, ilpPacket.amount)
 

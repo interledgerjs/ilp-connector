@@ -335,6 +335,21 @@ describe('Payments', function () {
     })
   })
 
+  it('ignores if the connector is the payee of a payment', function * () {
+    const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
+    yield this.mockPlugin1.emitAsync('incoming_transfer', {
+      id: '5857d460-2a46-4545-8311-1539d99e78e8',
+      direction: 'incoming',
+      ledger: 'mock.test1.',
+      amount: '100',
+      ilp: packet.serializeIlpPayment({
+        account: 'mock.test1.bob',
+        amount: '100'
+      }).toString('base64')
+    })
+    sinon.assert.notCalled(rejectSpy)
+  })
+
   it('rejects the source transfer if settlement fails', function * () {
     const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
     this.mockPlugin2.sendTransfer = function () {
