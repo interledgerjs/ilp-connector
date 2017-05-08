@@ -25,7 +25,7 @@ const routing = require('ilp-routing')
  * must be rounded in the connector's own favor to ensure that they don't lose money.
  *
  * The "public" tables consist of the local shifted routes, joined to the remote
- * (shifted) routes. Before joining, the local routes are shifted down by
+ * (shifted) routes. Before joining, the local routes are shifted right by
  * 1/10^destination_ledger_scale to account for rounding errors. Their curves are
  * broadcast to adjacent connectors.
  */
@@ -35,13 +35,11 @@ class RoutingTables {
    * @param {String} config.backend
    * @param {Integer} config.expiryDuration
    * @param {Number} config.fxSpread
-   * @param {Number} config.slippage
    */
   constructor (config) {
     this.isTrivialRate =
       config.backend === 'one-to-one' &&
-      config.fxSpread === 0 &&
-      config.slippage === 0
+      config.fxSpread === 0
     this.localTables = new routing.RoutingTables([], config.expiryDuration)
     this.publicTables = new routing.RoutingTables([], config.expiryDuration)
   }
@@ -50,13 +48,13 @@ class RoutingTables {
     const localRoutes = _localRoutes.map(routing.Route.fromData)
     this.localTables.addLocalRoutes(localRoutes)
 
-    // Shift the graph down by a small amount so that precision rounding doesn't
+    // Shift the graph right by a small amount so that precision rounding doesn't
     // cause UnacceptableRateErrors.
     for (const localRoute of localRoutes) {
-      const destinationAdjustment = this._getScaleAdjustment(
+      const sourceAdjustment = this._getScaleAdjustment(
         ledgers, localRoute.sourceLedger, localRoute.destinationLedger)
-      const shiftedLocalRoute = destinationAdjustment
-        ? localRoute.shiftY(-destinationAdjustment)
+      const shiftedLocalRoute = sourceAdjustment
+        ? localRoute.shiftX(sourceAdjustment)
         : localRoute
       this.publicTables.addLocalRoutes([shiftedLocalRoute])
     }
@@ -67,13 +65,16 @@ class RoutingTables {
     return this.publicTables.addRoute(route, noExpire)
   }
 
+  // Don't use a shifted route because the source amount is fixed, and the
+  // destination amount will be rounded down by the curve.
   findBestHopForSourceAmount (sourceLedger, destinationLedger, sourceAmount) {
     return this.localTables.findBestHopForSourceAmount(
       sourceLedger, destinationLedger, sourceAmount)
   }
 
+  // Use a shifted route because the curve will round the computed source amount down.
   findBestHopForDestinationAmount (sourceLedger, destinationLedger, destinationAmount) {
-    return this.localTables.findBestHopForDestinationAmount(
+    return this.publicTables.findBestHopForDestinationAmount(
       sourceLedger, destinationLedger, destinationAmount)
   }
 
@@ -115,8 +116,7 @@ class RoutingTables {
     const sourceScale = ledgers.getPlugin(sourceLedger).getInfo().currencyScale
     const destinationScale = ledgers.getPlugin(destinationLedger).getInfo().currencyScale
     if (sourceScale === destinationScale && this.isTrivialRate) return 0
-    const destinationAdjustment = destinationScale ? Math.pow(10, -destinationScale) : 0
-    return destinationAdjustment
+    return 1
   }
 }
 

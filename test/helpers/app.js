@@ -6,6 +6,7 @@ const loadConfig = require('../../src/lib/config')
 const RoutingTables = require('../../src/lib/routing-tables')
 const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
+const Quoter = require('../../src/lib/quoter')
 const Ledgers = require('../../src/lib/ledgers')
 const BalanceCache = require('../../src/lib/balance-cache')
 const TradingPairs = require('../../src/lib/trading-pairs')
@@ -32,6 +33,7 @@ exports.create = function (context) {
     fxSpread: config.fxSpread
   })
   const ledgers = new Ledgers({config, log, routingTables})
+  const quoter = new Quoter(ledgers)
   const Backend = require('../../src/backends/' + config.get('backend'))
   const backend = new Backend({
     currencyWithLedgerPairs: tradingPairs,
@@ -43,10 +45,11 @@ exports.create = function (context) {
   ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
   ledgers.setPairs(config.get('tradingPairs'))
   const routeBuilder = new RouteBuilder(
-    routingTables,
     ledgers,
+    quoter,
     {
       minMessageWindow: config.expiry.minMessageWindow,
+      maxHoldTime: config.expiry.maxHoldTime,
       slippage: config.slippage
     }
   )
@@ -62,13 +65,14 @@ exports.create = function (context) {
   })
   const balanceCache = new BalanceCache(ledgers)
   const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
-  const app = createApp(config, ledgers, backend, routeBuilder, routeBroadcaster, routingTables, tradingPairs, balanceCache, messageRouter)
+  const app = createApp(config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, tradingPairs, balanceCache, messageRouter)
   context.app = app
   context.backend = backend
   context.tradingPairs = tradingPairs
   context.routingTables = routingTables
   context.routeBroadcaster = routeBroadcaster
   context.routeBuilder = routeBuilder
+  context.quoter = quoter
   context.ledgers = ledgers
   context.config = config
   context.balanceCache = balanceCache

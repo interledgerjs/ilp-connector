@@ -3,6 +3,7 @@
 const _ = require('lodash')
 const co = require('co')
 const defer = require('co-defer')
+const BigNumber = require('bignumber.js')
 const Route = require('ilp-routing').Route
 const log = require('../common').log.create('route-broadcaster')
 const SIMPLIFY_POINTS = 10
@@ -133,34 +134,32 @@ class RouteBroadcaster {
     const connectors = Object.keys(this.peersByLedger[adjacentLedger])
     return Promise.all(connectors.map((account) => {
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
-      let routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
+      const routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
       const newRoutes = routesNewToConnector.map((route) => _.omit(route, ['added_during_epoch']))
       if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:', unreachableLedgers)
 
-      const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
+      const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendRequest({
         ledger: adjacentLedger,
         from: this.ledgers.getPlugin(adjacentLedger).getAccount(),
         to: account,
-        data: {
+        custom: {
           method: 'broadcast_routes',
           data: {
             new_routes: newRoutes,
             hold_down_time: this.holdDownTime,
             unreachable_through_me: unreachableLedgers
           }
-        }
-      })
-      // timeout the plugin.sendMessage Promise just so we don't have it hanging around forever
-      const timeoutPromise = new Promise((resolve, reject) => {
-        setTimeout(() => reject(new Error('route broadcast to ' + account + ' timed out')), this.routeBroadcastInterval)
+        },
+        // timeout the plugin.sendRequest Promise just so we don't have it hanging around forever
+        timeout: this.routeBroadcastInterval
       })
 
       // We are deliberately calling an async function synchronously because
       // we do not want to wait for the routes to be broadcasted before continuing.
-      // Even if there is an error sending a specific route or a sendMessage promise hangs,
+      // Even if there is an error sending a specific route or a sendRequest promise hangs,
       // we should continue sending the other broadcasts out
-      return Promise.race([broadcastPromise, timeoutPromise])
-        .then((val) => {
+      return broadcastPromise
+        .then(() => {
           this.peerEpochs[account] = this._currentEpoch()
         })
         .catch((err) => {
@@ -243,9 +242,10 @@ class RouteBroadcaster {
       const connector = configRoute.connectorAccount
       const targetPrefix = configRoute.targetPrefix
 
+      const maxUint = new BigNumber(2).pow(64).minus(1).toString()
       const route = new Route(
         // use a 1:1 curve as a placeholder (it will be overwritten by a remote quote)
-        [ [0, 0], [Number.MAX_VALUE, Number.MAX_VALUE] ],
+        [ [0, 0], [maxUint, maxUint] ],
         // the nextLedger is inserted to make sure this the hop to the
         // connectorLedger is not considered final.
         {

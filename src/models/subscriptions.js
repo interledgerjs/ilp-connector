@@ -4,7 +4,7 @@ const co = require('co')
 const log = require('../common').log.create('subscriptions')
 const payments = require('../models/payments')
 
-function * subscribePairs (core, config, routeBuilder, messageRouter, backend) {
+function * subscribePairs (core, config, routeBuilder, backend) {
   const handleIncoming = (client, transfer) => {
     return co(function * () {
       yield payments.updateIncomingTransfer(transfer, core, config, routeBuilder)
@@ -27,11 +27,6 @@ function * subscribePairs (core, config, routeBuilder, messageRouter, backend) {
     return co(function * () {
       yield payments.processExecutionFulfillment(transfer, fulfillment, core, backend, config)
     }).catch(logThenThrow)
-  })
-
-  core.on('incoming_message', (client, message) => {
-    return messageRouter.handleMessage(message)
-      .catch(logThenThrow)
   })
 }
 

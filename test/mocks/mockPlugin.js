@@ -28,8 +28,8 @@ class MockPlugin extends EventEmitter {
     return Promise.resolve(null)
   }
 
-  sendMessage (message) {
-    return Promise.resolve(null)
+  sendRequest (message) {
+    return Promise.reject(new Error('MockPlugin.sendRequest is not implemented: ' + this._account))
   }
 
   fulfillCondition (transferId, conditionFulfillment) {
@@ -61,6 +61,8 @@ class MockPlugin extends EventEmitter {
       currencyScale: 4
     }
   }
+
+  registerRequestHandler (requestHandler) { }
 }
 
 module.exports = MockPlugin

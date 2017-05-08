@@ -8,6 +8,7 @@ module.exports = {
   addPlugin: connector.addPlugin,
   removePlugin: connector.removePlugin,
   getPlugin: connector.getPlugin,
+  registerRequestHandler: connector.registerRequestHandler,
   listen: connector.listen
 }
 

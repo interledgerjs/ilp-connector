@@ -1,6 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
+const co = require('co')
 const PluginStore = require('../lib/pluginStore.js')
 const ilpCore = require('ilp-core')
 const TradingPairs = require('./trading-pairs')
@@ -9,10 +10,12 @@ const log = logger.create('ledgers')
 
 class Ledgers {
   constructor ({ config, routingTables }) {
+    this.tables = routingTables
     this._config = config
     this._core = new ilpCore.Core({ routingTables })
     this._pairs = new TradingPairs()
     this._ledgers = new Map()
+    this.requestHandler = co.wrap(this._requestHandler.bind(this))
   }
 
   addFromCredentialsConfig (ledgerCredentials) {
@@ -31,10 +34,6 @@ class Ledgers {
 
   getClient (ledgerPrefix) {
     return this._core.getClient(ledgerPrefix)
-  }
-
-  quote (params) {
-    return this._core.quote(params)
   }
 
   getPairs () {
@@ -90,6 +89,7 @@ class Ledgers {
       currency: creds.currency,
       plugin: client.getPlugin()
     })
+    client.getPlugin().registerRequestHandler(this.requestHandler)
 
     if (tradesTo) {
       this._pairs.addPairs(tradesTo.map((e) => [creds.currency + '@' + ledgerPrefix, e]))
@@ -117,6 +117,26 @@ class Ledgers {
     this._core.removeClient(ledgerPrefix)
     this._ledgers.delete(ledgerPrefix)
     return plugin
+  }
+
+  * _requestHandler (requestMessage) {
+    if (this._externalRequestHandler) {
+      const responseMessage = yield this._externalRequestHandler(requestMessage)
+      if (responseMessage) return responseMessage
+    }
+    if (this._internalRequestHandler) {
+      const responseMessage = yield this._internalRequestHandler(requestMessage)
+      if (responseMessage) return responseMessage
+    }
+    throw new Error('Invalid request method')
+  }
+
+  registerInternalRequestHandler (requestHandler) {
+    this._internalRequestHandler = requestHandler
+  }
+
+  registerExternalRequestHandler (requestHandler) {
+    this._externalRequestHandler = requestHandler
   }
 }
 
