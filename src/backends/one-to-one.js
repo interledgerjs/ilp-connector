@@ -22,6 +22,7 @@ class OneToOneBackend {
 
     this.spread = opts.spread || 0
     this.getInfo = opts.getInfo
+    this.getBalance = opts.getBalance
   }
 
   /**
@@ -46,9 +47,12 @@ class OneToOneBackend {
    * @param {String} params.destination_ledger The URI of the destination ledger
    * @param {String} params.source_currency The source currency
    * @param {String} params.destination_currency The destination currency
-   * @returns {Object}
+   * @returns {Promise.<Object>}
    */
   * getCurve (params) {
+    const sourceInfo = this.getInfo(params.source_ledger)
+    const destinationInfo = this.getInfo(params.destination_ledger)
+
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
     // the (equivalent) SourceAmount -- regardless of which of the 2 is fixed:
@@ -56,13 +60,25 @@ class OneToOneBackend {
     //   SourceAmount * (1 - Spread) = DestinationAmount
     //
     const rate = new BigNumber(1).minus(this.spread)
-    const sourceScale = this.getInfo(params.source_ledger).currencyScale
-    const destinationScale = this.getInfo(params.destination_ledger).currencyScale
-    const sourceAmount = new BigNumber(PROBE_SOURCE_AMOUNT).shift(sourceScale)
-    const destinationAmount = new BigNumber(sourceAmount)
-      .times(rate)
-      .shift(destinationScale - sourceScale)
-    return { points: [[0, 0], [ sourceAmount.toNumber(), destinationAmount.toNumber() ]] }
+      .shift(destinationInfo.currencyScale - sourceInfo.currencyScale)
+
+    let limit
+    if (sourceInfo.maxBalance !== undefined) {
+      let balanceIn = parseInt(yield this.getBalance(params.source_ledger))
+      let maxAmountIn = sourceInfo.maxBalance - balanceIn
+      limit = [ maxAmountIn, maxAmountIn * rate ]
+    }
+    if (destinationInfo.minBalance !== undefined) {
+      let balanceOut = parseInt(yield this.getBalance(params.destination_ledger))
+      let maxAmountOut = balanceOut - destinationInfo.minBalance
+      if (limit === undefined || maxAmountOut < limit[1]) {
+        limit = [ maxAmountOut / rate, maxAmountOut ]
+      }
+    }
+    if (limit === undefined) {
+      return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] ] }
+    }
+    return { points: [ [0, 0], limit, [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
   }
 
   /**

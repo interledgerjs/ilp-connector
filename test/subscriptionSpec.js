@@ -12,6 +12,10 @@ const wsHelper = require('./helpers/ws')
 const subscriptions = require('../src/models/subscriptions')
 const sinon = require('sinon')
 
+const mockPlugin = require('./mocks/mockPlugin')
+const mock = require('mock-require')
+mock('ilp-plugin-mock', mockPlugin)
+
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
 const env = _.cloneDeep(process.env)

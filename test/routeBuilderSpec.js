@@ -23,6 +23,10 @@ const markA = 'usd-ledger.mark'
 const markB = 'eur-ledger.mark'
 const maryB = 'eur-ledger.mary'
 
+const mockPlugin = require('./mocks/mockPlugin')
+const mock = require('mock-require')
+mock('ilp-plugin-mock', mockPlugin)
+
 describe('RouteBuilder', function () {
   logHelper(logger)
   beforeEach(function * () {

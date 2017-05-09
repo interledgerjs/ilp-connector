@@ -37,7 +37,8 @@ exports.create = function (context) {
     currencyWithLedgerPairs: tradingPairs,
     backendUri: config.get('backendUri'),
     spread: config.get('fxSpread'),
-    getInfo: (ledger) => ledgers.getPlugin(ledger).getInfo()
+    getInfo: (ledger) => ledgers.getPlugin(ledger).getInfo(),
+    getBalance: (ledger) => ledgers.getPlugin(ledger).getBalance()
   })
   ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
   ledgers.setPairs(config.get('tradingPairs'))
