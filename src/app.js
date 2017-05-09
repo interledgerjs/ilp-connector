@@ -104,7 +104,8 @@ function createApp (config, ledgers, backend, routeBuilder, routeBroadcaster, ro
       currencyWithLedgerPairs: ledgers.getPairs(),
       backendUri: config.get('backendUri'),
       spread: config.get('fxSpread'),
-      getInfo: (ledger) => ledgers.getPlugin(ledger).getInfo()
+      getInfo: (ledger) => ledgers.getPlugin(ledger).getInfo(),
+      getBalance: (ledger) => ledgers.getPlugin(ledger).getBalance()
     })
   }
 

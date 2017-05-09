@@ -26,7 +26,7 @@ describe('Modify Plugins', function () {
     const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
     _.map(testLedgers, (ledgerUri) => {
       this.ledgers.getPlugin(ledgerUri).getBalance =
-        function * () { return '150000' }
+        function () { return Promise.resolve('150000') }
     })
 
     // Reset before and after just in case a test wants to change the precision.

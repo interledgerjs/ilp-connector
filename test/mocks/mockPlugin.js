@@ -49,8 +49,8 @@ class MockPlugin extends EventEmitter {
 
   * _handleNotification () { }
 
-  * getBalance () {
-    return '123.456'
+  getBalance () {
+    return Promise.resolve('123.456')
   }
 
   getInfo () {

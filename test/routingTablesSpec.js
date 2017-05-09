@@ -6,6 +6,10 @@ const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
 const logger = require('../src/common/log')
 
+const mockPlugin = require('./mocks/mockPlugin')
+const mock = require('mock-require')
+mock('ilp-plugin-mock', mockPlugin)
+
 describe('RoutingTables', function () {
   logHelper(logger)
 

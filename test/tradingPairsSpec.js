@@ -5,6 +5,10 @@ const TradingPairs = require('../src/lib/trading-pairs')
 const logHelper = require('./helpers/log')
 const logger = require('../src/common/log')
 
+const mockPlugin = require('./mocks/mockPlugin')
+const mock = require('mock-require')
+mock('ilp-plugin-mock', mockPlugin)
+
 describe('TradingPairs', function () {
   logHelper(logger)
 

@@ -266,7 +266,7 @@ describe('Quotes', function () {
         destination_ledger: 'usd-ledger.',
         destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [1000, 0], [1000000000000, 1057081598942.9185] ]
+        liquidity_curve: [ [999.9999999999999, 0], [1000000000000, 1057081598942.9186] ]
       })
     })
 
@@ -291,7 +291,7 @@ describe('Quotes', function () {
         destination_ledger: 'usd-ledger.',
         destination_amount: '10560', // EUR/USD Rate of 1.0592 - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [10.000000000000002, 0], [1000000000000, 1057081599989.4292] ]
+        liquidity_curve: [ [10, 0], [1000000000000, 1057081599989.4293] ]
       })
     })
 
@@ -346,7 +346,7 @@ describe('Quotes', function () {
         destination_ledger: 'usd-ledger.',
         destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [1000, 0], [1000000000000, 1057081598942.9185] ]
+        liquidity_curve: [ [999.9999999999999, 0], [1000000000000, 1057081598942.9186] ]
       })
     })
 
@@ -365,7 +365,7 @@ describe('Quotes', function () {
         destination_ledger: 'usd-ledger.',
         destination_amount: '1000000',
         destination_expiry_duration: '5',
-        liquidity_curve: [ [946.0007628550152, 0], [1000000000946.0007, 1057081600000] ]
+        liquidity_curve: [ [946.0007628550151, 0], [1000000000946.0007, 1057081600000.0001] ]
       })
     })
 
@@ -383,7 +383,7 @@ describe('Quotes', function () {
         destination_ledger: 'usd-ledger.',
         destination_amount: '1056024', // EUR/USD Rate of 1.0592 - .2% spread - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [1000, 0], [1000000000000, 1057081598942.9185] ]
+        liquidity_curve: [ [999.9999999999999, 0], [1000000000000, 1057081598942.9186] ]
       })
     })
 
@@ -401,7 +401,7 @@ describe('Quotes', function () {
         destination_ledger: 'eur-ledger.',
         destination_amount: '941278', // 1 / (EUR/USD Rate of 1.0592 + .2% spread) - slippage
         destination_expiry_duration: '5',
-        liquidity_curve: [ [1000, 0], [1000000000000, 942220542864.4259] ]
+        liquidity_curve: [ [1000.0000000000001, 0], [1000000000000, 942220542864.426] ]
       })
     })
 
