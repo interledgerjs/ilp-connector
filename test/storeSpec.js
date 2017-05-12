@@ -37,6 +37,20 @@ describe('PluginStore', function () {
     assert.equal(yield this.obj.get('k'), str)
   })
 
+  it('should dump the store with dump()', function * () {
+    yield this.obj.put('k', 'v')
+    yield this.obj.put('a', 'b')
+    yield this.obj.put('c', 'd')
+    yield this.obj.put('e', 'f')
+
+    assert.deepEqual(yield this.obj.dump(), {
+      k: 'v',
+      a: 'b',
+      c: 'd',
+      e: 'f'
+    })
+  })
+
   it('should not create a store with an invalid name', function * () {
     const name = ('"; drop table "Users; --')
     try {
