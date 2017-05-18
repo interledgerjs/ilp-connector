@@ -8,7 +8,7 @@ const ServerError = require('five-bells-shared/errors/server-error')
 const healthStatus = require('../../common/health.js')
 // This simple backend uses a fixed (large) source amount and a rate to generate
 // the destination amount for the curve.
-const PROBE_SOURCE_AMOUNT = 1000000000000
+const PROBE_SOURCE_AMOUNT = new BigNumber(10).toPower(100)
 
 const RATES_API = 'https://api.fixer.io/latest'
 
