@@ -85,6 +85,8 @@ describe('RouteBroadcaster', function () {
         [ledgerB, ledgerA]
       ],
       minMessageWindow: 1,
+      broadcastCurves: true,
+      storeCurves: true,
       autoloadPeers: true,
       peers: [],
       ledgerCredentials,

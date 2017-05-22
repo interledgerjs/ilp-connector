@@ -34,6 +34,7 @@ class RouteBroadcaster {
     this.minMessageWindow = config.minMessageWindow
     this.ledgerCredentials = config.ledgerCredentials
     this.configRoutes = config.configRoutes
+    this.broadcastCurves = config.broadcastCurves
 
     this.autoloadPeers = config.autoloadPeers
     this.defaultPeers = config.peers
@@ -134,7 +135,12 @@ class RouteBroadcaster {
     return Promise.all(connectors.map((account) => {
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
       let routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
-      const newRoutes = routesNewToConnector.map((route) => _.omit(route, ['added_during_epoch']))
+      let fieldsToOmit = ['added_during_epoch']
+      if (!this.broadcastCurves) {
+        fieldsToOmit.push('points')
+      }
+
+      const newRoutes = routesNewToConnector.map((route) => _.omit(route, fieldsToOmit))
       if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:', unreachableLedgers)
 
       const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendMessage({
