@@ -201,6 +201,7 @@ class RouteBuilder {
       ledger: nextHop.destinationLedger,
       direction: 'outgoing',
       account: nextHop.destinationCreditAccount,
+      to: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
       ilp: sourceTransfer.ilp,
       noteToSelf,
