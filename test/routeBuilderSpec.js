@@ -111,6 +111,7 @@ describe('RouteBuilder', function () {
         ledger: ledgerB,
         direction: 'outgoing',
         account: bobB,
+        to: bobB,
         amount: '50',
         noteToSelf: {
           source_transfer_id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
@@ -138,6 +139,7 @@ describe('RouteBuilder', function () {
         ledger: ledgerB,
         direction: 'outgoing',
         account: bobB,
+        to: bobB,
         amount: '50',
         noteToSelf: {
           source_transfer_id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
@@ -198,6 +200,22 @@ describe('RouteBuilder', function () {
       assert.equal(destinationTransfer.ilp, ilpPacket)
     })
 
+    it('sets both the `to` and `account` fields on the outgoing transfer (to support new and deprecated field names)', function * () {
+      const destinationTransfer = yield this.builder.getDestinationTransfer({
+        id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
+        ledger: ledgerA,
+        direction: 'incoming',
+        account: aliceA,
+        amount: '100',
+        ilp: packet.serializeIlpPayment({
+          account: bobB,
+          amount: '50'
+        }).toString('base64')
+      })
+      assert.equal(destinationTransfer.account, bobB)
+      assert.equal(destinationTransfer.to, bobB)
+    })
+
     describe('with a route from ledgerB → ledgerC', function () {
       beforeEach(function * () {
         const points = [ [0, 0], [200, 100] ]
@@ -243,6 +261,7 @@ describe('RouteBuilder', function () {
           ledger: ledgerB,
           direction: 'outgoing',
           account: maryB,
+          to: maryB,
           amount: '50',
           ilp: ilpPacket,
           noteToSelf: {
