@@ -189,21 +189,21 @@ describe('Quotes', function () {
     })
   })
 
-  it.skip('should return local liquidity curve quotes', function * () {
+  it('should return local liquidity curve quotes', function * () {
     const quote = yield this.routeBuilder.quoteLiquidity({
       sourceAccount: 'eur-ledger.alice',
       destinationAccount: 'usd-ledger.bob',
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
-      liquidityCurve: new LiquidityCurve([ [0, 0], [1000000000000, 1057081600000] ]).toBuffer().toString('base64'),
+      liquidityCurve: new LiquidityCurve([ [1, 0], [100000000000001, 105708160000000] ]).toBuffer(),
       appliesToPrefix: 'usd-ledger.',
       sourceHoldDuration: 6000,
-      expiresAt: new Date(START_DATE + 10 * 1000)
+      expiresAt: new Date(START_DATE + 20 * 1000)
     })
   })
 
-  it.skip('should return remote liquidity curve quotes', function * () {
+  it('should return remote liquidity curve quotes', function * () {
     const curve = new LiquidityCurve([ [0, 0], [10000, 20000] ]).toBuffer()
     this.config.routeBroadcastEnabled = false
     yield this.messageRouter.receiveRoutes({
@@ -219,27 +219,16 @@ describe('Quotes', function () {
     }, 'eur-ledger.mary')
     this.config.routeBroadcastEnabled = true
 
-    this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
-      return Promise.resolve({
-        ilp: IlpPacket.serializeIlqpLiquidityResponse({
-          liquidityCurve: curve,
-          appliesToPrefix: 'random-ledger.',
-          sourceHoldDuration: 6000,
-          expiresAt: new Date(Date.now() + 10000)
-        })
-      })
-    }
-
     const quote = yield this.routeBuilder.quoteLiquidity({
       sourceAccount: 'usd-ledger.alice',
       destinationAccount: 'random-ledger.carl',
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
-      liquidityCurve: new LiquidityCurve([ [0, 0], [10613, 20000] ]).toBuffer().toString('base64'),
+      liquidityCurve: new LiquidityCurve([ [1, 0], [10614, 20000] ]).toBuffer(),
       appliesToPrefix: 'random-ledger.',
       sourceHoldDuration: 7000,
-      expiresAt: new Date(START_DATE + 10 * 1000)
+      expiresAt: new Date(START_DATE + 20000)
     })
   })
 
@@ -300,15 +289,16 @@ describe('Quotes', function () {
 
     it('returns a quote', function * () {
       this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
-        assert.deepEqual(IlpPacket.deserializeIlqpBySourceRequest(Buffer.from(request.ilp, 'base64')), {
+        assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(Buffer.from(request.ilp, 'base64')), {
           destinationAccount: 'random-ledger.bob',
-          destinationHoldDuration: 5000,
-          sourceAmount: '127'
+          destinationHoldDuration: 5000
         })
         return Promise.resolve({
-          ilp: IlpPacket.serializeIlqpBySourceResponse({
-            destinationAmount: '12345',
-            sourceHoldDuration: 6000
+          ilp: IlpPacket.serializeIlqpLiquidityResponse({
+            liquidityCurve: new LiquidityCurve([ [0, 0], [1000, 2000] ]).toBuffer(),
+            appliesToPrefix: 'random-ledger.',
+            sourceHoldDuration: 6000,
+            expiresAt: new Date(START_DATE + 10000)
           })
         })
       }
@@ -320,7 +310,7 @@ describe('Quotes', function () {
         destinationHoldDuration: 5000
       })
       expect(quote).to.deep.equal({
-        destinationAmount: '12345',
+        destinationAmount: '256', // (100 / 1.0592) * 1.3583 * 2
         sourceHoldDuration: 7000
       })
     })

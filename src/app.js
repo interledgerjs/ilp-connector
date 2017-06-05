@@ -10,12 +10,13 @@ const loadConfig = require('./lib/config')
 const RoutingTables = require('./lib/routing-tables')
 const RouteBuilder = require('./lib/route-builder')
 const RouteBroadcaster = require('./lib/route-broadcaster')
+const CurveCache = require('./lib/curve-cache')
 const Quoter = require('./lib/quoter')
 const Ledgers = require('./lib/ledgers')
 const BalanceCache = require('./lib/balance-cache')
 const MessageRouter = require('./lib/message-router')
 
-function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter) {
+function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter, curveCache) {
   for (let pair of ledgers.getPairs()) {
     log.info('pair', pair)
   }
@@ -30,6 +31,7 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       process.exit(1)
     }
     yield subscriptions.subscribePairs(ledgers.getCore(), config, routeBuilder, backend)
+    curveCache.start()
 
     let allLedgersConnected
     try {
@@ -83,9 +85,16 @@ function registerRequestHandler (ledgers, fn) {
   return ledgers.registerExternalRequestHandler(fn)
 }
 
-function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, balanceCache, messageRouter) {
+function createApp (config, ledgers, backend, curveCache, quoter, routeBuilder, routeBroadcaster, routingTables, balanceCache, messageRouter) {
   if (!config) {
     config = loadConfig()
+  }
+
+  if (!curveCache) {
+    curveCache = new CurveCache({
+      quoteExpiry: config.quoteExpiry,
+      quoteCleanupInterval: config.quoteCleanupInterval
+    })
   }
 
   if (!routingTables) {
@@ -104,7 +113,7 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
   }
 
   if (!quoter) {
-    quoter = new Quoter(ledgers)
+    quoter = new Quoter(ledgers, curveCache, {quoteExpiry: config.quoteExpiry})
   }
 
   if (!backend) {
@@ -120,6 +129,7 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
 
   if (!routeBuilder) {
     routeBuilder = new RouteBuilder(
+      curveCache,
       ledgers,
       quoter,
       {
@@ -168,7 +178,7 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
 
   return {
     getClient: ledgers.getClient.bind(ledgers),
-    listen: _.partial(listen, config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter),
+    listen: _.partial(listen, config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter, curveCache),
     addPlugin: _.partial(addPlugin, config, ledgers, backend, routeBroadcaster),
     removePlugin: _.partial(removePlugin, config, ledgers, backend, routingTables, routeBroadcaster),
     getPlugin: _.partial(getPlugin, ledgers),

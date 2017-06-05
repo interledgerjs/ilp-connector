@@ -82,6 +82,10 @@ MessageRouter.prototype._handleRequest = function * (request) {
 MessageRouter.prototype._handleRequestByPacket = function * (packet, sender) {
   const params = {sourceAccount: sender}
   switch (packet[0]) {
+    case IlpPacket.Type.TYPE_ILQP_LIQUIDITY_REQUEST:
+      return IlpPacket.serializeIlqpLiquidityResponse(
+        yield this.routeBuilder.quoteLiquidity(
+          Object.assign(params, IlpPacket.deserializeIlqpLiquidityRequest(packet))))
     case IlpPacket.Type.TYPE_ILQP_BY_SOURCE_REQUEST:
       return IlpPacket.serializeIlqpBySourceResponse(
         yield this.routeBuilder.quoteBySource(
