@@ -125,7 +125,9 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
       {
         minMessageWindow: config.expiry.minMessageWindow,
         maxHoldTime: config.expiry.maxHoldTime,
-        slippage: config.slippage
+        slippage: config.slippage,
+        secret: config.secret,
+        unwiseUseSameTransferId: config.unwiseUseSameTransferId
       }
     )
   }

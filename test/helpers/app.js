@@ -24,6 +24,8 @@ exports.create = function (context) {
   }
   process.env.CONNECTOR_DEBUG_REPLY_NOTIFICATIONS = 'true'
 
+  process.env.CONNECTOR_SECRET = 'VafuntVJRw6YzDTs4IgIU1IPJACywtgUUQJHh1u018w='
+
   const config = loadConfig()
   const tradingPairs = new TradingPairs(config.get('tradingPairs'))
   const routingTables = new RoutingTables({
@@ -50,7 +52,8 @@ exports.create = function (context) {
     {
       minMessageWindow: config.expiry.minMessageWindow,
       maxHoldTime: config.expiry.maxHoldTime,
-      slippage: config.slippage
+      slippage: config.slippage,
+      secret: config.secret
     }
   )
   const routeBroadcaster = new RouteBroadcaster(routingTables, backend, ledgers, {

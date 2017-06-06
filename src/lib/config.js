@@ -6,6 +6,7 @@ const Utils = require('../lib/utils')
 const _ = require('lodash')
 const logger = require('../common/log')
 const log = logger.create('config')
+const crypto = require('crypto')
 
 const envPrefix = 'CONNECTOR'
 
@@ -202,6 +203,14 @@ function getLocalConfig () {
   // }
   const ledgerCredentials = parseCredentials()
 
+  // The secret is used to generate destination transfer IDs
+  // that cannot be guessed and squatted on by others
+  const secretString = Config.getEnv(envPrefix, 'SECRET')
+  const secret = secretString
+    ? Buffer.from(secretString, 'base64')
+    : crypto.randomBytes(32)
+  const unwiseUseSameTransferId = Config.castBool(Config.getEnv(envPrefix, 'UNWISE_USE_SAME_TRANSFER_ID'))
+
   return {
     backend,
     configRoutes,
@@ -218,7 +227,9 @@ function getLocalConfig () {
     routeExpiry,
     autoloadPeers,
     peers,
-    databaseUri
+    databaseUri,
+    secret,
+    unwiseUseSameTransferId
   }
 }
 

@@ -87,7 +87,8 @@ describe('RouteBuilder', function () {
     this.builder = new RouteBuilder(this.ledgers, this.quoter, {
       minMessageWindow: 1,
       maxHoldTime: 10,
-      slippage: 0.02
+      slippage: 0.02,
+      secret: Buffer.from('VafuntVJRw6YzDTs4IgIU1IPJACywtgUUQJHh1u018w=', 'base64')
     })
     yield this.ledgers.connect()
   })
@@ -107,7 +108,7 @@ describe('RouteBuilder', function () {
         ilp: ilpPacket
       })
       assert.deepEqual(destinationTransfer, {
-        id: 'd9600d94-f171-4443-83f5-c4c685fa70cd',
+        id: destinationTransfer.id,
         ledger: ledgerB,
         direction: 'outgoing',
         to: bobB,
@@ -134,7 +135,7 @@ describe('RouteBuilder', function () {
         }).toString('base64')
       })
       assert.deepEqual(destinationTransfer, {
-        id: '628cc7c4-4046-4815-897d-78895741efd9',
+        id: destinationTransfer.id,
         ledger: ledgerB,
         direction: 'outgoing',
         to: bobB,
@@ -300,6 +301,37 @@ describe('RouteBuilder', function () {
         })
       }.bind(this), error('source transfer is missing "ilp"'))
     })
+  })
+
+  it('uses the secret provided to generate a deterministic destination transfer ID', function * () {
+    const destinationTransfer = yield this.builder.getDestinationTransfer({
+      id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
+      ledger: ledgerA,
+      direction: 'incoming',
+      account: aliceA,
+      amount: '100',
+      ilp: packet.serializeIlpPayment({
+        account: bobB,
+        amount: '50'
+      }).toString('base64')
+    })
+    assert.equal(destinationTransfer.id, '81851f12-1df2-4761-81b2-b775000e39bd')
+  })
+
+  it('uses the same ID for the destination transfer as the source transfer if the UNWISE_USE_SAME_TRANSFER_ID is set', function * () {
+    this.builder.unwiseUseSameTransferId = true
+    const destinationTransfer = yield this.builder.getDestinationTransfer({
+      id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
+      ledger: ledgerA,
+      direction: 'incoming',
+      account: aliceA,
+      amount: '100',
+      ilp: packet.serializeIlpPayment({
+        account: bobB,
+        amount: '50'
+      }).toString('base64')
+    })
+    assert.equal(destinationTransfer.id, 'ce83ac53-3abb-47d3-b32d-37aa36dd6372')
   })
 })
 
