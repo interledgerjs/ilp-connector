@@ -200,7 +200,6 @@ class RouteBuilder {
       id: getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id),
       ledger: nextHop.destinationLedger,
       direction: 'outgoing',
-      account: nextHop.destinationCreditAccount,
       to: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
       ilp: sourceTransfer.ilp,

@@ -268,7 +268,7 @@ describe('Payments', function () {
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
       ledger: 'mock.test2.',
-      account: 'mock.test2.bob',
+      to: 'mock.test2.bob',
       amount: '50',
       executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
       expiresAt: (new Date(START_DATE)).toISOString(),
@@ -297,7 +297,7 @@ describe('Payments', function () {
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
       ledger: 'mock.test2.',
-      account: 'mock.test2.bob',
+      to: 'mock.test2.bob',
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
@@ -325,7 +325,7 @@ describe('Payments', function () {
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
       ledger: 'mock.test2.',
-      account: 'mock.test2.mark',
+      to: 'mock.test2.mark',
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
@@ -598,7 +598,7 @@ describe('Payments', function () {
       sinon.assert.calledWithMatch(sendSpy, {
         direction: 'outgoing',
         ledger: 'mock.test2.',
-        account: 'mock.test2.bob',
+        to: 'mock.test2.bob',
         amount: '50',
         cases: [this.caseId1, this.caseId2],
         noteToSelf: {
