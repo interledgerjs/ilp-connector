@@ -31,6 +31,8 @@ class RouteBuilder {
     this.minMessageWindow = config.minMessageWindow * 1000 // millseconds
     this.maxHoldTime = config.maxHoldTime * 1000 // millseconds
     this.slippage = config.slippage
+    this.secret = config.secret
+    this.unwiseUseSameTransferId = config.unwiseUseSameTransferId
   }
 
   /**
@@ -186,18 +188,23 @@ class RouteBuilder {
       source_transfer_amount: sourceTransfer.amount
     }
 
+    // The ID for the next transfer should be deterministically generated, so
+    // that the connector doesn't send duplicate outgoing transfers if it
+    // receives duplicate notifications.
+    //
+    // The deterministic generation should ideally be impossible for a third
+    // party to predict. Otherwise an attacker might be able to squat on a
+    // predicted ID in order to interfere with a payment or make a connector
+    // look unreliable. In order to assure this, the connector may use a
+    // secret that seeds the deterministic ID generation.
+    //
+    // If people specifically want to use the same transfer ID though, we'll let them
+    const id = this.unwiseUseSameTransferId
+      ? sourceTransfer.id
+      : getDeterministicUuid(this.secret, sourceTransfer.ledger + '/' + sourceTransfer.id)
+
     return _.omitBy({
-      // The ID for the next transfer should be deterministically generated, so
-      // that the connector doesn't send duplicate outgoing transfers if it
-      // receives duplicate notifications.
-      //
-      // The deterministic generation should ideally be impossible for a third
-      // party to predict. Otherwise an attacker might be able to squat on a
-      // predicted ID in order to interfere with a payment or make a connector
-      // look unreliable. In order to assure this, the connector may use a
-      // secret that seeds the deterministic ID generation.
-      // TODO: Use a real secret
-      id: getDeterministicUuid('secret', sourceTransfer.ledger + '/' + sourceTransfer.id),
+      id,
       ledger: nextHop.destinationLedger,
       direction: 'outgoing',
       to: nextHop.destinationCreditAccount,

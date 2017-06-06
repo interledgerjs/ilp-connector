@@ -33,6 +33,13 @@ describe('ConnectorConfig', function () {
       process.env = _.cloneDeep(env)
     })
 
+    it('should generate a secret if one is not provided', function * () {
+      delete process.env.CONNECTOR_SECRET
+      const config = loadConnectorConfig()
+      expect(Buffer.isBuffer(config.secret)).to.be.true
+      expect(config.secret).to.have.length(32)
+    })
+
     it('should auto-generate pairs', function * () {
       const config = loadConnectorConfig()
       expect(config.get('tradingPairs')).to.deep.equal([[
