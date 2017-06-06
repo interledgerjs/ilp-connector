@@ -110,7 +110,6 @@ describe('RouteBuilder', function () {
         id: 'd9600d94-f171-4443-83f5-c4c685fa70cd',
         ledger: ledgerB,
         direction: 'outgoing',
-        account: bobB,
         to: bobB,
         amount: '50',
         noteToSelf: {
@@ -138,7 +137,6 @@ describe('RouteBuilder', function () {
         id: '628cc7c4-4046-4815-897d-78895741efd9',
         ledger: ledgerB,
         direction: 'outgoing',
-        account: bobB,
         to: bobB,
         amount: '50',
         noteToSelf: {
@@ -200,7 +198,7 @@ describe('RouteBuilder', function () {
       assert.equal(destinationTransfer.ilp, ilpPacket)
     })
 
-    it('sets both the `to` and `account` fields on the outgoing transfer (to support new and deprecated field names)', function * () {
+    it('sets the `to` field on the outgoing transfer (not the deprecated account field)', function * () {
       const destinationTransfer = yield this.builder.getDestinationTransfer({
         id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
         ledger: ledgerA,
@@ -212,7 +210,7 @@ describe('RouteBuilder', function () {
           amount: '50'
         }).toString('base64')
       })
-      assert.equal(destinationTransfer.account, bobB)
+      assert.equal(destinationTransfer.account, undefined)
       assert.equal(destinationTransfer.to, bobB)
     })
 
@@ -260,7 +258,6 @@ describe('RouteBuilder', function () {
           id: destinationTransfer.id,
           ledger: ledgerB,
           direction: 'outgoing',
-          account: maryB,
           to: maryB,
           amount: '50',
           ilp: ilpPacket,
