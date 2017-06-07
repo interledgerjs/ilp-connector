@@ -124,6 +124,8 @@ npm start
 * `CONNECTOR_BACKEND` (default: `'fixerio'`) the backend used to determine rates. This can either be a module name from `src/backends/` or a different module that will be `require()`ed by the connector.
 * `CONNECTOR_SECRET` (default: 32 random bytes) base64url-encoded 32-byte secret used by the connector to deterministically randomize transfer IDs
 * `CONNECTOR_UNWISE_USE_SAME_TRANSFER_ID` (default: false, obviously) use the same transfer id for the destination transfer as the source transfer. If ledgers enforce transfer ID uniqueness (as they SHOULD), this means that someone can squat on an ID on the destination ledger and make this connector seem unreliable
+* `CONNECTOR_BROADCAST_CURVES` (default: true) include the liquidity curve when broadcasting a route
+* `CONNECTOR_STORE_CURVES` (default: true) store liquidity curves from route broadcasts (current implementation only stores them in-memory)
 
 ## Running with Docker
 
