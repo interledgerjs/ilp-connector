@@ -182,6 +182,17 @@ function getLocalConfig () {
   const routeBroadcastEnabledString = Config.getEnv(envPrefix, 'ROUTE_BROADCAST_ENABLED')
   const routeBroadcastEnabled =
     routeBroadcastEnabledString ? Config.castBool(routeBroadcastEnabledString) : true
+
+  // For a 'core' node in an open network, set both to true.
+  // For a 'periphery' node in an open network, set only the first one to true.
+  // For a node in a network where price competition between routes is not needed, set both to false.
+  const broadcastCurvesString = Config.getEnv(envPrefix, 'BROADCAST_CURVES')
+  const broadcastCurves =
+    broadcastCurvesString ? Config.castBool(broadcastCurvesString) : true
+  const storeCurvesString = Config.getEnv(envPrefix, 'STORE_CURVES')
+  const storeCurves =
+    storeCurvesString ? Config.castBool(storeCurvesString) : true
+
   const routeBroadcastInterval =
     Number(Config.getEnv(envPrefix, 'ROUTE_BROADCAST_INTERVAL')) || DEFAULT_ROUTE_BROADCAST_INTERVAL
   const routeCleanupInterval =
@@ -225,6 +236,8 @@ function getLocalConfig () {
     routeBroadcastInterval,
     routeCleanupInterval,
     routeExpiry,
+    broadcastCurves,
+    storeCurves,
     autoloadPeers,
     peers,
     databaseUri,

@@ -89,6 +89,8 @@ describe('RouteBroadcaster', function () {
       autoloadPeers: true,
       peers: [],
       ledgerCredentials,
+      broadcastCurves: true,
+      storeCurves: true,
       configRoutes,
       routeExpiry: 1234
     }
@@ -386,7 +388,7 @@ describe('RouteBroadcaster', function () {
       assert.deepEqual(route.destinationLedger, ledgerB)
       assert.deepEqual(route.sourceAccount, ledgerA + 'mark')
       assert.deepEqual(route.destinationAccount, ledgerB + 'mark')
-      assert.deepEqual(route.getPoints(), [ [0, 0], [1000000000000, 778238680703] ])
+      assert.deepEqual(route.getPoints(), [ [0, 0], [100000000000000, 77823868070382] ])
     })
   })
 })

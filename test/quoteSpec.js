@@ -219,7 +219,7 @@ describe('Quotes', function () {
     }, 'eur-ledger.mary')
     this.config.routeBroadcastEnabled = true
 
-    this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
+    this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
       return Promise.resolve({
         ilp: IlpPacket.serializeIlqpLiquidityResponse({
           liquidityCurve: curve,
@@ -282,17 +282,15 @@ describe('Quotes', function () {
     })
   })
 
-  describe('quotes a multi-hop route', function () {
+  describe('if route has no curve, quotes a multi-hop route', function () {
     beforeEach(function * () {
-      const curve = new LiquidityCurve([ [0, 0], [10000, 20000] ]).toBuffer()
       this.config.routeBroadcastEnabled = false
       yield this.messageRouter.receiveRoutes({
         new_routes: [{
           source_ledger: 'eur-ledger.',
           destination_ledger: 'random-ledger.',
           min_message_window: 1,
-          source_account: 'eur-ledger.mary',
-          points: curve.toString('base64')
+          source_account: 'eur-ledger.mary'
         }],
         hold_down_time: 1234,
         unreachable_through_me: []
@@ -301,11 +299,11 @@ describe('Quotes', function () {
     })
 
     it('returns a quote', function * () {
-      this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
+      this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
         assert.deepEqual(IlpPacket.deserializeIlqpBySourceRequest(Buffer.from(request.ilp, 'base64')), {
           destinationAccount: 'random-ledger.bob',
           destinationHoldDuration: 5000,
-          sourceAmount: '94'
+          sourceAmount: '127'
         })
         return Promise.resolve({
           ilp: IlpPacket.serializeIlqpBySourceResponse({
@@ -336,7 +334,7 @@ describe('Quotes', function () {
         triggeredAt: new Date(),
         data: JSON.stringify({ foo: 'bar' })
       }
-      this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
+      this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
         return Promise.resolve({ ilp: IlpPacket.serializeIlpError(errorPacket) })
       }
 

@@ -143,6 +143,7 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
         routeCleanupInterval: config.routeCleanupInterval,
         routeBroadcastInterval: config.routeBroadcastInterval,
         routeExpiry: config.routeExpiry,
+        broadcastCurves: config.broadcastCurves,
         autoloadPeers: config.autoloadPeers,
         peers: config.peers,
         ledgerCredentials: config.ledgerCredentials
