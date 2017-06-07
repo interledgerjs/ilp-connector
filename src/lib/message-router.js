@@ -131,6 +131,9 @@ MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
     if (!route.source_account.startsWith(route.source_ledger)) continue
     // The destination_ledger can be any ledger except one that starts with `peer.`.
     if (route.destination_ledger.startsWith(PEER_LEDGER_PREFIX)) continue
+    if (!this.config.storeCurves) {
+      delete route.points
+    }
     if (this.routingTables.addRoute(route)) gotNewRoute = true
   }
   log.debug('receiveRoutes sender:', sender, ' provided ', routes.length, ' any new?:', gotNewRoute)

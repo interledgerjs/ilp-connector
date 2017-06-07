@@ -58,6 +58,8 @@ exports.create = function (context) {
     routeCleanupInterval: config.routeCleanupInterval,
     routeBroadcastInterval: config.routeBroadcastInterval,
     routeExpiry: config.routeExpiry,
+    broadcastCurves: true,
+    storeCurves: true,
     autoloadPeers: true,
     peers: [],
     ledgerCredentials: config.ledgerCredentials,

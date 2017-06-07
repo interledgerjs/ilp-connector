@@ -47,9 +47,14 @@ class Quoter {
     const hop = this._findBestHopForAmount(request)
     if (!hop) return null
 
-    // If we know a local route to the destinationAccount, use the local route.
+    // note the confusion between `next`, `destination`, and `final`;
+    // `finalAmount` will be renamed to `destinationAmount` later in
+    // the hopToQuote function.
+    if (hop.sourceAmount && hop.finalAmount) {
+      return hopToQuote(hop, destinationHoldDuration)
+    }
+
     // Otherwise, ask a connector closer to the destination.
-    if (hop.isLocal) return hopToQuote(hop, destinationHoldDuration)
 
     let headHop
     const intermediateConnector = hop.destinationCreditAccount
@@ -58,7 +63,6 @@ class Quoter {
       headHop = this.tables.findBestHopForSourceAmount(
         hop.sourceLedger, intermediateConnector, request.sourceAmount)
     }
-
     const tailQuote = yield ILQP.quoteByConnector({
       plugin: this.ledgers.getPlugin(hop.destinationLedger),
       connector: intermediateConnector,

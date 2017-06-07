@@ -122,6 +122,8 @@ npm start
 * `CONNECTOR_ROUTE_CLEANUP_INTERVAL` (default: `1000`) the frequency at which the connector checks for expired routes.
 * `CONNECTOR_ROUTE_EXPIRY` (default: `45000`) the maximum age of a route.
 * `CONNECTOR_BACKEND` (default: `'fixerio'`) the backend used to determine rates. This can either be a module name from `src/backends/` or a different module that will be `require()`ed by the connector.
+* `CONNECTOR_STORE_CURVES` (default: true) whether LiquidityCurves from route broadcasts should be stored and used. When false, remote quoting will be used
+* `CONNECTOR_BROADCAST_CURVES` (default: true) whether LiquidityCurves should be included in route broadcasts. When false, your peers will need to use remote quoting when using your routes.
 
 ## Running with Docker
 

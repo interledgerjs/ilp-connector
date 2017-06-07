@@ -11,7 +11,7 @@ const utils = require('../utils')
 const healthStatus = require('../../common/health.js')
 // This simple backend uses a fixed (large) source amount and a rate to generate
 // the destination amount for the curve.
-const PROBE_SOURCE_AMOUNT = 100000000
+const PROBE_SOURCE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
 
 /**
  * Example backend that connects to an external component to get

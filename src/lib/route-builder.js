@@ -14,7 +14,7 @@ const startsWith = require('lodash/startsWith')
 class RouteBuilder {
   /**
    * @param {Ledgers} ledgers
-   * @param {Quoter} quoter
+   * @param i{Quoter} quoter
    * @param {Object} config
    * @param {Integer} config.minMessageWindow seconds
    * @param {Integer} config.maxHoldTime seconds
