@@ -10,13 +10,13 @@ router.post('/rpc', function * () {
 
   if (!method) {
     this.status = 422
-    this.body = JSON.stringify({ message: "missing method" })
+    this.body = JSON.stringify({ message: 'missing method' })
     return
   }
 
   if (!prefix) {
     this.status = 422
-    this.body = JSON.stringify({ message: "missing prefix" })
+    this.body = JSON.stringify({ message: 'missing prefix' })
     return
   }
 
@@ -25,7 +25,7 @@ router.post('/rpc', function * () {
     plugin = connector.getPlugin(prefix)
   } catch (e) {
     this.status = 404
-    this.body = JSON.stringify({ message: "no plugin with prefix " + prefix })
+    this.body = JSON.stringify({ message: 'no plugin with prefix ' + prefix })
     return
   }
 
