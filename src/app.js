@@ -92,7 +92,6 @@ function createApp (config, ledgers, backend, curveCache, quoter, routeBuilder, 
 
   if (!curveCache) {
     curveCache = new CurveCache({
-      quoteExpiry: config.quoteExpiry,
       quoteCleanupInterval: config.quoteCleanupInterval
     })
   }

@@ -3,17 +3,15 @@ const BigNumber = require('bignumber.js')
 const PrefixMap = require('ilp-routing').PrefixMap
 
 /**
- * Cache liquidity curve quotes so that they can be referenced during payment.
+ * Cache remote liquidity curve quotes so that they can be referenced during payment.
  */
 class CurveCache {
   /**
    * @param {Object} params
-   * @param {Integer} params.quoteExpiry milliseconds
    * @param {Integer} params.quoteCleanupInterval milliseconds
    */
   constructor (params) {
     this.sources = {} // { sourceLedger ⇒ { appliesToPrefix ⇒ [liquidityQuote] } }
-    this.quoteExpiryDuration = params.quoteExpiry
     this.quoteCleanupInterval = params.quoteCleanupInterval
   }
 
@@ -37,7 +35,6 @@ class CurveCache {
   insert (liquidityQuote) {
     // The shifted curve is used during quote-by-destination to counter the
     // computed source amount being rounded down.
-    liquidityQuote.shiftedCurve = liquidityQuote.liquidityCurve.shiftX(liquidityQuote.shiftBy)
     this._getQuotes(
       liquidityQuote.sourceLedger,
       liquidityQuote.appliesToPrefix

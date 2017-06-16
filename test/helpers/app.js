@@ -30,7 +30,6 @@ exports.create = function (context) {
   const config = loadConfig()
   const tradingPairs = new TradingPairs(config.get('tradingPairs'))
   const curveCache = new CurveCache({
-    quoteExpiry: config.quoteExpiry,
     quoteCleanupInterval: config.quoteCleanupInterval
   })
   const routingTables = new RoutingTables({
