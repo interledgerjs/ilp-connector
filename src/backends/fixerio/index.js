@@ -120,6 +120,7 @@ class FixerIoBackend {
     rate = this._subtractSpread(rate)
       .shift(destinationInfo.currencyScale - sourceInfo.currencyScale)
 
+    console.log({ sourceRate, destinationRate, sourceInfo, destinationInfo, rate: rate.toString() })
     let limit
     if (sourceInfo.maxBalance !== undefined) {
       let balanceIn = parseInt(yield this.getBalance(params.source_ledger))
