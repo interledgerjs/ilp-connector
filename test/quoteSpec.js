@@ -232,6 +232,35 @@ describe('Quotes', function () {
     })
   })
 
+  it('should return liquidity curve quotes with the correct appliesToPrefix', function * () {
+    const curve = new LiquidityCurve([ [1, 0], [1001, 1000] ]).toBuffer().toString('base64')
+    ;['', 'a', 'ab'].forEach((targetPrefix) => {
+      this.routingTables.addRoute({
+        source_ledger: 'eur-ledger.',
+        source_account: 'eur-ledger.mark',
+        destination_ledger: 'usd-ledger.',
+        target_prefix: targetPrefix,
+        min_message_window: 1,
+        points: curve
+      })
+    })
+    expect((yield this.routeBuilder.quoteLiquidity({
+      sourceAccount: 'cad-ledger.alice',
+      destinationAccount: 'foo-ledger.carl',
+      destinationHoldDuration: 5000
+    })).appliesToPrefix).to.equal('f') // Can't be "", since that would match "random-ledger.".
+    expect((yield this.routeBuilder.quoteLiquidity({
+      sourceAccount: 'cad-ledger.alice',
+      destinationAccount: 'abc-ledger.carl',
+      destinationHoldDuration: 5000
+    })).appliesToPrefix).to.equal('ab')
+    expect((yield this.routeBuilder.quoteLiquidity({
+      sourceAccount: 'cad-ledger.alice',
+      destinationAccount: 'acb-ledger.carl',
+      destinationHoldDuration: 5000
+    })).appliesToPrefix).to.equal('ac')
+  })
+
   it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', function * () {
     const quote = yield this.routeBuilder.quoteBySource({
       sourceAmount: '1000000',

@@ -82,9 +82,9 @@ describe('RouteBuilder', function () {
     this.ledgers.getPlugin(ledgerA).getAccount = function () { return markA }
     this.ledgers.getPlugin(ledgerB).getAccount = function () { return markB }
 
-    this.quoter = new Quoter(this.ledgers, this.curveCache, this.config)
+    this.quoter = new Quoter(this.ledgers, this.config)
 
-    this.builder = new RouteBuilder(this.curveCache, this.ledgers, this.quoter, {
+    this.builder = new RouteBuilder(this.ledgers, this.quoter, {
       minMessageWindow: 1,
       maxHoldTime: 10,
       slippage: 0.02,

@@ -6,7 +6,6 @@ const loadConfig = require('../../src/lib/config')
 const RoutingTables = require('../../src/lib/routing-tables')
 const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
-const CurveCache = require('../../src/lib/curve-cache')
 const Quoter = require('../../src/lib/quoter')
 const Ledgers = require('../../src/lib/ledgers')
 const BalanceCache = require('../../src/lib/balance-cache')
@@ -29,9 +28,6 @@ exports.create = function (context) {
 
   const config = loadConfig()
   const tradingPairs = new TradingPairs(config.get('tradingPairs'))
-  const curveCache = new CurveCache({
-    quoteCleanupInterval: config.quoteCleanupInterval
-  })
   const routingTables = new RoutingTables({
     backend: config.backend,
     expiryDuration: config.routeExpiry,
@@ -39,7 +35,7 @@ exports.create = function (context) {
     fxSpread: config.fxSpread
   })
   const ledgers = new Ledgers({config, log, routingTables})
-  const quoter = new Quoter(ledgers, curveCache, {quoteExpiry: config.quoteExpiry})
+  const quoter = new Quoter(ledgers, {quoteExpiry: config.quoteExpiry})
   const Backend = require('../../src/backends/' + config.get('backend'))
   const backend = new Backend({
     currencyWithLedgerPairs: tradingPairs,
@@ -50,7 +46,6 @@ exports.create = function (context) {
   ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
   ledgers.setPairs(config.get('tradingPairs'))
   const routeBuilder = new RouteBuilder(
-    curveCache,
     ledgers,
     quoter,
     {
@@ -74,14 +69,13 @@ exports.create = function (context) {
   })
   const balanceCache = new BalanceCache(ledgers)
   const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
-  const app = createApp(config, ledgers, backend, curveCache, quoter, routeBuilder, routeBroadcaster, routingTables, tradingPairs, balanceCache, messageRouter)
+  const app = createApp(config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, tradingPairs, balanceCache, messageRouter)
   context.app = app
   context.backend = backend
   context.tradingPairs = tradingPairs
   context.routingTables = routingTables
   context.routeBroadcaster = routeBroadcaster
   context.routeBuilder = routeBuilder
-  context.curveCache = curveCache
   context.quoter = quoter
   context.ledgers = ledgers
   context.config = config

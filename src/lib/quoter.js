@@ -4,18 +4,17 @@ const ILQP = require('ilp').ILQP
 const LiquidityCurve = require('ilp-routing').LiquidityCurve
 const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-error')
 const IlpError = require('../errors/ilp-error')
+const log = require('../common/log').create('quoter')
 
 class Quoter {
   /**
    * @param {Ledgers} ledgers
-   * @param {CurveCache} curveCache
    * @param {Object} config
    * @param {Integer} config.quoteExpiry
    */
-  constructor (ledgers, curveCache, config) {
+  constructor (ledgers, config) {
     this.ledgers = ledgers
     this.tables = ledgers.tables
-    this.curveCache = curveCache
     this.quoteExpiryDuration = config.quoteExpiry // milliseconds
   }
 
@@ -38,7 +37,7 @@ class Quoter {
     })
   }
 
-  _quoteLiquidity (request) {
+  * _quoteLiquidity (request) {
     const hop = this.tables.localTables.findBestHopForSourceAmount(request.sourceAccount, request.destinationAccount, '0')
     if (!hop) return Promise.resolve(null)
     const connector = hop.bestHop
@@ -46,56 +45,41 @@ class Quoter {
     const shiftBy = request._shiftCurve
       ? this.tables.getScaleAdjustment(this.ledgers, fullRoute.sourceLedger, fullRoute.nextLedger)
       : 0
-    const quoteExpiresAt = Date.now() + this.quoteExpiryDuration
-    if (fullRoute.curve) {
-      return Promise.resolve({
-        route: fullRoute,
-        hop: fullRoute.isLocal ? null : connector,
-        liquidityCurve: fullRoute.curve.shiftX(shiftBy),
-        appliesToPrefix: fullRoute.targetPrefix,
-        sourceHoldDuration: request.destinationHoldDuration + fullRoute.minMessageWindow * 1000,
-        expiresAt: quoteExpiresAt
+    if (isCurveExpired(fullRoute)) {
+      const headRoute = this.tables.localTables.getLocalRoute(fullRoute.sourceLedger, fullRoute.nextLedger)
+      const tailQuote = yield ILQP.quoteByConnector({
+        plugin: this.ledgers.getPlugin(fullRoute.nextLedger),
+        connector,
+        quoteQuery: {
+          destinationAccount: request.destinationAccount,
+          destinationHoldDuration: request.destinationHoldDuration
+        }
       })
-    }
-
-    const headRoute = this.tables.localTables.getLocalRoute(fullRoute.sourceLedger, fullRoute.nextLedger)
-    return this._getRemoteQuote(fullRoute.nextLedger, connector, request).then((tailQuote) => {
-      return {
-        route: fullRoute,
-        hop: connector,
-        liquidityCurve: headRoute.curve.join(tailQuote.liquidityCurve).shiftX(shiftBy),
-        appliesToPrefix: maxLength(fullRoute.targetPrefix, tailQuote.appliesToPrefix),
-        sourceHoldDuration: headRoute.minMessageWindow * 1000 + tailQuote.sourceHoldDuration,
-        expiresAt: Math.min(quoteExpiresAt, tailQuote.expiresAt)
-      }
-    })
-  }
-
-  _getRemoteQuote (nextLedger, nextConnector, request) {
-    if (request._checkCache) {
-      const cachedQuote = this.curveCache.findBestQuoteForSourceAmount(request.sourceAmount || '0')
-      if (cachedQuote) return cachedQuote
-    }
-    return ILQP.quoteByConnector({
-      plugin: this.ledgers.getPlugin(nextLedger),
-      connector: nextConnector,
-      quoteQuery: {
-        destinationAccount: request.destinationAccount,
-        destinationHoldDuration: request.destinationHoldDuration
-      }
-    }).then((tailQuote) => {
       if (tailQuote.code) throw new IlpError(tailQuote)
       const tailCurve = new LiquidityCurve(tailQuote.liquidityCurve)
-      // Save the quoted curve.
-      const quote = Object.assign({}, tailQuote, {
-        nextLedger,
-        nextConnector,
-        liquidityCurve: tailCurve,
-        expiresAt: tailQuote.expiresAt.getTime()
-      })
-      this.curveCache.insert(quote)
-      return quote
-    })
+      // The quote is more specific than the route.
+      if (fullRoute.targetPrefix.length < tailQuote.appliesToPrefix.length) {
+        log.warn('quote.appliesToPrefix="%s" is more specific than route.targetPrefix="%s"',
+          tailQuote.appliesToPrefix.length, fullRoute.targetPrefix.length)
+      }
+      // The quote is more general than the route, so update the route.
+      fullRoute.curve = headRoute.curve.join(tailCurve)
+      fullRoute.curveExpiresAt = tailQuote.expiresAt.getTime()
+      fullRoute.minMessageWindow = (tailQuote.sourceHoldDuration - request.destinationHoldDuration) / 1000 + headRoute.minMessageWindow
+    }
+
+    const quoteExpiresAt = Date.now() + this.quoteExpiryDuration
+    const routingTable = this.tables.localTables.sources.resolve(request.sourceAccount)
+    const appliesToPrefix = routingTable.getAppliesToPrefix(fullRoute.targetPrefix, request.destinationAccount)
+
+    return {
+      route: fullRoute,
+      hop: fullRoute.isLocal ? null : connector,
+      liquidityCurve: fullRoute.curve.shiftX(shiftBy),
+      appliesToPrefix,
+      sourceHoldDuration: request.destinationHoldDuration + fullRoute.minMessageWindow * 1000,
+      expiresAt: Math.min(quoteExpiresAt, fullRoute.curveExpiresAt || Infinity)
+    }
   }
 
   /**
@@ -164,8 +148,9 @@ class Quoter {
   }
 }
 
-function maxLength (prefix1, prefix2) {
-  return prefix1.length > prefix2.length ? prefix1 : prefix2
+function isCurveExpired (route) {
+  if (!route.curve) return true
+  return route.curveExpiresAt && route.curveExpiresAt < Date.now()
 }
 
 module.exports = Quoter

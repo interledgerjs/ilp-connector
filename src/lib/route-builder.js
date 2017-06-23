@@ -13,7 +13,6 @@ const startsWith = require('lodash/startsWith')
 
 class RouteBuilder {
   /**
-   * @param {CurveCache} curveCache
    * @param {Ledgers} ledgers
    * @param {Quoter} quoter
    * @param {Object} config
@@ -21,12 +20,11 @@ class RouteBuilder {
    * @param {Integer} config.maxHoldTime seconds
    * @param {Number} config.slippage
    */
-  constructor (curveCache, ledgers, quoter, config) {
+  constructor (ledgers, quoter, config) {
     if (!ledgers) {
       throw new TypeError('Must be given a valid Ledgers instance')
     }
 
-    this.curveCache = curveCache
     this.ledgers = ledgers
     this.routingTables = ledgers.tables
     this.quoter = quoter

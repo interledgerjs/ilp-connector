@@ -37,7 +37,7 @@ const routing = require('ilp-routing')
  * | Quote-by-liquidity          | yes      |
  * | Quote-by-source-Amount      | no       |
  * | Quote-by-destination-amount | yes      |
- * | Payment (via CurveCache)    | no       |
+ * | Payment                     | no       |
  */
 class RoutingTables {
   /**

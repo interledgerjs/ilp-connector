@@ -121,7 +121,6 @@ npm start
 * `CONNECTOR_ROUTE_BROADCAST_INTERVAL` (default: `30000`) the frequency at which the connector broadcasts its routes to adjacent connectors.
 * `CONNECTOR_ROUTE_CLEANUP_INTERVAL` (default: `1000`) the frequency at which the connector checks for expired routes.
 * `CONNECTOR_ROUTE_EXPIRY` (default: `45000`) the maximum age of a route.
-* `CONNECTOR_QUOTE_CLEANUP_INTERVAL` (default: `1000`) the frequency at which the connector checks for expired quotes.
 * `CONNECTOR_QUOTE_EXPIRY` (default: `20000`) the maximum age of a quote.
 * `CONNECTOR_BACKEND` (default: `'fixerio'`) the backend used to determine rates. This can either be a module name from `src/backends/` or a different module that will be `require()`ed by the connector.
 * `CONNECTOR_SECRET` (default: 32 random bytes) base64url-encoded 32-byte secret used by the connector to deterministically randomize transfer IDs
