@@ -199,7 +199,7 @@ describe('Quotes', function () {
       liquidityCurve: new LiquidityCurve([ [1, 0], [100000000000001, 105708160000000] ]).toBuffer(),
       appliesToPrefix: 'usd-ledger.',
       sourceHoldDuration: 6000,
-      expiresAt: new Date(START_DATE + 20 * 1000)
+      expiresAt: new Date(START_DATE + 45000)
     })
   })
 
@@ -228,13 +228,13 @@ describe('Quotes', function () {
       liquidityCurve: new LiquidityCurve([ [1, 0], [10614, 20000] ]).toBuffer(),
       appliesToPrefix: 'random-ledger.',
       sourceHoldDuration: 7000,
-      expiresAt: new Date(START_DATE + 20000)
+      expiresAt: new Date(START_DATE + 45000)
     })
   })
 
   it('should return liquidity curve quotes with the correct appliesToPrefix', function * () {
     const curve = new LiquidityCurve([ [1, 0], [1001, 1000] ]).toBuffer().toString('base64')
-    ;['', 'a', 'ab'].forEach((targetPrefix) => {
+    ;['', 'a.', 'a.b.'].forEach((targetPrefix) => {
       this.routingTables.addRoute({
         source_ledger: 'eur-ledger.',
         source_account: 'eur-ledger.mark',
@@ -246,19 +246,19 @@ describe('Quotes', function () {
     })
     expect((yield this.routeBuilder.quoteLiquidity({
       sourceAccount: 'cad-ledger.alice',
-      destinationAccount: 'foo-ledger.carl',
+      destinationAccount: 'random-ledger.carl',
       destinationHoldDuration: 5000
-    })).appliesToPrefix).to.equal('f') // Can't be "", since that would match "random-ledger.".
+    })).appliesToPrefix).to.equal('random-ledger.') // Can't be "", since that would match "eur-ledger.".
     expect((yield this.routeBuilder.quoteLiquidity({
       sourceAccount: 'cad-ledger.alice',
-      destinationAccount: 'abc-ledger.carl',
+      destinationAccount: 'a.b.carl',
       destinationHoldDuration: 5000
-    })).appliesToPrefix).to.equal('ab')
+    })).appliesToPrefix).to.equal('a.b.')
     expect((yield this.routeBuilder.quoteLiquidity({
       sourceAccount: 'cad-ledger.alice',
-      destinationAccount: 'acb-ledger.carl',
+      destinationAccount: 'a.c.b.carl',
       destinationHoldDuration: 5000
-    })).appliesToPrefix).to.equal('ac')
+    })).appliesToPrefix).to.equal('a.c.')
   })
 
   it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', function * () {
@@ -316,7 +316,7 @@ describe('Quotes', function () {
       this.config.routeBroadcastEnabled = true
     })
 
-    it('returns a quote', function * () {
+    it('returns a quote when appliesToPrefix is more general than targetPrefix', function * () {
       this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
         assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(Buffer.from(request.ilp, 'base64')), {
           destinationAccount: 'random-ledger.bob',
@@ -325,7 +325,35 @@ describe('Quotes', function () {
         return Promise.resolve({
           ilp: IlpPacket.serializeIlqpLiquidityResponse({
             liquidityCurve: new LiquidityCurve([ [0, 0], [1000, 2000] ]).toBuffer(),
-            appliesToPrefix: 'random-ledger.',
+            appliesToPrefix: 'random',
+            sourceHoldDuration: 6000,
+            expiresAt: new Date(START_DATE + 10000)
+          })
+        })
+      }
+
+      const quote = yield this.routeBuilder.quoteBySource({
+        sourceAmount: '100',
+        sourceAccount: 'usd-ledger.alice',
+        destinationAccount: 'random-ledger.bob',
+        destinationHoldDuration: 5000
+      })
+      expect(quote).to.deep.equal({
+        destinationAmount: '256', // (100 / 1.0592) * 1.3583 * 2
+        sourceHoldDuration: 7000
+      })
+    })
+
+    it('returns a quote when appliesToPrefix is more specific than targetPrefix', function * () {
+      this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
+        assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(Buffer.from(request.ilp, 'base64')), {
+          destinationAccount: 'random-ledger.bob',
+          destinationHoldDuration: 5000
+        })
+        return Promise.resolve({
+          ilp: IlpPacket.serializeIlqpLiquidityResponse({
+            liquidityCurve: new LiquidityCurve([ [0, 0], [1000, 2000] ]).toBuffer(),
+            appliesToPrefix: 'random-ledger.b',
             sourceHoldDuration: 6000,
             expiresAt: new Date(START_DATE + 10000)
           })
@@ -346,6 +374,7 @@ describe('Quotes', function () {
 
     it('relays an error packet', function * () {
       const errorPacket = {
+        responseType: 8,
         code: 'F01',
         name: 'Invalid Packet',
         triggeredBy: 'example.us.ledger3.bob',

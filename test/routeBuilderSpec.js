@@ -4,7 +4,6 @@ const co = require('co')
 const chai = require('chai')
 const assert = chai.assert
 const packet = require('ilp-packet')
-const LiquidityCurve = require('ilp-routing').LiquidityCurve
 const RoutingTables = require('../src/lib/routing-tables')
 const RouteBuilder = require('../src/lib/route-builder')
 const appHelper = require('./helpers/app')
@@ -91,13 +90,6 @@ describe('RouteBuilder', function () {
       secret: Buffer.from('VafuntVJRw6YzDTs4IgIU1IPJACywtgUUQJHh1u018w=', 'base64')
     })
     yield this.ledgers.connect()
-
-    // Populate the curve cache.
-    yield this.quoter.quoteLiquidity({
-      sourceAccount: ledgerA,
-      destinationAccount: ledgerB,
-      destinationHoldDuration: 5000
-    })
   })
 
   describe('getDestinationTransfer', function () {
@@ -231,25 +223,6 @@ describe('RouteBuilder', function () {
           source_account: maryB,
           min_message_window: 1,
           points
-        })
-
-        // Populate the curve cache.
-        this.ledgers.getPlugin(ledgerB).sendRequest = (request) => {
-          return Promise.resolve({
-            ilp: packet.serializeIlqpLiquidityResponse({
-              liquidityCurve: new LiquidityCurve(points).toBuffer(),
-              appliesToPrefix: ledgerC,
-              sourceHoldDuration: 6000,
-              expiresAt: new Date(Date.now() + 10000)
-            })
-          })
-        }
-
-        // Populate the curve cache.
-        yield this.quoter.quoteLiquidity({
-          sourceAccount: ledgerA,
-          destinationAccount: ledgerC,
-          destinationHoldDuration: 5000
         })
       })
 

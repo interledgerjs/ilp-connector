@@ -79,13 +79,6 @@ describe('Payments', function () {
 
     this.mockPlugin1 = this.ledgers.getPlugin('mock.test1.')
     this.mockPlugin2 = this.ledgers.getPlugin('mock.test2.')
-
-    // Populate the curve cache.
-    yield this.quoter.quoteLiquidity({
-      sourceAccount: 'mock.test1.',
-      destinationAccount: 'mock.test2.',
-      destinationHoldDuration: 5000
-    })
   })
 
   afterEach(function * () {

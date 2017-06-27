@@ -81,13 +81,6 @@ describe('Subscriptions', function () {
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
-
-    // Populate the curve cache.
-    yield this.quoter.quoteLiquidity({
-      sourceAccount: this.transferUsdPrepared.ledger,
-      destinationAccount: this.transferEurProposed.ledger,
-      destinationHoldDuration: 5000
-    })
   })
 
   afterEach(function * () {
