@@ -78,6 +78,9 @@ class OneToOneBackend {
     if (limit === undefined) {
       return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] ] }
     }
+    if (limit[1] === 0) { // the route exists in theory, but the connector is either at max source balance or at min destination balance
+      return { points: [] }
+    }
     if (limit[0] >= PROBE_SOURCE_AMOUNT) {
       return { points: [ [0, 0], limit ] }
     }
