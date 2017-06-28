@@ -235,6 +235,7 @@ class RouteBuilder {
       id,
       ledger: nextHop.destinationLedger,
       direction: 'outgoing',
+      from: this.ledgers.getPlugin(nextHop.destinationLedger).getAccount(),
       to: nextHop.destinationCreditAccount,
       amount: nextHop.destinationAmount,
       ilp: sourceTransfer.ilp,

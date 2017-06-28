@@ -110,6 +110,7 @@ describe('RouteBuilder', function () {
         id: destinationTransfer.id,
         ledger: ledgerB,
         direction: 'outgoing',
+        from: markB,
         to: bobB,
         amount: '50',
         noteToSelf: {
@@ -137,6 +138,7 @@ describe('RouteBuilder', function () {
         id: destinationTransfer.id,
         ledger: ledgerB,
         direction: 'outgoing',
+        from: markB,
         to: bobB,
         amount: '50',
         noteToSelf: {
@@ -246,6 +248,7 @@ describe('RouteBuilder', function () {
           id: destinationTransfer.id,
           ledger: ledgerB,
           direction: 'outgoing',
+          from: markB,
           to: maryB,
           amount: '50',
           ilp: ilpPacket,
