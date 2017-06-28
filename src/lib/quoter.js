@@ -1,17 +1,105 @@
 'use strict'
 
 const ILQP = require('ilp').ILQP
+const LiquidityCurve = require('ilp-routing').LiquidityCurve
+const IlpPacket = require('ilp-packet')
 const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-error')
 const IlpError = require('../errors/ilp-error')
 
 class Quoter {
-  constructor (ledgers) {
+  /**
+   * @param {Ledgers} ledgers
+   * @param {Object} config
+   * @param {Integer} config.quoteExpiry
+   */
+  constructor (ledgers, config) {
     this.ledgers = ledgers
     this.tables = ledgers.tables
+    this.localTables = this.tables.localTables
+    this.quoteExpiryDuration = config.quoteExpiry // milliseconds
   }
 
   /**
-   * @param {Ledgers} ledgers
+   * If that matching route has a local curve, it will be returned.
+   * Otherwise, make a remote curve quote request.
+   *
+   * @param {Object} request
+   * @param {IlpAddress} request.sourceAccount
+   * @param {IlpAddress} request.destinationAccount
+   * @param {Integer} request.destinationHoldDuration
+   * @param {Boolean} [request._shiftCurve] default: true
+   * @returns {Object}
+   */
+  * quoteLiquidity (request) {
+    const liquidityQuote = yield this._quoteLiquidity(
+      Object.assign({_shiftCurve: true}, request))
+    if (!liquidityQuote) return null
+    return Object.assign({}, liquidityQuote, {
+      liquidityCurve: liquidityQuote.liquidityCurve.toBuffer(),
+      expiresAt: new Date(liquidityQuote.expiresAt)
+    })
+  }
+
+  * _quoteLiquidity (request) {
+    const hop = this.localTables.findBestHopForSourceAmount(
+      request.sourceAccount, request.destinationAccount, '0')
+    if (!hop) return Promise.resolve(null)
+    const connector = hop.bestHop
+    let fullRoute = hop.bestRoute
+    if (isCurveExpired(fullRoute)) {
+      const tailQuote = yield ILQP.quoteByConnector({
+        plugin: this.ledgers.getPlugin(fullRoute.nextLedger),
+        connector,
+        quoteQuery: {
+          destinationAccount: request.destinationAccount,
+          destinationHoldDuration: request.destinationHoldDuration
+        }
+      })
+      if (tailQuote.responseType === IlpPacket.Type.TYPE_ILP_ERROR) {
+        throw new IlpError(tailQuote)
+      }
+      const tailCurve = new LiquidityCurve(tailQuote.liquidityCurve)
+      // The quote is more specific than the route.
+      if (fullRoute.targetPrefix.length < tailQuote.appliesToPrefix.length) {
+        // `fullRoute.nextLedger` is passed as the source ledger, since a tail
+        // route is passed to `addRoute()`, not a full one.
+        this.localTables.addRoute({
+          source_ledger: fullRoute.nextLedger,
+          destination_ledger: tailQuote.appliesToPrefix,
+          source_account: connector,
+          min_message_window: (tailQuote.sourceHoldDuration - request.destinationHoldDuration) / 1000,
+          points: tailQuote.liquidityCurve
+        })
+        fullRoute = this.localTables.findBestHopForSourceAmount(
+          request.sourceAccount, request.destinationAccount, '0').bestRoute
+        fullRoute.expiresAt = tailQuote.expiresAt.getTime()
+      // The quote is more general than the route, so update the route.
+      } else {
+        const headRoute = this.localTables.getLocalPairRoute(fullRoute.sourceLedger, fullRoute.nextLedger)
+        fullRoute.curve = headRoute.curve.join(tailCurve)
+        fullRoute.curveExpiresAt = tailQuote.expiresAt.getTime()
+        fullRoute.minMessageWindow = (tailQuote.sourceHoldDuration - request.destinationHoldDuration) / 1000 + headRoute.minMessageWindow
+      }
+    }
+
+    const shiftBy = request._shiftCurve
+      ? this.tables.getScaleAdjustment(this.ledgers, fullRoute.sourceLedger, fullRoute.nextLedger)
+      : 0
+    const quoteExpiresAt = Date.now() + this.quoteExpiryDuration
+    const routingTable = this.localTables.sources.resolve(request.sourceAccount)
+    const appliesToPrefix = routingTable.getAppliesToPrefix(fullRoute.targetPrefix, request.destinationAccount)
+
+    return {
+      route: fullRoute,
+      hop: fullRoute.isLocal ? null : connector,
+      liquidityCurve: fullRoute.curve.shiftX(shiftBy),
+      appliesToPrefix,
+      sourceHoldDuration: request.destinationHoldDuration + fullRoute.minMessageWindow * 1000,
+      expiresAt: Math.min(quoteExpiresAt, fullRoute.curveExpiresAt || Infinity)
+    }
+  }
+
+  /**
    * @param {Object} request
    * @param {IlpAddress} request.sourceAccount
    * @param {IlpAddress} request.destinationAccount
@@ -23,11 +111,14 @@ class Quoter {
     if (request.sourceAmount === '0') {
       throw new InvalidAmountSpecifiedError('sourceAmount must be positive')
     }
-    return yield this._quoteByAmount(request)
+    const liquidityQuote = yield this._quoteLiquidity(request)
+    if (!liquidityQuote) return null
+    return Object.assign({
+      destinationAmount: liquidityQuote.liquidityCurve.amountAt(request.sourceAmount).toString()
+    }, liquidityQuote)
   }
 
   /**
-   * @param {Ledgers} ledgers
    * @param {Object} request
    * @param {IlpAddress} request.sourceAccount
    * @param {IlpAddress} request.destinationAccount
@@ -39,77 +130,44 @@ class Quoter {
     if (request.destinationAmount === '0') {
       throw new InvalidAmountSpecifiedError('destinationAmount must be positive')
     }
-    return yield this._quoteByAmount(request)
+    // Use the shifted curve because the `amountReverse()` is rounded down,
+    // and we don't want to lose money.
+    const liquidityQuote = yield this._quoteLiquidity(Object.assign({_shiftCurve: true}, request))
+    if (!liquidityQuote) return null
+    return Object.assign({
+      sourceAmount: liquidityQuote.liquidityCurve.amountReverse(request.destinationAmount).toString()
+    }, liquidityQuote)
   }
 
-  * _quoteByAmount (request) {
-    const destinationHoldDuration = request.destinationHoldDuration
-    const hop = this._findBestHopForAmount(request)
-    if (!hop) return null
-
-    // note the confusion between `next`, `destination`, and `final`;
-    // `finalAmount` will be renamed to `destinationAmount` later in
-    // the hopToQuote function.
-    if (hop.sourceAmount && hop.finalAmount) {
-      return hopToQuote(hop, destinationHoldDuration)
-    }
-
-    // Otherwise, ask a connector closer to the destination.
-
-    let headHop
-    const intermediateConnector = hop.destinationCreditAccount
-    // Quote by source amount
-    if (request.sourceAmount) {
-      headHop = this.tables.findBestHopForSourceAmount(
-        hop.sourceLedger, intermediateConnector, request.sourceAmount)
-    }
-    const tailQuote = yield ILQP.quoteByConnector({
-      plugin: this.ledgers.getPlugin(hop.destinationLedger),
-      connector: intermediateConnector,
-      quoteQuery: {
-        sourceAmount: request.destinationAmount === undefined ? headHop.destinationAmount : null,
-        destinationAmount: request.sourceAmount === undefined ? hop.finalAmount : null,
-        destinationAccount: request.destinationAccount,
-        destinationHoldDuration
-      }
+  /**
+   * @param {IlpAddress} sourceLedger
+   * @param {IlpAddress} destination
+   * @param {Amount} sourceAmount
+   * @returns {Object}
+   */
+  * findBestPathForSourceAmount (sourceLedger, destination, sourceAmount) {
+    const quote = yield this.quoteBySourceAmount({
+      sourceAccount: sourceLedger,
+      destinationAccount: destination,
+      sourceAmount: sourceAmount,
+      destinationHoldDuration: 10 // dummy value, only used if a remote quote is needed
     })
-    if (tailQuote.code) throw new IlpError(tailQuote)
-
-    // Quote by destination amount
-    if (request.destinationAmount) {
-      headHop = this.tables.findBestHopForDestinationAmount(
-        hop.sourceLedger, intermediateConnector, tailQuote.sourceAmount)
-    }
-
+    if (!quote) return
+    const headRoute = this.localTables.getLocalPairRoute(sourceLedger, quote.route.nextLedger)
+    const headCurve = headRoute.curve
     return {
-      sourceLedger: hop.sourceLedger,
-      nextLedger: headHop.destinationLedger,
-      sourceAmount: headHop.sourceAmount,
-      destinationAmount: tailQuote.destinationAmount,
-      sourceHoldDuration: tailQuote.sourceHoldDuration + headHop.minMessageWindow * 1000,
-      destinationHoldDuration
+      isFinal: !quote.hop,
+      destinationLedger: quote.route.nextLedger,
+      destinationCreditAccount: quote.hop,
+      destinationAmount: headCurve.amountAt(sourceAmount).toString(),
+      finalAmount: quote.liquidityCurve.amountAt(sourceAmount).toString()
     }
-  }
-
-  _findBestHopForAmount (query) {
-    return query.sourceAmount === undefined
-      ? this.tables.findBestHopForDestinationAmount(
-          query.sourceAccount, query.destinationAccount, query.destinationAmount)
-      : this.tables.findBestHopForSourceAmount(
-          query.sourceAccount, query.destinationAccount, query.sourceAmount)
   }
 }
 
-function hopToQuote (hop, destinationHoldDuration) {
-  return {
-    sourceLedger: hop.sourceLedger,
-    nextLedger: hop.destinationLedger,
-    destinationLedger: hop.finalLedger,
-    sourceAmount: hop.sourceAmount,
-    destinationAmount: hop.finalAmount,
-    sourceHoldDuration: destinationHoldDuration + hop.minMessageWindow * 1000,
-    destinationHoldDuration
-  }
+function isCurveExpired (route) {
+  if (!route.curve) return true
+  return route.curveExpiresAt && route.curveExpiresAt < Date.now()
 }
 
 module.exports = Quoter

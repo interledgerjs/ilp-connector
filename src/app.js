@@ -104,7 +104,7 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
   }
 
   if (!quoter) {
-    quoter = new Quoter(ledgers)
+    quoter = new Quoter(ledgers, {quoteExpiry: config.quoteExpiry})
   }
 
   if (!backend) {

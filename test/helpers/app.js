@@ -35,14 +35,13 @@ exports.create = function (context) {
     fxSpread: config.fxSpread
   })
   const ledgers = new Ledgers({config, log, routingTables})
-  const quoter = new Quoter(ledgers)
+  const quoter = new Quoter(ledgers, {quoteExpiry: config.quoteExpiry})
   const Backend = require('../../src/backends/' + config.get('backend'))
   const backend = new Backend({
     currencyWithLedgerPairs: tradingPairs,
     backendUri: config.get('backendUri'),
     spread: config.get('fxSpread'),
-    getInfo: (ledger) => ledgers.getPlugin(ledger).getInfo(),
-    getBalance: (ledger) => ledgers.getPlugin(ledger).getBalance()
+    getInfo: (ledger) => ledgers.getPlugin(ledger).getInfo()
   })
   ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
   ledgers.setPairs(config.get('tradingPairs'))

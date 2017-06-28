@@ -18,6 +18,7 @@ const DEFAULT_SLIPPAGE = 0.001 // 0.1%
 const DEFAULT_ROUTE_BROADCAST_INTERVAL = 30 * 1000 // milliseconds
 const DEFAULT_ROUTE_CLEANUP_INTERVAL = 1000 // milliseconds
 const DEFAULT_ROUTE_EXPIRY = 45 * 1000 // milliseconds
+const DEFAULT_QUOTE_EXPIRY = 45 * 1000 // milliseconds
 
 function generateDefaultPairs (ledgers) {
   return Utils.getPairs(ledgers).map((pair) => {
@@ -199,6 +200,8 @@ function getLocalConfig () {
     Number(Config.getEnv(envPrefix, 'ROUTE_CLEANUP_INTERVAL')) || DEFAULT_ROUTE_CLEANUP_INTERVAL
   const routeExpiry =
     Number(Config.getEnv(envPrefix, 'ROUTE_EXPIRY')) || DEFAULT_ROUTE_EXPIRY
+  const quoteExpiry =
+    Number(Config.getEnv(envPrefix, 'QUOTE_EXPIRY')) || DEFAULT_QUOTE_EXPIRY
 
   const peersString = Config.getEnv(envPrefix, 'PEERS')
   const peers = peersString ? peersString.split(',') : []
@@ -238,6 +241,7 @@ function getLocalConfig () {
     routeExpiry,
     broadcastCurves,
     storeCurves,
+    quoteExpiry,
     autoloadPeers,
     peers,
     databaseUri,

@@ -28,6 +28,16 @@ const routing = require('ilp-routing')
  * (shifted) routes. Before joining, the local routes are shifted right by
  * 1/10^destination_ledger_scale to account for rounding errors. Their curves are
  * broadcast to adjacent connectors.
+ *
+ * Summary:
+ *
+ * | Method                      | Shifted? |
+ * |-----------------------------|----------|
+ * | Broadcasted routes          | yes      |
+ * | Quote-by-liquidity          | yes      |
+ * | Quote-by-source-Amount      | no       |
+ * | Quote-by-destination-amount | yes      |
+ * | Payment                     | no       |
  */
 class RoutingTables {
   /**
@@ -51,7 +61,7 @@ class RoutingTables {
     // Shift the graph right by a small amount so that precision rounding doesn't
     // cause UnacceptableRateErrors.
     for (const localRoute of localRoutes) {
-      const sourceAdjustment = this._getScaleAdjustment(
+      const sourceAdjustment = this.getScaleAdjustment(
         ledgers, localRoute.sourceLedger, localRoute.destinationLedger)
       const shiftedLocalRoute = sourceAdjustment
         ? localRoute.shiftX(sourceAdjustment)
@@ -63,19 +73,6 @@ class RoutingTables {
   addRoute (route, noExpire) {
     this.localTables.addRoute(route, noExpire)
     return this.publicTables.addRoute(route, noExpire)
-  }
-
-  // Don't use a shifted route because the source amount is fixed, and the
-  // destination amount will be rounded down by the curve.
-  findBestHopForSourceAmount (sourceLedger, destinationLedger, sourceAmount) {
-    return this.localTables.findBestHopForSourceAmount(
-      sourceLedger, destinationLedger, sourceAmount)
-  }
-
-  // Use a shifted route because the curve will round the computed source amount down.
-  findBestHopForDestinationAmount (sourceLedger, destinationLedger, destinationAmount) {
-    return this.publicTables.findBestHopForDestinationAmount(
-      sourceLedger, destinationLedger, destinationAmount)
   }
 
   toJSON (maxPoints) {
@@ -112,7 +109,7 @@ class RoutingTables {
     return this.publicTables.invalidateConnectorsRoutesTo(connectorAccount, ledger)
   }
 
-  _getScaleAdjustment (ledgers, sourceLedger, destinationLedger) {
+  getScaleAdjustment (ledgers, sourceLedger, destinationLedger) {
     const sourceScale = ledgers.getPlugin(sourceLedger).getInfo().currencyScale
     const destinationScale = ledgers.getPlugin(destinationLedger).getInfo().currencyScale
     if (sourceScale === destinationScale && this.isTrivialRate) return 0

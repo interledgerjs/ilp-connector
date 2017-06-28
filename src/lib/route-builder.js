@@ -40,6 +40,35 @@ class RouteBuilder {
    * @param {String} params.sourceAccount
    * @param {String} params.destinationAccount
    * @param {Number} params.destinationHoldDuration
+   * @returns {QuoteLiquidityResponse}
+   */
+  * quoteLiquidity (params) {
+    log.info('creating quote sourceAccount=%s destinationAccount=%s',
+      params.sourceAccount, params.destinationAccount)
+    const quote = yield this.quoter.quoteLiquidity({
+      sourceAccount: params.sourceAccount,
+      destinationAccount: params.destinationAccount,
+      destinationHoldDuration: params.destinationHoldDuration
+    })
+    if (!quote) {
+      log.info('no quote found for params: ' + JSON.stringify(params))
+      throw new NoRouteFoundError('No route found from: ' + params.sourceAccount + ' to: ' + params.destinationAccount)
+    }
+    this._verifyLedgerIsConnected(quote.route.sourceLedger)
+    this._validateHoldDurations(quote.sourceHoldDuration, params.destinationHoldDuration)
+    return {
+      liquidityCurve: quote.liquidityCurve,
+      appliesToPrefix: quote.appliesToPrefix,
+      sourceHoldDuration: quote.sourceHoldDuration,
+      expiresAt: quote.expiresAt
+    }
+  }
+
+  /**
+   * @param {Object} params
+   * @param {String} params.sourceAccount
+   * @param {String} params.destinationAccount
+   * @param {Number} params.destinationHoldDuration
    * @param {String} params.sourceAmount
    * @returns {QuoteBySourceResponse}
    */
@@ -59,9 +88,9 @@ class RouteBuilder {
     if (quote.destinationAmount === '0') {
       throw new UnacceptableAmountError('Quoted destination is lower than minimum amount allowed')
     }
-    this._verifyLedgerIsConnected(quote.sourceLedger)
-    this._verifyLedgerIsConnected(quote.nextLedger)
-    this._validateHoldDurations(quote.sourceHoldDuration, quote.destinationHoldDuration)
+    this._verifyLedgerIsConnected(quote.route.sourceLedger)
+    this._verifyLedgerIsConnected(quote.route.nextLedger)
+    this._validateHoldDurations(quote.sourceHoldDuration, params.destinationHoldDuration)
     return {
       destinationAmount: quote.destinationAmount,
       sourceHoldDuration: quote.sourceHoldDuration
@@ -92,9 +121,9 @@ class RouteBuilder {
     if (quote.sourceAmount === '0') {
       throw new UnacceptableAmountError('Quoted source is lower than minimum amount allowed')
     }
-    this._verifyLedgerIsConnected(quote.sourceLedger)
-    this._verifyLedgerIsConnected(quote.nextLedger)
-    this._validateHoldDurations(quote.sourceHoldDuration, quote.destinationHoldDuration)
+    this._verifyLedgerIsConnected(quote.route.sourceLedger)
+    this._verifyLedgerIsConnected(quote.route.nextLedger)
+    this._validateHoldDurations(quote.sourceHoldDuration, params.destinationHoldDuration)
     return {
       sourceAmount: quote.sourceAmount,
       sourceHoldDuration: quote.sourceHoldDuration
@@ -150,11 +179,10 @@ class RouteBuilder {
       ilpPacket.account, ilpPacket.amount)
 
     const sourceLedger = sourceTransfer.ledger
-    const nextHop = this.routingTables.findBestHopForSourceAmount(
+    const nextHop = yield this.quoter.findBestPathForSourceAmount(
       sourceLedger, ilpPacket.account, sourceTransfer.amount)
     if (!nextHop) {
-      log.info('could not find route for source transfer: ' + JSON.stringify(sourceTransfer))
-      log.debug('current routing tables (simplified to 10 points): ' + JSON.stringify(this.routingTables.toJSON(10)))
+      log.info('could not find quote for source transfer: ' + JSON.stringify(sourceTransfer))
       throw new IncomingTransferError({
         code: 'S02',
         name: 'Unreachable',

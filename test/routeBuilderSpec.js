@@ -4,7 +4,6 @@ const co = require('co')
 const chai = require('chai')
 const assert = chai.assert
 const packet = require('ilp-packet')
-const LiquidityCurve = require('ilp-routing').LiquidityCurve
 const RoutingTables = require('../src/lib/routing-tables')
 const RouteBuilder = require('../src/lib/route-builder')
 const appHelper = require('./helpers/app')
@@ -225,18 +224,6 @@ describe('RouteBuilder', function () {
           min_message_window: 1,
           points
         })
-
-        // Populate the curve cache.
-        this.ledgers.getPlugin(ledgerB).sendRequest = (request) => {
-          return Promise.resolve({
-            ilp: packet.serializeIlqpLiquidityResponse({
-              liquidityCurve: new LiquidityCurve(points).toBuffer(),
-              appliesToPrefix: ledgerC,
-              sourceHoldDuration: 6000,
-              expiresAt: new Date(Date.now() + 10000)
-            })
-          })
-        }
       })
 
       it('returns an intermediate destination transfer when the connector knows a route to the destination', function * () {
