@@ -120,13 +120,13 @@ class FixerIoBackend {
     rate = this._subtractSpread(rate)
       .shift(destinationInfo.currencyScale - sourceInfo.currencyScale)
 
-    console.log({ sourceRate, destinationRate, sourceInfo, destinationInfo, rate: rate.toString() })
     let limit
     if (sourceInfo.maxBalance !== undefined) {
       let balanceIn = parseInt(yield this.getBalance(params.source_ledger))
       let maxAmountIn = sourceInfo.maxBalance - balanceIn
       limit = [ maxAmountIn, maxAmountIn * rate ]
     }
+    const limitFromSource = limit
     if (destinationInfo.minBalance !== undefined) {
       let balanceOut = parseInt(yield this.getBalance(params.destination_ledger))
       let maxAmountOut = balanceOut - destinationInfo.minBalance
@@ -134,18 +134,23 @@ class FixerIoBackend {
         limit = [ maxAmountOut / rate, maxAmountOut ]
       }
     }
+    const limitFromDest = limit
     if (limit === undefined) {
+      console.log({ sourceRate, destinationRate, sourceInfo, destinationInfo, rate: rate.toString(), limitFromSource, limitFromDest, caseN: 1, limit: [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] })
       return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] ] }
     }
     if (limit[1] === 0) { // the route exists in theory, but the connector is either at max source balance or at min destination balance
       return { points: [] }
     }
     if (limit[0] >= PROBE_SOURCE_AMOUNT) {
+      console.log({ sourceRate, destinationRate, sourceInfo, destinationInfo, rate: rate.toString(), limitFromSource, limitFromDest, caseN: 2, limit })
       return { points: [ [0, 0], limit ] }
     }
     if (limit[0] === 0) { // avoid repeating non-increasing [0, 0], [0, 0], ...
+      console.log({ sourceRate, destinationRate, sourceInfo, destinationInfo, rate: rate.toString(), limitFromSource, limitFromDest, caseN: 3, limit: [ PROBE_SOURCE_AMOUNT, limit[1] ] })
       return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
     }
+    console.log({ sourceRate, destinationRate, sourceInfo, destinationInfo, rate: rate.toString(), limitFromSource, limitFromDest, caseN: 4, limit, limitZ: [ PROBE_SOURCE_AMOUNT, limit[1] ] })
     return { points: [ [0, 0], limit, [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
   }
 
