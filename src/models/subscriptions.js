@@ -4,28 +4,28 @@ const co = require('co')
 const log = require('../common').log.create('subscriptions')
 const payments = require('../models/payments')
 
-function * subscribePairs (core, config, routeBuilder, backend) {
-  const handleIncoming = (client, transfer) => {
+function * subscribePairs (ledgers, config, routeBuilder, backend) {
+  const handleIncoming = (plugin, transfer) => {
     return co(function * () {
-      yield payments.updateIncomingTransfer(transfer, core, config, routeBuilder)
+      yield payments.updateIncomingTransfer(transfer, ledgers, config, routeBuilder)
     }).catch(logThenThrow)
   }
-  core.on('incoming_prepare', handleIncoming)
-  core.on('incoming_transfer', handleIncoming)
+  ledgers.on('incoming_prepare', handleIncoming)
+  ledgers.on('incoming_transfer', handleIncoming)
 
-  core.on('outgoing_cancel', (client, transfer, rejectionMessage) => {
-    return co(payments.rejectSourceTransfer, transfer, rejectionMessage, core)
+  ledgers.on('outgoing_cancel', (plugin, transfer, rejectionMessage) => {
+    return co(payments.rejectSourceTransfer, transfer, rejectionMessage, ledgers)
       .catch(logThenThrow)
   })
 
-  core.on('outgoing_reject', (client, transfer, rejectionMessage) => {
-    return co(payments.rejectSourceTransfer, transfer, rejectionMessage, core)
+  ledgers.on('outgoing_reject', (plugin, transfer, rejectionMessage) => {
+    return co(payments.rejectSourceTransfer, transfer, rejectionMessage, ledgers)
       .catch(logThenThrow)
   })
 
-  core.on('outgoing_fulfill', (client, transfer, fulfillment) => {
+  ledgers.on('outgoing_fulfill', (plugin, transfer, fulfillment) => {
     return co(function * () {
-      yield payments.processExecutionFulfillment(transfer, fulfillment, core, backend, config)
+      yield payments.processExecutionFulfillment(transfer, fulfillment, ledgers, backend, config)
     }).catch(logThenThrow)
   })
 }

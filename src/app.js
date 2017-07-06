@@ -29,7 +29,7 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       log.error(error)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(ledgers.getCore(), config, routeBuilder, backend)
+    yield subscriptions.subscribePairs(ledgers, config, routeBuilder, backend)
 
     let allLedgersConnected
     try {
@@ -167,7 +167,6 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
   }
 
   return {
-    getClient: ledgers.getClient.bind(ledgers),
     listen: _.partial(listen, config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter),
     addPlugin: _.partial(addPlugin, config, ledgers, backend, routeBroadcaster),
     removePlugin: _.partial(removePlugin, config, ledgers, backend, routingTables, routeBroadcaster),

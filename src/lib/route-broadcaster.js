@@ -180,11 +180,7 @@ class RouteBroadcaster {
   }
 
   crawl () {
-    return this.ledgers.getClients().map(this._crawlClient, this)
-  }
-
-  * _crawlClient (client) {
-    yield this._crawlLedgerPlugin(client.getPlugin())
+    return this.ledgers.getPlugins().map(this._crawlLedgerPlugin, this)
   }
 
   * _crawlLedgerPlugin (plugin) {

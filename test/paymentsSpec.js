@@ -71,7 +71,7 @@ describe('Payments', function () {
     yield this.backend.connect(ratesResponse)
     yield this.ledgers.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
-    yield subscriptions.subscribePairs(this.ledgers.getCore(), this.config, this.routeBuilder, this.backend)
+    yield subscriptions.subscribePairs(this.ledgers, this.config, this.routeBuilder, this.backend)
 
     this.setTimeout = setTimeout
     this.setInterval = setInterval
