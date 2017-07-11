@@ -53,14 +53,18 @@ class OneToOneBackend {
     const sourceInfo = this.getInfo(params.source_ledger)
     const destinationInfo = this.getInfo(params.destination_ledger)
 
+    // Make sure that probeSourceAmount * rate doesn't exceed 15 significant digits.
+    const scaleDiff = destinationInfo.currencyScale - sourceInfo.currencyScale
+    const probeSourceAmount = scaleDiff > 0
+      ? PROBE_SOURCE_AMOUNT.shift(-scaleDiff)
+      : PROBE_SOURCE_AMOUNT
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
     // the (equivalent) SourceAmount -- regardless of which of the 2 is fixed:
     //
     //   SourceAmount * (1 - Spread) = DestinationAmount
     //
-    const rate = new BigNumber(1).minus(this.spread)
-      .shift(destinationInfo.currencyScale - sourceInfo.currencyScale)
+    const rate = new BigNumber(1).minus(this.spread).shift(scaleDiff)
 
     let limit
     if (sourceInfo.maxBalance !== undefined) {
@@ -76,15 +80,15 @@ class OneToOneBackend {
       }
     }
     if (limit === undefined) {
-      return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] ] }
+      return { points: [ [0, 0], [ probeSourceAmount, probeSourceAmount * rate ] ] }
     }
-    if (limit[0] >= PROBE_SOURCE_AMOUNT) {
+    if (limit[0] >= probeSourceAmount) {
       return { points: [ [0, 0], limit ] }
     }
     if (limit[0] === 0) { // avoid repeating non-increasing [0, 0], [0, 0], ...
-      return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
+      return { points: [ [0, 0], [ probeSourceAmount, limit[1] ] ] }
     }
-    return { points: [ [0, 0], limit, [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
+    return { points: [ [0, 0], limit, [ probeSourceAmount, limit[1] ] ] }
   }
 
   /**

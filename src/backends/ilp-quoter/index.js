@@ -91,16 +91,16 @@ class ILPQuoter {
     const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs,
                                                params.source_ledger,
                                                params.destination_ledger)
-    const amount = PROBE_SOURCE_AMOUNT
+    const sourceScale = this.getInfo(params.source_ledger).currencyScale
+    const destinationInfo = this.getInfo(params.destination_ledger)
+    const destinationScale = destinationInfo.currencyScale
+    const scaleDiff = Math.abs(destinationScale - sourceScale)
+    const amount = PROBE_SOURCE_AMOUNT.shift(-scaleDiff)
     const type = 'source'
 
     const uri = this.backendUri + '/quote/' +
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
                 '/' + type
-
-    const sourceScale = this.getInfo(params.source_ledger).currencyScale
-    const destinationInfo = this.getInfo(params.destination_ledger)
-    const destinationScale = destinationInfo.currencyScale
 
     const result = yield request({
       uri,
