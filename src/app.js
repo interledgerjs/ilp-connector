@@ -43,8 +43,8 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
     if (config.routeBroadcastEnabled) {
       yield routeBroadcaster.start()
     } else {
-      yield routeBroadcaster.addConfigRoutes()
       yield routeBroadcaster.reloadLocalRoutes()
+      yield routeBroadcaster.addConfigRoutes()
     }
 
     if (!allLedgersConnected) {
