@@ -3,12 +3,10 @@
 const _ = require('lodash')
 const co = require('co')
 const defer = require('co-defer')
-const BigNumber = require('bignumber.js')
 const Route = require('ilp-routing').Route
 const log = require('../common').log.create('route-broadcaster')
 const SIMPLIFY_POINTS = 10
 const PEER_LEDGER_PREFIX = 'peer.'
-const MAX_UINT = new BigNumber(2).pow(64).minus(1).toString()
 
 class RouteBroadcaster {
   /**
@@ -250,8 +248,8 @@ class RouteBroadcaster {
       const targetPrefix = configRoute.targetPrefix
 
       const route = new Route(
-        // use a 1:1 curve as a placeholder (it will be overwritten by a remote quote)
-        [ [0, 0], [MAX_UINT, MAX_UINT] ],
+        // don't give a curve in order to force a remote quote
+        null,
         // the nextLedger is inserted to make sure this the hop to the
         // connectorLedger is not considered final.
         {
