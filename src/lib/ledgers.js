@@ -8,6 +8,14 @@ const TradingPairs = require('./trading-pairs')
 const logger = require('../common/log')
 const log = logger.create('ledgers')
 
+const PLUGIN_EVENTS = [
+  'incoming_transfer',
+  'incoming_prepare',
+  'outgoing_fulfill',
+  'outgoing_cancel',
+  'outgoing_reject'
+]
+
 class Ledgers extends EventEmitter {
   constructor ({ config, routingTables }) {
     super()
@@ -20,11 +28,13 @@ class Ledgers extends EventEmitter {
     this.requestHandler = co.wrap(this._requestHandler.bind(this))
 
     const ledgers = this
-    this._relayEvent = function () {
-      const event = arguments[0]
-      const args = Array.prototype.slice.call(arguments, 1)
-      return ledgers.emitAsync.apply(ledgers, [event, this].concat(args))
-    }
+    this._relayEvents = {}
+    PLUGIN_EVENTS.forEach((event) => {
+      this._relayEvents[event] = function () {
+        const args = Array.prototype.slice.call(arguments)
+        return ledgers.emitAsync.apply(ledgers, [event, this].concat(args))
+      }
+    })
   }
 
   addFromCredentialsConfig (ledgerCredentials) {
@@ -157,7 +167,7 @@ class Ledgers extends EventEmitter {
     if (prefix.slice(-1) !== '.') {
       throw new Error('prefix must end with "."')
     }
-    plugin.onAny(this._relayEvent)
+    PLUGIN_EVENTS.forEach((event) => plugin.on(event, this._relayEvents[event]))
     this.pluginList.push(plugin)
     this.plugins[prefix] = plugin
   }
@@ -169,7 +179,7 @@ class Ledgers extends EventEmitter {
   removePlugin (prefix) {
     const plugin = this.getPlugin(prefix)
     if (!plugin) return
-    plugin.offAny(this._relayEvent)
+    PLUGIN_EVENTS.forEach((event) => plugin.off(event, this._relayEvents[event]))
     this.pluginList.splice(this.pluginList.indexOf(plugin), 1)
     delete this.plugins[prefix]
     return plugin
