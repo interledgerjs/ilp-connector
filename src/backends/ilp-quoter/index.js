@@ -94,8 +94,7 @@ class ILPQuoter {
     const sourceScale = this.getInfo(params.source_ledger).currencyScale
     const destinationInfo = this.getInfo(params.destination_ledger)
     const destinationScale = destinationInfo.currencyScale
-    const scaleDiff = Math.abs(destinationScale - sourceScale)
-    const amount = PROBE_SOURCE_AMOUNT.shift(-scaleDiff)
+    const amount = PROBE_SOURCE_AMOUNT.shift(-Math.max(sourceScale, destinationScale))
     const type = 'source'
 
     const uri = this.backendUri + '/quote/' +

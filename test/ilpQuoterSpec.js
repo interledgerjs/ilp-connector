@@ -159,7 +159,7 @@ describe('ILPQuoter', function () {
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/100000000000000/source').query({precision, scale}).reply(200, { source_amount: 123.89, destination_amount: 88.77 })
+                      .get('/quote/EUR/USD/10000000000/source').query({precision, scale}).reply(200, { source_amount: 123.89, destination_amount: 88.77 })
       const quoteResponse = yield this.backend.getCurve(quote)
       expect(quoteResponse.points).to.deep.equal([ [0, 0], [1238900, 887700] ])
       expect(scope.isDone()).to.be.true
@@ -171,7 +171,7 @@ describe('ILPQuoter', function () {
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/100000000000000/source').query({precision, scale}).reply(200, { source_amount: 99.77, destination_amount: 123.89 })
+                      .get('/quote/EUR/USD/10000000000/source').query({precision, scale}).reply(200, { source_amount: 99.77, destination_amount: 123.89 })
       const quoteResponse = yield this.backend.getCurve(quote)
       expect(quoteResponse.points).to.deep.equal([ [0, 0], [997700, 1238900] ])
       expect(scope.isDone()).to.be.true
@@ -183,7 +183,7 @@ describe('ILPQuoter', function () {
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/100000000000000/source').query({precision, scale}).reply(404)
+                      .get('/quote/EUR/USD/10000000000/source').query({precision, scale}).reply(404)
       yield yieldAndAssertException(this.backend.getCurve(quote), ServerError)
       expect(scope.isDone()).to.be.true
     })
@@ -194,7 +194,7 @@ describe('ILPQuoter', function () {
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/100000000000000/source').query({precision, scale}).reply(500)
+                      .get('/quote/EUR/USD/10000000000/source').query({precision, scale}).reply(500)
       yield yieldAndAssertException(this.backend.getCurve(quote), ServerError)
       expect(scope.isDone()).to.be.true
     })
@@ -205,7 +205,7 @@ describe('ILPQuoter', function () {
         destination_ledger: 'localhost:4000.'
       }
       const scope = nock(this.backendUri)
-                      .get('/quote/EUR/USD/100000000000000/source').query({precision, scale})
+                      .get('/quote/EUR/USD/10000000000/source').query({precision, scale})
                                                                .reply(200, {
                                                                  source_amount: 99.77,
                                                                  destination_amount: 123.89,

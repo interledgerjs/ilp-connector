@@ -4,7 +4,7 @@ const BigNumber = require('bignumber.js')
 const healthStatus = require('../common/health.js')
 // This simple backend uses a fixed (large) source amount and a rate to generate
 // the destination amount for the curve.
-const PROBE_SOURCE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
+const PROBE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
 
 /**
  * Backend which charges no spread and trades everything one-to-one.
@@ -53,11 +53,7 @@ class OneToOneBackend {
     const sourceInfo = this.getInfo(params.source_ledger)
     const destinationInfo = this.getInfo(params.destination_ledger)
 
-    // Make sure that probeSourceAmount * rate doesn't exceed 15 significant digits.
     const scaleDiff = destinationInfo.currencyScale - sourceInfo.currencyScale
-    const probeSourceAmount = scaleDiff > 0
-      ? PROBE_SOURCE_AMOUNT.shift(-scaleDiff)
-      : PROBE_SOURCE_AMOUNT
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
     // the (equivalent) SourceAmount -- regardless of which of the 2 is fixed:
@@ -79,16 +75,18 @@ class OneToOneBackend {
         limit = [ maxAmountOut.div(rate).toNumber(), maxAmountOut.toNumber() ]
       }
     }
-    if (limit === undefined) {
-      return { points: [ [0, 0], [ probeSourceAmount, probeSourceAmount * rate ] ] }
+
+    if (limit) {
+      // avoid repeating non-increasing [0, 0], [0, 0], ...
+      return limit[0] === 0
+        ? { points: [ [0, 0], [ PROBE_AMOUNT, limit[1] ] ] }
+        : { points: [ [0, 0], limit ] }
+    // Make sure that neither amount exceeds 15 significant digits.
+    } else if (rate.gt(1)) {
+      return { points: [ [0, 0], [ PROBE_AMOUNT / rate, PROBE_AMOUNT ] ] }
+    } else {
+      return { points: [ [0, 0], [ PROBE_AMOUNT, PROBE_AMOUNT * rate ] ] }
     }
-    if (limit[0] >= probeSourceAmount) {
-      return { points: [ [0, 0], limit ] }
-    }
-    if (limit[0] === 0) { // avoid repeating non-increasing [0, 0], [0, 0], ...
-      return { points: [ [0, 0], [ probeSourceAmount, limit[1] ] ] }
-    }
-    return { points: [ [0, 0], limit, [ probeSourceAmount, limit[1] ] ] }
   }
 
   /**
