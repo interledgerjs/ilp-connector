@@ -6,6 +6,7 @@ const defer = require('co-defer')
 const Route = require('ilp-routing').Route
 const log = require('../common').log.create('route-broadcaster')
 const SIMPLIFY_POINTS = 10
+const CRAWL_RETRY_TIME = 60000
 const PEER_LEDGER_PREFIX = 'peer.'
 
 class RouteBroadcaster {
@@ -55,7 +56,7 @@ class RouteBroadcaster {
   }
 
   * start () {
-    yield this.crawl()
+    yield this.startCrawl() // will wait only for first attempt at every ledger
     try {
       yield this.reloadLocalRoutes()
       yield this.addConfigRoutes()
@@ -179,12 +180,21 @@ class RouteBroadcaster {
     }))
   }
 
-  crawl () {
-    return this.ledgers.getClients().map(this._crawlClient, this)
+  startCrawl () {
+    return this.ledgers.getClients().map(this._startCrawlClient, this)
   }
 
-  * _crawlClient (client) {
-    yield this._crawlLedgerPlugin(client.getPlugin())
+  * _startCrawlClient (client) {
+    try {
+      // wait for first attempt to succeed or fail
+      yield this._crawlLedgerPlugin(client.getPlugin())
+    } catch(e) {
+      // follow-up attempts happen in the background until successful
+      // but this generator function already returns
+      defer.setTimeout(function *() {
+        yield this._startCrawlClient(client)
+      }.bind(this), CRAWL_RETRY_TIME)
+    }
   }
 
   * _crawlLedgerPlugin (plugin) {
