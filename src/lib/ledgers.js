@@ -84,6 +84,15 @@ class Ledgers {
       _store: store,
       _log: logger.create(creds.plugin)
     }))
+    if (creds.overrideInfo) {
+      const plugin = client.getPlugin()
+      const _getInfo = plugin.getInfo.bind(plugin)
+      plugin.getInfo = () => {
+        const info = Object.assign({}, _getInfo(), creds.overrideInfo)
+        log.debug('using overridden info for plugin', ledgerPrefix, info)
+        return info
+      }
+    }
     this._core.addClient(ledgerPrefix, client)
     this._ledgers.set(ledgerPrefix, {
       currency: creds.currency,
