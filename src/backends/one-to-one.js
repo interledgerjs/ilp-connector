@@ -64,15 +64,15 @@ class OneToOneBackend {
 
     let limit
     if (sourceInfo.maxBalance !== undefined) {
-      let balanceIn = parseInt(yield this.getBalance(params.source_ledger))
-      let maxAmountIn = sourceInfo.maxBalance - balanceIn
-      limit = [ maxAmountIn, maxAmountIn * rate ]
+      let balanceIn = yield this.getBalance(params.source_ledger)
+      let maxAmountIn = new BigNumber(sourceInfo.maxBalance).minus(balanceIn)
+      limit = [ maxAmountIn.toNumber(), maxAmountIn.times(rate).toNumber() ]
     }
     if (destinationInfo.minBalance !== undefined) {
-      let balanceOut = parseInt(yield this.getBalance(params.destination_ledger))
-      let maxAmountOut = balanceOut - destinationInfo.minBalance
-      if (limit === undefined || maxAmountOut < limit[1]) {
-        limit = [ maxAmountOut / rate, maxAmountOut ]
+      let balanceOut = yield this.getBalance(params.destination_ledger)
+      let maxAmountOut = new BigNumber(balanceOut).minus(destinationInfo.minBalance)
+      if (limit === undefined || maxAmountOut.lessThan(limit[1])) {
+        limit = [ maxAmountOut.div(rate).toNumber(), maxAmountOut.toNumber() ]
       }
     }
     if (limit === undefined) {
