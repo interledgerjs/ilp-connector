@@ -75,6 +75,7 @@ function parseCredentialsEnv () {
       currency: ledger.currency,
       store: ledger.store,
       plugin: ledger.plugin,
+      overrideInfo: ledger.overrideInfo,
       options: Object.assign({}, ledger.options)
     }
   })
