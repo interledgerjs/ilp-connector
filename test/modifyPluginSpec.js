@@ -85,6 +85,27 @@ describe('Modify Plugins', function () {
 
       assert.isTrue(this.routeBroadcaster.peersByLedger['eur-ledger-2.']['mark'])
     })
+
+    it('should override the plugin.getInfo function with overrideInfo data', function * () {
+      const overrideInfo = {
+        minBalance: '-10',
+        maxBalance: '10000',
+        prefix: 'test.other.prefix.',
+        currencyCode: 'XYZ',
+        currencyScale: 0
+      }
+      yield this.app.addPlugin('eur-ledger-2.', {
+        currency: 'EUR',
+        plugin: 'ilp-plugin-mock',
+        options: {
+          prefix: 'eur-ledger-2.'
+        },
+        overrideInfo
+      })
+
+      const info = this.ledgers._core.clients['eur-ledger-2.'].getPlugin().getInfo()
+      assert.include(info, overrideInfo)
+    })
   })
 
   describe('removePlugin', function () {
