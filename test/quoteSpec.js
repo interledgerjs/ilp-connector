@@ -196,7 +196,7 @@ describe('Quotes', function () {
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
-      liquidityCurve: new LiquidityCurve([ [1, 0], [100000000000001, 105708160000000] ]).toBuffer(),
+      liquidityCurve: new LiquidityCurve([ [ 1, 0 ], [ 94600076285502, 100000000000000 ] ]).toBuffer(),
       appliesToPrefix: 'usd-ledger.',
       sourceHoldDuration: 6000,
       expiresAt: new Date(START_DATE + 45000)

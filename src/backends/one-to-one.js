@@ -4,7 +4,7 @@ const BigNumber = require('bignumber.js')
 const healthStatus = require('../common/health.js')
 // This simple backend uses a fixed (large) source amount and a rate to generate
 // the destination amount for the curve.
-const PROBE_SOURCE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
+const PROBE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
 
 /**
  * Backend which charges no spread and trades everything one-to-one.
@@ -53,14 +53,14 @@ class OneToOneBackend {
     const sourceInfo = this.getInfo(params.source_ledger)
     const destinationInfo = this.getInfo(params.destination_ledger)
 
+    const scaleDiff = destinationInfo.currencyScale - sourceInfo.currencyScale
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
     // the (equivalent) SourceAmount -- regardless of which of the 2 is fixed:
     //
     //   SourceAmount * (1 - Spread) = DestinationAmount
     //
-    const rate = new BigNumber(1).minus(this.spread)
-      .shift(destinationInfo.currencyScale - sourceInfo.currencyScale)
+    const rate = new BigNumber(1).minus(this.spread).shift(scaleDiff)
 
     let limit
     if (sourceInfo.maxBalance !== undefined) {
@@ -75,16 +75,18 @@ class OneToOneBackend {
         limit = [ maxAmountOut.div(rate).toNumber(), maxAmountOut.toNumber() ]
       }
     }
-    if (limit === undefined) {
-      return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] ] }
+
+    if (limit) {
+      // avoid repeating non-increasing [0, 0], [0, 0], ...
+      return limit[0] === 0
+        ? { points: [ [0, 0], [ PROBE_AMOUNT, limit[1] ] ] }
+        : { points: [ [0, 0], limit ] }
+    // Make sure that neither amount exceeds 15 significant digits.
+    } else if (rate.gt(1)) {
+      return { points: [ [0, 0], [ PROBE_AMOUNT / rate, PROBE_AMOUNT ] ] }
+    } else {
+      return { points: [ [0, 0], [ PROBE_AMOUNT, PROBE_AMOUNT * rate ] ] }
     }
-    if (limit[0] >= PROBE_SOURCE_AMOUNT) {
-      return { points: [ [0, 0], limit ] }
-    }
-    if (limit[0] === 0) { // avoid repeating non-increasing [0, 0], [0, 0], ...
-      return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
-    }
-    return { points: [ [0, 0], limit, [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
   }
 
   /**

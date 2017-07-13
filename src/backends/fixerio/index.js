@@ -8,7 +8,7 @@ const ServerError = require('five-bells-shared/errors/server-error')
 const healthStatus = require('../../common/health.js')
 // This simple backend uses a fixed (large) source amount and a rate to generate
 // the destination amount for the curve.
-const PROBE_SOURCE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
+const PROBE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
 
 const RATES_API = 'https://api.fixer.io/latest'
 
@@ -77,14 +77,6 @@ class FixerIoBackend {
     return new BigNumber(amount).times(100).ceil().div(100).toFixed(2)
   }
 
-  _subtractSpread (amount) {
-    return new BigNumber(amount).times(new BigNumber(1).minus(this.spread))
-  }
-
-  _addSpread (amount) {
-    return new BigNumber(amount).times(new BigNumber(1).plus(this.spread))
-  }
-
   /**
    * Get a liquidity curve for the given parameters.
    *
@@ -116,9 +108,9 @@ class FixerIoBackend {
     //
     //   SourceAmount * Rate * (1 - Spread) = DestinationAmount
     //
-    let rate = new BigNumber(destinationRate).div(sourceRate)
-    rate = this._subtractSpread(rate)
-      .shift(destinationInfo.currencyScale - sourceInfo.currencyScale)
+    const rate = new BigNumber(destinationRate).shift(destinationInfo.currencyScale)
+      .div(new BigNumber(sourceRate).shift(sourceInfo.currencyScale))
+      .times(new BigNumber(1).minus(this.spread))
 
     let limit
     if (sourceInfo.maxBalance !== undefined) {
@@ -133,16 +125,18 @@ class FixerIoBackend {
         limit = [ maxAmountOut.div(rate).toNumber(), maxAmountOut.toNumber() ]
       }
     }
-    if (limit === undefined) {
-      return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, PROBE_SOURCE_AMOUNT * rate ] ] }
+
+    if (limit) {
+      // avoid repeating non-increasing [0, 0], [0, 0], ...
+      return limit[0] === 0
+        ? { points: [ [0, 0], [ PROBE_AMOUNT, limit[1] ] ] }
+        : { points: [ [0, 0], limit ] }
+    // Make sure that neither amount exceeds 15 significant digits.
+    } else if (rate.gt(1)) {
+      return { points: [ [0, 0], [ PROBE_AMOUNT / rate, PROBE_AMOUNT ] ] }
+    } else {
+      return { points: [ [0, 0], [ PROBE_AMOUNT, PROBE_AMOUNT * rate ] ] }
     }
-    if (limit[0] >= PROBE_SOURCE_AMOUNT) {
-      return { points: [ [0, 0], limit ] }
-    }
-    if (limit[0] === 0) { // avoid repeating non-increasing [0, 0], [0, 0], ...
-      return { points: [ [0, 0], [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
-    }
-    return { points: [ [0, 0], limit, [ PROBE_SOURCE_AMOUNT, limit[1] ] ] }
   }
 
   /**
