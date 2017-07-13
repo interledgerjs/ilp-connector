@@ -39,13 +39,13 @@ describe('Modify Plugins', function () {
 
   describe('addPlugin', function () {
     it('should add a new plugin to ledgers', function * () {
-      assert.equal(Object.keys(this.ledgers._core.clients).length, 4)
+      assert.equal(Object.keys(this.ledgers.plugins).length, 4)
       yield this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {}
       })
-      assert.equal(Object.keys(this.ledgers._core.clients).length, 5)
+      assert.equal(Object.keys(this.ledgers.plugins).length, 5)
     })
 
     it('should support new ledger', function * () {
@@ -103,7 +103,7 @@ describe('Modify Plugins', function () {
         overrideInfo
       })
 
-      const info = this.ledgers._core.clients['eur-ledger-2.'].getPlugin().getInfo()
+      const info = this.ledgers.plugins['eur-ledger-2.'].getInfo()
       assert.include(info, overrideInfo)
     })
   })

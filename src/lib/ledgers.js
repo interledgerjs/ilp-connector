@@ -2,20 +2,39 @@
 
 const _ = require('lodash')
 const co = require('co')
+const EventEmitter = require('eventemitter2')
 const PluginStore = require('../lib/pluginStore.js')
-const ilpCore = require('ilp-core')
 const TradingPairs = require('./trading-pairs')
 const logger = require('../common/log')
 const log = logger.create('ledgers')
 
-class Ledgers {
+const PLUGIN_EVENTS = [
+  'incoming_transfer',
+  'incoming_prepare',
+  'outgoing_fulfill',
+  'outgoing_cancel',
+  'outgoing_reject'
+]
+
+class Ledgers extends EventEmitter {
   constructor ({ config, routingTables }) {
+    super()
+    this.pluginList = [] // LedgerPlugin[]
+    this.plugins = {} // { prefix ⇒ LedgerPlugin }
     this.tables = routingTables
     this._config = config
-    this._core = new ilpCore.Core({ routingTables })
     this._pairs = new TradingPairs()
     this._ledgers = new Map()
     this.requestHandler = co.wrap(this._requestHandler.bind(this))
+
+    const ledgers = this
+    this._relayEvents = {}
+    PLUGIN_EVENTS.forEach((event) => {
+      this._relayEvents[event] = function () {
+        const args = Array.prototype.slice.call(arguments)
+        return ledgers.emitAsync.apply(ledgers, [event, this].concat(args))
+      }
+    })
   }
 
   addFromCredentialsConfig (ledgerCredentials) {
@@ -25,16 +44,17 @@ class Ledgers {
   }
 
   connect (options) {
-    return this._core.connect(options)
+    return Promise.all(this.pluginList.map((plugin) => plugin.connect(options)))
   }
 
   getPlugin (ledgerPrefix) {
-    return this._core.getPlugin(ledgerPrefix)
+    if (ledgerPrefix.slice(-1) !== '.') {
+      throw new Error('prefix must end with "."')
+    }
+    return this.plugins[ledgerPrefix] || null
   }
 
-  getClient (ledgerPrefix) {
-    return this._core.getClient(ledgerPrefix)
-  }
+  getPlugins (ledgerPrefix) { return this.pluginList }
 
   getPairs () {
     return this._pairs.toArray()
@@ -43,14 +63,6 @@ class Ledgers {
   setPairs (pairs) {
     this._pairs.empty()
     this._pairs.addPairs(pairs)
-  }
-
-  getCore () {
-    return this._core
-  }
-
-  getClients () {
-    return this._core.getClients()
   }
 
   getCurrencyForLedger (ledgerPrefix) {
@@ -77,15 +89,14 @@ class Ledgers {
     }
 
     creds.options.prefix = ledgerPrefix
-    const client = new ilpCore.Client(Object.assign({}, creds.options, {
+    const Plugin = require(creds.plugin)
+    const plugin = new Plugin(Object.assign({}, creds.options, {
       debugReplyNotifications: this._config.features.debugReplyNotifications,
       // non JSON-stringifiable fields are prefixed with an underscore
-      _plugin: require(creds.plugin),
       _store: store,
       _log: logger.create(creds.plugin)
     }))
     if (creds.overrideInfo) {
-      const plugin = client.getPlugin()
       const _getInfo = plugin.getInfo.bind(plugin)
       plugin.getInfo = () => {
         const info = Object.assign({}, _getInfo(), creds.overrideInfo)
@@ -93,12 +104,12 @@ class Ledgers {
         return info
       }
     }
-    this._core.addClient(ledgerPrefix, client)
+    this.addPlugin(ledgerPrefix, plugin)
     this._ledgers.set(ledgerPrefix, {
       currency: creds.currency,
-      plugin: client.getPlugin()
+      plugin
     })
-    client.getPlugin().registerRequestHandler(this.requestHandler)
+    plugin.registerRequestHandler(this.requestHandler)
 
     if (tradesTo) {
       this._pairs.addPairs(tradesTo.map((e) => [creds.currency + '@' + ledgerPrefix, e]))
@@ -123,7 +134,7 @@ class Ledgers {
   remove (ledgerPrefix) {
     const plugin = this.getPlugin(ledgerPrefix)
     this._pairs.removeAll(this.getCurrencyForLedger(ledgerPrefix) + '@' + ledgerPrefix)
-    this._core.removeClient(ledgerPrefix)
+    this.removePlugin(ledgerPrefix)
     this._ledgers.delete(ledgerPrefix)
     return plugin
   }
@@ -146,6 +157,32 @@ class Ledgers {
 
   registerExternalRequestHandler (requestHandler) {
     this._externalRequestHandler = requestHandler
+  }
+
+  /**
+   * @param {IlpAddress} prefix
+   * @param {LedgerPlugin} plugin
+   */
+  addPlugin (prefix, plugin) {
+    if (prefix.slice(-1) !== '.') {
+      throw new Error('prefix must end with "."')
+    }
+    PLUGIN_EVENTS.forEach((event) => plugin.on(event, this._relayEvents[event]))
+    this.pluginList.push(plugin)
+    this.plugins[prefix] = plugin
+  }
+
+  /**
+   * @param {IlpAddress} prefix
+   * @returns {LedgerPlugin}
+   */
+  removePlugin (prefix) {
+    const plugin = this.getPlugin(prefix)
+    if (!plugin) return
+    PLUGIN_EVENTS.forEach((event) => plugin.off(event, this._relayEvents[event]))
+    this.pluginList.splice(this.pluginList.indexOf(plugin), 1)
+    delete this.plugins[prefix]
+    return plugin
   }
 }
 

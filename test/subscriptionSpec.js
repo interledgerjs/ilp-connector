@@ -77,7 +77,7 @@ describe('Subscriptions', function () {
     this.wsEurLedger = new wsHelper.Server('ws://eur-ledger.example/accounts/mark/transfers')
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
-    yield subscriptions.subscribePairs(this.ledgers.getCore(), this.config, this.routeBuilder, this.backend)
+    yield subscriptions.subscribePairs(this.ledgers, this.config, this.routeBuilder, this.backend)
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
