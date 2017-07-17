@@ -134,8 +134,10 @@ class Quoter {
     // and we don't want to lose money.
     const liquidityQuote = yield this._quoteLiquidity(Object.assign({_shiftCurve: true}, request))
     if (!liquidityQuote) return null
+    const sourceAmount = liquidityQuote.liquidityCurve.amountReverse(request.destinationAmount).toString()
+    if (sourceAmount === 'Infinity') return null
     return Object.assign({
-      sourceAmount: liquidityQuote.liquidityCurve.amountReverse(request.destinationAmount).toString()
+      sourceAmount
     }, liquidityQuote)
   }
 
