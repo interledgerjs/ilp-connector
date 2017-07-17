@@ -16,7 +16,6 @@ const PEER_LEDGER_PREFIX = 'peer.'
  * @param {RoutingTables} opts.routingTables
  * @param {RouteBroadcaster} opts.routeBroadcaster
  * @param {RouteBuilder} opts.routeBuilder
- * @param {BalanceCache} opts.balanceCache
  */
 function MessageRouter (opts) {
   this.config = opts.config
@@ -24,7 +23,6 @@ function MessageRouter (opts) {
   this.routingTables = opts.routingTables
   this.routeBroadcaster = opts.routeBroadcaster
   this.routeBuilder = opts.routeBuilder
-  this.balanceCache = opts.balanceCache
   this.ledgers.registerInternalRequestHandler(this.handleRequest.bind(this))
 }
 
@@ -80,20 +78,19 @@ MessageRouter.prototype._handleRequest = function * (request) {
 }
 
 MessageRouter.prototype._handleRequestByPacket = function * (packet, sender) {
-  const params = {sourceAccount: sender}
+  const packetData = Object.assign(
+    {sourceAccount: sender},
+    IlpPacket.deserializeIlpPacket(packet).data)
   switch (packet[0]) {
     case IlpPacket.Type.TYPE_ILQP_LIQUIDITY_REQUEST:
       return IlpPacket.serializeIlqpLiquidityResponse(
-        yield this.routeBuilder.quoteLiquidity(
-          Object.assign(params, IlpPacket.deserializeIlqpLiquidityRequest(packet))))
+        yield this.routeBuilder.quoteLiquidity(packetData))
     case IlpPacket.Type.TYPE_ILQP_BY_SOURCE_REQUEST:
       return IlpPacket.serializeIlqpBySourceResponse(
-        yield this.routeBuilder.quoteBySource(
-          Object.assign(params, IlpPacket.deserializeIlqpBySourceRequest(packet))))
+        yield this.routeBuilder.quoteBySource(packetData))
     case IlpPacket.Type.TYPE_ILQP_BY_DESTINATION_REQUEST:
       return IlpPacket.serializeIlqpByDestinationResponse(
-        yield this.routeBuilder.quoteByDestination(
-          Object.assign(params, IlpPacket.deserializeIlqpByDestinationRequest(packet))))
+        yield this.routeBuilder.quoteByDestination(packetData))
     default:
       throw new InvalidBodyError('Packet has unexpected type')
   }

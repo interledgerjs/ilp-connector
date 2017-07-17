@@ -242,8 +242,7 @@ describe('RouteBroadcaster', function () {
       const routingTables = this.tables
       const routeBroadcaster = this.routeBroadcaster
       const routeBuilder = this.routeBuilder
-      const balanceCache = this.balanceCache
-      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder})
       const ledgerD = 'xrp.ledger.'
       const newRoutes = [{
         source_ledger: ledgerB,
@@ -273,8 +272,7 @@ describe('RouteBroadcaster', function () {
       const routingTables = this.tables
       const routeBroadcaster = this.routeBroadcaster
       const routeBuilder = this.routeBuilder
-      const balanceCache = this.balanceCache
-      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder})
       const newRoutes = [{
         source_ledger: ledgerB,
         destination_ledger: 'peer.do.not.add.me',
@@ -297,8 +295,7 @@ describe('RouteBroadcaster', function () {
       const routingTables = this.tables
       const routeBroadcaster = this.routeBroadcaster
       const routeBuilder = this.routeBuilder
-      const balanceCache = this.balanceCache
-      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
+      const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder})
       const newRoutes = [{
         source_ledger: ledgerA,
         destination_ledger: ledgerC,

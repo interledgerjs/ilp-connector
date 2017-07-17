@@ -42,8 +42,6 @@ describe('Quotes', function () {
         function * () { return '150000' }
     })
 
-    // Reset before and after just in case a test wants to change the precision.
-    this.balanceCache.reset()
     yield this.backend.connect(ratesResponse)
     yield this.ledgers.connect()
     yield this.routeBroadcaster.reloadLocalRoutes()
