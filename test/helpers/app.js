@@ -8,7 +8,6 @@ const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
 const Quoter = require('../../src/lib/quoter')
 const Ledgers = require('../../src/lib/ledgers')
-const BalanceCache = require('../../src/lib/balance-cache')
 const TradingPairs = require('../../src/lib/trading-pairs')
 const MessageRouter = require('../../src/lib/message-router')
 
@@ -68,9 +67,8 @@ exports.create = function (context) {
     ledgerCredentials: config.ledgerCredentials,
     configRoutes: config.configRoutes
   })
-  const balanceCache = new BalanceCache(ledgers)
-  const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder, balanceCache})
-  const app = createApp(config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, tradingPairs, balanceCache, messageRouter)
+  const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder})
+  const app = createApp(config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, tradingPairs, messageRouter)
   context.app = app
   context.backend = backend
   context.tradingPairs = tradingPairs
@@ -80,6 +78,5 @@ exports.create = function (context) {
   context.quoter = quoter
   context.ledgers = ledgers
   context.config = config
-  context.balanceCache = balanceCache
   context.messageRouter = messageRouter
 }

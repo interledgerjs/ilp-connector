@@ -12,7 +12,6 @@ const RouteBuilder = require('./lib/route-builder')
 const RouteBroadcaster = require('./lib/route-broadcaster')
 const Quoter = require('./lib/quoter')
 const Ledgers = require('./lib/ledgers')
-const BalanceCache = require('./lib/balance-cache')
 const MessageRouter = require('./lib/message-router')
 
 function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter) {
@@ -83,7 +82,7 @@ function registerRequestHandler (ledgers, fn) {
   return ledgers.registerExternalRequestHandler(fn)
 }
 
-function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, balanceCache, messageRouter) {
+function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, messageRouter) {
   if (!config) {
     config = loadConfig()
   }
@@ -151,18 +150,13 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
     )
   }
 
-  if (!balanceCache) {
-    balanceCache = new BalanceCache(ledgers)
-  }
-
   if (!messageRouter) {
     messageRouter = new MessageRouter({
       config,
       ledgers,
       routingTables,
       routeBroadcaster,
-      routeBuilder,
-      balanceCache
+      routeBuilder
     })
   }
 
