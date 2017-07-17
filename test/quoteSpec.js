@@ -72,6 +72,17 @@ describe('Quotes', function () {
     yield assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'destinationAmount must be positive')
   })
 
+  it('should return NoRouteFoundError when the destination amount is unachievable', function * () {
+    const quotePromise = co(this.routeBuilder.quoteByDestination({
+      destinationAmount: '100000000000000000000000000000',
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationHoldDuration: 1.001
+    }))
+
+    yield assert.isRejected(quotePromise, NoRouteFoundError, 'No route found from: eur-ledger.alice to: usd-ledger.bob')
+  })
+
   it('should return NoRouteFoundError when the source ledger is not supported', function * () {
     const quotePromise = co(this.routeBuilder.quoteBySource({
       sourceAmount: '100',
