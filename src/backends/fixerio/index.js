@@ -116,13 +116,13 @@ class FixerIoBackend {
     if (sourceInfo.maxBalance !== undefined) {
       let balanceIn = yield this.getBalance(params.source_ledger)
       let maxAmountIn = new BigNumber(sourceInfo.maxBalance).minus(balanceIn)
-      limit = [ maxAmountIn.toNumber(), maxAmountIn.times(rate).toNumber() ]
+      limit = [ maxAmountIn.toString(), maxAmountIn.times(rate).toString() ]
     }
     if (destinationInfo.minBalance !== undefined) {
       let balanceOut = yield this.getBalance(params.destination_ledger)
       let maxAmountOut = new BigNumber(balanceOut).minus(destinationInfo.minBalance)
       if (limit === undefined || maxAmountOut.lessThan(limit[1])) {
-        limit = [ maxAmountOut.div(rate).toNumber(), maxAmountOut.toNumber() ]
+        limit = [ maxAmountOut.div(rate).toString(), maxAmountOut.toString() ]
       }
     }
 
