@@ -78,7 +78,7 @@ class OneToOneBackend {
 
     if (limit) {
       // avoid repeating non-increasing [0, 0], [0, 0], ...
-      return limit[0] === 0
+      return limit[0] === '0'
         ? { points: [ [0, 0], [ PROBE_AMOUNT, limit[1] ] ] }
         : { points: [ [0, 0], limit ] }
     // Make sure that neither amount exceeds 15 significant digits.
