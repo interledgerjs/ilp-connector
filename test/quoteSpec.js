@@ -326,7 +326,7 @@ describe('Quotes', function () {
     })
 
     it('returns a quote when appliesToPrefix is more general than targetPrefix', function * () {
-      this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
+      this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
         assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(Buffer.from(request.ilp, 'base64')), {
           destinationAccount: 'random-ledger.bob',
           destinationHoldDuration: 5000
@@ -348,13 +348,13 @@ describe('Quotes', function () {
         destinationHoldDuration: 5000
       })
       expect(quote).to.deep.equal({
-        destinationAmount: '256', // (100 / 1.0592) * 1.3583 * 2
+        destinationAmount: '188', // (100 / 1.0592) * 2
         sourceHoldDuration: 7000
       })
     })
 
     it('returns a quote when appliesToPrefix is more specific than targetPrefix', function * () {
-      this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
+      this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
         assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(Buffer.from(request.ilp, 'base64')), {
           destinationAccount: 'random-ledger.bob',
           destinationHoldDuration: 5000
@@ -376,7 +376,7 @@ describe('Quotes', function () {
         destinationHoldDuration: 5000
       })
       expect(quote).to.deep.equal({
-        destinationAmount: '256', // (100 / 1.0592) * 1.3583 * 2
+        destinationAmount: '188', // (100 / 1.0592) * 2
         sourceHoldDuration: 7000
       })
     })
@@ -391,7 +391,7 @@ describe('Quotes', function () {
         triggeredAt: new Date(),
         data: JSON.stringify({ foo: 'bar' })
       }
-      this.ledgers.getPlugin('cad-ledger.').sendRequest = (request) => {
+      this.ledgers.getPlugin('eur-ledger.').sendRequest = (request) => {
         return Promise.resolve({ ilp: IlpPacket.serializeIlpError(errorPacket) })
       }
 
