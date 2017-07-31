@@ -21,7 +21,7 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
 
   // Start a coroutine that connects to the backend and
   // subscribes to all the ledgers in the background
-  co(function * () {
+  return co(function * () {
     try {
       yield backend.connect()
     } catch (error) {
