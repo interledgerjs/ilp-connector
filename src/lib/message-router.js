@@ -37,7 +37,10 @@ MessageRouter.prototype.handleRequest = function (requestMessage) {
     return Promise.reject(new Error('Invalid request message'))
   }
   return co.wrap(this._handleRequest).call(this, requestMessage).catch((err) => {
-    if (!(err instanceof IlpError)) throw err
+    if (!(err instanceof IlpError)) {
+      log.warn('handleRequest error', err.stack)
+      throw err
+    }
     return {
       ledger: requestMessage.ledger,
       from: requestMessage.to,
