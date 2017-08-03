@@ -46,12 +46,13 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       yield routeBroadcaster.addConfigRoutes()
     }
 
-    if (!allLedgersConnected) {
+    if (allLedgersConnected) {
+      log.info('connector ready (republic attitude)')
+    } else {
       ledgers.connect({timeout: Infinity})
         .then(() => routeBroadcaster.reloadLocalRoutes())
-        .then(() => log.info('all ledgers connected'))
+        .then(() => log.info('connector ready (republic attitude)'))
     }
-    log.info('connector ready (republic attitude)')
   }).catch((err) => log.error(err))
 }
 
