@@ -17,6 +17,10 @@
         "$ref": "IlpAddress.json"
       }
     },
+    "request_full_table": {
+      "description": "On this route broadcast, piggy-back a request for the other peer to send their full table in *their* next route broadcast",
+      "type": "boolean"
+    },
     "new_routes": {
       "description": "A list of Routes that have been added to the sending connector's table since the last update it has sent you.  May replace previously broadcast routes.",
       "$ref": "Routes.json"

@@ -59,7 +59,7 @@ class RouteBroadcaster {
     try {
       yield this.reloadLocalRoutes()
       yield this.addConfigRoutes()
-      this.broadcast()
+      this.broadcast(true)
     } catch (e) {
       if (e.name === 'SystemError' ||
           e.name === 'ServerError') {
@@ -107,7 +107,7 @@ class RouteBroadcaster {
     }.bind(this), this.routeBroadcastInterval)
   }
 
-  broadcast () {
+  broadcast (requestFullTable = false) {
     const adjacentLedgers = Object.keys(this.peersByLedger)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS).filter(route => {
       const isPeerRoute = (route.destination_ledger.startsWith(PEER_LEDGER_PREFIX))
@@ -122,7 +122,7 @@ class RouteBroadcaster {
 
     return Promise.all(adjacentLedgers.map((adjacentLedger) => {
       const ledgerRoutes = routes.filter((route) => route.source_ledger === adjacentLedger)
-      return this._broadcastToLedger(adjacentLedger, ledgerRoutes, unreachableLedgers)
+      return this._broadcastToLedger(adjacentLedger, ledgerRoutes, unreachableLedgers, requestFullTable)
         .catch((err) => {
           log.warn('broadcasting routes on ledger ' + adjacentLedger + ' failed')
           log.debug(err)
@@ -130,7 +130,7 @@ class RouteBroadcaster {
     }))
   }
 
-  _broadcastToLedger (adjacentLedger, routes, unreachableLedgers) {
+  _broadcastToLedger (adjacentLedger, routes, unreachableLedgers, requestFullTable) {
     const connectors = Object.keys(this.peersByLedger[adjacentLedger])
     return Promise.all(connectors.map((account) => {
       log.info('broadcasting ' + routes.length + ' routes to ' + account)
@@ -152,7 +152,8 @@ class RouteBroadcaster {
           data: {
             new_routes: newRoutes,
             hold_down_time: this.holdDownTime,
-            unreachable_through_me: unreachableLedgers
+            unreachable_through_me: unreachableLedgers,
+            request_full_table: requestFullTable
           }
         },
         // timeout the plugin.sendRequest Promise just so we don't have it hanging around forever

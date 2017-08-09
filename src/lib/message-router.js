@@ -120,7 +120,9 @@ MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
       lostLedgerLinks.push(...this.routingTables.invalidateConnectorsRoutesTo(sender, ledger))
     }
   }
-
+  if (payload.request_full_table) {
+    this.routeBroadcaster.peerEpochs[sender] = -1
+  }
   if (routes.length === 0 && lostLedgerLinks.length === 0) { // just a heartbeat
     log.info('got heartbeat from:', sender)
     return
