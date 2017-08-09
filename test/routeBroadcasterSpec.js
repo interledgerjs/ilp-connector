@@ -206,6 +206,7 @@ describe('RouteBroadcaster', function () {
             data:
             { hold_down_time: 1234,
               unreachable_through_me: [],
+              request_full_table: false,
               new_routes: routesWithSourceLedgerA } },
           timeout: undefined
         })
@@ -223,6 +224,7 @@ describe('RouteBroadcaster', function () {
             data:
             { hold_down_time: 1234,
               unreachable_through_me: [],
+              request_full_table: false,
               new_routes: routesWithSourceLedgerB } },
           timeout: undefined
         })
@@ -255,13 +257,15 @@ describe('RouteBroadcaster', function () {
       yield messageRouter.receiveRoutes({
         new_routes: newRoutes,
         hold_down_time: 1234,
-        unreachable_through_me: []
+        unreachable_through_me: [],
+        request_full_table: false
       }, ledgerB + 'mark')
       assert.equal(this.tables.toJSON(2).length, 5)
       yield messageRouter.receiveRoutes({
         new_routes: [],
         hold_down_time: 1234,
-        unreachable_through_me: [ledgerD]
+        unreachable_through_me: [ledgerD],
+        request_full_table: false
       }, ledgerB + 'mark')
       assert.equal(this.tables.toJSON(2).length, 4)
     })
@@ -284,7 +288,8 @@ describe('RouteBroadcaster', function () {
       yield messageRouter.receiveRoutes({
         new_routes: newRoutes,
         hold_down_time: 1234,
-        unreachable_through_me: []
+        unreachable_through_me: [],
+        request_full_table: false
       }, ledgerB + 'mark')
       assert.equal(this.tables.toJSON(2).length, 4)
     })
@@ -307,7 +312,8 @@ describe('RouteBroadcaster', function () {
       yield messageRouter.receiveRoutes({
         new_routes: newRoutes,
         hold_down_time: 1234,
-        unreachable_through_me: []
+        unreachable_through_me: [],
+        request_full_table: false
       }, ledgerB + 'mark')
       assert.equal(this.tables.toJSON(2).length, 4)
     })
