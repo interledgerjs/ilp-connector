@@ -13,7 +13,7 @@ const MessageRouter = require('../../src/lib/message-router')
 
 const createApp = require('../../src').createApp
 
-exports.create = function (context) {
+exports.create = function (context, minBalance) {
   // Set up test environment
   if (!process.env.CONNECTOR_LEDGERS) {
     process.env.CONNECTOR_LEDGERS = JSON.stringify(require('../data/ledgerCredentials.json'))
@@ -40,7 +40,11 @@ exports.create = function (context) {
     currencyWithLedgerPairs: tradingPairs,
     backendUri: config.get('backendUri'),
     spread: config.get('fxSpread'),
-    getInfo: (ledger) => ledgers.getPlugin(ledger).getInfo(),
+    getInfo: (ledger) => {
+      const info = ledgers.getPlugin(ledger).getInfo()
+      info.minBalance = minBalance
+      return info
+    },
     getBalance: (ledger) => ledgers.getPlugin(ledger).getBalance()
   })
   ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))

@@ -38,8 +38,7 @@ describe('Quotes', function () {
 
     const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
     _.map(testLedgers, (ledgerUri) => {
-      this.ledgers.getPlugin(ledgerUri).getBalance =
-        function * () { return '150000' }
+      this.ledgers.getPlugin(ledgerUri)._balance = '150000'
     })
 
     yield this.backend.connect(ratesResponse)
@@ -444,5 +443,41 @@ describe('Quotes', function () {
     }))
 
     yield assert.isRejected(quotePromise, LedgerNotConnectedError, 'No connection to ledger "usd-ledger."')
+  })
+})
+
+describe('Quotes with minBalance', function () {
+  logHelper(logger)
+
+  beforeEach(function * () {
+    appHelper.create(this, '0')
+    this.clock = sinon.useFakeTimers(START_DATE)
+
+    const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
+    _.map(testLedgers, (ledgerUri) => {
+      this.ledgers.getPlugin(ledgerUri).getBalance =
+        function * () { return '150000' }
+    })
+
+    yield this.backend.connect(ratesResponse)
+    yield this.ledgers.connect()
+    yield this.routeBroadcaster.reloadLocalRoutes()
+  })
+
+  afterEach(function () {
+    this.clock.restore()
+    nock.cleanAll()
+  })
+
+  it('fails when the connector is broke', function * () {
+    console.log('setting minBalance')
+    const quotePromise = co(this.routeBuilder.quoteByDestination({
+      sourceAccount: 'eur-ledger.alice',
+      destinationAccount: 'usd-ledger.bob',
+      destinationAmount: '200000',
+      destinationHoldDuration: 5
+    }))
+
+    yield assert.isRejected(quotePromise, NoRouteFoundError, '')
   })
 })
