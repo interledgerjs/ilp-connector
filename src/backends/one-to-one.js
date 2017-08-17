@@ -77,6 +77,9 @@ class OneToOneBackend {
     }
 
     if (limit) {
+      if (limit[1] === 0) { // the route exists in theory, but the connector is either at max source balance or at min destination balance
+        return { points: [] }
+      }
       // avoid repeating non-increasing [0, 0], [0, 0], ...
       return limit[0] === '0'
         ? { points: [ [0, 0], [ PROBE_AMOUNT, limit[1] ] ] }

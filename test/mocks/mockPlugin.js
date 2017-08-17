@@ -7,6 +7,8 @@ class MockPlugin extends EventEmitter {
     super()
     this._prefix = options.prefix || 'example.'
     this._account = this._prefix + (options.username || 'mocky')
+    this._balance = '123.456'
+    this._minBalance = undefined
   }
 
   connect () {
@@ -50,7 +52,7 @@ class MockPlugin extends EventEmitter {
   * _handleNotification () { }
 
   getBalance () {
-    return Promise.resolve('123.456')
+    return Promise.resolve(this._balance)
   }
 
   getInfo () {
@@ -58,7 +60,8 @@ class MockPlugin extends EventEmitter {
       prefix: this._prefix,
       connectors: ['mark'],
       currencyCode: 'doesn\'t matter, the connector will ignore this',
-      currencyScale: 4
+      currencyScale: 4,
+      minBalance: this._minBalance
     }
   }
 
