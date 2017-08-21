@@ -9,6 +9,8 @@ const logger = require('../common/log')
 const log = logger.create('ledgers')
 
 const PLUGIN_EVENTS = [
+  'connect',
+  'disconnect',
   'incoming_transfer',
   'incoming_prepare',
   'outgoing_fulfill',

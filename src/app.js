@@ -62,9 +62,7 @@ function addPlugin (config, ledgers, backend, routeBroadcaster, id, options, tra
     ledgers.add(id, options, tradesTo, tradesFrom)
 
     yield ledgers.getPlugin(id).connect({timeout: Infinity})
-
     yield routeBroadcaster.reloadLocalRoutes()
-    yield routeBroadcaster._crawlLedgerPlugin(ledgers.getPlugin(id))
   })
 }
 
