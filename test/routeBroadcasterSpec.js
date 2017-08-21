@@ -125,7 +125,7 @@ describe('RouteBroadcaster', function () {
     it('loads peers from CONNECTOR_PEERS even if they are not returned in the ledger info', function * () {
       this.config.peers.push('eur-ledger.margery')
       this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.config)
-      yield this.broadcaster.crawl()
+      this.broadcaster.crawl()
       assert(this.broadcaster.peersByLedger['eur-ledger.']['eur-ledger.margery'])
     })
   })
@@ -232,7 +232,7 @@ describe('RouteBroadcaster', function () {
         return Promise.resolve(null)
       }
 
-      yield this.broadcaster.crawl()
+      this.broadcaster.crawl()
       this.broadcaster.broadcast()
       assert(routesWithSourceLedgerASent)
       assert(routesWithSourceLedgerBSent)
@@ -342,7 +342,7 @@ describe('RouteBroadcaster', function () {
         return Promise.resolve(null)
       }
 
-      yield this.broadcaster.crawl()
+      this.broadcaster.crawl()
       this.broadcaster.broadcast()
       assert(routesWithSourceLedgerASent)
       assert(routesWithSourceLedgerBSent)
@@ -374,7 +374,7 @@ describe('RouteBroadcaster', function () {
         return Promise.resolve(null)
       }
 
-      yield this.broadcaster.crawl()
+      this.broadcaster.crawl()
       this.broadcaster.broadcast()
       assert(routesWithSourceLedgerASent)
       assert(routesWithSourceLedgerBSent)

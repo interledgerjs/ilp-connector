@@ -31,6 +31,8 @@ class RouteBroadcaster {
     this.routingTables = routingTables
     this.backend = backend
     this.ledgers = ledgers
+    this.ledgers.on('connect', (plugin) => this._crawlLedgerPlugin(plugin))
+    this.ledgers.on('disconnect', (plugin) => this.depeerLedger(plugin.getInfo().prefix))
     this.minMessageWindow = config.minMessageWindow
     this.ledgerCredentials = config.ledgerCredentials
     this.configRoutes = config.configRoutes
@@ -55,7 +57,7 @@ class RouteBroadcaster {
   }
 
   * start () {
-    yield this.crawl()
+    this.crawl()
     try {
       yield this.reloadLocalRoutes()
       yield this.addConfigRoutes()
@@ -181,14 +183,11 @@ class RouteBroadcaster {
   }
 
   crawl () {
-    return this.ledgers.getPlugins().map(this._crawlLedgerPlugin, this)
+    this.ledgers.getPlugins().forEach(this._crawlLedgerPlugin, this)
   }
 
-  * _crawlLedgerPlugin (plugin) {
-    if (!plugin.isConnected()) {
-      plugin.once('connect', () => this._crawlLedgerPlugin(plugin))
-      return
-    }
+  _crawlLedgerPlugin (plugin) {
+    if (!plugin.isConnected()) return
     const localAccount = plugin.getAccount()
     const info = plugin.getInfo()
     const prefix = info.prefix
