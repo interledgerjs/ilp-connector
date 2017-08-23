@@ -198,7 +198,7 @@ class RouteBuilder {
       const expectedFinalAmount = new BigNumber(ilpPacket.amount).times(1 - this.slippage)
       if (expectedFinalAmount.greaterThan(nextHop.finalAmount)) {
         throw new IncomingTransferError({
-          code: 'R02',
+          code: 'R01',
           name: 'Insufficient Source Amount',
           message: 'Payment rate does not match the rate currently offered'
         })

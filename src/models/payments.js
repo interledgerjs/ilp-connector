@@ -25,6 +25,10 @@ function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
           code: 'S00',
           name: 'Bad Request',
           message: 'destination transfer failed: ' + err.message
+        } : (err.name === 'NotAcceptedError') ? {
+          code: 'T04',
+          name: 'Insufficient Liquidity',
+          message: 'destination transfer failed: ' + err.message
         } : {
           code: 'T01',
           name: 'Ledger Unreachable',
