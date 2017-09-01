@@ -384,6 +384,43 @@ describe('Payments', function () {
     assert(false)
   })
 
+  it('rejects the source transfer if settlement fails with insufficient liquidity', function * () {
+    const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
+    this.mockPlugin2.sendTransfer = function () {
+      return Promise.reject({
+        name: 'InsufficientBalanceError',
+        message: 'Sender has insufficient funds.'
+      })
+    }
+
+    try {
+      yield this.mockPlugin1.emitAsync('incoming_prepare', {
+        id: '5857d460-2a46-4545-8311-1539d99e78e8',
+        direction: 'incoming',
+        ledger: 'mock.test1.',
+        amount: '100',
+        executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
+        expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+        ilp: packet.serializeIlpPayment({
+          account: 'mock.test2.bob',
+          amount: '50'
+        }).toString('base64')
+      })
+    } catch (err) {
+      assert.equal(err.message, 'Sender has insufficient funds.')
+      sinon.assert.calledOnce(rejectSpy)
+      sinon.assert.calledWith(rejectSpy, '5857d460-2a46-4545-8311-1539d99e78e8', sinon.match({
+        code: 'T04',
+        name: 'Insufficient Liquidity',
+        message: 'destination transfer failed: Sender has insufficient funds.',
+        triggered_by: 'mock.test2.bob',
+        additional_info: {}
+      }))
+      return
+    }
+    assert(false)
+  })
+
   it('rejects with Invalid Packet if the incoming transfer\'s ILP packet isn\'t valid', function * () {
     const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
     yield this.mockPlugin1.emitAsync('incoming_transfer', {
@@ -397,7 +434,7 @@ describe('Payments', function () {
     })
     sinon.assert.calledOnce(rejectSpy)
     sinon.assert.calledWith(rejectSpy, '5857d460-2a46-4545-8311-1539d99e78e8', sinon.match({
-      code: 'S01',
+      code: 'F01',
       name: 'Invalid Packet',
       message: 'source transfer has invalid ILP packet',
       triggered_by: 'mock.test1.bob',
@@ -421,7 +458,7 @@ describe('Payments', function () {
     })
     sinon.assert.calledOnce(rejectSpy)
     sinon.assert.calledWith(rejectSpy, '5857d460-2a46-4545-8311-1539d99e78e8', sinon.match({
-      code: 'R03',
+      code: 'R02',
       name: 'Insufficient Timeout',
       message: 'Transfer has already expired',
       triggered_by: 'mock.test1.bob',
@@ -445,7 +482,7 @@ describe('Payments', function () {
     })
     sinon.assert.calledOnce(rejectSpy)
     sinon.assert.calledWith(rejectSpy, '5857d460-2a46-4545-8311-1539d99e78e8', sinon.match({
-      code: 'R03',
+      code: 'R02',
       name: 'Insufficient Timeout',
       message: 'Not enough time to send payment',
       triggered_by: 'mock.test1.bob',

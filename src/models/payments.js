@@ -4,6 +4,7 @@ const testPaymentExpiry = require('../lib/testPaymentExpiry')
 const log = require('../common').log.create('payments')
 const executeSourceTransfer = require('../lib/executeSourceTransfer')
 const validator = require('../lib/validate')
+const ilpErrors = require('../lib/ilp-errors')
 const IncomingTransferError = require('../errors/incoming-transfer-error')
 
 function * validateExpiry (sourceTransfer, destinationTransfer, config) {
@@ -21,15 +22,13 @@ function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
     .sendTransfer(destinationTransfer)
     .catch((err) => {
       const rejectionMessage =
-        (err.name === 'InvalidFieldsError' || err.name === 'DuplicateIdError') ? {
-          code: 'S00',
-          name: 'Bad Request',
-          message: 'destination transfer failed: ' + err.message
-        } : {
-          code: 'T01',
-          name: 'Ledger Unreachable',
-          message: 'destination transfer failed: ' + err.message
-        }
+          (err.name === 'InvalidFieldsError' || err.name === 'DuplicateIdError')
+        ? ilpErrors.F00_Bad_Request({message: 'destination transfer failed: ' + err.message})
+        : (err.name === 'InsufficientBalanceError')
+        ? ilpErrors.T04_Insufficient_Liquidity({message: 'destination transfer failed: ' + err.message})
+        : (err.name === 'AccountNotFoundError')
+        ? ilpErrors.F02_Unreachable({message: 'destination transfer failed: ' + err.message})
+        : ilpErrors.T01_Ledger_Unreachable({message: 'destination transfer failed: ' + err.message})
       return ledgers.getPlugin(sourceTransfer.ledger)
         .rejectIncomingTransfer(sourceTransfer.id, Object.assign({
           triggered_by: ledgers.getPlugin(destinationTransfer.ledger).getAccount(),

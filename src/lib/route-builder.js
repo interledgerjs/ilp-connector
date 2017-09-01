@@ -2,6 +2,7 @@
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const packet = require('ilp-packet')
+const ilpErrors = require('./ilp-errors')
 const NoRouteFoundError = require('../errors/no-route-found-error')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
@@ -147,22 +148,18 @@ class RouteBuilder {
       'sourceLedger=%s sourceAmount=%s ilpPacket=%s',
       sourceTransfer.ledger, sourceTransfer.amount, sourceTransfer.ilp)
     if (!sourceTransfer.ilp) {
-      throw new IncomingTransferError({
-        code: 'S01',
-        name: 'Invalid Packet',
+      throw new IncomingTransferError(ilpErrors.F01_Invalid_Packet({
         message: 'source transfer is missing "ilp"'
-      })
+      }))
     }
     let ilpPacket
     try {
       ilpPacket = packet.deserializeIlpPayment(Buffer.from(sourceTransfer.ilp, 'base64'))
     } catch (err) {
       log.debug('error parsing ILP packet: ' + sourceTransfer.ilp)
-      throw new IncomingTransferError({
-        code: 'S01',
-        name: 'Invalid Packet',
+      throw new IncomingTransferError(ilpErrors.F01_Invalid_Packet({
         message: 'source transfer has invalid ILP packet'
-      })
+      }))
     }
     const destinationAddress = ilpPacket.account
     const myAddress = this.ledgers.getPlugin(sourceTransfer.ledger).getAccount()
@@ -183,11 +180,9 @@ class RouteBuilder {
       sourceLedger, ilpPacket.account, sourceTransfer.amount)
     if (!nextHop) {
       log.info('could not find quote for source transfer: ' + JSON.stringify(sourceTransfer))
-      throw new IncomingTransferError({
-        code: 'S02',
-        name: 'Unreachable',
+      throw new IncomingTransferError(ilpErrors.F02_Unreachable({
         message: 'No route found from: ' + sourceLedger + ' to: ' + ilpPacket.account
-      })
+      }))
     }
     this._verifyLedgerIsConnected(nextHop.destinationLedger)
 
@@ -197,11 +192,9 @@ class RouteBuilder {
       // As long as the fxSpread > slippage, the connector won't lose money.
       const expectedFinalAmount = new BigNumber(ilpPacket.amount).times(1 - this.slippage)
       if (expectedFinalAmount.greaterThan(nextHop.finalAmount)) {
-        throw new IncomingTransferError({
-          code: 'R02',
-          name: 'Insufficient Source Amount',
+        throw new IncomingTransferError(ilpErrors.R01_Insufficient_Source_Amount({
           message: 'Payment rate does not match the rate currently offered'
-        })
+        }))
       }
       // TODO: Verify atomic mode notaries are trusted
       // TODO: Verify expiry is acceptable
