@@ -176,8 +176,8 @@ class RouteBuilder {
       ilpPacket.account, ilpPacket.amount)
 
     const sourceLedger = sourceTransfer.ledger
-    const nextHop = yield this.quoter.findBestPathForSourceAmount(
-      sourceLedger, ilpPacket.account, sourceTransfer.amount)
+    const nextHop = yield this.quoter.findBestPathForFinalAmount(
+      sourceLedger, ilpPacket.account, ilpPacket.amount)
     if (!nextHop) {
       log.info('could not find quote for source transfer: ' + JSON.stringify(sourceTransfer))
       throw new IncomingTransferError(ilpErrors.F02_Unreachable({
@@ -186,22 +186,15 @@ class RouteBuilder {
     }
     this._verifyLedgerIsConnected(nextHop.destinationLedger)
 
-    // Check if this connector can authorize the final transfer.
-    if (nextHop.isFinal) {
-      // Verify expectedFinalAmount ≤ actualFinalAmount
-      // As long as the fxSpread > slippage, the connector won't lose money.
-      const expectedFinalAmount = new BigNumber(ilpPacket.amount).times(1 - this.slippage)
-      if (expectedFinalAmount.greaterThan(nextHop.finalAmount)) {
-        throw new IncomingTransferError(ilpErrors.R01_Insufficient_Source_Amount({
-          message: 'Payment rate does not match the rate currently offered'
-        }))
-      }
-      // TODO: Verify atomic mode notaries are trusted
-      // TODO: Verify expiry is acceptable
-
-      nextHop.destinationCreditAccount = ilpPacket.account
-      nextHop.destinationAmount = ilpPacket.amount
+    // As long as the fxSpread > slippage, the connector won't lose money.
+    const expectedSourceAmount = new BigNumber(nextHop.sourceAmount).times(1 - this.slippage)
+    if (expectedSourceAmount.greaterThan(sourceTransfer.amount)) {
+      throw new IncomingTransferError(ilpErrors.R01_Insufficient_Source_Amount({
+        message: 'Payment rate does not match the rate currently offered'
+      }))
     }
+    // TODO: Verify atomic mode notaries are trusted
+    // TODO: Verify expiry is acceptable
 
     const noteToSelf = {
       source_transfer_ledger: sourceTransfer.ledger,
