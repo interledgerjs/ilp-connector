@@ -194,7 +194,7 @@ describe('RouteBuilder', function () {
         ledger: ledgerA,
         direction: 'incoming',
         account: aliceA,
-        amount: '98', // 98 ⇒ 49 = 50 * (1 - slippage)
+        amount: '99', // 99  * (1 - slippage) = 100 ⇒ 50
         ilp: ilpPacket
       })
       assert.equal(destinationTransfer.ilp, ilpPacket)
