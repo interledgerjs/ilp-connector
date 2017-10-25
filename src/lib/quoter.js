@@ -142,30 +142,6 @@ class Quoter {
   }
 
   /**
-   * @param {IlpAddress} sourceLedger
-   * @param {IlpAddress} destination
-   * @param {Amount} sourceAmount
-   * @returns {Object}
-   */
-  * findBestPathForSourceAmount (sourceLedger, destination, sourceAmount) {
-    const quote = yield this.quoteBySourceAmount({
-      sourceAccount: sourceLedger,
-      destinationAccount: destination,
-      sourceAmount: sourceAmount,
-      destinationHoldDuration: 10 // dummy value, only used if a remote quote is needed
-    })
-    if (!quote) return
-    const headRoute = this.localTables.getLocalPairRoute(sourceLedger, quote.route.nextLedger)
-    const headCurve = headRoute.curve
-    return {
-      destinationLedger: quote.route.nextLedger,
-      destinationCreditAccount: quote.hop,
-      destinationAmount: headCurve.amountAt(sourceAmount).toString(),
-      finalAmount: quote.liquidityCurve.amountAt(sourceAmount).toString()
-    }
-  }
-
-  /**
    * Note that this function, like most of the ilp-connector code, uses the terms
    * source, destination, and final, to refer to what we would normally call
    * incoming, outgoing, and destination.
