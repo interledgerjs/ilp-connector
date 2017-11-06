@@ -124,7 +124,6 @@ class Ledgers extends EventEmitter {
     if (!tradesFrom && !tradesTo) {
       const newLedger = creds.currency + '@' + ledgerPrefix
       for (let otherLedgerPrefix of this._ledgers.keys()) {
-        if (ledgerPrefix === otherLedgerPrefix) continue
         const currency = this._ledgers.get(otherLedgerPrefix).currency
         const otherLedger = currency + '@' + otherLedgerPrefix
         this._pairs.add(newLedger, otherLedger)
