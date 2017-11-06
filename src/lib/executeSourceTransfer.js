@@ -44,7 +44,8 @@ function * executeSourceTransfer (destinationTransfer, fulfillment, ledgers, bac
     return Promise.resolve(plugin.fulfillCondition(sourceTransferID, fulfillment))
       .catch(function (err) {
         if (shouldRetry(err)) {
-          log.debug(`Resubmitting fulfillment for source transfer ${sourceTransferID}.`)
+          const errInfo = (typeof err === 'object' && err.stack) ? err.stack : String(err)
+          log.debug(`Resubmitting fulfillment for source transfer ${sourceTransferID} after error ${errInfo}`)
           retry(err)
         }
       })
