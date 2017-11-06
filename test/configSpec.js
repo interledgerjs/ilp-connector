@@ -44,6 +44,9 @@ describe('ConnectorConfig', function () {
       const config = loadConnectorConfig()
       expect(config.get('tradingPairs')).to.deep.equal([[
         'USD@usd-ledger.',
+        'USD@usd-ledger.'
+      ], [
+        'USD@usd-ledger.',
         'EUR@eur-ledger.'
       ], [
         'EUR@eur-ledger.',
@@ -56,10 +59,16 @@ describe('ConnectorConfig', function () {
         'USD@usd-ledger.'
       ], [
         'EUR@eur-ledger.',
+        'EUR@eur-ledger.'
+      ], [
+        'EUR@eur-ledger.',
         'AUD@aud-ledger.'
       ], [
         'AUD@aud-ledger.',
         'EUR@eur-ledger.'
+      ], [
+        'AUD@aud-ledger.',
+        'AUD@aud-ledger.'
       ]])
     })
 
