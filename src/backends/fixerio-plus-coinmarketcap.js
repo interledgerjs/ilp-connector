@@ -7,16 +7,16 @@ const fromPairs = require('lodash/fromPairs')
 const ROUNDING_FACTOR = 100000000
 
 class FixerIoCoinMarketCapBackend extends FixerIoBackend {
-  * connect (mockData) {
-    yield super.connect(mockData)
-    const ccRates = yield this._getCCRates(this.rates.USD)
+  async connect (mockData) {
+    await super.connect(mockData)
+    const ccRates = await this._getCCRates(this.rates.USD)
     Object.assign(this.rates, ccRates)
     this.currencies = this.currencies.concat(Object.keys(ccRates))
     this.currencies.sort()
   }
 
-  * _getCCRates (usdRate) {
-    let rateRes = yield request({
+  async _getCCRates (usdRate) {
+    let rateRes = await request({
       method: 'get',
       uri: COINMARKETCAP_API,
       json: true

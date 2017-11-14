@@ -13,7 +13,7 @@ const retryOpts = {
 
 // Add the execution_condition_fulfillment to the source transfer
 // and submit it to the source ledger
-function * executeSourceTransfer (destinationTransfer, fulfillment, ledgers, backend, config) {
+async function executeSourceTransfer (destinationTransfer, fulfillment, ledgers, backend, config) {
   if (!fulfillment) {
     log.error('Cannot execute source transfers, no condition fulfillment found. Destination transfer: ' + JSON.stringify(destinationTransfer))
     return
@@ -51,7 +51,7 @@ function * executeSourceTransfer (destinationTransfer, fulfillment, ledgers, bac
       })
   })
 
-  yield Promise.race([fulfillPromise, timeoutPromise])
+  await Promise.race([fulfillPromise, timeoutPromise])
     .then(function () {
       backend.submitPayment({
         source_ledger: sourceTransferLedger,

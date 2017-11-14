@@ -22,9 +22,9 @@ const IncomingTransferError = require('../errors/incoming-transfer-error')
  *   funds on hold while waiting for the outcome of a transaction. No expiry can
  *   exceed this value.
  */
-module.exports = function * (config, sourceTransfer, destinationTransfer) {
+module.exports = async function (config, sourceTransfer, destinationTransfer) {
   const tester = new TransferTester(config, sourceTransfer, destinationTransfer)
-  yield tester.loadCaseExpiries()
+  await tester.loadCaseExpiries()
   return tester
 }
 
@@ -116,21 +116,21 @@ TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
 // Atomic
 // /////////////////////////////////////////////////////////////////////////////
 
-TransferTester.prototype.loadCaseExpiries = function * () {
+TransferTester.prototype.loadCaseExpiries = async function () {
   for (const transfer of this.transfers) {
     if (transfer.expiresAt) continue
     const caseIDs = getTransferCases(transfer)
     for (const caseID of caseIDs) {
-      yield this.loadCaseExpiry(caseID)
+      await this.loadCaseExpiry(caseID)
     }
   }
 }
 
 // TODO check if the notary is trusted
-TransferTester.prototype.loadCaseExpiry = function * (caseID) {
+TransferTester.prototype.loadCaseExpiry = async function (caseID) {
   if (this.expiryByCase[caseID]) return
 
-  const caseRes = yield request({
+  const caseRes = await request({
     method: 'get',
     uri: caseID,
     json: true

@@ -12,7 +12,7 @@ mock('ilp-plugin-mock', mockPlugin)
 describe('TradingPairs', function () {
   logHelper(logger)
 
-  beforeEach(function * () {
+  beforeEach(async function () {
     appHelper.create(this)
     this.pairs = new TradingPairs()
     for (let pair of this.config.get('tradingPairs')) {

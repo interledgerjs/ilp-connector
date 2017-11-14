@@ -56,9 +56,9 @@ MessageRouter.prototype.handleRequest = function (requestMessage) {
  * @param {RequestMessage} request
  * @returns {ResponseMessage} response
  */
-MessageRouter.prototype._handleRequest = function * (request) {
+MessageRouter.prototype._handleRequest = async function (request) {
   if (request.ilp) {
-    const responsePacket = yield this._handleRequestByPacket(
+    const responsePacket = await this._handleRequestByPacket(
       Buffer.from(request.ilp, 'base64'), request.from)
     return {
       ledger: request.ledger,
@@ -69,7 +69,7 @@ MessageRouter.prototype._handleRequest = function * (request) {
   }
 
   if (request.custom.method === 'broadcast_routes') {
-    yield this.receiveRoutes(request.custom.data, request.from)
+    await this.receiveRoutes(request.custom.data, request.from)
     return {
       ledger: request.ledger,
       from: request.to,
@@ -80,20 +80,20 @@ MessageRouter.prototype._handleRequest = function * (request) {
   log.warn('ignoring unkown request method', request.custom.method)
 }
 
-MessageRouter.prototype._handleRequestByPacket = function * (packet, sender) {
+MessageRouter.prototype._handleRequestByPacket = async function (packet, sender) {
   const packetData = Object.assign(
     {sourceAccount: sender},
     IlpPacket.deserializeIlpPacket(packet).data)
   switch (packet[0]) {
     case IlpPacket.Type.TYPE_ILQP_LIQUIDITY_REQUEST:
       return IlpPacket.serializeIlqpLiquidityResponse(
-        yield this.routeBuilder.quoteLiquidity(packetData))
+        await this.routeBuilder.quoteLiquidity(packetData))
     case IlpPacket.Type.TYPE_ILQP_BY_SOURCE_REQUEST:
       return IlpPacket.serializeIlqpBySourceResponse(
-        yield this.routeBuilder.quoteBySource(packetData))
+        await this.routeBuilder.quoteBySource(packetData))
     case IlpPacket.Type.TYPE_ILQP_BY_DESTINATION_REQUEST:
       return IlpPacket.serializeIlqpByDestinationResponse(
-        yield this.routeBuilder.quoteByDestination(packetData))
+        await this.routeBuilder.quoteByDestination(packetData))
     default:
       throw new InvalidBodyError('Packet has unexpected type')
   }
@@ -105,7 +105,7 @@ MessageRouter.prototype._handleRequestByPacket = function * (packet, sender) {
  * @param {Route[]} routes
  * @param {IlpAddress} sender
  */
-MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
+MessageRouter.prototype.receiveRoutes = async function (payload, sender) {
   validate('RoutingUpdate', payload)
   log.debug('receiveRoutes sender:', sender)
   let routes = payload.new_routes
@@ -147,7 +147,7 @@ MessageRouter.prototype.receiveRoutes = function * (payload, sender) {
   if ((gotNewRoute || (lostLedgerLinks.length > 0)) &&
       this.config.routeBroadcastEnabled) {
     this.routeBroadcaster.markLedgersUnreachable(lostLedgerLinks)
-    co(this.routeBroadcaster.broadcast.bind(this.routeBroadcaster))
+    this.routeBroadcaster.broadcast()
       .catch(function (err) {
         log.warn('error broadcasting routes: ' + err.message)
       })

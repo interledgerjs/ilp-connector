@@ -43,10 +43,10 @@ class RouteBuilder {
    * @param {Number} params.destinationHoldDuration
    * @returns {QuoteLiquidityResponse}
    */
-  * quoteLiquidity (params) {
+  async quoteLiquidity (params) {
     log.info('creating quote sourceAccount=%s destinationAccount=%s',
       params.sourceAccount, params.destinationAccount)
-    const quote = yield this.quoter.quoteLiquidity({
+    const quote = await this.quoter.quoteLiquidity({
       sourceAccount: params.sourceAccount,
       destinationAccount: params.destinationAccount,
       destinationHoldDuration: params.destinationHoldDuration
@@ -73,10 +73,10 @@ class RouteBuilder {
    * @param {String} params.sourceAmount
    * @returns {QuoteBySourceResponse}
    */
-  * quoteBySource (params) {
+  async quoteBySource (params) {
     log.info('creating quote sourceAccount=%s destinationAccount=%s sourceAmount=%s',
       params.sourceAccount, params.destinationAccount, params.sourceAmount)
-    const quote = yield this.quoter.quoteBySourceAmount({
+    const quote = await this.quoter.quoteBySourceAmount({
       sourceAccount: params.sourceAccount,
       destinationAccount: params.destinationAccount,
       destinationHoldDuration: params.destinationHoldDuration,
@@ -106,10 +106,10 @@ class RouteBuilder {
    * @param {String} params.destinationAmount
    * @returns {QuoteByDestinationResponse}
    */
-  * quoteByDestination (params) {
+  async quoteByDestination (params) {
     log.info('creating quote sourceAccount=%s destinationAccount=%s destinationAmount=%s',
       params.sourceAccount, params.destinationAccount, params.destinationAmount)
-    const quote = yield this.quoter.quoteByDestinationAmount({
+    const quote = await this.quoter.quoteByDestinationAmount({
       sourceAccount: params.sourceAccount,
       destinationAccount: params.destinationAccount,
       destinationHoldDuration: params.destinationHoldDuration,
@@ -143,7 +143,7 @@ class RouteBuilder {
    * @param {Transfer} sourceTransfer
    * @returns {Transfer} destinationTransfer
    */
-  * getDestinationTransfer (sourceTransfer) {
+  async getDestinationTransfer (sourceTransfer) {
     log.info('constructing destination transfer ' +
       'sourceLedger=%s sourceAmount=%s ilpPacket=%s',
       sourceTransfer.ledger, sourceTransfer.amount, sourceTransfer.ilp)
@@ -176,7 +176,7 @@ class RouteBuilder {
       ilpPacket.account, ilpPacket.amount)
 
     const sourceLedger = sourceTransfer.ledger
-    const nextHop = yield this.quoter.findBestPathForFinalAmount(
+    const nextHop = await this.quoter.findBestPathForFinalAmount(
       sourceLedger, ilpPacket.account, ilpPacket.amount)
     if (!nextHop) {
       log.info('could not find quote for source transfer: ' + JSON.stringify(sourceTransfer))

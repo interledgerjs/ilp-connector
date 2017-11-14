@@ -13,12 +13,12 @@ mock('ilp-plugin-mock', mockPlugin)
 describe('RoutingTables', function () {
   logHelper(logger)
 
-  beforeEach(function * () {
+  beforeEach(async function () {
     appHelper.create(this)
   })
 
   describe('constructor', function () {
-    it('sets isTrivialRate=true', function * () {
+    it('sets isTrivialRate=true', async function () {
       const tables = new RoutingTables({
         backend: 'one-to-one',
         fxSpread: 0,
@@ -27,7 +27,7 @@ describe('RoutingTables', function () {
       assert.equal(tables.isTrivialRate, true)
     })
 
-    it('sets isTrivialRate=false when the backend is not one-to-one', function * () {
+    it('sets isTrivialRate=false when the backend is not one-to-one', async function () {
       const tables = new RoutingTables({
         backend: 'foo',
         fxSpread: 0,
@@ -36,7 +36,7 @@ describe('RoutingTables', function () {
       assert.equal(tables.isTrivialRate, false)
     })
 
-    it('sets isTrivialRate=false when the fxSpread is not zero', function * () {
+    it('sets isTrivialRate=false when the fxSpread is not zero', async function () {
       const tables = new RoutingTables({
         backend: 'foo',
         fxSpread: 0.01,
@@ -45,7 +45,7 @@ describe('RoutingTables', function () {
       assert.equal(tables.isTrivialRate, false)
     })
 
-    it('sets isTrivialRate=false when the slippage is not zero', function * () {
+    it('sets isTrivialRate=false when the slippage is not zero', async function () {
       const tables = new RoutingTables({
         backend: 'foo',
         fxSpread: 0,

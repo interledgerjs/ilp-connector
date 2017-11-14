@@ -1,6 +1,5 @@
 'use strict'
 
-const co = require('co')
 const chai = require('chai')
 const assert = chai.assert
 const packet = require('ilp-packet')
@@ -33,7 +32,7 @@ mock('ilp-plugin-mock', mockPlugin)
 
 describe('RouteBuilder', function () {
   logHelper(logger)
-  beforeEach(function * () {
+  beforeEach(async function () {
     appHelper.create(this)
 
     this.tables = new RoutingTables({
@@ -89,16 +88,16 @@ describe('RouteBuilder', function () {
       slippage: 0.02,
       secret: Buffer.from('VafuntVJRw6YzDTs4IgIU1IPJACywtgUUQJHh1u018w=', 'base64')
     })
-    yield this.ledgers.connect()
+    await this.ledgers.connect()
   })
 
   describe('getDestinationTransfer', function () {
-    it('returns the original destination transfer when the connector can settle it', function * () {
+    it('returns the original destination transfer when the connector can settle it', async function () {
       const ilpPacket = packet.serializeIlpPayment({
         account: bobB,
         amount: '50'
       }).toString('base64')
-      const destinationTransfer = yield this.builder.getDestinationTransfer({
+      const destinationTransfer = await this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
         direction: 'incoming',
@@ -122,8 +121,8 @@ describe('RouteBuilder', function () {
       })
     })
 
-    it('only overrides the trader debit account when it isnt already set', function * () {
-      const destinationTransfer = yield this.builder.getDestinationTransfer({
+    it('only overrides the trader debit account when it isnt already set', async function () {
+      const destinationTransfer = await this.builder.getDestinationTransfer({
         id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
         ledger: ledgerA,
         direction: 'incoming',
@@ -153,12 +152,12 @@ describe('RouteBuilder', function () {
       })
     })
 
-    it('passes on the ILP packet', function * () {
+    it('passes on the ILP packet', async function () {
       const ilpPacket = packet.serializeIlpPayment({
         account: bobB,
         amount: '50'
       }).toString('base64')
-      const destinationTransfer = yield this.builder.getDestinationTransfer({
+      const destinationTransfer = await this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
         direction: 'incoming',
@@ -169,27 +168,27 @@ describe('RouteBuilder', function () {
       assert.deepEqual(destinationTransfer.ilp, ilpPacket)
     })
 
-    it('throws "Insufficient Source Amount" when the amount is too low', function * () {
+    it('throws "Insufficient Source Amount" when the amount is too low', async function () {
       const ilpPacket = packet.serializeIlpPayment({
         account: bobB,
         amount: '50'
       }).toString('base64')
-      yield assert.isRejected(co(this.builder.getDestinationTransfer({
+      await assert.isRejected(this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
         direction: 'incoming',
         account: aliceA,
         amount: '97',
         ilp: ilpPacket
-      })), IncomingTransferError, 'Payment rate does not match the rate currently offered')
+      }), IncomingTransferError, 'Payment rate does not match the rate currently offered')
     })
 
-    it('returns a destination transfer when the amount is too low, but within the slippage', function * () {
+    it('returns a destination transfer when the amount is too low, but within the slippage', async function () {
       const ilpPacket = packet.serializeIlpPayment({
         account: bobB,
         amount: '50'
       }).toString('base64')
-      const destinationTransfer = yield this.builder.getDestinationTransfer({
+      const destinationTransfer = await this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
         ledger: ledgerA,
         direction: 'incoming',
@@ -200,8 +199,8 @@ describe('RouteBuilder', function () {
       assert.equal(destinationTransfer.ilp, ilpPacket)
     })
 
-    it('sets the `to` field on the outgoing transfer (not the deprecated account field)', function * () {
-      const destinationTransfer = yield this.builder.getDestinationTransfer({
+    it('sets the `to` field on the outgoing transfer (not the deprecated account field)', async function () {
+      const destinationTransfer = await this.builder.getDestinationTransfer({
         id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
         ledger: ledgerA,
         direction: 'incoming',
@@ -217,7 +216,7 @@ describe('RouteBuilder', function () {
     })
 
     describe('with a route from ledgerB → ledgerC', function () {
-      beforeEach(function * () {
+      beforeEach(async function () {
         const points = [ [0, 0], [200, 100] ]
         this.tables.addRoute({
           source_ledger: ledgerB,
@@ -228,12 +227,12 @@ describe('RouteBuilder', function () {
         })
       })
 
-      it('returns an intermediate destination transfer when the connector knows a route to the destination', function * () {
+      it('returns an intermediate destination transfer when the connector knows a route to the destination', async function () {
         const ilpPacket = packet.serializeIlpPayment({
           account: carlC,
           amount: '25'
         }).toString('base64')
-        const destinationTransfer = yield this.builder.getDestinationTransfer({
+        const destinationTransfer = await this.builder.getDestinationTransfer({
           id: '123',
           ledger: ledgerA,
           direction: 'incoming',
@@ -264,9 +263,9 @@ describe('RouteBuilder', function () {
       })
     })
 
-    it('throws when there is no path from the source to the destination', function * () {
-      yield assertThrows(function * () {
-        yield this.builder.getDestinationTransfer({
+    it('throws when there is no path from the source to the destination', async function () {
+      await assertThrows(async function () {
+        await this.builder.getDestinationTransfer({
           id: '123',
           ledger: ledgerA,
           direction: 'incoming',
@@ -280,9 +279,9 @@ describe('RouteBuilder', function () {
       }.bind(this), error('No route found from: usd-ledger. to: cny-ledger.carl'))
     })
 
-    it('throws when the source transfer has no destination transfer', function * () {
-      yield assertThrows(function * () {
-        yield this.builder.getDestinationTransfer({
+    it('throws when the source transfer has no destination transfer', async function () {
+      await assertThrows(async function () {
+        await this.builder.getDestinationTransfer({
           id: '123',
           ledger: ledgerA,
           account: aliceA,
@@ -293,8 +292,8 @@ describe('RouteBuilder', function () {
     })
   })
 
-  it('uses the secret provided to generate a deterministic destination transfer ID', function * () {
-    const destinationTransfer = yield this.builder.getDestinationTransfer({
+  it('uses the secret provided to generate a deterministic destination transfer ID', async function () {
+    const destinationTransfer = await this.builder.getDestinationTransfer({
       id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
       ledger: ledgerA,
       direction: 'incoming',
@@ -308,9 +307,9 @@ describe('RouteBuilder', function () {
     assert.equal(destinationTransfer.id, '81851f12-1df2-4761-81b2-b775000e39bd')
   })
 
-  it('uses the same ID for the destination transfer as the source transfer if the UNWISE_USE_SAME_TRANSFER_ID is set', function * () {
+  it('uses the same ID for the destination transfer as the source transfer if the UNWISE_USE_SAME_TRANSFER_ID is set', async function () {
     this.builder.unwiseUseSameTransferId = true
-    const destinationTransfer = yield this.builder.getDestinationTransfer({
+    const destinationTransfer = await this.builder.getDestinationTransfer({
       id: 'ce83ac53-3abb-47d3-b32d-37aa36dd6372',
       ledger: ledgerA,
       direction: 'incoming',
@@ -325,9 +324,9 @@ describe('RouteBuilder', function () {
   })
 })
 
-function * assertThrows (generator, validateError) {
+async function assertThrows (generator, validateError) {
   try {
-    yield generator()
+    await generator()
   } catch (err) {
     return validateError(err)
   }

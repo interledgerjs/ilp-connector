@@ -7,18 +7,18 @@ const validator = require('../lib/validate')
 const ilpErrors = require('../lib/ilp-errors')
 const IncomingTransferError = require('../errors/incoming-transfer-error')
 
-function * validateExpiry (sourceTransfer, destinationTransfer, config) {
+async function validateExpiry (sourceTransfer, destinationTransfer, config) {
   // TODO tie the maxHoldTime to the fx rate
   // TODO bring all these loops into one to speed this up
-  const tester = yield testPaymentExpiry(config, sourceTransfer, destinationTransfer)
+  const tester = await testPaymentExpiry(config, sourceTransfer, destinationTransfer)
   tester.validateNotExpired()
   tester.validateMaxHoldTime()
 }
 
-function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
+async function settle (sourceTransfer, destinationTransfer, config, ledgers) {
   log.debug('Settle payment, source: ' + JSON.stringify(sourceTransfer))
   log.debug('Settle payment, destination: ' + JSON.stringify(destinationTransfer))
-  yield ledgers.getPlugin(destinationTransfer.ledger)
+  await ledgers.getPlugin(destinationTransfer.ledger)
     .sendTransfer(destinationTransfer)
     .catch((err) => {
       const rejectionMessage =
@@ -39,31 +39,31 @@ function * settle (sourceTransfer, destinationTransfer, config, ledgers) {
     })
 }
 
-function * updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
+async function updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
   let destinationTransfer
   try {
-    destinationTransfer = yield routeBuilder.getDestinationTransfer(sourceTransfer)
+    destinationTransfer = await routeBuilder.getDestinationTransfer(sourceTransfer)
     if (!destinationTransfer) return // in case the connector is the payee there is no destinationTransfer
-    yield validateExpiry(sourceTransfer, destinationTransfer, config)
+    await validateExpiry(sourceTransfer, destinationTransfer, config)
   } catch (err) {
     if (!(err instanceof IncomingTransferError)) throw err
-    yield rejectIncomingTransfer(sourceTransfer, err.rejectionMessage, ledgers)
+    await rejectIncomingTransfer(sourceTransfer, err.rejectionMessage, ledgers)
     return
   }
-  yield settle(sourceTransfer, destinationTransfer, config, ledgers)
+  await settle(sourceTransfer, destinationTransfer, config, ledgers)
 }
 
-function * processExecutionFulfillment (transfer, fulfillment, ledgers, backend, config) {
+async function processExecutionFulfillment (transfer, fulfillment, ledgers, backend, config) {
   // If the destination transfer was executed, the connector should try to
   // execute the source transfer to get paid.
   if (transfer.direction === 'outgoing') {
     log.debug('Got notification about executed destination transfer with ID ' +
       transfer.id + ' on ledger ' + transfer.ledger)
-    yield executeSourceTransfer(transfer, fulfillment, ledgers, backend, config)
+    await executeSourceTransfer(transfer, fulfillment, ledgers, backend, config)
   }
 }
 
-function * rejectIncomingTransfer (sourceTransfer, _rejectionMessage, ledgers) {
+async function rejectIncomingTransfer (sourceTransfer, _rejectionMessage, ledgers) {
   const myAddress = ledgers.getPlugin(sourceTransfer.ledger).getAccount()
   const rejectionMessage = Object.assign({
     triggered_by: myAddress,
@@ -76,7 +76,7 @@ function * rejectIncomingTransfer (sourceTransfer, _rejectionMessage, ledgers) {
       sourceTransfer.id,
       JSON.stringify(rejectionMessage)
     )
-    yield ledgers.getPlugin(sourceTransfer.ledger)
+    await ledgers.getPlugin(sourceTransfer.ledger)
       .rejectIncomingTransfer(sourceTransfer.id, rejectionMessage)
   } else {
     log.debug(
@@ -87,14 +87,14 @@ function * rejectIncomingTransfer (sourceTransfer, _rejectionMessage, ledgers) {
   }
 }
 
-function * rejectSourceTransfer (destinationTransfer, rejectionMessage, ledgers) {
+async function rejectSourceTransfer (destinationTransfer, rejectionMessage, ledgers) {
   const noteToSelf = destinationTransfer.noteToSelf || {}
   const sourceTransferLedger = noteToSelf.source_transfer_ledger
   const sourceTransferId = noteToSelf.source_transfer_id
   validator.validate('IlpAddress', sourceTransferLedger)
   validator.validate('Uuid', sourceTransferId)
 
-  yield ledgers.getPlugin(sourceTransferLedger)
+  await ledgers.getPlugin(sourceTransferLedger)
     .rejectIncomingTransfer(sourceTransferId, Object.assign(rejectionMessage, {
       forwarded_by: ledgers.getPlugin(sourceTransferLedger).getAccount()
     }))

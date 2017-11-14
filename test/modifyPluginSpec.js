@@ -1,5 +1,4 @@
 'use strict'
-const co = require('co')
 const chai = require('chai')
 const assert = chai.assert
 const expect = chai.expect
@@ -21,7 +20,7 @@ mockRequire('ilp-plugin-mock', PluginMock)
 describe('Modify Plugins', function () {
   logHelper(logger)
 
-  beforeEach(function * () {
+  beforeEach(async function () {
     appHelper.create(this)
 
     const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
@@ -30,15 +29,15 @@ describe('Modify Plugins', function () {
         function () { return Promise.resolve('150000') }
     })
 
-    yield this.backend.connect(ratesResponse)
-    yield this.ledgers.connect()
-    yield this.routeBroadcaster.reloadLocalRoutes()
+    await this.backend.connect(ratesResponse)
+    await this.ledgers.connect()
+    await this.routeBroadcaster.reloadLocalRoutes()
   })
 
   describe('addPlugin', function () {
-    it('should add a new plugin to ledgers', function * () {
+    it('should add a new plugin to ledgers', async function () {
       assert.equal(Object.keys(this.ledgers.plugins).length, 4)
-      yield this.app.addPlugin('eur-ledger-2.', {
+      await this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {}
@@ -46,34 +45,34 @@ describe('Modify Plugins', function () {
       assert.equal(Object.keys(this.ledgers.plugins).length, 5)
     })
 
-    it('should support new ledger', function * () {
-      const quotePromise = co(this.routeBuilder.quoteBySource({
+    it('should support new ledger', async function () {
+      const quotePromise = this.routeBuilder.quoteBySource({
         sourceAmount: '100',
         sourceAccount: 'eur-ledger-2.alice',
         destinationAccount: 'usd-ledger.bob',
         destinationHoldDuration: 5000
-      }))
+      })
 
-      yield assert.isRejected(quotePromise, NoRouteFoundError, /No route found from: eur-ledger-2\.alice to: usd-ledger\.bob/)
+      await assert.isRejected(quotePromise, NoRouteFoundError, /No route found from: eur-ledger-2\.alice to: usd-ledger\.bob/)
 
-      yield this.app.addPlugin('eur-ledger-2.', {
+      await this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {}
       })
 
-      const quotePromise2 = co(this.routeBuilder.quoteBySource({
+      const quotePromise2 = this.routeBuilder.quoteBySource({
         sourceAmount: '100',
         sourceAccount: 'eur-ledger-2.alice',
         destinationAccount: 'usd-ledger.bob',
         destinationHoldDuration: 5000
-      }))
+      })
 
-      yield assert.isFulfilled(quotePromise2)
+      await assert.isFulfilled(quotePromise2)
     })
 
-    it('should get peers on the added ledger', function * () {
-      yield this.app.addPlugin('eur-ledger-2.', {
+    it('should get peers on the added ledger', async function () {
+      await this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {
@@ -84,7 +83,7 @@ describe('Modify Plugins', function () {
       assert.isTrue(this.routeBroadcaster.peersByLedger['eur-ledger-2.']['mark'])
     })
 
-    it('should override the plugin.getInfo function with overrideInfo data', function * () {
+    it('should override the plugin.getInfo function with overrideInfo data', async function () {
       const overrideInfo = {
         minBalance: '-10',
         maxBalance: '10000',
@@ -92,7 +91,7 @@ describe('Modify Plugins', function () {
         currencyCode: 'XYZ',
         currencyScale: 0
       }
-      yield this.app.addPlugin('eur-ledger-2.', {
+      await this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {
@@ -107,8 +106,8 @@ describe('Modify Plugins', function () {
   })
 
   describe('removePlugin', function () {
-    beforeEach(function * () {
-      yield this.app.addPlugin('eur-ledger-2.', {
+    beforeEach(async function () {
+      await this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         prefix: 'eur-ledger-2.',
@@ -118,28 +117,28 @@ describe('Modify Plugins', function () {
       })
     })
 
-    it('should remove a plugin from ledgers', function * () {
+    it('should remove a plugin from ledgers', async function () {
       assert.isOk(this.ledgers.getPlugin('eur-ledger-2.'))
-      yield this.app.removePlugin('eur-ledger-2.')
+      await this.app.removePlugin('eur-ledger-2.')
       assert.isNotOk(this.ledgers.getPlugin('eur-ledger-2.'))
     })
 
-    it('should no longer quote to that plugin', function * () {
-      yield this.routeBuilder.quoteBySource({
+    it('should no longer quote to that plugin', async function () {
+      await this.routeBuilder.quoteBySource({
         sourceAmount: '100',
         sourceAccount: 'eur-ledger-2.alice',
         destinationAccount: 'cad-ledger.bob',
         destinationHoldDuration: 1.001
       })
 
-      yield this.app.removePlugin('eur-ledger-2.')
+      await this.app.removePlugin('eur-ledger-2.')
 
-      yield co(this.routeBuilder.quoteBySource({
+      await this.routeBuilder.quoteBySource({
         sourceAmount: '100',
         sourceAccount: 'eur-ledger-2.alice',
         destinationAccount: 'usd-ledger.bob',
         destinationHoldDuration: 1.001
-      })).then((quote) => {
+      }).then((quote) => {
         throw new Error()
       }).catch((err) => {
         expect(err.name).to.equal('NoRouteFoundError')
@@ -147,8 +146,8 @@ describe('Modify Plugins', function () {
       })
     })
 
-    it('should depeer the removed ledger', function * () {
-      yield this.app.removePlugin('eur-ledger-2.')
+    it('should depeer the removed ledger', async function () {
+      await this.app.removePlugin('eur-ledger-2.')
 
       assert.isNotOk(this.routeBroadcaster.peersByLedger['eur-ledger-2.'])
     })

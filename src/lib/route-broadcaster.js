@@ -2,7 +2,6 @@
 
 const _ = require('lodash')
 const co = require('co')
-const defer = require('co-defer')
 const Route = require('ilp-routing').Route
 const log = require('../common').log.create('route-broadcaster')
 const SIMPLIFY_POINTS = 10
@@ -56,11 +55,11 @@ class RouteBroadcaster {
     this.lastNewRouteSentAt = Date.now()
   }
 
-  * start () {
+  async start () {
     this.crawl()
     try {
-      yield this.reloadLocalRoutes()
-      yield this.addConfigRoutes()
+      await this.reloadLocalRoutes()
+      await this.addConfigRoutes()
       this.broadcast(true)
     } catch (e) {
       if (e.name === 'SystemError' ||
@@ -95,18 +94,19 @@ class RouteBroadcaster {
     return this.routingTables.publicTables.currentEpoch
   }
 
-  broadcastSoon () {
-    defer.setTimeout(function * () {
-      try {
-        this.routingTables.removeExpiredRoutes()
-        yield this.reloadLocalRoutes()
-        yield this.broadcast()
-      } catch (err) {
-        log.warn('broadcasting routes failed')
-        log.debug(err)
-      }
-      this.broadcastSoon()
-    }.bind(this), this.routeBroadcastInterval)
+  async broadcastSoon () {
+    await new Promise(resolve => setTimeout(resolve, this.routeBroadcastInterval))
+
+    try {
+      this.routingTables.removeExpiredRoutes()
+      await this.reloadLocalRoutes()
+      await this.broadcast()
+    } catch (err) {
+      log.warn('broadcasting routes failed')
+      log.debug(err)
+    }
+
+    this.broadcastSoon()
   }
 
   broadcast (requestFullTable = false) {
@@ -264,7 +264,7 @@ class RouteBroadcaster {
     return Promise.resolve(null)
   }
 
-  * _tradingPairToLocalRoute (pair) {
+  async _tradingPairToLocalRoute (pair) {
     const sourceLedger = pair[0].split('@').slice(1).join('@')
     const destinationLedger = pair[1].split('@').slice(1).join('@')
     const sourceCurrency = pair[0].split('@')[0]
@@ -274,7 +274,7 @@ class RouteBroadcaster {
     // `backend.getCurve()` may need `plugin.getInfo()`
     if (!sourcePlugin.isConnected() || !destinationPlugin.isConnected()) return
 
-    const curve = yield this.backend.getCurve({
+    const curve = await this.backend.getCurve({
       source_ledger: sourceLedger,
       destination_ledger: destinationLedger,
       source_currency: sourceCurrency,
