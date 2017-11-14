@@ -7,6 +7,9 @@ const validator = require('../lib/validate')
 const ilpErrors = require('../lib/ilp-errors')
 const IncomingTransferError = require('../errors/incoming-transfer-error')
 
+// Maximum number of entries in the forwarded_by field for ILP errors
+const FORWARDED_BY_MAX = 6
+
 function * validateExpiry (sourceTransfer, destinationTransfer, config) {
   // TODO tie the maxHoldTime to the fx rate
   // TODO bring all these loops into one to speed this up
@@ -94,12 +97,19 @@ function * rejectSourceTransfer (destinationTransfer, rejectionMessage, ledgers)
   validator.validate('IlpAddress', sourceTransferLedger)
   validator.validate('Uuid', sourceTransferId)
 
+  // Add ourselves to the front of the forwarded list and cut off after
+  // FORWARDED_BY_MAX.
+  const forwardedBy = [ledgers.getPlugin(sourceTransferLedger).getAccount()]
+    .concat(rejectionMessage.forwarded_by || [])
+    .slice(0, FORWARDED_BY_MAX)
+
   yield ledgers.getPlugin(sourceTransferLedger)
     .rejectIncomingTransfer(sourceTransferId, Object.assign(rejectionMessage, {
-      forwarded_by: ledgers.getPlugin(sourceTransferLedger).getAccount()
+      forwarded_by: forwardedBy
     }))
-    .catch(() => {
+    .catch(err => {
       log.warn('Attempted to reject source transfer but it was unsucessful')
+      log.debug((typeof err === 'object' && err.stack) ? err.stack : String(err))
     })
 }
 
