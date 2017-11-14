@@ -140,13 +140,13 @@ class Ledgers extends EventEmitter {
     return plugin
   }
 
-  * _requestHandler (requestMessage) {
+  async _requestHandler (requestMessage) {
     if (this._externalRequestHandler) {
-      const responseMessage = yield this._externalRequestHandler(requestMessage)
+      const responseMessage = await this._externalRequestHandler(requestMessage)
       if (responseMessage) return responseMessage
     }
     if (this._internalRequestHandler) {
-      const responseMessage = yield this._internalRequestHandler(requestMessage)
+      const responseMessage = await this._internalRequestHandler(requestMessage)
       if (responseMessage) return responseMessage
     }
     throw new Error('Invalid request method')

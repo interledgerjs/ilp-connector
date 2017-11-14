@@ -3,7 +3,7 @@ const PluginStore = require('../src/lib/pluginStore')
 const assert = require('chai').assert
 
 describe('PluginStore', function () {
-  beforeEach(function * () {
+  beforeEach(async function () {
     this.obj = new PluginStore('sqlite://:memory:', 'test')
   })
 
@@ -31,13 +31,13 @@ describe('PluginStore', function () {
     }).catch((err) => { console.error(err) })
   })
 
-  it('should store a long string', function * () {
+  it('should store a long string', async function () {
     const str = ('long string. another ').repeat(1000)
-    yield this.obj.put('k', str)
-    assert.equal(yield this.obj.get('k'), str)
+    await this.obj.put('k', str)
+    assert.equal(await this.obj.get('k'), str)
   })
 
-  it('should not create a store with an invalid name', function * () {
+  it('should not create a store with an invalid name', async function () {
     const name = ('"; drop table "Users; --')
     try {
       const store = new PluginStore('sqlite://:memory:', name)
@@ -47,7 +47,7 @@ describe('PluginStore', function () {
     }
   })
 
-  it('should create a store with dashes in the name', function * () {
+  it('should create a store with dashes in the name', async function () {
     const name = ('a-name-with-dashes')
     const store = new PluginStore('sqlite://:memory:', name)
     assert.isOk(store)

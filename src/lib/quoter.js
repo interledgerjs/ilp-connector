@@ -30,8 +30,8 @@ class Quoter {
    * @param {Boolean} [request._shiftCurve] default: true
    * @returns {Object}
    */
-  * quoteLiquidity (request) {
-    const liquidityQuote = yield this._quoteLiquidity(
+  async quoteLiquidity (request) {
+    const liquidityQuote = await this._quoteLiquidity(
       Object.assign({_shiftCurve: true}, request))
     if (!liquidityQuote) return null
     return Object.assign({}, liquidityQuote, {
@@ -40,14 +40,14 @@ class Quoter {
     })
   }
 
-  * _quoteLiquidity (request) {
+  async _quoteLiquidity (request) {
     const hop = this.localTables.findBestHopForSourceAmount(
       request.sourceAccount, request.destinationAccount, '0')
     if (!hop) return Promise.resolve(null)
     const connector = hop.bestHop
     let fullRoute = hop.bestRoute
     if (isCurveExpired(fullRoute)) {
-      const tailQuote = yield ILQP.quoteByConnector({
+      const tailQuote = await ILQP.quoteByConnector({
         plugin: this.ledgers.getPlugin(fullRoute.nextLedger),
         connector,
         quoteQuery: {
@@ -107,11 +107,11 @@ class Quoter {
    * @param {Integer} request.destinationHoldDuration
    * @returns {Object}
    */
-  * quoteBySourceAmount (request) {
+  async quoteBySourceAmount (request) {
     if (request.sourceAmount === '0') {
       throw new InvalidAmountSpecifiedError('sourceAmount must be positive')
     }
-    const liquidityQuote = yield this._quoteLiquidity(request)
+    const liquidityQuote = await this._quoteLiquidity(request)
     if (!liquidityQuote) return null
     return Object.assign({
       destinationAmount: liquidityQuote.liquidityCurve.amountAt(request.sourceAmount).toString()
@@ -126,13 +126,13 @@ class Quoter {
    * @param {Integer} request.destinationHoldDuration
    * @returns {Object}
    */
-  * quoteByDestinationAmount (request) {
+  async quoteByDestinationAmount (request) {
     if (request.destinationAmount === '0') {
       throw new InvalidAmountSpecifiedError('destinationAmount must be positive')
     }
     // Use the shifted curve because the `amountReverse()` is rounded down,
     // and we don't want to lose money.
-    const liquidityQuote = yield this._quoteLiquidity(Object.assign({_shiftCurve: true}, request))
+    const liquidityQuote = await this._quoteLiquidity(Object.assign({_shiftCurve: true}, request))
     if (!liquidityQuote) return null
     const sourceAmount = liquidityQuote.liquidityCurve.amountReverse(request.destinationAmount).toString()
     if (sourceAmount === 'Infinity') return null
@@ -151,9 +151,9 @@ class Quoter {
    * @param {Amount} finalAmount
    * @returns {Object}
    */
-  * findBestPathForFinalAmount (sourceLedger, destination, finalAmount) {
+  async findBestPathForFinalAmount (sourceLedger, destination, finalAmount) {
     // This obtains a quote from incoming/"source" ledger to destination/"final" ledger:
-    const quote = yield this.quoteByDestinationAmount({
+    const quote = await this.quoteByDestinationAmount({
       sourceAccount: sourceLedger,
       destinationAccount: destination,
       destinationAmount: finalAmount,

@@ -28,13 +28,13 @@ class OneToOneBackend {
   /**
    * Nothing to do since this backend is totally static.
    */
-  * connect (mockData) {
+  async connect (mockData) {
   }
 
   /**
    * Get backend status
    */
-  * getStatus () {
+  async getStatus () {
     return {
       backendStatus: healthStatus.statusOk
     }
@@ -49,7 +49,7 @@ class OneToOneBackend {
    * @param {String} params.destination_currency The destination currency
    * @returns {Promise.<Object>}
    */
-  * getCurve (params) {
+  async getCurve (params) {
     const sourceInfo = this.getInfo(params.source_ledger)
     const destinationInfo = this.getInfo(params.destination_ledger)
 
@@ -64,12 +64,12 @@ class OneToOneBackend {
 
     let limit
     if (sourceInfo.maxBalance !== undefined) {
-      let balanceIn = yield this.getBalance(params.source_ledger)
+      let balanceIn = await this.getBalance(params.source_ledger)
       let maxAmountIn = new BigNumber(sourceInfo.maxBalance).minus(balanceIn)
       limit = [ maxAmountIn.toString(), maxAmountIn.times(rate).toString() ]
     }
     if (destinationInfo.minBalance !== undefined) {
-      let balanceOut = yield this.getBalance(params.destination_ledger)
+      let balanceOut = await this.getBalance(params.destination_ledger)
       let maxAmountOut = new BigNumber(balanceOut).minus(destinationInfo.minBalance)
       if (limit === undefined || maxAmountOut.lessThan(limit[1])) {
         limit = [ maxAmountOut.div(rate).toString(), maxAmountOut.toString() ]

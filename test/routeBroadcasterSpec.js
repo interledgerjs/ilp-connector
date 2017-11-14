@@ -24,7 +24,7 @@ const ledgerC = 'eur-ledger.'
 describe('RouteBroadcaster', function () {
   logHelper(logger)
 
-  beforeEach(function * () {
+  beforeEach(async function () {
     process.env.BACKEND = 'one-to-one'
     appHelper.create(this)
 
@@ -42,7 +42,7 @@ describe('RouteBroadcaster', function () {
       }
     ]
 
-    yield this.backend.connect(ratesResponse)
+    await this.backend.connect(ratesResponse)
 
     this.tables = new RoutingTables({
       fxSpread: 0.002,
@@ -114,7 +114,7 @@ describe('RouteBroadcaster', function () {
       points: [ [0, 0], [50, 60] ],
       additional_info: {}
     })
-    yield this.ledgers.connect()
+    await this.ledgers.connect()
   })
 
   afterEach(function () {
@@ -122,7 +122,7 @@ describe('RouteBroadcaster', function () {
   })
 
   describe('crawl', function () {
-    it('loads peers from CONNECTOR_PEERS even if they are not returned in the ledger info', function * () {
+    it('loads peers from CONNECTOR_PEERS even if they are not returned in the ledger info', async function () {
       this.config.peers.push('eur-ledger.margery')
       this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.config)
       this.broadcaster.crawl()
@@ -131,8 +131,8 @@ describe('RouteBroadcaster', function () {
   })
 
   describe('addConfigRoutes', function () {
-    it('loads routes from CONNECTOR_ROUTES', function * () {
-      yield this.broadcaster.addConfigRoutes()
+    it('loads routes from CONNECTOR_ROUTES', async function () {
+      await this.broadcaster.addConfigRoutes()
       assertSubset(
         this.tables.localTables.sources.get(ledgerB).destinations.get('prefix.').get('cad-ledger.mary'),
         {
@@ -172,7 +172,7 @@ describe('RouteBroadcaster', function () {
       }
     ]
 
-    it('sends the combined routes to all adjacent connectors', function * () {
+    it('sends the combined routes to all adjacent connectors', async function () {
       this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
           return {
@@ -238,7 +238,7 @@ describe('RouteBroadcaster', function () {
       assert(routesWithSourceLedgerBSent)
     })
 
-    it('invalidates routes', function * () {
+    it('invalidates routes', async function () {
       const config = this.config
       const ledgers = this.ledgers
       const routingTables = this.tables
@@ -254,14 +254,14 @@ describe('RouteBroadcaster', function () {
         points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
       }]
       assert.equal(this.tables.toJSON(2).length, 4)
-      yield messageRouter.receiveRoutes({
+      await messageRouter.receiveRoutes({
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: [],
         request_full_table: false
       }, ledgerB + 'mark')
       assert.equal(this.tables.toJSON(2).length, 5)
-      yield messageRouter.receiveRoutes({
+      await messageRouter.receiveRoutes({
         new_routes: [],
         hold_down_time: 1234,
         unreachable_through_me: [ledgerD],
@@ -270,7 +270,7 @@ describe('RouteBroadcaster', function () {
       assert.equal(this.tables.toJSON(2).length, 4)
     })
 
-    it('does not add peer routes', function * () {
+    it('does not add peer routes', async function () {
       const config = this.config
       const ledgers = this.ledgers
       const routingTables = this.tables
@@ -285,7 +285,7 @@ describe('RouteBroadcaster', function () {
         points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
       }]
       assert.equal(this.tables.toJSON(2).length, 4)
-      yield messageRouter.receiveRoutes({
+      await messageRouter.receiveRoutes({
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: [],
@@ -294,7 +294,7 @@ describe('RouteBroadcaster', function () {
       assert.equal(this.tables.toJSON(2).length, 4)
     })
 
-    it('ignores routes where source_ledger does not match source_account', function * () {
+    it('ignores routes where source_ledger does not match source_account', async function () {
       const config = this.config
       const ledgers = this.ledgers
       const routingTables = this.tables
@@ -309,7 +309,7 @@ describe('RouteBroadcaster', function () {
         points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
       }]
       assert.equal(this.tables.toJSON(2).length, 4)
-      yield messageRouter.receiveRoutes({
+      await messageRouter.receiveRoutes({
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: [],
@@ -318,7 +318,7 @@ describe('RouteBroadcaster', function () {
       assert.equal(this.tables.toJSON(2).length, 4)
     })
 
-    it('should send all routes even if sending one message fails', function * () {
+    it('should send all routes even if sending one message fails', async function () {
       this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
           return { prefix: ledgerA, connectors: [ledgerA + 'mark', ledgerA + 'mary'] }
@@ -348,7 +348,7 @@ describe('RouteBroadcaster', function () {
       assert(routesWithSourceLedgerBSent)
     })
 
-    it('should send all routes even if plugin.sendRequest hangs', function * () {
+    it('should send all routes even if plugin.sendRequest hangs', async function () {
       this.ledgers.getPlugin(ledgerA).getInfo =
         function () {
           return { prefix: ledgerA, connectors: [ledgerA + 'mark', ledgerA + 'mary'] }
@@ -382,8 +382,8 @@ describe('RouteBroadcaster', function () {
   })
 
   describe('_tradingPairToLocalRoute', function () {
-    it('returns a Route', function * () {
-      const route = yield this.broadcaster._tradingPairToLocalRoute(
+    it('returns a Route', async function () {
+      const route = await this.broadcaster._tradingPairToLocalRoute(
         [ 'CAD@' + ledgerA, 'USD@' + ledgerB ])
       assert.ok(route instanceof routing.Route)
       assert.deepEqual(route.sourceLedger, ledgerA)

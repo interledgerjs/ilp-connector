@@ -37,9 +37,9 @@ class ILPQuoter {
     this.quotePrecision = opts.quotePrecision
   }
 
-  * putPair (uri) {
+  async putPair (uri) {
     const req = request({ method: 'PUT', uri, json: true })
-    const res = yield req
+    const res = await req
     const result = {
       success: true,
       errorMessage: undefined
@@ -57,9 +57,9 @@ class ILPQuoter {
    * Connect to the backend to get the available currency pairs
    *   and checks that all the pairs are supported
    */
-  * connect () {
+  async connect () {
     const uris = _.uniq(this.currencyPairs.map((pair) => this.backendUri + '/pair/' + pair[0] + '/' + pair[1]))
-    const results = yield uris.map((uri) => this.putPair(uri))
+    const results = await Promise.all(uris.map((uri) => this.putPair(uri)))
     const success = _.every(results, (result) => result.success)
     if (!success) {
       const message = _.reduce(results, (msg, result) => result.success ? msg : msg + result.errorMessage + ' ', '')
@@ -71,7 +71,7 @@ class ILPQuoter {
   /**
    * Get backend status
    */
-  * getStatus () {
+  async getStatus () {
     const status = {
       backendStatus: this.backendStatus
     }
@@ -86,7 +86,7 @@ class ILPQuoter {
    *
    * The quote is used locally to generate a liquidity curve.
    */
-  * getCurve (params) {
+  async getCurve (params) {
     log.debug('Connecting to ' + this.backendUri)
     const currencyPair = utils.getCurrencyPair(this.currencyWithLedgerPairs,
                                                params.source_ledger,
@@ -101,7 +101,7 @@ class ILPQuoter {
                 currencyPair[0] + '/' + currencyPair[1] + '/' + amount +
                 '/' + type
 
-    const result = yield request({
+    const result = await request({
       uri,
       json: true,
       qs: {

@@ -1,7 +1,6 @@
 'use strict'
 
 const _ = require('lodash')
-const co = require('co')
 const subscriptions = require('./models/subscriptions')
 const logger = require('./common/log')
 const log = logger.create('app')
@@ -21,18 +20,18 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
 
   // Start a coroutine that connects to the backend and
   // subscribes to all the ledgers in the background
-  return co(function * () {
+  return (async function () {
     try {
-      yield backend.connect()
+      await backend.connect()
     } catch (error) {
       log.error(error)
       process.exit(1)
     }
-    yield subscriptions.subscribePairs(ledgers, config, routeBuilder, backend)
+    await subscriptions.subscribePairs(ledgers, config, routeBuilder, backend)
 
     let allLedgersConnected
     try {
-      yield ledgers.connect({timeout: 10000})
+      await ledgers.connect({timeout: 10000})
       allLedgersConnected = true
     } catch (err) {
       allLedgersConnected = false
@@ -40,10 +39,10 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
     }
 
     if (config.routeBroadcastEnabled) {
-      yield routeBroadcaster.start()
+      await routeBroadcaster.start()
     } else {
-      yield routeBroadcaster.reloadLocalRoutes()
-      yield routeBroadcaster.addConfigRoutes()
+      await routeBroadcaster.reloadLocalRoutes()
+      await routeBroadcaster.addConfigRoutes()
     }
 
     if (allLedgersConnected) {
@@ -53,25 +52,25 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
         .then(() => routeBroadcaster.reloadLocalRoutes())
         .then(() => log.info('connector ready (republic attitude)'))
     }
-  }).catch((err) => log.error(err))
+  })().catch((err) => log.error(err))
 }
 
 function addPlugin (config, ledgers, backend, routeBroadcaster, id, options, tradesTo, tradesFrom) {
-  return co(function * () {
+  return (async function () {
     options.prefix = id
     ledgers.add(id, options, tradesTo, tradesFrom)
 
-    yield ledgers.getPlugin(id).connect({timeout: Infinity})
-    yield routeBroadcaster.reloadLocalRoutes()
-  })
+    await ledgers.getPlugin(id).connect({timeout: Infinity})
+    await routeBroadcaster.reloadLocalRoutes()
+  })()
 }
 
 function removePlugin (config, ledgers, backend, routingTables, routeBroadcaster, id) {
-  return co(function * () {
+  return (async function () {
     routingTables.removeLedger(id)
     routeBroadcaster.depeerLedger(id)
-    yield ledgers.remove(id).disconnect()
-  })
+    await ledgers.remove(id).disconnect()
+  })()
 }
 
 function getPlugin (ledgers, id) {

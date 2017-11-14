@@ -41,14 +41,14 @@ class FixerIoBackend {
    *
    * Mock data can be provided for testing purposes
    */
-  * connect (mockData) {
+  async connect (mockData) {
     log.debug('connect')
 
     let apiData
     if (mockData) {
       apiData = mockData
     } else {
-      let result = yield request({
+      let result = await request({
         uri: RATES_API,
         json: true
       })
@@ -63,7 +63,7 @@ class FixerIoBackend {
   /**
    * Get backend status
    */
-  * getStatus () {
+  async getStatus () {
     return {
       backendStatus: healthStatus.statusOk
     }
@@ -86,7 +86,7 @@ class FixerIoBackend {
    * @param {String} params.destination_currency The destination currency
    * @returns {Promise.<Object>}
    */
-  * getCurve (params) {
+  async getCurve (params) {
     // Get ratio between currencies and apply spread
     const destinationRate = this.rates[params.destination_currency]
     const sourceRate = this.rates[params.source_currency]
@@ -114,12 +114,12 @@ class FixerIoBackend {
 
     let limit
     if (sourceInfo.maxBalance !== undefined) {
-      let balanceIn = yield this.getBalance(params.source_ledger)
+      let balanceIn = await this.getBalance(params.source_ledger)
       let maxAmountIn = new BigNumber(sourceInfo.maxBalance).minus(balanceIn)
       limit = [ maxAmountIn.toString(), maxAmountIn.times(rate).toString() ]
     }
     if (destinationInfo.minBalance !== undefined) {
-      let balanceOut = yield this.getBalance(params.destination_ledger)
+      let balanceOut = await this.getBalance(params.destination_ledger)
       let maxAmountOut = new BigNumber(balanceOut).minus(destinationInfo.minBalance)
       if (limit === undefined || maxAmountOut.lessThan(limit[1])) {
         limit = [ maxAmountOut.div(rate).toString(), maxAmountOut.toString() ]
@@ -153,7 +153,7 @@ class FixerIoBackend {
    * @param {String} params.destination_amount The amount of the destination asset we want to send
    * @return {Promise.<null>}
    */
-  * submitPayment (params) {
+  async submitPayment (params) {
     return Promise.resolve(null)
   }
 }

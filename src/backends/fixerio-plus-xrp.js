@@ -5,15 +5,15 @@ const CHARTS_API = 'https://api.ripplecharts.com/api/exchange_rates'
 const EUR_ISSUER = 'rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B' // bitstamp
 
 class FixerIoXRPBackend extends FixerIoBackend {
-  * connect (mockData) {
-    yield super.connect(mockData)
-    this.rates.XRP = yield this._getXRPRate()
+  async connect (mockData) {
+    await super.connect(mockData)
+    this.rates.XRP = await this._getXRPRate()
     this.currencies.push('XRP')
     this.currencies.sort()
   }
 
-  * _getXRPRate () {
-    let rateRes = yield request({
+  async _getXRPRate () {
+    let rateRes = await request({
       method: 'post',
       uri: CHARTS_API,
       json: true,

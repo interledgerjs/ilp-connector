@@ -23,11 +23,11 @@ const env = _.cloneDeep(process.env)
 describe('Subscriptions', function () {
   logHelper(logger)
 
-  beforeEach(function * () {
+  beforeEach(async function () {
     appHelper.create(this)
-    yield this.backend.connect(ratesResponse)
-    yield this.ledgers.connect()
-    yield this.routeBroadcaster.reloadLocalRoutes()
+    await this.backend.connect(ratesResponse)
+    await this.ledgers.connect()
+    await this.routeBroadcaster.reloadLocalRoutes()
 
     nock('http://usd-ledger.example').get('/')
       .reply(200, {
@@ -77,13 +77,13 @@ describe('Subscriptions', function () {
     this.wsEurLedger = new wsHelper.Server('ws://eur-ledger.example/accounts/mark/transfers')
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
-    yield subscriptions.subscribePairs(this.ledgers, this.config, this.routeBuilder, this.backend)
+    await subscriptions.subscribePairs(this.ledgers, this.config, this.routeBuilder, this.backend)
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
   })
 
-  afterEach(function * () {
+  afterEach(async function () {
     nock.cleanAll()
     this.clock.restore()
     process.env = _.cloneDeep(env)
@@ -93,7 +93,7 @@ describe('Subscriptions', function () {
     this.wsCnyLedger.close()
   })
 
-  it('should initiate and complete a universal mode payment', function * () {
+  it('should initiate and complete a universal mode payment', async function () {
     const sourceTransfer = this.transferUsdPrepared
     const destinationTransfer = this.transferEurProposed
     const sourceAmount = '10700'
@@ -106,7 +106,7 @@ describe('Subscriptions', function () {
       this.ledgers.getPlugin(sourceTransfer.ledger),
       'fulfillCondition')
 
-    yield this.ledgers.getPlugin(sourceTransfer.ledger)
+    await this.ledgers.getPlugin(sourceTransfer.ledger)
       .emitAsync('incoming_prepare', {
         id: sourceTransfer.id,
         direction: 'incoming',
@@ -124,7 +124,7 @@ describe('Subscriptions', function () {
     sinon.assert.calledOnce(sendSpy)
 
     const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
-    yield this.ledgers.getPlugin(sourceTransfer.ledger)
+    await this.ledgers.getPlugin(sourceTransfer.ledger)
       .emitAsync('outgoing_fulfill', {
         id: destinationTransfer.id,
         direction: 'outgoing',
@@ -143,13 +143,13 @@ describe('Subscriptions', function () {
     sinon.assert.calledWith(fulfillSpy, sourceId, 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
   })
 
-  it('should notify the backend of a successful payment', function * () {
+  it('should notify the backend of a successful payment', async function () {
     const sourceTransfer = this.transferUsdPrepared
     const destinationTransfer = this.transferEurProposed
     const backendSpy = sinon.spy(this.backend, 'submitPayment')
 
     const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
-    yield this.ledgers.getPlugin(sourceTransfer.ledger)
+    await this.ledgers.getPlugin(sourceTransfer.ledger)
       .emitAsync('outgoing_fulfill', {
         id: destinationTransfer.id,
         direction: 'outgoing',

@@ -33,14 +33,14 @@ describe('ConnectorConfig', function () {
       process.env = _.cloneDeep(env)
     })
 
-    it('should generate a secret if one is not provided', function * () {
+    it('should generate a secret if one is not provided', async function () {
       delete process.env.CONNECTOR_SECRET
       const config = loadConnectorConfig()
       expect(Buffer.isBuffer(config.secret)).to.be.true
       expect(config.secret).to.have.length(32)
     })
 
-    it('should auto-generate pairs', function * () {
+    it('should auto-generate pairs', async function () {
       const config = loadConnectorConfig()
       expect(config.get('tradingPairs')).to.deep.equal([[
         'USD@usd-ledger.',
@@ -149,7 +149,7 @@ describe('ConnectorConfig', function () {
     })
 
     describe('ledger credentials', () => {
-      it('should parse ledger credentials -- deprecated format', function * () {
+      it('should parse ledger credentials -- deprecated format', async function () {
         const ledgerCredentials = require('./data/ledgerCredentials.json')
         const ledgerCredsModified = _.cloneDeep(ledgerCredentials)
         const usdLedgerCreds = ledgerCredsModified['usd-ledger.']
@@ -162,7 +162,7 @@ describe('ConnectorConfig', function () {
           .to.deep.equal(ledgerCredentials)
       })
 
-      it('should parse ledger credentials', function * () {
+      it('should parse ledger credentials', async function () {
         const ledgerCredentialsEnv = {
           'cad-ledger.': {
             currency: 'CAD',
@@ -217,7 +217,7 @@ describe('ConnectorConfig', function () {
           .to.deep.equal(ledgerCredentials)
       })
 
-      it('should parse another type of ledger\'s credentials', function * () {
+      it('should parse another type of ledger\'s credentials', async function () {
         const ledgerCredentialsEnv = {
           'cad-ledger.': {
             currency: 'USD',
