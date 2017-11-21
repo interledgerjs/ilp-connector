@@ -13,7 +13,7 @@ const retryOpts = {
 
 // Add the execution_condition_fulfillment to the source transfer
 // and submit it to the source ledger
-async function executeSourceTransfer (destinationTransfer, fulfillment, ledgers, backend, config) {
+async function executeSourceTransfer (destinationTransfer, fulfillment, fulfillmentData, ledgers, backend, config) {
   if (!fulfillment) {
     log.error('Cannot execute source transfers, no condition fulfillment found. Destination transfer: ' + JSON.stringify(destinationTransfer))
     return
@@ -41,7 +41,7 @@ async function executeSourceTransfer (destinationTransfer, fulfillment, ledgers,
   })
 
   const fulfillPromise = promiseRetry(retryOpts, function (retry, number) {
-    return Promise.resolve(plugin.fulfillCondition(sourceTransferID, fulfillment))
+    return Promise.resolve(plugin.fulfillCondition(sourceTransferID, fulfillment, fulfillmentData))
       .catch(function (err) {
         if (shouldRetry(err)) {
           const errInfo = (typeof err === 'object' && err.stack) ? err.stack : String(err)
