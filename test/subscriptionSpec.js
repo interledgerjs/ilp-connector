@@ -98,7 +98,8 @@ describe('Subscriptions', function () {
     const destinationTransfer = this.transferEurProposed
     const sourceAmount = '10700'
     const destinationAmount = '10000'
-
+    const fulfillment = 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'
+    const fulfillmentData = 'ABAB'
     const sendSpy = sinon.spy(
       this.ledgers.getPlugin(destinationTransfer.ledger),
       'sendTransfer')
@@ -137,10 +138,10 @@ describe('Subscriptions', function () {
           source_transfer_id: sourceId,
           source_transfer_amount: sourceAmount
         }
-      }, 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
+      }, fulfillment, fulfillmentData)
 
     sinon.assert.calledOnce(fulfillSpy)
-    sinon.assert.calledWith(fulfillSpy, sourceId, 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
+    sinon.assert.calledWith(fulfillSpy, sourceId, fulfillment, fulfillmentData)
   })
 
   it('should notify the backend of a successful payment', async function () {
