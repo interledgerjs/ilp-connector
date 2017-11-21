@@ -53,13 +53,13 @@ async function updateIncomingTransfer (sourceTransfer, ledgers, config, routeBui
   await settle(sourceTransfer, destinationTransfer, config, ledgers)
 }
 
-async function processExecutionFulfillment (transfer, fulfillment, ledgers, backend, config) {
+async function processExecutionFulfillment (transfer, fulfillment, fulfillmentData, ledgers, backend, config) {
   // If the destination transfer was executed, the connector should try to
   // execute the source transfer to get paid.
   if (transfer.direction === 'outgoing') {
     log.debug('Got notification about executed destination transfer with ID ' +
       transfer.id + ' on ledger ' + transfer.ledger)
-    await executeSourceTransfer(transfer, fulfillment, ledgers, backend, config)
+    await executeSourceTransfer(transfer, fulfillment, fulfillmentData, ledgers, backend, config)
   }
 }
 

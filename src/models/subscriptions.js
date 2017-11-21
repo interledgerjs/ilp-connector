@@ -21,8 +21,8 @@ async function subscribePairs (ledgers, config, routeBuilder, backend) {
       .catch(logThenThrow)
   })
 
-  ledgers.on('outgoing_fulfill', (plugin, transfer, fulfillment) => {
-    return payments.processExecutionFulfillment(transfer, fulfillment, ledgers, backend, config)
+  ledgers.on('outgoing_fulfill', (plugin, transfer, fulfillment, fulfillmentData) => {
+    return payments.processExecutionFulfillment(transfer, fulfillment, fulfillmentData, ledgers, backend, config)
       .catch(logThenThrow)
   })
 }
