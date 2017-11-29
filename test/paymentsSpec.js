@@ -280,7 +280,7 @@ describe('Payments', function () {
     })
   })
 
-  it('uses best rate when ilp packet amount = 0', async function () {
+  it('uses best rate when ilp packet is a forwarded payment', async function () {
     const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
     await this.mockPlugin1.emitAsync('incoming_prepare', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
@@ -289,9 +289,8 @@ describe('Payments', function () {
       amount: '100',
       executionCondition: 'ni:///sha-256;I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk?fpt=preimage-sha-256&cost=6',
       expiresAt: (new Date(START_DATE + 1000)).toISOString(),
-      ilp: packet.serializeIlpPayment({
-        account: 'mock.test2.bob',
-        amount: '0'
+      ilp: packet.serializeIlpForwardedPayment({
+        account: 'mock.test2.bob'
       }).toString('base64')
     })
 

@@ -168,10 +168,9 @@ describe('RouteBuilder', function () {
       assert.deepEqual(destinationTransfer.ilp, ilpPacket)
     })
 
-    it('uses best rate when ilp packet amount = 0', async function () {
-      const ilpPacket = packet.serializeIlpPayment({
-        account: bobB,
-        amount: '0'
+    it('uses best rate when ilp packet is a forwarded payment', async function () {
+      const ilpPacket = packet.serializeIlpForwardedPayment({
+        account: bobB
       }).toString('base64')
       const destinationTransfer = await this.builder.getDestinationTransfer({
         id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
