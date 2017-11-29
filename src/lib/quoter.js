@@ -141,6 +141,18 @@ class Quoter {
     }, liquidityQuote)
   }
 
+  async findBestPathForSourceAmount (sourceLedger, destination, sourceAmount) {
+    const hop = this.localTables.findBestHopForSourceAmount(
+      sourceLedger, destination, sourceAmount)
+
+    return {
+      destinationLedger: hop.bestRoute.nextLedger,
+      destinationCreditAccount: hop.bestRoute.isLocal ? destination : hop.bestHop,
+      sourceAmount: sourceAmount.toString(),
+      destinationAmount: hop.bestRoute.curve.amountAt(sourceAmount).toString()
+    }
+  }
+
   /**
    * Note that this function, like most of the ilp-connector code, uses the terms
    * source, destination, and final, to refer to what we would normally call
@@ -172,8 +184,7 @@ class Quoter {
       destinationLedger: quote.route.nextLedger,
       destinationCreditAccount: quote.hop,
       sourceAmount: quote.sourceAmount,
-      destinationAmount: headCurve.amountAt(quote.sourceAmount).toString(),
-      finalAmount: quote.liquidityCurve.amountAt(quote.sourceAmount).toString()
+      destinationAmount: headCurve.amountAt(quote.sourceAmount).toString()
     }
   }
 }
