@@ -154,14 +154,14 @@ class RouteBuilder {
     }
     let ilpPacket
     try {
-      ilpPacket = packet.deserializeIlpPayment(Buffer.from(sourceTransfer.ilp, 'base64'))
+      ilpPacket = packet.deserializeIlpPacket(Buffer.from(sourceTransfer.ilp, 'base64'))
     } catch (err) {
       log.debug('error parsing ILP packet: ' + sourceTransfer.ilp)
       throw new IncomingTransferError(ilpErrors.F01_Invalid_Packet({
         message: 'source transfer has invalid ILP packet'
       }))
     }
-    const destinationAddress = ilpPacket.account
+    const destinationAddress = ilpPacket.data.account
     const myAddress = this.ledgers.getPlugin(sourceTransfer.ledger).getAccount()
     if (startsWith(destinationAddress, myAddress)) {
       log.debug(
@@ -173,19 +173,20 @@ class RouteBuilder {
     }
 
     log.debug('constructing transfer for ILP packet with account=%s amount=%s',
-      ilpPacket.account, ilpPacket.amount)
+      ilpPacket.data.account, ilpPacket.data.amount)
 
     const sourceLedger = sourceTransfer.ledger
 
-    // If the ILP amount field is zero, it means we should forward the maximum
-    // we are willing to.
-    const nextHop = (ilpPacket.amount === '0')
-      ? await this.quoter.findBestPathForSourceAmount(sourceLedger, ilpPacket.account, sourceTransfer.amount)
-      : await this.quoter.findBestPathForFinalAmount(sourceLedger, ilpPacket.account, ilpPacket.amount)
+    // If the ILP packet is of type Forwarded Payment, it means we should forward the maximum
+    // we are willing to. Note that this feature is experimental, and support for it may disappear
+    // or change at any time.
+    const nextHop = (ilpPacket.type === packet.Type.TYPE_ILP_FORWARDED_PAYMENT)
+      ? await this.quoter.findBestPathForSourceAmount(sourceLedger, ilpPacket.data.account, sourceTransfer.amount)
+      : await this.quoter.findBestPathForFinalAmount(sourceLedger, ilpPacket.data.account, ilpPacket.data.amount)
     if (!nextHop) {
       log.info('could not find quote for source transfer: ' + JSON.stringify(sourceTransfer))
       throw new IncomingTransferError(ilpErrors.F02_Unreachable({
-        message: 'No route found from: ' + sourceLedger + ' to: ' + ilpPacket.account
+        message: 'No route found from: ' + sourceLedger + ' to: ' + ilpPacket.data.account
       }))
     }
     this._verifyLedgerIsConnected(nextHop.destinationLedger)
