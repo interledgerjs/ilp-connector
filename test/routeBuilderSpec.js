@@ -168,6 +168,23 @@ describe('RouteBuilder', function () {
       assert.deepEqual(destinationTransfer.ilp, ilpPacket)
     })
 
+    it('uses best rate when ilp packet amount = 0', async function () {
+      const ilpPacket = packet.serializeIlpPayment({
+        account: bobB,
+        amount: '0'
+      }).toString('base64')
+      const destinationTransfer = await this.builder.getDestinationTransfer({
+        id: 'fd7ecefd-8eb8-4e16-b7c8-b67d9d6995f5',
+        ledger: ledgerA,
+        direction: 'incoming',
+        account: aliceA,
+        amount: '100',
+        ilp: ilpPacket
+      })
+      assert.deepEqual(destinationTransfer.amount, '50')
+      assert.deepEqual(destinationTransfer.to, 'eur-ledger.bob')
+    })
+
     it('throws "Insufficient Source Amount" when the amount is too low', async function () {
       const ilpPacket = packet.serializeIlpPayment({
         account: bobB,
