@@ -176,8 +176,12 @@ class RouteBuilder {
       ilpPacket.account, ilpPacket.amount)
 
     const sourceLedger = sourceTransfer.ledger
-    const nextHop = await this.quoter.findBestPathForFinalAmount(
-      sourceLedger, ilpPacket.account, ilpPacket.amount)
+
+    // If the ILP amount field is zero, it means we should forward the maximum
+    // we are willing to.
+    const nextHop = (ilpPacket.amount === '0')
+      ? await this.quoter.findBestPathForSourceAmount(sourceLedger, ilpPacket.account, sourceTransfer.amount)
+      : await this.quoter.findBestPathForFinalAmount(sourceLedger, ilpPacket.account, ilpPacket.amount)
     if (!nextHop) {
       log.info('could not find quote for source transfer: ' + JSON.stringify(sourceTransfer))
       throw new IncomingTransferError(ilpErrors.F02_Unreachable({
