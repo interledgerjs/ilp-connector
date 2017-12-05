@@ -91,14 +91,16 @@ async function rejectSourceTransfer (destinationTransfer, rejectionMessage, ledg
   const noteToSelf = destinationTransfer.noteToSelf || {}
   const sourceTransferLedger = noteToSelf.source_transfer_ledger
   const sourceTransferId = noteToSelf.source_transfer_id
+  const connectorAccount = ledgers.getPlugin(sourceTransferLedger).getAccount()
   validator.validate('IlpAddress', sourceTransferLedger)
   validator.validate('Uuid', sourceTransferId)
 
   await ledgers.getPlugin(sourceTransferLedger)
     .rejectIncomingTransfer(sourceTransferId, Object.assign(rejectionMessage, {
-      forwarded_by: ledgers.getPlugin(sourceTransferLedger).getAccount()
+      forwarded_by: (rejectionMessage.forwarded_by || []).concat(connectorAccount)
     }))
-    .catch(() => {
+    .catch((err) => {
+      log.debug('Error rejecting source transfer:', err)
       log.warn('Attempted to reject source transfer but it was unsucessful')
     })
 }

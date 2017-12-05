@@ -545,7 +545,7 @@ describe('Payments', function () {
         name: 'Error 1',
         message: 'error 1',
         triggered_by: 'foo',
-        forwarded_by: 'mock.test2.bob',
+        forwarded_by: ['mock.test2.bob'],
         additional_info: {}
       })
     })
@@ -566,6 +566,7 @@ describe('Payments', function () {
         name: 'Error 1',
         message: 'error 1',
         triggered_by: 'foo',
+        forwarded_by: ['mock.someone.else'],
         additional_info: {}
       })
       sinon.assert.calledOnce(rejectSpy)
@@ -574,7 +575,7 @@ describe('Payments', function () {
         name: 'Error 1',
         message: 'error 1',
         triggered_by: 'foo',
-        forwarded_by: 'mock.test2.bob',
+        forwarded_by: ['mock.someone.else', 'mock.test2.bob'],
         additional_info: {}
       })
     })
