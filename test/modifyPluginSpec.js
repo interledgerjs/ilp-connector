@@ -71,7 +71,7 @@ describe('Modify Plugins', function () {
       await assert.isFulfilled(quotePromise2)
     })
 
-    it('should get peers on the added ledger', async function () {
+    it('should add a peer for the added ledger', async function () {
       await this.app.addPlugin('eur-ledger-2.', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
@@ -80,7 +80,7 @@ describe('Modify Plugins', function () {
         }
       })
 
-      assert.isTrue(this.routeBroadcaster.peersByLedger['eur-ledger-2.']['mark'])
+      assert.isTrue(this.routeBroadcaster.peers['eur-ledger-2.'])
     })
 
     it('should override the plugin.getInfo function with overrideInfo data', async function () {
@@ -149,7 +149,7 @@ describe('Modify Plugins', function () {
     it('should depeer the removed ledger', async function () {
       await this.app.removePlugin('eur-ledger-2.')
 
-      assert.isNotOk(this.routeBroadcaster.peersByLedger['eur-ledger-2.'])
+      assert.isNotOk(this.routeBroadcaster.peers['eur-ledger-2.'])
     })
   })
 })

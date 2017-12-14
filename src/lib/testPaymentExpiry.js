@@ -2,8 +2,7 @@
 const _ = require('lodash')
 const moment = require('moment')
 const request = require('co-request')
-const ilpErrors = require('./ilp-errors')
-const IncomingTransferError = require('../errors/incoming-transfer-error')
+const { codes, createIlpError } = require('./ilp-errors')
 
 /**
  * In atomic mode, transfers shouldn't have an `expires_at` property.
@@ -34,6 +33,7 @@ function TransferTester (config, sourceTransfer, destinationTransfer) {
   this.destinationTransfer = destinationTransfer
   this.transfers = [sourceTransfer, destinationTransfer]
   this.expiryByCase = {}
+  this.createIlpError = createIlpError.bind(null, config.account)
 
   // TODO use a more intelligent value for the minMessageWindow
   this.minMessageWindow = config.getIn(['expiry', 'minMessageWindow']) * 1000
@@ -46,9 +46,10 @@ TransferTester.prototype.getExpiry = function (transfer) {
     this.expiryByCase, getTransferCases(transfer))))
   if (expiries.length === 0) return undefined
   if (expiries.length === 1) return expiries[0]
-  throw new IncomingTransferError(ilpErrors.F00_Bad_Request({
+  throw this.createIlpError({
+    code: codes.F00_BAD_REQUEST,
     message: 'Case expiries don\'t agree'
-  }))
+  })
 }
 
 TransferTester.prototype.isAtomic = function () {
@@ -64,17 +65,19 @@ TransferTester.prototype.validateNotExpired = function () {
   {
     const expiresAt = this.getExpiry(this.sourceTransfer)
     if (expiresAt && moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
-      throw new IncomingTransferError(ilpErrors.R02_Insufficient_Timeout({
+      throw this.createIlpError({
+        code: codes.R02_INSUFFICIENT_TIMEOUT,
         message: 'Transfer has already expired'
-      }))
+      })
     }
   }
   {
     const expiresAt = this.getExpiry(this.destinationTransfer)
     if (expiresAt && moment(expiresAt, moment.ISO_8601).isBefore(moment())) {
-      throw new IncomingTransferError(ilpErrors.R02_Insufficient_Timeout({
+      throw this.createIlpError({
+        code: codes.R02_INSUFFICIENT_TIMEOUT,
         message: 'Not enough time to send payment'
-      }))
+      })
     }
   }
 }
@@ -94,21 +97,23 @@ TransferTester.prototype.validateMaxHoldTime = function () {
   if (expiresAt) {
     this.validateExpiryHoldTime(expiresAt)
   } else {
-    throw new IncomingTransferError(ilpErrors.F00_Bad_Request({
+    throw this.createIlpError({
+      code: codes.F00_BAD_REQUEST,
       message: 'Destination transfers with ' +
         'execution conditions must have an expires_at field for connector ' +
         'to agree to authorize them'
-    }))
+    })
   }
 }
 
 TransferTester.prototype.validateExpiryHoldTime = function (expiresAt) {
   if (moment(expiresAt, moment.ISO_8601).diff(moment()) > this.maxHoldTime) {
-    throw new IncomingTransferError(ilpErrors.R02_Insufficient_Timeout({
+    throw this.createIlpError({
+      code: codes.R02_INSUFFICIENT_TIMEOUT,
       message: 'Destination transfer expiry is ' +
         "too far in the future. The connector's money would need to be " +
         'held for too long'
-    }))
+    })
   }
 }
 
@@ -136,17 +141,19 @@ TransferTester.prototype.loadCaseExpiry = async function (caseID) {
     json: true
   })
   if (caseRes.statusCode !== 200) {
-    throw new IncomingTransferError(ilpErrors.T00_Internal_Error({
+    throw this.createIlpError({
+      code: codes.T00_INTERNAL_ERROR,
       message: 'Unexpected remote error: ' + caseRes.statusCode + ' ' + caseRes.body
-    }))
+    })
   }
   const expiry = caseRes.body.expires_at
   if (expiry) {
     this.expiryByCase[caseID] = expiry
   } else {
-    throw new IncomingTransferError(ilpErrors.F00_Bad_Request({
+    throw this.createIlpError({
+      code: codes.F00_BAD_REQUEST,
       message: 'Cases must have an expiry.'
-    }))
+    })
   }
 }
 

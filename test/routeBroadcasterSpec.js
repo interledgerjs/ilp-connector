@@ -122,11 +122,12 @@ describe('RouteBroadcaster', function () {
   })
 
   describe('crawl', function () {
-    it('loads peers from CONNECTOR_PEERS even if they are not returned in the ledger info', async function () {
-      this.config.peers.push('eur-ledger.margery')
+    it('loads peers from CONNECTOR_PEERS when autoloadPeers is off', async function () {
+      this.config.peers.push('eur-ledger.')
+      this.config.autoloadPeers = false
       this.broadcaster = new RouteBroadcaster(this.tables, this.backend, this.ledgers, this.config)
       this.broadcaster.crawl()
-      assert(this.broadcaster.peersByLedger['eur-ledger.']['eur-ledger.margery'])
+      assert(this.broadcaster.peers['eur-ledger.'])
     })
   })
 
@@ -198,9 +199,6 @@ describe('RouteBroadcaster', function () {
       let routesWithSourceLedgerASent, routesWithSourceLedgerBSent
       this.ledgers.getPlugin(ledgerA).sendRequest = function (message) {
         assert.deepEqual(message, {
-          ledger: ledgerA,
-          from: ledgerA + 'mark',
-          to: ledgerA + 'mary',
           custom:
           { method: 'broadcast_routes',
             data:
@@ -216,9 +214,6 @@ describe('RouteBroadcaster', function () {
 
       this.ledgers.getPlugin(ledgerB).sendRequest = function (message) {
         assert.deepEqual(message, {
-          ledger: ledgerB,
-          from: ledgerB + 'mark',
-          to: ledgerB + 'mary',
           custom:
           { method: 'broadcast_routes',
             data:
@@ -389,8 +384,6 @@ describe('RouteBroadcaster', function () {
       assert.deepEqual(route.sourceLedger, ledgerA)
       assert.deepEqual(route.nextLedger, ledgerB)
       assert.deepEqual(route.destinationLedger, ledgerB)
-      assert.deepEqual(route.sourceAccount, ledgerA + 'mark')
-      assert.deepEqual(route.destinationAccount, ledgerB + 'mark')
       assert.deepEqual(route.getPoints(), [ [0, 0], [100000000000000, 77823868070382] ])
     })
   })

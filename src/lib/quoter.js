@@ -145,7 +145,7 @@ class Quoter {
     const hop = this.localTables.findBestHopForSourceAmount(
       sourceLedger, destination, sourceAmount)
 
-    return {
+    return hop && {
       destinationLedger: hop.bestRoute.nextLedger,
       destinationCreditAccount: hop.bestRoute.isLocal ? destination : hop.bestHop,
       sourceAmount: sourceAmount.toString(),

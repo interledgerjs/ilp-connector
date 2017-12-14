@@ -2,15 +2,15 @@
 
 const _ = require('lodash')
 const nock = require('nock')
-const packet = require('ilp-packet')
 nock.enableNetConnect(['localhost'])
 const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const wsHelper = require('./helpers/ws')
-const subscriptions = require('../src/models/subscriptions')
 const sinon = require('sinon')
+const IlpPacket = require('ilp-packet')
+const { assert } = require('chai')
 
 const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
@@ -77,7 +77,6 @@ describe('Subscriptions', function () {
     this.wsEurLedger = new wsHelper.Server('ws://eur-ledger.example/accounts/mark/transfers')
     this.wsEurLedger.on('connection', () => null)
     this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
-    await subscriptions.subscribePairs(this.ledgers, this.config, this.routeBuilder, this.backend)
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
@@ -99,78 +98,75 @@ describe('Subscriptions', function () {
     const sourceAmount = '10700'
     const destinationAmount = '10000'
     const fulfillment = 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'
-    const fulfillmentData = 'ABAB'
-    const sendSpy = sinon.spy(
+    const fulfillmentData = Buffer.from('ABAB', 'base64')
+    const sendStub = sinon.stub(
       this.ledgers.getPlugin(destinationTransfer.ledger),
       'sendTransfer')
-    const fulfillSpy = sinon.spy(
-      this.ledgers.getPlugin(sourceTransfer.ledger),
-      'fulfillCondition')
-
-    await this.ledgers.getPlugin(sourceTransfer.ledger)
-      .emitAsync('incoming_prepare', {
-        id: sourceTransfer.id,
-        direction: 'incoming',
-        ledger: sourceTransfer.ledger,
-        account: sourceTransfer.debits[0].account,
-        amount: sourceAmount,
-        executionCondition: sourceTransfer.debits[0].execution_condition,
-        expiresAt: sourceTransfer.debits[0].expires_at,
-        ilp: packet.serializeIlpPayment({
-          amount: destinationAmount,
-          account: destinationTransfer.credits[0].account
-        }).toString('base64')
+      .resolves({
+        fulfillment,
+        ilp: IlpPacket.serializeIlpFulfillment({
+          data: fulfillmentData
+        })
       })
 
-    sinon.assert.calledOnce(sendSpy)
+    const result = await this.ledgers.getPlugin(sourceTransfer.ledger)
+      ._transferHandler({
+        amount: sourceAmount,
+        executionCondition: sourceTransfer.execution_condition,
+        expiresAt: new Date(sourceTransfer.expires_at),
+        ilp: IlpPacket.serializeIlpPayment({
+          account: destinationTransfer.credits[0].account,
+          amount: destinationAmount
+        }),
+        custom: { }
+      })
 
-    const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
-    await this.ledgers.getPlugin(sourceTransfer.ledger)
-      .emitAsync('outgoing_fulfill', {
-        id: destinationTransfer.id,
-        direction: 'outgoing',
-        ledger: destinationTransfer.ledger,
-        account: destinationTransfer.debits[0].account,
-        amount: destinationAmount,
-        executionCondition: destinationTransfer.debits[0].execution_condition,
-        noteToSelf: {
-          source_transfer_ledger: sourceTransfer.ledger,
-          source_transfer_id: sourceId,
-          source_transfer_amount: sourceAmount
-        }
-      }, fulfillment, fulfillmentData)
+    sinon.assert.calledOnce(sendStub)
 
-    sinon.assert.calledOnce(fulfillSpy)
-    sinon.assert.calledWith(fulfillSpy, sourceId, fulfillment, fulfillmentData)
+    assert.deepEqual(result, {
+      fulfillment,
+      ilp: IlpPacket.serializeIlpFulfillment({
+        data: fulfillmentData
+      })
+    })
   })
 
   it('should notify the backend of a successful payment', async function () {
     const sourceTransfer = this.transferUsdPrepared
     const destinationTransfer = this.transferEurProposed
     const backendSpy = sinon.spy(this.backend, 'submitPayment')
+    const sourceAmount = '10700'
+    const destinationAmount = '10000'
+    const fulfillment = 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'
+    const fulfillmentData = Buffer.from('ABAB', 'base64')
+    sinon.stub(
+      this.ledgers.getPlugin(destinationTransfer.ledger),
+      'sendTransfer')
+      .resolves({
+        fulfillment,
+        ilp: IlpPacket.serializeIlpFulfillment({
+          data: fulfillmentData
+        })
+      })
 
-    const sourceId = sourceTransfer.id.substring(sourceTransfer.id.length - 36)
     await this.ledgers.getPlugin(sourceTransfer.ledger)
-      .emitAsync('outgoing_fulfill', {
-        id: destinationTransfer.id,
-        direction: 'outgoing',
-        ledger: destinationTransfer.ledger,
-        account: destinationTransfer.debits[0].account,
-        amount: destinationTransfer.debits[0].amount,
-        executionCondition: destinationTransfer.debits[0].execution_condition,
-        noteToSelf: {
-          source_transfer_ledger: sourceTransfer.ledger,
-          source_transfer_id: sourceId,
-          source_transfer_amount: sourceTransfer.debits[0].amount
-        }
-      }, 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok')
+      ._transferHandler({
+        amount: sourceAmount,
+        executionCondition: sourceTransfer.execution_condition,
+        expiresAt: new Date(sourceTransfer.expires_at),
+        ilp: IlpPacket.serializeIlpPayment({
+          account: destinationTransfer.credits[0].account,
+          amount: destinationAmount
+        }),
+        custom: { }
+      })
 
     sinon.assert.calledOnce(backendSpy)
     sinon.assert.calledWith(backendSpy, {
       source_ledger: sourceTransfer.ledger,
-      source_amount: sourceTransfer.debits[0].amount,
+      source_amount: sourceAmount,
       destination_ledger: destinationTransfer.ledger,
-      destination_amount: destinationTransfer.credits[0].amount
+      destination_amount: destinationAmount
     })
   })
 })

@@ -39,9 +39,10 @@ class RouteBroadcaster {
 
     this.autoloadPeers = config.autoloadPeers
     this.defaultPeers = config.peers
-    // peersByLedger is stored in the form { ledgerPrefix ⇒ { connectorAddress ⇒ true } }
+    // peersByLedger is stored in the form { ledgerPrefix ⇒ true }
     // Note that the connectorAddress must be the full ILP address, including the ledgerPrefix
-    this.peersByLedger = {}
+    this.peers = {}
+    this.defaultPeers.forEach(peer => { this.peers[peer] = true })
 
     this.peerEpochs = {} // { adjacentConnector ⇒ int } the last broadcast-epoch we successfully informed a peer in
     this.holdDownTime = config.routeExpiry // todo? replace 'expiry' w/ hold-down or just reappropriate the term?
@@ -110,7 +111,7 @@ class RouteBroadcaster {
   }
 
   broadcast (requestFullTable = false) {
-    const adjacentLedgers = Object.keys(this.peersByLedger)
+    const adjacentLedgers = Object.keys(this.peers)
     const routes = this.routingTables.toJSON(SIMPLIFY_POINTS).filter(route => {
       const isPeerRoute = (route.destination_ledger.startsWith(PEER_LEDGER_PREFIX))
       return !isPeerRoute
@@ -133,95 +134,66 @@ class RouteBroadcaster {
   }
 
   _broadcastToLedger (adjacentLedger, routes, unreachableLedgers, requestFullTable) {
-    const connectors = Object.keys(this.peersByLedger[adjacentLedger])
-    return Promise.all(connectors.map((account) => {
-      log.info('broadcasting ' + routes.length + ' routes to ' + account)
-      const routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[account] || -1)))
-      const fieldsToOmit = ['added_during_epoch']
-      if (!this.broadcastCurves) {
-        fieldsToOmit.push('points')
-      }
+    log.info('broadcasting ' + routes.length + ' routes to ' + adjacentLedger)
+    const routesNewToConnector = routes.filter((route) => (route.added_during_epoch > (this.peerEpochs[adjacentLedger] || -1)))
+    const fieldsToOmit = ['added_during_epoch']
+    if (!this.broadcastCurves) {
+      fieldsToOmit.push('points')
+    }
 
-      const newRoutes = routesNewToConnector.map((route) => _.omit(route, fieldsToOmit))
-      if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:', unreachableLedgers)
+    const newRoutes = routesNewToConnector.map((route) => _.omit(route, fieldsToOmit))
+    if (unreachableLedgers.length > 0) log.info('_broadcastToLedger unreachableLedgers:', unreachableLedgers)
 
-      const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendRequest({
-        ledger: adjacentLedger,
-        from: this.ledgers.getPlugin(adjacentLedger).getAccount(),
-        to: account,
-        custom: {
-          method: 'broadcast_routes',
-          data: {
-            new_routes: newRoutes,
-            hold_down_time: this.holdDownTime,
-            unreachable_through_me: unreachableLedgers,
-            request_full_table: requestFullTable
-          }
-        },
-        // timeout the plugin.sendRequest Promise just so we don't have it hanging around forever
-        timeout: this.routeBroadcastInterval
+    const broadcastPromise = this.ledgers.getPlugin(adjacentLedger).sendRequest({
+      custom: {
+        method: 'broadcast_routes',
+        data: {
+          new_routes: newRoutes,
+          hold_down_time: this.holdDownTime,
+          unreachable_through_me: unreachableLedgers,
+          request_full_table: requestFullTable
+        }
+      },
+      // timeout the plugin.sendRequest Promise just so we don't have it hanging around forever
+      timeout: this.routeBroadcastInterval
+    })
+
+    // We are deliberately calling an async function synchronously because
+    // we do not want to wait for the routes to be broadcasted before continuing.
+    // Even if there is an error sending a specific route or a sendRequest promise hangs,
+    // we should continue sending the other broadcasts out
+    return broadcastPromise
+      .then(() => {
+        this.peerEpochs[adjacentLedger] = this._currentEpoch()
       })
-
-      // We are deliberately calling an async function synchronously because
-      // we do not want to wait for the routes to be broadcasted before continuing.
-      // Even if there is an error sending a specific route or a sendRequest promise hangs,
-      // we should continue sending the other broadcasts out
-      return broadcastPromise
-        .then(() => {
-          this.peerEpochs[account] = this._currentEpoch()
-        })
-        .catch((err) => {
-          let lostLedgerLinks = this.routingTables.invalidateConnector(account)
-          log.info('detectedDown! account:', account, 'lostLedgerLinks:', lostLedgerLinks)
-          this.markLedgersUnreachable(lostLedgerLinks)
-          // todo: it would be better for the possibly-just-netsplit connector to report its last seen version of this connector's ledger
-          this.peerEpochs[account] = -1
-          log.warn('broadcasting routes to ' + account + ' failed')
-          log.debug(err)
-        })
-    }))
+      .catch((err) => {
+        let lostLedgerLinks = this.routingTables.invalidateConnector(adjacentLedger)
+        log.info('detectedDown! account:', adjacentLedger, 'lostLedgerLinks:', lostLedgerLinks)
+        this.markLedgersUnreachable(lostLedgerLinks)
+        // todo: it would be better for the possibly-just-netsplit connector to report its last seen version of this connector's ledger
+        this.peerEpochs[adjacentLedger] = -1
+        log.warn('broadcasting routes to ' + adjacentLedger + ' failed')
+        log.debug(err)
+      })
   }
 
   crawl () {
-    this.ledgers.getPlugins().forEach(this._crawlLedgerPlugin, this)
-  }
-
-  _crawlLedgerPlugin (plugin) {
-    if (!plugin.isConnected()) return
-    const localAccount = plugin.getAccount()
-    const info = plugin.getInfo()
-    const prefix = info.prefix
-    for (const connector of (info.connectors || [])) {
-      // Don't broadcast routes to ourselves.
-      if (localAccount === connector) continue
-      if (this.autoloadPeers || this.defaultPeers.indexOf(connector) !== -1) {
-        this._addPeer(prefix, connector)
-      }
-    }
-
-    // Add peers from config if their prefixes match the ledger,
-    // even if they are not returned in the ledger info
-    for (const connector of this.defaultPeers) {
-      if (connector.indexOf(prefix) === 0) {
-        this._addPeer(prefix, connector)
-      }
+    if (this.autoloadPeers) {
+      this.ledgers.getPrefixes().forEach(this._addPeer, this)
     }
   }
 
-  _addPeer (prefix, connector) {
-    if (!this.peersByLedger[prefix]) {
-      this.peersByLedger[prefix] = {}
-    }
-    if (this.peersByLedger[prefix][connector]) {
+  _addPeer (prefix) {
+    if (this.peers[prefix]) {
       // don't log duplicates
       return
     }
-    this.peersByLedger[prefix][connector] = true
-    log.info('adding peer ' + connector + ' via ledger ' + prefix)
+    this.peers[prefix] = true
+    log.info('adding peer ' + prefix)
   }
 
   depeerLedger (prefix) {
-    delete this.peersByLedger[prefix]
+    delete this.peers[prefix]
   }
 
   reloadLocalRoutes () {
@@ -285,8 +257,6 @@ class RouteBroadcaster {
       destination_ledger: destinationLedger,
       additional_info: curve.additional_info,
       min_message_window: this.minMessageWindow,
-      source_account: sourcePlugin.getAccount(),
-      destination_account: destinationPlugin.getAccount(),
       points: curve.points
     }, this._currentEpoch())
   }

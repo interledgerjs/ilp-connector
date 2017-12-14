@@ -2,15 +2,17 @@
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const packet = require('ilp-packet')
-const ilpErrors = require('./ilp-errors')
+const { codes, createIlpError } = require('./ilp-errors')
 const NoRouteFoundError = require('../errors/no-route-found-error')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const LedgerNotConnectedError = require('../errors/ledger-not-connected-error')
-const IncomingTransferError = require('../errors/incoming-transfer-error')
-const getDeterministicUuid = require('../lib/utils').getDeterministicUuid
 const log = require('../common/log').create('route-builder')
-const startsWith = require('lodash/startsWith')
+
+const VALID_PAYMENT_PACKETS = [
+  packet.Type.TYPE_ILP_PAYMENT,
+  packet.Type.TYPE_ILP_FORWARDED_PAYMENT
+]
 
 class RouteBuilder {
   /**
@@ -34,6 +36,7 @@ class RouteBuilder {
     this.slippage = config.slippage
     this.secret = config.secret
     this.unwiseUseSameTransferId = config.unwiseUseSameTransferId
+    this.createIlpError = createIlpError.bind(null, config.account || '')
   }
 
   /**
@@ -131,6 +134,63 @@ class RouteBuilder {
     }
   }
 
+  async getNextHopFromIlpPacket (sourceLedger, sourceAmount, ilp) {
+    let ilpPacket
+    try {
+      ilpPacket = packet.deserializeIlpPacket(ilp)
+    } catch (err) {
+      const errInfo = (typeof err === 'object' && err.stack) ? err.stack : err
+      log.debug('error parsing ILP packet ' + ilp.toString('base64') + ' - ' + errInfo)
+      throw this.createIlpError({
+        code: codes.F01_INVALID_PACKET,
+        message: 'Source transfer has invalid ILP packet'
+      })
+    }
+
+    if (VALID_PAYMENT_PACKETS.indexOf(ilpPacket.type) === -1) {
+      throw this.createIlpError({
+        code: codes.F01_INVALID_PACKET,
+        message: 'Invalid packet type'
+      })
+    }
+
+    if (ilpPacket.data.account.length === 0) {
+      throw this.createIlpError({
+        code: codes.F01_INVALID_PACKET,
+        message: 'Missing destination'
+      })
+    }
+
+    log.info('constructing destination transfer ' +
+      'sourceLedger=%s sourceAmount=%s destination=%s',
+      sourceLedger, sourceAmount, ilpPacket.data.account)
+
+    let nextHop
+    if (ilpPacket.type === packet.Type.TYPE_ILP_PAYMENT) {
+      nextHop = await this.quoter.findBestPathForFinalAmount(
+        sourceLedger,
+        ilpPacket.data.account,
+        ilpPacket.data.amount
+      )
+    } else if (ilpPacket.type === packet.Type.TYPE_ILP_FORWARDED_PAYMENT) {
+      nextHop = await this.quoter.findBestPathForSourceAmount(
+        sourceLedger,
+        ilpPacket.data.account,
+        sourceAmount
+      )
+    }
+
+    if (!nextHop) {
+      log.info(`could not find quote for transfer. sourceLedger=${sourceLedger} sourceAmount=${sourceAmount} ilp=${ilp.toString('base64')}`)
+      throw this.createIlpError({
+        code: codes.F02_UNREACHABLE,
+        message: 'No route found from: ' + sourceLedger + ' to: ' + ilpPacket.data.account
+      })
+    }
+
+    return nextHop
+  }
+
   /**
    * Given a source transfer with an embedded final transfer, get the next
    * transfer in the chain.
@@ -143,99 +203,41 @@ class RouteBuilder {
    * @param {Transfer} sourceTransfer
    * @returns {Transfer} destinationTransfer
    */
-  async getDestinationTransfer (sourceTransfer) {
-    log.info('constructing destination transfer ' +
-      'sourceLedger=%s sourceAmount=%s ilpPacket=%s',
-      sourceTransfer.ledger, sourceTransfer.amount, sourceTransfer.ilp)
-    if (!sourceTransfer.ilp) {
-      throw new IncomingTransferError(ilpErrors.F01_Invalid_Packet({
-        message: 'source transfer is missing "ilp"'
-      }))
-    }
-    let ilpPacket
-    try {
-      ilpPacket = packet.deserializeIlpPacket(Buffer.from(sourceTransfer.ilp, 'base64'))
-    } catch (err) {
-      log.debug('error parsing ILP packet: ' + sourceTransfer.ilp)
-      throw new IncomingTransferError(ilpErrors.F01_Invalid_Packet({
-        message: 'source transfer has invalid ILP packet'
-      }))
-    }
-    const destinationAddress = ilpPacket.data.account
-    const myAddress = this.ledgers.getPlugin(sourceTransfer.ledger).getAccount()
-    if (startsWith(destinationAddress, myAddress)) {
-      log.debug(
-        'ignoring transfer addressed to destination which starts with my address destination=%s me=%s',
-        destinationAddress,
-        myAddress
-      )
-      return
-    }
+  async getDestinationTransfer (sourceLedger, sourceTransfer) {
+    const nextHop = await this.getNextHopFromIlpPacket(sourceLedger, sourceTransfer.amount, sourceTransfer.ilp)
 
-    log.debug('constructing transfer for ILP packet with account=%s amount=%s',
-      ilpPacket.data.account, ilpPacket.data.amount)
-
-    const sourceLedger = sourceTransfer.ledger
-
-    // If the ILP packet is of type Forwarded Payment, it means we should forward the maximum
-    // we are willing to. Note that this feature is experimental, and support for it may disappear
-    // or change at any time.
-    const nextHop = (ilpPacket.type === packet.Type.TYPE_ILP_FORWARDED_PAYMENT)
-      ? await this.quoter.findBestPathForSourceAmount(sourceLedger, ilpPacket.data.account, sourceTransfer.amount)
-      : await this.quoter.findBestPathForFinalAmount(sourceLedger, ilpPacket.data.account, ilpPacket.data.amount)
-    if (!nextHop) {
-      log.info('could not find quote for source transfer: ' + JSON.stringify(sourceTransfer))
-      throw new IncomingTransferError(ilpErrors.F02_Unreachable({
-        message: 'No route found from: ' + sourceLedger + ' to: ' + ilpPacket.data.account
-      }))
-    }
     this._verifyLedgerIsConnected(nextHop.destinationLedger)
 
     // As long as the fxSpread > slippage, the connector won't lose money.
     const expectedSourceAmount = new BigNumber(nextHop.sourceAmount).times(1 - this.slippage)
     if (expectedSourceAmount.greaterThan(sourceTransfer.amount)) {
-      throw new IncomingTransferError(ilpErrors.R01_Insufficient_Source_Amount({
+      throw this.createIlpError({
+        code: codes.R01_INSUFFICIENT_SOURCE_AMOUNT,
         message: 'Payment rate does not match the rate currently offered'
-      }))
+      })
     }
     // TODO: Verify atomic mode notaries are trusted
-    // TODO: Verify expiry is acceptable
 
-    const noteToSelf = {
-      source_transfer_ledger: sourceTransfer.ledger,
-      source_transfer_id: sourceTransfer.id,
-      source_transfer_amount: sourceTransfer.amount
+    const custom = {}
+
+    // Carry forward atomic mode fields
+    if (sourceTransfer.custom && sourceTransfer.custom.cancellationCondition) {
+      custom.cancellationCondition = sourceTransfer.custom.cancellationCondition
+    }
+    if (sourceTransfer.custom && sourceTransfer.custom.cases) {
+      custom.cases = sourceTransfer.custom.cases
     }
 
-    // The ID for the next transfer should be deterministically generated, so
-    // that the connector doesn't send duplicate outgoing transfers if it
-    // receives duplicate notifications.
-    //
-    // The deterministic generation should ideally be impossible for a third
-    // party to predict. Otherwise an attacker might be able to squat on a
-    // predicted ID in order to interfere with a payment or make a connector
-    // look unreliable. In order to assure this, the connector may use a
-    // secret that seeds the deterministic ID generation.
-    //
-    // If people specifically want to use the same transfer ID though, we'll let them
-    const id = this.unwiseUseSameTransferId
-      ? sourceTransfer.id
-      : getDeterministicUuid(this.secret, sourceTransfer.ledger + '/' + sourceTransfer.id)
-
-    return _.omitBy({
-      id,
-      ledger: nextHop.destinationLedger,
-      direction: 'outgoing',
-      from: this.ledgers.getPlugin(nextHop.destinationLedger).getAccount(),
-      to: nextHop.destinationCreditAccount,
-      amount: nextHop.destinationAmount,
-      ilp: sourceTransfer.ilp,
-      noteToSelf,
-      executionCondition: sourceTransfer.executionCondition,
-      cancellationCondition: sourceTransfer.cancellationCondition,
-      expiresAt: this._getDestinationExpiry(sourceTransfer.expiresAt),
-      cases: sourceTransfer.cases
-    }, _.isUndefined)
+    return {
+      destinationLedger: nextHop.destinationLedger,
+      destinationTransfer: _.omitBy({
+        amount: nextHop.destinationAmount,
+        ilp: sourceTransfer.ilp,
+        executionCondition: sourceTransfer.executionCondition,
+        expiresAt: this._getDestinationExpiry(sourceTransfer.expiresAt),
+        custom
+      }, _.isUndefined)
+    }
   }
 
   _getDestinationExpiry (sourceExpiry) {
