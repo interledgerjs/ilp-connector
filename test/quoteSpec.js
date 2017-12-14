@@ -421,7 +421,7 @@ describe('Quotes', function () {
   })
 
   it('fails when the source ledger connection is closed', async function () {
-    this.ledgers.getPlugin('eur-ledger.').connected = false
+    this.ledgers.getPlugin('eur-ledger.').oldPlugin.connected = false
     const quotePromise = this.routeBuilder.quoteByDestination({
       sourceAccount: 'eur-ledger.alice',
       destinationAccount: 'usd-ledger.bob',
@@ -433,7 +433,7 @@ describe('Quotes', function () {
   })
 
   it('fails when the destination ledger connection is closed', async function () {
-    this.ledgers.getPlugin('usd-ledger.').connected = false
+    this.ledgers.getPlugin('usd-ledger.').oldPlugin.connected = false
     const quotePromise = this.routeBuilder.quoteByDestination({
       sourceAccount: 'eur-ledger.alice',
       destinationAccount: 'usd-ledger.bob',
@@ -442,41 +442,5 @@ describe('Quotes', function () {
     })
 
     await assert.isRejected(quotePromise, LedgerNotConnectedError, 'No connection to ledger "usd-ledger."')
-  })
-})
-
-describe('Quotes with minBalance', function () {
-  logHelper(logger)
-
-  beforeEach(async function () {
-    appHelper.create(this, '0')
-    this.clock = sinon.useFakeTimers(START_DATE)
-
-    const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
-    _.map(testLedgers, (ledgerUri) => {
-      this.ledgers.getPlugin(ledgerUri).getBalance =
-        async function () { return '150000' }
-    })
-
-    await this.backend.connect(ratesResponse)
-    await this.ledgers.connect()
-    await this.routeBroadcaster.reloadLocalRoutes()
-  })
-
-  afterEach(function () {
-    this.clock.restore()
-    nock.cleanAll()
-  })
-
-  it('fails when the connector is broke', async function () {
-    console.log('setting minBalance')
-    const quotePromise = this.routeBuilder.quoteByDestination({
-      sourceAccount: 'eur-ledger.alice',
-      destinationAccount: 'usd-ledger.bob',
-      destinationAmount: '200000',
-      destinationHoldDuration: 5
-    })
-
-    await assert.isRejected(quotePromise, NoRouteFoundError, '')
   })
 })

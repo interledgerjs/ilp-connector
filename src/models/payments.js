@@ -2,10 +2,8 @@
 
 const testPaymentExpiry = require('../lib/testPaymentExpiry')
 const log = require('../common').log.create('payments')
-const executeSourceTransfer = require('../lib/executeSourceTransfer')
 const validator = require('../lib/validate')
-const ilpErrors = require('../lib/ilp-errors')
-const IncomingTransferError = require('../errors/incoming-transfer-error')
+const { createIlpError, codes } = require('../lib/ilp-errors')
 
 async function validateExpiry (sourceTransfer, destinationTransfer, config) {
   // TODO tie the maxHoldTime to the fx rate
@@ -15,76 +13,102 @@ async function validateExpiry (sourceTransfer, destinationTransfer, config) {
   tester.validateMaxHoldTime()
 }
 
-async function settle (sourceTransfer, destinationTransfer, config, ledgers) {
-  log.debug('Settle payment, source: ' + JSON.stringify(sourceTransfer))
+async function settle (destinationLedger, destinationTransfer, config, ledgers) {
   log.debug('Settle payment, destination: ' + JSON.stringify(destinationTransfer))
-  await ledgers.getPlugin(destinationTransfer.ledger)
-    .sendTransfer(destinationTransfer)
-    .catch((err) => {
-      const rejectionMessage =
-          (err.name === 'InvalidFieldsError' || err.name === 'DuplicateIdError')
-        ? ilpErrors.F00_Bad_Request({message: 'destination transfer failed: ' + err.message})
-        : (err.name === 'InsufficientBalanceError')
-        ? ilpErrors.T04_Insufficient_Liquidity({message: 'destination transfer failed: ' + err.message})
-        : (err.name === 'AccountNotFoundError')
-        ? ilpErrors.F02_Unreachable({message: 'destination transfer failed: ' + err.message})
-        : ilpErrors.T01_Ledger_Unreachable({message: 'destination transfer failed: ' + err.message})
-      return ledgers.getPlugin(sourceTransfer.ledger)
-        .rejectIncomingTransfer(sourceTransfer.id, Object.assign({
-          triggered_by: ledgers.getPlugin(destinationTransfer.ledger).getAccount(),
-          triggered_at: (new Date()).toISOString(),
-          additional_info: {}
-        }, rejectionMessage))
-        .then(() => { throw err })
-    })
+  return await ledgers.getPlugin(destinationLedger).sendTransfer(destinationTransfer)
 }
 
-async function updateIncomingTransfer (sourceTransfer, ledgers, config, routeBuilder) {
-  let destinationTransfer
+const updateIncomingTransfer = (ledgers, config, routeBuilder, backend) => async (sourceLedger, sourceTransfer) => {
+  const account = config.account
+
+  if (typeof sourceTransfer.ilp === 'string') {
+    throw new TypeError('ILP packet provided as a string, should be a buffer. ledger=' + sourceLedger)
+  } else if (!Buffer.isBuffer(sourceTransfer.ilp)) {
+    throw new TypeError('ILP packet must be a buffer. ledger=' + sourceLedger)
+  }
+
+  const { destinationLedger, destinationTransfer } =
+    await routeBuilder.getDestinationTransfer(sourceLedger, sourceTransfer)
+
+  // TODO ENLIGHTEN Can't have transfers with no fulfillment
+  if (!destinationTransfer) return // in case the connector is the payee there is no destinationTransfer
+
+  await validateExpiry(sourceTransfer, destinationTransfer, config)
+
   try {
-    destinationTransfer = await routeBuilder.getDestinationTransfer(sourceTransfer)
-    if (!destinationTransfer) return // in case the connector is the payee there is no destinationTransfer
-    await validateExpiry(sourceTransfer, destinationTransfer, config)
-  } catch (err) {
-    if (!(err instanceof IncomingTransferError)) throw err
-    await rejectIncomingTransfer(sourceTransfer, err.rejectionMessage, ledgers)
-    return
-  }
-  await settle(sourceTransfer, destinationTransfer, config, ledgers)
-}
+    const result = await settle(destinationLedger, destinationTransfer, config, ledgers)
 
-async function processExecutionFulfillment (transfer, fulfillment, fulfillmentData, ledgers, backend, config) {
-  // If the destination transfer was executed, the connector should try to
-  // execute the source transfer to get paid.
-  if (transfer.direction === 'outgoing') {
     log.debug('Got notification about executed destination transfer with ID ' +
-      transfer.id + ' on ledger ' + transfer.ledger)
-    await executeSourceTransfer(transfer, fulfillment, fulfillmentData, ledgers, backend, config)
+      destinationTransfer.executionCondition.slice(0, 6).toString('base64') + ' on ledger ' + destinationLedger)
+
+    backend.submitPayment({
+      source_ledger: sourceLedger,
+      source_amount: sourceTransfer.amount,
+      destination_ledger: destinationLedger,
+      destination_amount: destinationTransfer.amount
+    })
+
+    return result
+  } catch (err) {
+    log.debug('Transfer error:', (typeof err === 'object' && err.stack) ? err.stack : err)
+    if (err.name === 'InterledgerRejectionError') {
+      throw err
+    }
+
+    if (err.name === 'InvalidFieldsError' || err.name === 'DuplicateIdError') {
+      throw createIlpError(account, {
+        code: codes.F00_BAD_REQUEST,
+        message: 'destination transfer failed: ' + err.message
+      })
+    }
+
+    if (err.name === 'InsufficientBalanceError') {
+      throw createIlpError(account, {
+        code: codes.T04_INSUFFICIENT_LIQUIDITY,
+        message: 'destination transfer failed: ' + err.message
+      })
+    }
+
+    if (err.name === 'AccountNotFoundError') {
+      throw createIlpError(account, {
+        code: codes.F02_UNREACHABLE,
+        message: 'destination transfer failed: ' + err.message
+      })
+    }
+
+    throw createIlpError(account, {
+      code: codes.T01_LEDGER_UNREACHABLE,
+      message: 'destination transfer failed: ' + err.message
+    })
+    //   return ledgers.getPlugin(sourceTransfer.ledger)
+    //     .rejectIncomingTransfer(sourceTransfer.id, Object.assign({
+    //       triggered_by: ledgers.getPlugin(destinationTransfer.ledger).getAccount(),
+    //       triggered_at: (new Date()).toISOString(),
+    //       additional_info: {}
+    //     }, rejectionMessage))
+    //     .then(() => { throw err })
+
+    // TODO ENLIGHTEN Create an InterledgerRejectionError
+    //
+    // await rejectIncomingTransfer(sourceLedger, sourceTransfer, err.rejectionMessage, ledgers)
+    // return
   }
 }
 
-async function rejectIncomingTransfer (sourceTransfer, _rejectionMessage, ledgers) {
-  const myAddress = ledgers.getPlugin(sourceTransfer.ledger).getAccount()
+async function rejectIncomingTransfer (sourceLedger, sourceTransfer, _rejectionMessage, ledgers) {
   const rejectionMessage = Object.assign({
-    triggered_by: myAddress,
+    // TODO: ENLIGHTEN
+    // triggered_by: myAddress,
     triggered_at: (new Date()).toISOString(),
     additional_info: {}
   }, _rejectionMessage)
-  if (sourceTransfer.executionCondition) {
-    log.debug(
-      'rejecting incoming transfer id=%s reason=%s',
-      sourceTransfer.id,
-      JSON.stringify(rejectionMessage)
-    )
-    await ledgers.getPlugin(sourceTransfer.ledger)
-      .rejectIncomingTransfer(sourceTransfer.id, rejectionMessage)
-  } else {
-    log.debug(
-      'ignoring incoming optimistic transfer id=%s reason=%s',
-      sourceTransfer.id,
-      JSON.stringify(rejectionMessage)
-    )
-  }
+  log.debug(
+    'rejecting incoming transfer id=%s reason=%s',
+    sourceTransfer.executionCondition.slice(0, 6).toString('base64'),
+    JSON.stringify(rejectionMessage)
+  )
+  await ledgers.getPlugin(sourceLedger)
+    .rejectIncomingTransfer(sourceTransfer.id, rejectionMessage)
 }
 
 async function rejectSourceTransfer (destinationTransfer, rejectionMessage, ledgers) {
@@ -105,7 +129,6 @@ async function rejectSourceTransfer (destinationTransfer, rejectionMessage, ledg
 
 module.exports = {
   updateIncomingTransfer,
-  processExecutionFulfillment,
   rejectIncomingTransfer,
   rejectSourceTransfer
 }

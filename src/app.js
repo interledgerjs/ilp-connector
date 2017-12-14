@@ -1,7 +1,6 @@
 'use strict'
 
 const _ = require('lodash')
-const subscriptions = require('./models/subscriptions')
 const logger = require('./common/log')
 const log = logger.create('app')
 
@@ -12,6 +11,7 @@ const RouteBroadcaster = require('./lib/route-broadcaster')
 const Quoter = require('./lib/quoter')
 const Ledgers = require('./lib/ledgers')
 const MessageRouter = require('./lib/message-router')
+const payments = require('./models/payments')
 
 function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter) {
   for (let pair of ledgers.getPairs()) {
@@ -27,7 +27,6 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       log.error(error)
       process.exit(1)
     }
-    await subscriptions.subscribePairs(ledgers, config, routeBuilder, backend)
 
     let allLedgersConnected
     try {
@@ -62,6 +61,7 @@ function addPlugin (config, ledgers, backend, routeBroadcaster, id, options, tra
 
     await ledgers.getPlugin(id).connect({timeout: Infinity})
     await routeBroadcaster.reloadLocalRoutes()
+    routeBroadcaster.crawl()
   })()
 }
 
@@ -158,6 +158,10 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
       routeBuilder
     })
   }
+
+  ledgers.registerTransferHandler(
+    payments.updateIncomingTransfer(ledgers, config, routeBuilder, backend)
+  )
 
   return {
     listen: _.partial(listen, config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter),

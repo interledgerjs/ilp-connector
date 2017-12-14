@@ -1,12 +1,13 @@
 'use strict'
 
 const _ = require('lodash')
-const co = require('co')
 const EventEmitter = require('eventemitter2')
+const compat = require('ilp-compat-plugin')
 const PluginStore = require('../lib/pluginStore.js')
 const TradingPairs = require('./trading-pairs')
 const logger = require('../common/log')
 const log = logger.create('ledgers')
+const { createIlpError, codes } = require('./ilp-errors')
 
 const PLUGIN_EVENTS = [
   'connect',
@@ -23,11 +24,13 @@ class Ledgers extends EventEmitter {
     super()
     this.pluginList = [] // LedgerPlugin[]
     this.plugins = {} // { prefix ⇒ LedgerPlugin }
+    this.prefixReverseMap = new Map() // { LedgerPlugin ⇒ prefix }
     this.tables = routingTables
     this._config = config
     this._pairs = new TradingPairs()
     this._ledgers = new Map()
-    this.requestHandler = co.wrap(this._requestHandler.bind(this))
+    this.requestHandler = this._requestHandler.bind(this)
+    this.createIlpError = createIlpError.bind(null, config.account)
 
     const ledgers = this
     this._relayEvents = {}
@@ -56,7 +59,13 @@ class Ledgers extends EventEmitter {
     return this.plugins[ledgerPrefix] || null
   }
 
-  getPlugins (ledgerPrefix) { return this.pluginList }
+  getPlugins () {
+    return this.pluginList
+  }
+
+  getPrefixes () {
+    return Object.keys(this.plugins)
+  }
 
   getPairs () {
     return this._pairs.toArray()
@@ -92,12 +101,12 @@ class Ledgers extends EventEmitter {
 
     creds.options.prefix = ledgerPrefix
     const Plugin = require(creds.plugin)
-    const plugin = new Plugin(Object.assign({}, creds.options, {
+    const plugin = compat(new Plugin(Object.assign({}, creds.options, {
       debugReplyNotifications: this._config.features.debugReplyNotifications,
       // non JSON-stringifiable fields are prefixed with an underscore
       _store: store,
       _log: logger.create(creds.plugin)
-    }))
+    })))
     if (creds.overrideInfo) {
       const _getInfo = plugin.getInfo.bind(plugin)
       plugin.getInfo = () => {
@@ -111,6 +120,7 @@ class Ledgers extends EventEmitter {
       currency: creds.currency,
       plugin
     })
+    plugin.registerTransferHandler(this._handleTransfer.bind(this, ledgerPrefix))
     plugin.registerRequestHandler(this.requestHandler)
 
     if (tradesTo) {
@@ -138,6 +148,28 @@ class Ledgers extends EventEmitter {
     this.removePlugin(ledgerPrefix)
     this._ledgers.delete(ledgerPrefix)
     return plugin
+  }
+
+  async _handleTransfer (prefix, transfer) {
+    if (!this._transferHandler) {
+      throw this.createIlpError({
+        code: codes.F02_UNREACHABLE,
+        message: 'Connector not ready'
+      })
+    }
+
+    return this._transferHandler(prefix, transfer)
+  }
+
+  registerTransferHandler (transferHandler) {
+    if (this._transferHandler) {
+      throw new Error('Transfer handler already registered')
+    }
+    this._transferHandler = transferHandler
+  }
+
+  deregisterTransferHandler () {
+    this._transferHandler = null
   }
 
   async _requestHandler (requestMessage) {
@@ -168,7 +200,7 @@ class Ledgers extends EventEmitter {
     if (prefix.slice(-1) !== '.') {
       throw new Error('prefix must end with "."')
     }
-    PLUGIN_EVENTS.forEach((event) => plugin.on(event, this._relayEvents[event]))
+    this.prefixReverseMap.set(plugin, prefix)
     this.pluginList.push(plugin)
     this.plugins[prefix] = plugin
   }
@@ -180,10 +212,15 @@ class Ledgers extends EventEmitter {
   removePlugin (prefix) {
     const plugin = this.getPlugin(prefix)
     if (!plugin) return
-    PLUGIN_EVENTS.forEach((event) => plugin.off(event, this._relayEvents[event]))
+    plugin.deregisterTransferHandler()
     this.pluginList.splice(this.pluginList.indexOf(plugin), 1)
     delete this.plugins[prefix]
+    this.prefixReverseMap.delete(plugin)
     return plugin
+  }
+
+  getPrefix (plugin) {
+    return this.prefixReverseMap.get(plugin)
   }
 }
 

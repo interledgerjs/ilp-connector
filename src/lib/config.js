@@ -149,6 +149,8 @@ function getLocalConfig () {
   features.debugReplyNotifications =
     Config.castBool(Config.getEnv(envPrefix, 'DEBUG_REPLY_NOTIFICATIONS'))
 
+  const account = Config.getEnv(envPrefix, 'ILP_ADDRESS') || 'unknown'
+
   // Configure which backend we will use to determine
   // rates and execute payments. The list of available backends
   // can be found in src/backends
@@ -227,6 +229,7 @@ function getLocalConfig () {
   const unwiseUseSameTransferId = Config.castBool(Config.getEnv(envPrefix, 'UNWISE_USE_SAME_TRANSFER_ID'))
 
   return {
+    account,
     backend,
     configRoutes,
     ledgerCredentials,

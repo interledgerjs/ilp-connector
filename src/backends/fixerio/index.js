@@ -112,30 +112,8 @@ class FixerIoBackend {
       .div(new BigNumber(sourceRate).shift(sourceInfo.currencyScale))
       .times(new BigNumber(1).minus(this.spread))
 
-    let limit
-    if (sourceInfo.maxBalance !== undefined) {
-      let balanceIn = await this.getBalance(params.source_ledger)
-      let maxAmountIn = new BigNumber(sourceInfo.maxBalance).minus(balanceIn)
-      limit = [ maxAmountIn.toString(), maxAmountIn.times(rate).toString() ]
-    }
-    if (destinationInfo.minBalance !== undefined) {
-      let balanceOut = await this.getBalance(params.destination_ledger)
-      let maxAmountOut = new BigNumber(balanceOut).minus(destinationInfo.minBalance)
-      if (limit === undefined || maxAmountOut.lessThan(limit[1])) {
-        limit = [ maxAmountOut.div(rate).toString(), maxAmountOut.toString() ]
-      }
-    }
-
-    if (limit) {
-      if (limit[1] === 0) { // the route exists in theory, but the connector is either at max source balance or at min destination balance
-        return { points: [] }
-      }
-      // avoid repeating non-increasing [0, 0], [0, 0], ...
-      return limit[0] === '0'
-        ? { points: [ [0, 0], [ PROBE_AMOUNT, limit[1] ] ] }
-        : { points: [ [0, 0], limit ] }
     // Make sure that neither amount exceeds 15 significant digits.
-    } else if (rate.gt(1)) {
+    if (rate.gt(1)) {
       return { points: [ [0, 0], [ PROBE_AMOUNT / rate, PROBE_AMOUNT ] ] }
     } else {
       return { points: [ [0, 0], [ PROBE_AMOUNT, PROBE_AMOUNT * rate ] ] }

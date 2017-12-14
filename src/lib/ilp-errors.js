@@ -1,35 +1,41 @@
 'use strict'
 
-// ILP Error Codes (see RFC-0003 for more details).
-const errors = {
-  F00_Bad_Request: {code: 'F00', name: 'Bad Request'},
-  F01_Invalid_Packet: {code: 'F01', name: 'Invalid Packet'},
-  F02_Unreachable: {code: 'F02', name: 'Unreachable'},
-  F03_Invalid_Amount: {code: 'F03', name: 'Invalid Amount'},
-  F04_Insufficient_Destination_Amount: {code: 'F04', name: 'Insufficient Destination Amount'},
-  F05_Wrong_Condition: {code: 'F05', name: 'Wrong Condition'},
-  F06_Unexpected_Payment: {code: 'F06', name: 'Unexpected Payment'},
-  F07_Cannot_Receive: {code: 'F07', name: 'Cannot Receive'},
-  F99_Application_Error: {code: 'F99', name: 'Application Error'},
+const IlpPacket = require('ilp-packet')
+const InterledgerRejectionError = require('../errors/interledger-rejection-error')
 
-  T00_Internal_Error: {code: 'T00', name: 'Internal Error'},
-  T01_Ledger_Unreachable: {code: 'T01', name: 'Ledger Unreachable'},
-  T02_Ledger_Busy: {code: 'T02', name: 'Ledger Busy'},
-  T03_Connector_Busy: {code: 'T03', name: 'Connector Busy'},
-  T04_Insufficient_Liquidity: {code: 'T04', name: 'Insufficient Liquidity'},
-  T05_Rate_Limited: {code: 'T05', name: 'Rate Limited'},
-  T99_Application_Error: {code: 'T99', name: 'Application Error'},
+exports.createIlpError = (account, { code, message, data }) => {
+  const err = new InterledgerRejectionError({
+    message,
+    ilpRejection: IlpPacket.serializeIlpRejection(Object.assign({
+      code,
+      triggeredBy: account,
+      message,
+      data: data || Buffer.alloc(0)
+    }))
+  })
 
-  R00_Transfer_Timed_Out: {code: 'R00', name: 'Transfer Timed Out'},
-  R01_Insufficient_Source_Amount: {code: 'R01', name: 'Insufficient Source Amount'},
-  R02_Insufficient_Timeout: {code: 'R02', name: 'Insufficient Timeout'},
-  R99_Application_Error: {code: 'R99', name: 'Application Error'}
+  return err
 }
 
-function makeError (base, extra) {
-  return Object.assign({}, base, extra)
-}
-
-for (const key in errors) {
-  exports[key] = makeError.bind(null, errors[key])
+exports.codes = {
+  F00_BAD_REQUEST: 'F00',
+  F01_INVALID_PACKET: 'F01',
+  F02_UNREACHABLE: 'F02',
+  F03_INVALID_AMOUNT: 'F03',
+  F04_INSUFFICIENT_DESTINATION: 'F04',
+  F05_WRONG_CONDITION: 'F05',
+  F06_UNEXPECTED_PAYMENT: 'F06',
+  F07_CANNOT_RECEIVE: 'F07',
+  F99_APPLICATION_ERROR: 'F99',
+  T00_INTERNAL_ERROR: 'T00',
+  T01_LEDGER_UNREACHABLE: 'T01',
+  T02_LEDGER_BUSY: 'T02',
+  T03_CONNECTOR_BUSY: 'T03',
+  T04_INSUFFICIENT_LIQUIDITY: 'T04',
+  T05_RATE_LIMITED: 'T05',
+  T99_APPLICATION_ERROR: 'T99',
+  R00_TRANSFER_TIMED_OUT: 'R00',
+  R01_INSUFFICIENT_SOURCE_AMOUNT: 'R01',
+  R02_INSUFFICIENT_TIMEOUT: 'R02',
+  R99_APPLICATION_ERROR: 'R99'
 }
