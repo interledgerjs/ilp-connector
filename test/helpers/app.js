@@ -1,6 +1,6 @@
 'use strict'
 
-const loadConfig = require('../../src/lib/config')
+const Config = require('../../src/lib/config')
 const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
 const PrefixMap = require('../../src/routing/prefix-map')
@@ -25,7 +25,7 @@ exports.create = function (context, minBalance) {
 
   process.env.CONNECTOR_SECRET = 'VafuntVJRw6YzDTs4IgIU1IPJACywtgUUQJHh1u018w='
 
-  const config = loadConfig()
+  const config = new Config()
   const routingTable = new PrefixMap()
   const tradingPairs = new TradingPairs(config.get('tradingPairs'))
   const accounts = new Accounts({config, routingTable})

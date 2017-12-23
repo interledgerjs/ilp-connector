@@ -1,7 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
-const loadConnectorConfig = require('../src/lib/config')
+const Config = require('../src/lib/config')
 const expect = require('chai').expect
 const assert = require('chai').assert
 const env = _.cloneDeep(process.env)
@@ -35,13 +35,13 @@ describe('ConnectorConfig', function () {
 
     it('should generate a secret if one is not provided', async function () {
       delete process.env.CONNECTOR_SECRET
-      const config = loadConnectorConfig()
+      const config = new Config()
       expect(Buffer.isBuffer(config.secret)).to.be.true
       expect(config.secret).to.have.length(32)
     })
 
     it('should auto-generate pairs', async function () {
-      const config = loadConnectorConfig()
+      const config = new Config()
       expect(config.get('tradingPairs')).to.deep.equal([[
         'usd-ledger',
         'usd-ledger'
@@ -86,53 +86,34 @@ describe('ConnectorConfig', function () {
 
       it('parses routes correctly', function () {
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
-        const config = loadConnectorConfig()
+        const config = new Config()
         expect(config.get('routes'))
           .to.deep.equal(this.routes)
       })
 
       it('won\'t parse routes with invalid ledger', function () {
-        this.routes[0].peerAddress = 'garbage'
+        this.routes[0].peerAddress = 'garbage!'
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
-        try {
-          loadConnectorConfig()
-          assert(false)
-        } catch (e) {
-          assert.isTrue(true)
-        }
+        assert.throws(() => {
+          return new Config()
+        })
       })
 
       it('should not parse routes missing prefix', function () {
         this.routes[0].targetPrefix = undefined
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
-        try {
-          loadConnectorConfig()
-          assert(false)
-        } catch (e) {
-          assert.isTrue(true)
-        }
+        assert.throws(() => {
+          return new Config()
+        })
       })
 
       it('should not parse routes missing ledger', function () {
         this.routes[0].peerAddress = undefined
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
-        try {
-          loadConnectorConfig()
-          assert(false)
-        } catch (e) {
-          assert.isTrue(true)
-        }
-      })
 
-      it('should not parse routes missing account', function () {
-        this.routes[0].connectorAccount = undefined
-        process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
-        try {
-          loadConnectorConfig()
-          assert(false)
-        } catch (e) {
-          assert.isTrue(true)
-        }
+        assert.throws(() => {
+          return new Config()
+        })
       })
     })
 
@@ -145,7 +126,7 @@ describe('ConnectorConfig', function () {
         delete usdLedgerCreds.account
         process.env.CONNECTOR_ACCOUNTS = JSON.stringify(ledgerCredsModified)
 
-        const config = loadConnectorConfig()
+        const config = new Config()
         expect(config.get('accountCredentials'))
           .to.deep.equal(accountCredentials)
       })
@@ -176,7 +157,7 @@ describe('ConnectorConfig', function () {
 
         process.env.UNIT_TEST_OVERRIDE = 'true'
         process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
-        const config = loadConnectorConfig()
+        const config = new Config()
 
         const accountCredentials = {
           'cad-ledger': {
@@ -229,7 +210,7 @@ describe('ConnectorConfig', function () {
 
         process.env.UNIT_TEST_OVERRIDE = 'true'
         process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
-        const config = loadConnectorConfig()
+        const config = new Config()
 
         const accountCredentials = {
           'cad-ledger': {

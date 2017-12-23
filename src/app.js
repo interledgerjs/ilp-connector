@@ -4,7 +4,7 @@ const _ = require('lodash')
 const logger = require('./common/log')
 const log = logger.create('app')
 
-const loadConfig = require('./lib/config')
+const Config = require('./lib/config')
 const PrefixMap = require('./routing/prefix-map')
 const Quoter = require('./lib/quoter')
 const RouteBuilder = require('./lib/route-builder')
@@ -78,7 +78,7 @@ function registerRequestHandler (accounts, fn) {
 
 function createApp ({ config, accounts, backend, routeBuilder, quoter, routeBroadcaster, routingTable, messageRouter } = {}) {
   if (!config) {
-    config = loadConfig()
+    config = new Config()
   }
 
   if (!routingTable) {
