@@ -20,11 +20,64 @@ const DEFAULT_ROUTE_EXPIRY = 45 * 1000 // milliseconds
 const DEFAULT_QUOTE_EXPIRY = 45 * 1000 // milliseconds
 
 class Config {
+  constructor () {
+    this.getLocalConfig()
+  }
+
   validate () {
     if (!this.address) {
       log.error('please set required config setting CONNECTOR_ILP_ADDRESS.')
       process.exit(1)
     }
+  }
+
+  get (key) {
+    return this[key]
+  }
+
+  /**
+   * Parse a boolean config variable.
+   *
+   * Environment variables are passed in as strings, but this function can turn
+   * values like `undefined`, `''`, `'0'` and `'false'` into `false`.
+   *
+   * If a default value is provided, `undefined` and `''` will return the
+   * default value.
+   *
+   * Values other than `undefined`, `''`, `'1'`, `'0'`, `'true'`, and `'false'` will throw.
+   *
+   * @param {String} value Config value
+   * @param {Boolean} defaultValue Value to be returned for undefined or empty inputs
+   * @return {Boolean} Same config value intelligently cast to bool
+   */
+  static castBool (value, defaultValue) {
+    value = value && value.trim()
+    if (value === undefined || value === '') return Boolean(defaultValue)
+    if (value === 'true' || value === '1') return true
+    if (value === 'false' || value === '0') return false
+    throw new TypeError('castBool unexpected value: ' + value)
+  }
+
+  /**
+   * Get a config value from the environment.
+   *
+   * Applies the config prefix defined in the constructor.
+   *
+   *
+   * @param {String} prefix prefix
+   * @param {String} name Config key (will be prefixed)
+   * @return {String} Config value or undefined
+   *
+   * getEnv('example', 'my_setting') === process.env.EXAMPLE_MY_SETTING
+   */
+  static getEnv (prefix, name) {
+    let envVar
+    if (name && prefix) envVar = `${prefix}_${name}`
+    else if (name && !prefix) envVar = name
+    else if (!name && prefix) envVar = prefix
+    else throw new TypeError('Invalid environment variable')
+
+    return process.env[envVar.toUpperCase().replace(/-/g, '_')]
   }
 
   generateDefaultPairs (accounts) {
@@ -34,7 +87,7 @@ class Config {
   }
 
   parseCredentials () {
-    const credentialsEnv = parseCredentialsEnv()
+    const credentialsEnv = this.parseCredentialsEnv()
 
     return _.mapValues(credentialsEnv, (credentials) => {
       // DEPRECATED: `account_uri` (should be just `account`)
@@ -143,11 +196,11 @@ class Config {
   }
 
   getLocalConfig () {
-    const accounts = parseAccounts()
+    const accounts = this.parseAccounts()
     // Currency pairs traded should be specified as
     // [["http://usd-ledger.example","http://eur-ledger.example"],...]
-    let tradingPairs =
-    JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || generateDefaultPairs(accounts)
+    this.tradingPairs =
+    JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || this.generateDefaultPairs(accounts)
 
     // Routes to add to the connector, in the form:
     // [{
@@ -157,21 +210,21 @@ class Config {
     //  "targetPrefix": "usd.",
     //  "peerAddress": "example.other."
     // }]
-    const routes = parseRoutes()
+    this.routes = this.parseRoutes()
 
-    const features = {}
+    const features = this.features = {}
     // Debug feature: Reply to websocket notifications
     features.debugReplyNotifications =
     Config.castBool(Config.getEnv(envPrefix, 'DEBUG_REPLY_NOTIFICATIONS'))
 
-    const address = Config.getEnv(envPrefix, 'ILP_ADDRESS') || ''
+    this.address = Config.getEnv(envPrefix, 'ILP_ADDRESS') || ''
 
     // Configure which backend we will use to determine
     // rates and execute payments. The list of available backends
     // can be found in src/backends
-    const backend = Config.getEnv(envPrefix, 'BACKEND') || 'fixerio'
+    this.backend = Config.getEnv(envPrefix, 'BACKEND') || 'fixerio'
 
-    const expiry = {}
+    const expiry = this.expiry = {}
     expiry.minMessageWindow =
     +Config.getEnv(envPrefix, 'MIN_MESSAGE_WINDOW') || DEFAULT_MIN_MESSAGE_WINDOW
 
@@ -184,48 +237,48 @@ class Config {
 
     expiry.maxHoldTime = +Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || DEFAULT_MAX_HOLD_TIME
 
-    const databaseUri = Config.getEnv('DB_URI')
+    this.databaseUri = Config.getEnv('DB_URI')
 
     // The spread is added to every quoted rate
     const fxSpreadString = Config.getEnv(envPrefix, 'FX_SPREAD')
-    const fxSpread = fxSpreadString ? +fxSpreadString : DEFAULT_FX_SPREAD
+    this.fxSpread = fxSpreadString ? +fxSpreadString : DEFAULT_FX_SPREAD
 
     const slippageString = Config.getEnv(envPrefix, 'SLIPPAGE')
-    const slippage = slippageString ? +slippageString : DEFAULT_SLIPPAGE
+    this.slippage = slippageString ? +slippageString : DEFAULT_SLIPPAGE
 
     // BACKEND_URI must be defined for backends that connect to an external
     // component to retrieve the rate or amounts (it is therefore required
     // when using the ilp-quote backend)
-    const backendUri = Config.getEnv(envPrefix, 'BACKEND_URI')
+    this.backendUri = Config.getEnv(envPrefix, 'BACKEND_URI')
 
     const routeBroadcastEnabledString = Config.getEnv(envPrefix, 'ROUTE_BROADCAST_ENABLED')
-    const routeBroadcastEnabled =
+    this.routeBroadcastEnabled =
     routeBroadcastEnabledString ? Config.castBool(routeBroadcastEnabledString) : true
 
     // For a 'core' node in an open network, set both to true.
     // For a 'periphery' node in an open network, set only the first one to true.
     // For a node in a network where price competition between routes is not needed, set both to false.
     const broadcastCurvesString = Config.getEnv(envPrefix, 'BROADCAST_CURVES')
-    const broadcastCurves =
+    this.broadcastCurves =
     broadcastCurvesString ? Config.castBool(broadcastCurvesString) : true
     const storeCurvesString = Config.getEnv(envPrefix, 'STORE_CURVES')
-    const storeCurves =
+    this.storeCurves =
     storeCurvesString ? Config.castBool(storeCurvesString) : true
     const reflectPaymentsString = Config.getEnv(envPrefix, 'REFLECT_PAYMENTS')
-    const reflectPayments =
+    this.reflectPayments =
     reflectPaymentsString ? Config.castBool(reflectPaymentsString) : true
 
-    const routeBroadcastInterval =
+    this.routeBroadcastInterval =
     Number(Config.getEnv(envPrefix, 'ROUTE_BROADCAST_INTERVAL')) || DEFAULT_ROUTE_BROADCAST_INTERVAL
-    const routeCleanupInterval =
+    this.routeCleanupInterval =
     Number(Config.getEnv(envPrefix, 'ROUTE_CLEANUP_INTERVAL')) || DEFAULT_ROUTE_CLEANUP_INTERVAL
-    const routeExpiry =
+    this.routeExpiry =
     Number(Config.getEnv(envPrefix, 'ROUTE_EXPIRY')) || DEFAULT_ROUTE_EXPIRY
-    const quoteExpiry =
+    this.quoteExpiry =
     Number(Config.getEnv(envPrefix, 'QUOTE_EXPIRY')) || DEFAULT_QUOTE_EXPIRY
 
     const peersString = Config.getEnv(envPrefix, 'PEERS')
-    const peers = peersString ? peersString.split(',') : []
+    this.peers = peersString ? peersString.split(',') : []
 
     // Credentials should be specified as a map of the form
     // {
@@ -235,45 +288,15 @@ class Config {
     //      "password": "..."
     //    }
     // }
-    const accountCredentials = parseCredentials()
+    this.accountCredentials = this.parseCredentials()
 
     // The secret is used to generate destination transfer IDs
     // that cannot be guessed and squatted on by others
     const secretString = Config.getEnv(envPrefix, 'SECRET')
-    const secret = secretString
+    this.secret = secretString
     ? Buffer.from(secretString, 'base64')
     : crypto.randomBytes(32)
-}
-
-  return {
-    validate,
-
-    address,
-    backend,
-    routes,
-    accountCredentials,
-    fxSpread,
-    slippage,
-    expiry,
-    features,
-    tradingPairs,
-    backendUri,
-    routeBroadcastEnabled,
-    routeBroadcastInterval,
-    routeCleanupInterval,
-    routeExpiry,
-    broadcastCurves,
-    storeCurves,
-    reflectPayments,
-    quoteExpiry,
-    peers,
-    databaseUri,
-    secret
   }
 }
 
-function loadConnectorConfig () {
-  return Config.loadConfig(envPrefix, getLocalConfig(), {ed25519: false})
-}
-
-module.exports = loadConnectorConfig
+module.exports = Config
