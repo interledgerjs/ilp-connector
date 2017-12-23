@@ -26,18 +26,17 @@ describe('Payments', function () {
   beforeEach(async function () {
     const pairs = [
       [
-        'USD@mock.test1.',
-        'EUR@mock.test2.'
+        'mock.test1',
+        'mock.test2'
       ],
       [
-        'EUR@mock.test2.',
-        'USD@mock.test1.'
+        'mock.test2',
+        'mock.test1'
       ]
     ]
-    process.env.CONNECTOR_ILP_ADDRESS = 'test.connie'
     process.env.UNIT_TEST_OVERRIDE = '1'
-    process.env.CONNECTOR_LEDGERS = JSON.stringify({
-      'mock.test1.': {
+    process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
+      'mock.test1': {
         currency: 'USD',
         plugin: 'ilp-plugin-mock',
         options: {
@@ -48,7 +47,7 @@ describe('Payments', function () {
           password: 'bob'
         }
       },
-      'mock.test2.': {
+      'mock.test2': {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {
@@ -68,16 +67,16 @@ describe('Payments', function () {
 
     appHelper.create(this)
     await this.backend.connect(ratesResponse)
-    await this.ledgers.connect()
+    await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
 
     this.setTimeout = setTimeout
     this.setInterval = setInterval
     this.clock = sinon.useFakeTimers(START_DATE)
 
-    this.mockPlugin1Wrapped = this.ledgers.getPlugin('mock.test1.')
+    this.mockPlugin1Wrapped = this.accounts.getPlugin('mock.test1')
     this.mockPlugin1 = this.mockPlugin1Wrapped.oldPlugin
-    this.mockPlugin2Wrapped = this.ledgers.getPlugin('mock.test2.')
+    this.mockPlugin2Wrapped = this.accounts.getPlugin('mock.test2')
     this.mockPlugin2 = this.mockPlugin2Wrapped.oldPlugin
   })
 
@@ -95,7 +94,7 @@ describe('Payments', function () {
     const result = await this.mockPlugin1Wrapped._transferHandler({
       amount: '100',
       executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-      expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+      expiresAt: (new Date(START_DATE + 2000)).toISOString(),
       ilp: packet.serializeIlpForwardedPayment({
         account: 'mock.test2.bob'
       }),
@@ -117,7 +116,7 @@ describe('Payments', function () {
     const result = await this.mockPlugin1Wrapped._transferHandler({
       amount: '100',
       executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-      expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+      expiresAt: (new Date(START_DATE + 2000)).toISOString(),
       ilp: packet.serializeIlpForwardedPayment({
         account: 'mock.test2.bob'
       }),
@@ -136,7 +135,7 @@ describe('Payments', function () {
     await this.mockPlugin1Wrapped._transferHandler({
       amount: '100',
       executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-      expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+      expiresAt: (new Date(START_DATE + 2000)).toISOString(),
       ilp: packet.serializeIlpPayment({
         account: 'mock.test2.bob',
         amount: '50'
@@ -147,7 +146,31 @@ describe('Payments', function () {
     sinon.assert.calledWithMatch(sendSpy, {
       amount: '50',
       executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-      expiresAt: (new Date(START_DATE)).toISOString()
+      expiresAt: (new Date(START_DATE + 1000)).toISOString()
+    })
+  })
+
+  it('reduces the destination expiry to its max hold time if that time would otherwise be exceeded', async function () {
+    const sendSpy = sinon.stub(this.mockPlugin2Wrapped, 'sendTransfer')
+      .resolves({
+        fulfillment: 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok',
+        data: Buffer.alloc(0)
+      })
+    await this.mockPlugin1Wrapped._transferHandler({
+      amount: '100',
+      executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
+      expiresAt: (new Date(START_DATE + 200000)).toISOString(),
+      ilp: packet.serializeIlpPayment({
+        account: 'mock.test2.bob',
+        amount: '50'
+      })
+    })
+
+    sinon.assert.calledOnce(sendSpy)
+    sinon.assert.calledWithMatch(sendSpy, {
+      amount: '50',
+      executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
+      expiresAt: (new Date(START_DATE + 10000)).toISOString()
     })
   })
 
@@ -160,7 +183,7 @@ describe('Payments', function () {
     await this.mockPlugin1Wrapped._transferHandler({
       amount: '100',
       executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-      expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+      expiresAt: (new Date(START_DATE + 2000)).toISOString(),
       ilp: packet.serializeIlpForwardedPayment({
         account: 'mock.test2.bob'
       }),
@@ -171,7 +194,7 @@ describe('Payments', function () {
     sinon.assert.calledWithMatch(sendSpy, {
       amount: '94',
       executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-      expiresAt: (new Date(START_DATE)).toISOString()
+      expiresAt: (new Date(START_DATE + 1000)).toISOString()
     })
   })
 
@@ -181,7 +204,7 @@ describe('Payments', function () {
     await this.mockPlugin1.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
-      ledger: 'mock.test1.',
+      ledger: 'mock.test1',
       amount: '100',
       ilp: packet.serializeIlpPayment({
         account: 'mock.test2.bob',
@@ -192,12 +215,12 @@ describe('Payments', function () {
     sinon.assert.calledOnce(sendSpy)
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
-      ledger: 'mock.test2.',
+      ledger: 'mock.test2',
       to: 'mock.test2.bob',
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'mock.test1.',
+        source_transfer_ledger: 'mock.test1',
         source_transfer_amount: '100'
       }
     })
@@ -219,12 +242,12 @@ describe('Payments', function () {
     sinon.assert.calledOnce(sendSpy)
     sinon.assert.calledWithMatch(sendSpy, {
       direction: 'outgoing',
-      ledger: 'mock.test2.',
+      ledger: 'mock.test2',
       to: 'mock.test2.mark',
       amount: '50',
       noteToSelf: {
         source_transfer_id: '5857d460-2a46-4545-8311-1539d99e78e8',
-        source_transfer_ledger: 'mock.test1.',
+        source_transfer_ledger: 'mock.test1',
         source_transfer_amount: '100'
       }
     })
@@ -235,7 +258,7 @@ describe('Payments', function () {
     await this.mockPlugin1.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
-      ledger: 'mock.test1.',
+      ledger: 'mock.test1',
       amount: '100',
       ilp: packet.serializeIlpPayment({
         account: 'mock.test1.bob',
@@ -253,7 +276,7 @@ describe('Payments', function () {
       await this.mockPlugin1Wrapped._transferHandler({
         amount: '100',
         executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-        expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+        expiresAt: (new Date(START_DATE + 2000)).toISOString(),
         ilp: packet.serializeIlpForwardedPayment({
           account: 'mock.test2.bob'
         }),
@@ -283,7 +306,7 @@ describe('Payments', function () {
       await this.mockPlugin1Wrapped._transferHandler({
         amount: '100',
         executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-        expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+        expiresAt: (new Date(START_DATE + 2000)).toISOString(),
         ilp: packet.serializeIlpForwardedPayment({
           account: 'mock.test2.bob'
         }),
@@ -306,7 +329,7 @@ describe('Payments', function () {
     try {
       await this.mockPlugin1Wrapped._transferHandler({
         amount: '100',
-        executionCondition: 'cc:0:',
+        executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
         expiresAt: (new Date(START_DATE - 1)).toISOString(),
         ilp: packet.serializeIlpForwardedPayment({
           account: 'mock.test2.bob'
@@ -316,7 +339,7 @@ describe('Payments', function () {
       assert.equal(err.name, 'InterledgerRejectionError')
       assert.deepEqual(packet.deserializeIlpRejection(err.ilpRejection), {
         code: 'R02',
-        message: 'Transfer has already expired',
+        message: 'source transfer has already expired. sourceExpiry=2015-06-15T23:59:59.999Z currentTime=2015-06-16T00:00:00.000Z',
         triggeredBy: 'test.connie',
         data: Buffer.alloc(0)
       })
@@ -329,8 +352,8 @@ describe('Payments', function () {
     try {
       await this.mockPlugin1Wrapped._transferHandler({
         amount: '100',
-        executionCondition: 'cc:0:',
-        expiresAt: (new Date(START_DATE + 999)).toISOString(),
+        executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
+        expiresAt: (new Date(START_DATE + 1999)).toISOString(),
         ilp: packet.serializeIlpForwardedPayment({
           account: 'mock.test2.bob'
         })
@@ -339,7 +362,7 @@ describe('Payments', function () {
       assert.equal(err.name, 'InterledgerRejectionError')
       assert.deepEqual(packet.deserializeIlpRejection(err.ilpRejection), {
         code: 'R02',
-        message: 'Not enough time to send payment',
+        message: 'source transfer expires too soon to complete payment. actualSourceExpiry=2015-06-16T00:00:01.999Z requiredSourceExpiry=2015-06-16T00:00:02.000Z currentTime=2015-06-16T00:00:00.000Z',
         triggeredBy: 'test.connie',
         data: Buffer.alloc(0)
       })
@@ -364,7 +387,7 @@ describe('Payments', function () {
         await this.mockPlugin1Wrapped._transferHandler({
           amount: '100',
           executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-          expiresAt: (new Date(START_DATE + 1000)).toISOString(),
+          expiresAt: (new Date(START_DATE + 2000)).toISOString(),
           ilp: packet.serializeIlpForwardedPayment({
             account: 'mock.test2.bob'
           }),
@@ -393,7 +416,7 @@ describe('Payments', function () {
       this.transfer = {
         id: '5857d460-2a46-4545-8311-1539d99e78e8',
         direction: 'incoming',
-        ledger: 'mock.test1.',
+        ledger: 'mock.test1',
         amount: '100',
         ilp: packet.serializeIlpPayment({
           account: 'mock.test2.bob',
@@ -450,13 +473,13 @@ describe('Payments', function () {
       sinon.assert.calledOnce(sendSpy)
       sinon.assert.calledWithMatch(sendSpy, {
         direction: 'outgoing',
-        ledger: 'mock.test2.',
+        ledger: 'mock.test2',
         to: 'mock.test2.bob',
         amount: '50',
         cases: [this.caseId1, this.caseId2],
         noteToSelf: {
           source_transfer_id: this.transfer.id,
-          source_transfer_ledger: 'mock.test1.',
+          source_transfer_ledger: 'mock.test1',
           source_transfer_amount: '100'
         }
       })

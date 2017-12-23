@@ -10,7 +10,7 @@
       "minimum": 1
     },
     "unreachable_through_me": {
-      "description": "A list of ledgers that have become unreachable through the sending connector",
+      "description": "A list of accounts that have become unreachable through the sending connector",
       "type": "array",
       "minItems": 0,
       "items": {

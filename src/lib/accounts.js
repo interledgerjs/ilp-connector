@@ -6,8 +6,8 @@ const compat = require('ilp-compat-plugin')
 const PluginStore = require('../lib/pluginStore.js')
 const TradingPairs = require('./trading-pairs')
 const logger = require('../common/log')
-const log = logger.create('ledgers')
-const { createIlpError, codes } = require('./ilp-errors')
+const log = logger.create('accounts')
+const { createIlpRejection, codes } = require('./ilp-errors')
 
 const PLUGIN_EVENTS = [
   'connect',
@@ -19,44 +19,37 @@ const PLUGIN_EVENTS = [
   'outgoing_reject'
 ]
 
-class Ledgers extends EventEmitter {
-  constructor ({ config, routingTables }) {
+class Accounts extends EventEmitter {
+  constructor ({ config, routingTable }) {
     super()
     this.pluginList = [] // LedgerPlugin[]
     this.plugins = {} // { prefix ⇒ LedgerPlugin }
     this.prefixReverseMap = new Map() // { LedgerPlugin ⇒ prefix }
-    this.tables = routingTables
     this._config = config
     this._pairs = new TradingPairs()
-    this._ledgers = new Map()
+    this._accounts = new Map()
     this.requestHandler = this._requestHandler.bind(this)
-    this.createIlpError = createIlpError.bind(null, config.account)
+    this.createIlpRejection = createIlpRejection.bind(null, config.address)
 
-    const ledgers = this
+    const accounts = this
     this._relayEvents = {}
     PLUGIN_EVENTS.forEach((event) => {
       this._relayEvents[event] = function () {
         const args = Array.prototype.slice.call(arguments)
-        return ledgers.emitAsync.apply(ledgers, [event, this].concat(args))
+        return accounts.emitAsync.apply(accounts, [event, this].concat(args))
       }
     })
-  }
-
-  addFromCredentialsConfig (ledgerCredentials) {
-    for (let ledgerPrefix of Object.keys(ledgerCredentials)) {
-      this.add(ledgerPrefix, ledgerCredentials[ledgerPrefix])
-    }
   }
 
   connect (options) {
     return Promise.all(this.pluginList.map((plugin) => plugin.connect(options)))
   }
 
-  getPlugin (ledgerPrefix) {
-    if (ledgerPrefix.slice(-1) !== '.') {
-      throw new Error('prefix must end with "."')
+  getPlugin (accountAddress) {
+    if (accountAddress.slice(-1) === '.') {
+      throw new Error('peer address must not end with "."')
     }
-    return this.plugins[ledgerPrefix] || null
+    return this.plugins[accountAddress] || null
   }
 
   getPlugins () {
@@ -76,30 +69,31 @@ class Ledgers extends EventEmitter {
     this._pairs.addPairs(pairs)
   }
 
-  getCurrencyForLedger (ledgerPrefix) {
-    const ledger = this._ledgers.get(ledgerPrefix)
+  getCurrency (accountAddress) {
+    const account = this._accounts.get(accountAddress)
 
-    if (!ledger) {
+    if (!account) {
+      log.debug('no currency found. account=' + accountAddress)
       return null
     }
 
-    return ledger.currency
+    return account.currency
   }
 
-  add (ledgerPrefix, creds, tradesTo, tradesFrom) {
-    log.info('adding ledger ' + ledgerPrefix)
+  add (accountAddress, creds, tradesTo, tradesFrom) {
+    log.info('add account. peerAddress=' + accountAddress)
 
     creds = _.cloneDeep(creds)
     let store = null
 
     if (creds.store) {
       if (!this._config.databaseUri) {
-        throw new Error('missing DB_URI; cannot create plugin store for ' + ledgerPrefix)
+        throw new Error('missing DB_URI; cannot create plugin store for ' + accountAddress)
       }
-      store = new PluginStore(this._config.databaseUri, ledgerPrefix)
+      store = new PluginStore(this._config.databaseUri, accountAddress)
     }
 
-    creds.options.prefix = ledgerPrefix
+    creds.options.prefix = accountAddress
     const Plugin = require(creds.plugin)
     const plugin = compat(new Plugin(Object.assign({}, creds.options, {
       debugReplyNotifications: this._config.features.debugReplyNotifications,
@@ -111,48 +105,43 @@ class Ledgers extends EventEmitter {
       const _getInfo = plugin.getInfo.bind(plugin)
       plugin.getInfo = () => {
         const info = Object.assign({}, _getInfo(), creds.overrideInfo)
-        log.debug('using overridden info for plugin', ledgerPrefix, info)
+        log.debug('using overridden info for plugin', accountAddress, info)
         return info
       }
     }
-    this.addPlugin(ledgerPrefix, plugin)
-    this._ledgers.set(ledgerPrefix, {
+
+    if (accountAddress.slice(-1) === '.') {
+      throw new Error('peer address must not end with "."')
+    }
+    this.prefixReverseMap.set(plugin, accountAddress)
+    this.pluginList.push(plugin)
+    this.plugins[accountAddress] = plugin
+
+    this._accounts.set(accountAddress, {
       currency: creds.currency,
       plugin
     })
-    plugin.registerTransferHandler(this._handleTransfer.bind(this, ledgerPrefix))
+    plugin.registerTransferHandler(this._handleTransfer.bind(this, accountAddress))
     plugin.registerRequestHandler(this.requestHandler)
-
-    if (tradesTo) {
-      this._pairs.addPairs(tradesTo.map((e) => [creds.currency + '@' + ledgerPrefix, e]))
-    }
-
-    if (tradesFrom) {
-      this._pairs.addPairs(tradesTo.map((e) => [e, creds.currency + '@' + ledgerPrefix]))
-    }
-
-    if (!tradesFrom && !tradesTo) {
-      const newLedger = creds.currency + '@' + ledgerPrefix
-      for (let otherLedgerPrefix of this._ledgers.keys()) {
-        const currency = this._ledgers.get(otherLedgerPrefix).currency
-        const otherLedger = currency + '@' + otherLedgerPrefix
-        this._pairs.add(newLedger, otherLedger)
-        this._pairs.add(otherLedger, newLedger)
-      }
-    }
   }
 
-  remove (ledgerPrefix) {
-    const plugin = this.getPlugin(ledgerPrefix)
-    this._pairs.removeAll(this.getCurrencyForLedger(ledgerPrefix) + '@' + ledgerPrefix)
-    this.removePlugin(ledgerPrefix)
-    this._ledgers.delete(ledgerPrefix)
+  remove (accountAddress) {
+    const plugin = this.getPlugin(accountAddress)
+    if (!plugin) {
+      return
+    }
+    log.info('remove account. peerAddress=' + accountAddress)
+    plugin.deregisterTransferHandler()
+    this.pluginList.splice(this.pluginList.indexOf(plugin), 1)
+    delete this.plugins[accountAddress]
+    this.prefixReverseMap.delete(plugin)
+    this._accounts.delete(accountAddress)
     return plugin
   }
 
   async _handleTransfer (prefix, transfer) {
     if (!this._transferHandler) {
-      throw this.createIlpError({
+      throw this.createIlpRejection({
         code: codes.F02_UNREACHABLE,
         message: 'Connector not ready'
       })
@@ -192,36 +181,18 @@ class Ledgers extends EventEmitter {
     this._externalRequestHandler = requestHandler
   }
 
-  /**
-   * @param {IlpAddress} prefix
-   * @param {LedgerPlugin} plugin
-   */
-  addPlugin (prefix, plugin) {
-    if (prefix.slice(-1) !== '.') {
-      throw new Error('prefix must end with "."')
-    }
-    this.prefixReverseMap.set(plugin, prefix)
-    this.pluginList.push(plugin)
-    this.plugins[prefix] = plugin
-  }
-
-  /**
-   * @param {IlpAddress} prefix
-   * @returns {LedgerPlugin}
-   */
-  removePlugin (prefix) {
-    const plugin = this.getPlugin(prefix)
-    if (!plugin) return
-    plugin.deregisterTransferHandler()
-    this.pluginList.splice(this.pluginList.indexOf(plugin), 1)
-    delete this.plugins[prefix]
-    this.prefixReverseMap.delete(plugin)
-    return plugin
-  }
-
   getPrefix (plugin) {
     return this.prefixReverseMap.get(plugin)
   }
+
+  isLocal (address) {
+    for (let prefix of Object.keys(this.plugins)) {
+      if (address.startsWith(prefix)) {
+        return true
+      }
+    }
+    return false
+  }
 }
 
-module.exports = Ledgers
+module.exports = Accounts

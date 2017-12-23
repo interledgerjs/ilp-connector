@@ -17,7 +17,7 @@ module.exports = function (wallaby) {
     ],
 
     tests: [
-      'test/*Spec.js'
+      'test/*.test.js'
     ],
 
     testFramework: 'mocha',

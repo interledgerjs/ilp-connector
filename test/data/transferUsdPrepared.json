@@ -1,6 +1,6 @@
 {
   "id": "http://usd-ledger.example/transfers/6851929f-5a91-4d02-b9f4-4ae6b7f1768c",
-  "ledger":"usd-ledger.",
+  "ledger":"usd-ledger",
   "debits":[{
     "amount":"1.07",
     "account":"usd-ledger.alice"

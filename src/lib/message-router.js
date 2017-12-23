@@ -1,29 +1,25 @@
 'use strict'
 
-const co = require('co')
 const IlpPacket = require('ilp-packet')
 const InvalidBodyError = require('five-bells-shared').InvalidBodyError
 const IlpError = require('../errors/ilp-error')
 const validate = require('./validate').validate
+const LiquidityCurve = require('../routing/liquidity-curve')
 const log = require('../common/log').create('message-router')
-
-const PEER_LEDGER_PREFIX = 'peer.'
 
 /**
  * @param {Object} opts
  * @param {Config} opts.config
- * @param {Ledgers} opts.ledgers
- * @param {RoutingTables} opts.routingTables
+ * @param {Accounts} opts.accounts
  * @param {RouteBroadcaster} opts.routeBroadcaster
  * @param {RouteBuilder} opts.routeBuilder
  */
 function MessageRouter (opts) {
   this.config = opts.config
-  this.ledgers = opts.ledgers
-  this.routingTables = opts.routingTables
+  this.accounts = opts.accounts
   this.routeBroadcaster = opts.routeBroadcaster
   this.routeBuilder = opts.routeBuilder
-  this.ledgers.registerInternalRequestHandler(this.handleRequest.bind(this))
+  this.accounts.registerInternalRequestHandler(this.handleRequest.bind(this))
 }
 
 /**
@@ -32,13 +28,16 @@ function MessageRouter (opts) {
  * @param {RequestMessage} requestMessage
  * @returns {Promise.<ResponseMessage>}
  */
-MessageRouter.prototype.handleRequest = function (requestMessage) {
+MessageRouter.prototype.handleRequest = async function (requestMessage) {
   if (!requestMessage.ilp && !requestMessage.custom) {
-    return Promise.reject(new Error('Invalid request message'))
+    throw new Error('Invalid request message')
   }
-  return co.wrap(this._handleRequest).call(this, requestMessage).catch((err) => {
+
+  try {
+    return await this._handleRequest(requestMessage)
+  } catch (err) {
+    log.warn('error while handling request.', err.stack)
     if (!(err instanceof IlpError)) {
-      log.warn('handleRequest error', err.stack)
       throw err
     }
     return {
@@ -49,7 +48,7 @@ MessageRouter.prototype.handleRequest = function (requestMessage) {
         forwardedBy: err.packet.forwardedBy.concat(requestMessage.to)
       }))
     }
-  })
+  }
 }
 
 /**
@@ -107,51 +106,26 @@ MessageRouter.prototype._handleRequestByPacket = async function (packet, sender)
  */
 MessageRouter.prototype.receiveRoutes = async function (payload, sender) {
   validate('RoutingUpdate', payload)
-  log.debug('receiveRoutes sender:', sender)
-  let routes = payload.new_routes
+  log.debug('received routes. sender=%s', sender)
 
-  let holdDownTime = payload.hold_down_time
-  this.routingTables.bumpConnector(sender, holdDownTime)
-  let potentiallyUnreachableLedgers = payload.unreachable_through_me
-  let lostLedgerLinks = []
-  if (potentiallyUnreachableLedgers.length > 0) {
-    log.info('informed of broken routes to:', potentiallyUnreachableLedgers, ' through:', sender)
-    for (const ledger of potentiallyUnreachableLedgers) {
-      lostLedgerLinks.push(...this.routingTables.invalidateConnectorsRoutesTo(sender, ledger))
-    }
-  }
-  if (payload.request_full_table) {
-    this.routeBroadcaster.peerEpochs[sender] = -1
-  }
-  if (routes.length === 0 && lostLedgerLinks.length === 0) { // just a heartbeat
-    log.info('got heartbeat from:', sender)
-    return
+  const routeUpdate = {
+    newRoutes: payload.new_routes.map(route => (
+      route.source_ledger !== route.source_account
+      ? null
+      : {
+        peer: sender,
+        prefix: route.target_prefix || route.destination_ledger,
+        distance: Math.max(route.paths && route.paths[0] && route.paths[0].length || 1, 1),
+        curve: route.points && new LiquidityCurve(route.points),
+        minMessageWindow: route.min_message_window * 1000
+      }
+    )).filter(Boolean),
+    unreachableThroughMe: payload.unreachable_through_me,
+    holdDownTime: payload.hold_down_time,
+    requestFullTable: payload.request_full_table
   }
 
-  let gotNewRoute = false
-  for (const route of routes) {
-    // We received a route from another connector, but that route
-    // doesn't actually belong to the connector, so ignore it.
-    if (route.source_account !== sender) continue
-    // make sure source_account is on source_ledger:
-    if (!route.source_account.startsWith(route.source_ledger)) continue
-    // The destination_ledger can be any ledger except one that starts with `peer.`.
-    if (route.destination_ledger.startsWith(PEER_LEDGER_PREFIX)) continue
-    if (!this.config.storeCurves) {
-      delete route.points
-    }
-    if (this.routingTables.addRoute(route)) gotNewRoute = true
-  }
-  log.debug('receiveRoutes sender:', sender, ' provided ', routes.length, ' any new?:', gotNewRoute)
-
-  if ((gotNewRoute || (lostLedgerLinks.length > 0)) &&
-      this.config.routeBroadcastEnabled) {
-    this.routeBroadcaster.markLedgersUnreachable(lostLedgerLinks)
-    this.routeBroadcaster.broadcast()
-      .catch(function (err) {
-        log.warn('error broadcasting routes: ' + err.message)
-      })
-  }
+  this.routeBroadcaster.handleRouteUpdate(sender, routeUpdate)
 }
 
 module.exports = MessageRouter

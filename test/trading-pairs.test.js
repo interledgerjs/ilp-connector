@@ -47,36 +47,36 @@ describe('TradingPairs', function () {
 
       assert.deepEqual(pairs, [
         [
-          'CAD@cad-ledger.',
-          'EUR@eur-ledger.'
+          'cad-ledger',
+          'eur-ledger'
         ],
         [
-          'CAD@cad-ledger.',
-          'USD@usd-ledger.'
+          'cad-ledger',
+          'usd-ledger'
         ],
         [
-          'CNY@cny-ledger.',
-          'USD@usd-ledger.'
+          'cny-ledger',
+          'usd-ledger'
         ],
         [
-          'EUR@eur-ledger.',
-          'CAD@cad-ledger.'
+          'eur-ledger',
+          'cad-ledger'
         ],
         [
-          'EUR@eur-ledger.',
-          'USD@usd-ledger.'
+          'eur-ledger',
+          'usd-ledger'
         ],
         [
-          'USD@usd-ledger.',
-          'CAD@cad-ledger.'
+          'usd-ledger',
+          'cad-ledger'
         ],
         [
-          'USD@usd-ledger.',
-          'CNY@cny-ledger.'
+          'usd-ledger',
+          'cny-ledger'
         ],
         [
-          'USD@usd-ledger.',
-          'EUR@eur-ledger.'
+          'usd-ledger',
+          'eur-ledger'
         ]
       ])
     })
@@ -84,10 +84,10 @@ describe('TradingPairs', function () {
 
   describe('addPairs', function () {
     it('adds a pair to the array', function () {
-      assert.deepEqual(this.pairs.toArray().slice(-1)[0], ['CNY@cny-ledger.', 'USD@usd-ledger.'])
+      assert.deepEqual(this.pairs.toArray().slice(-1)[0], ['cny-ledger', 'usd-ledger'])
       assert.equal(this.pairs.toArray().length, 8)
-      this.pairs.addPairs([['XRP@xrp-ledger.', 'USD@usd-ledger.']])
-      assert.deepEqual(this.pairs.toArray().slice(-1)[0], ['XRP@xrp-ledger.', 'USD@usd-ledger.'])
+      this.pairs.addPairs([['xrp-ledger', 'usd-ledger']])
+      assert.deepEqual(this.pairs.toArray().slice(-1)[0], ['xrp-ledger', 'usd-ledger'])
       assert.equal(this.pairs.toArray().length, 9)
     })
   })
@@ -95,7 +95,7 @@ describe('TradingPairs', function () {
   describe('removeAll', function () {
     it('removes all pairs containing a ledger', function () {
       assert.equal(this.pairs.toArray().length, 8)
-      this.pairs.removeAll('USD@usd-ledger.')
+      this.pairs.removeAll('usd-ledger')
       assert.equal(this.pairs.toArray().length, 2)
     })
   })
