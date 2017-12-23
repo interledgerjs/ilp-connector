@@ -5,8 +5,8 @@ const EventEmitter = require('eventemitter2')
 class MockPlugin extends EventEmitter {
   constructor (options) {
     super()
-    this._prefix = options.prefix || 'example.'
-    this._account = this._prefix + (options.username || 'mocky')
+    this._prefix = options.prefix || 'example'
+    this._account = this._prefix
     this._balance = '123.456'
     this._minBalance = undefined
   }

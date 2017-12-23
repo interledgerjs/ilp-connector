@@ -5,22 +5,20 @@ const logger = require('./common/log')
 const log = logger.create('app')
 
 const loadConfig = require('./lib/config')
-const RoutingTables = require('./lib/routing-tables')
+const PrefixMap = require('./routing/prefix-map')
+const Quoter = require('./lib/quoter')
 const RouteBuilder = require('./lib/route-builder')
 const RouteBroadcaster = require('./lib/route-broadcaster')
-const Quoter = require('./lib/quoter')
-const Ledgers = require('./lib/ledgers')
+const Accounts = require('./lib/accounts')
 const MessageRouter = require('./lib/message-router')
 const payments = require('./models/payments')
 
-function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter) {
-  for (let pair of ledgers.getPairs()) {
-    log.info('pair', pair)
-  }
-
+function listen (config, accounts, backend, routeBuilder, routeBroadcaster, messageRouter) {
   // Start a coroutine that connects to the backend and
-  // subscribes to all the ledgers in the background
+  // subscribes to all the accounts in the background
   return (async function () {
+    config.validate()
+
     try {
       await backend.connect()
     } catch (error) {
@@ -28,123 +26,118 @@ function listen (config, ledgers, backend, routeBuilder, routeBroadcaster, messa
       process.exit(1)
     }
 
-    let allLedgersConnected
+    let allAccountsConnected
     try {
-      await ledgers.connect({timeout: 10000})
-      allLedgersConnected = true
+      await accounts.connect({timeout: 10000})
+      allAccountsConnected = true
     } catch (err) {
-      allLedgersConnected = false
-      log.warn('one or more ledgers failed to connect; broadcasting routes anyway; error=', err.message)
+      allAccountsConnected = false
+      log.warn('one or more accounts failed to connect; broadcasting routes anyway; error=', err.message)
     }
 
     if (config.routeBroadcastEnabled) {
       await routeBroadcaster.start()
-    } else {
-      await routeBroadcaster.reloadLocalRoutes()
-      await routeBroadcaster.addConfigRoutes()
     }
 
-    if (allLedgersConnected) {
+    if (allAccountsConnected) {
       log.info('connector ready (republic attitude)')
     } else {
-      ledgers.connect({timeout: Infinity})
+      accounts.connect({timeout: Infinity})
         .then(() => routeBroadcaster.reloadLocalRoutes())
         .then(() => log.info('connector ready (republic attitude)'))
     }
   })().catch((err) => log.error(err))
 }
 
-function addPlugin (config, ledgers, backend, routeBroadcaster, id, options, tradesTo, tradesFrom) {
+function addPlugin (config, accounts, backend, routeBroadcaster, id, options, tradesTo, tradesFrom) {
   return (async function () {
     options.prefix = id
-    ledgers.add(id, options, tradesTo, tradesFrom)
+    accounts.add(id, options, tradesTo, tradesFrom)
+    routeBroadcaster.add(id)
 
-    await ledgers.getPlugin(id).connect({timeout: Infinity})
+    await accounts.getPlugin(id).connect({timeout: Infinity})
     await routeBroadcaster.reloadLocalRoutes()
-    routeBroadcaster.crawl()
   })()
 }
 
-function removePlugin (config, ledgers, backend, routingTables, routeBroadcaster, id) {
+function removePlugin (config, accounts, backend, routeBroadcaster, id) {
   return (async function () {
-    routingTables.removeLedger(id)
-    routeBroadcaster.depeerLedger(id)
-    await ledgers.remove(id).disconnect()
+    await accounts.remove(id).disconnect()
+    routeBroadcaster.remove(id)
+    routeBroadcaster.reloadLocalRoutes()
   })()
 }
 
-function getPlugin (ledgers, id) {
-  return ledgers.getPlugin(id)
+function getPlugin (accounts, id) {
+  return accounts.getPlugin(id)
 }
 
-function registerRequestHandler (ledgers, fn) {
-  return ledgers.registerExternalRequestHandler(fn)
+function registerRequestHandler (accounts, fn) {
+  return accounts.registerExternalRequestHandler(fn)
 }
 
-function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, messageRouter) {
+function createApp ({ config, accounts, backend, routeBuilder, quoter, routeBroadcaster, routingTable, messageRouter } = {}) {
   if (!config) {
     config = loadConfig()
   }
 
-  if (!routingTables) {
-    routingTables = new RoutingTables({
-      backend: config.backend,
-      expiryDuration: config.routeExpiry,
-      fxSpread: config.fxSpread,
-      slippage: config.slippage
-    })
+  if (!routingTable) {
+    routingTable = new PrefixMap()
   }
 
-  if (!ledgers) {
-    ledgers = new Ledgers({config, log: logger, routingTables})
-    ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
-    ledgers.setPairs(config.get('tradingPairs'))
+  if (!accounts) {
+    accounts = new Accounts({config, log: logger, routingTable})
+    accounts.setPairs(config.get('tradingPairs'))
   }
 
   if (!quoter) {
-    quoter = new Quoter(ledgers, {quoteExpiry: config.quoteExpiry})
+    quoter = new Quoter(accounts, config)
   }
 
   if (!backend) {
     const Backend = getBackend(config.get('backend'))
     backend = new Backend({
-      currencyWithLedgerPairs: ledgers.getPairs(),
+      currencyWithLedgerPairs: accounts.getPairs(),
       backendUri: config.get('backendUri'),
       spread: config.get('fxSpread'),
-      getInfo: (ledger) => ledgers.getPlugin(ledger).getInfo(),
-      getBalance: (ledger) => ledgers.getPlugin(ledger).getBalance()
+      getInfo: (ledger) => accounts.getPlugin(ledger).getInfo()
     })
   }
 
   if (!routeBuilder) {
     routeBuilder = new RouteBuilder(
-      ledgers,
+      accounts,
+      routingTable,
+      backend,
       quoter,
       {
         minMessageWindow: config.expiry.minMessageWindow,
         maxHoldTime: config.expiry.maxHoldTime,
         slippage: config.slippage,
         secret: config.secret,
-        unwiseUseSameTransferId: config.unwiseUseSameTransferId
+        address: config.address,
+        quoteExpiry: config.quoteExpiry,
+        reflectPayments: config.reflectPayments
       }
     )
   }
 
   if (!routeBroadcaster) {
     routeBroadcaster = new RouteBroadcaster(
-      routingTables,
+      routingTable,
       backend,
-      ledgers,
+      accounts,
+      quoter,
       {
-        configRoutes: config.configRoutes,
+        address: config.address,
+        routes: config.routes,
         minMessageWindow: config.expiry.minMessageWindow,
         routeCleanupInterval: config.routeCleanupInterval,
         routeBroadcastInterval: config.routeBroadcastInterval,
         routeExpiry: config.routeExpiry,
         broadcastCurves: config.broadcastCurves,
-        autoloadPeers: config.autoloadPeers,
         peers: config.peers,
-        ledgerCredentials: config.ledgerCredentials
+        accountCredentials: config.accountCredentials
       }
     )
   }
@@ -152,23 +145,31 @@ function createApp (config, ledgers, backend, quoter, routeBuilder, routeBroadca
   if (!messageRouter) {
     messageRouter = new MessageRouter({
       config,
-      ledgers,
-      routingTables,
+      accounts,
       routeBroadcaster,
       routeBuilder
     })
   }
 
-  ledgers.registerTransferHandler(
-    payments.updateIncomingTransfer(ledgers, config, routeBuilder, backend)
+  accounts.registerTransferHandler(
+    payments.handleIncomingTransfer.bind(payments, accounts, config, routeBuilder, backend)
   )
 
+  const credentials = config.get('accountCredentials')
+  // We have two separate for loops to make the logs look nicer :)
+  for (let address of Object.keys(credentials)) {
+    accounts.add(address, credentials[address])
+  }
+  for (let address of Object.keys(credentials)) {
+    routeBroadcaster.add(address)
+  }
+
   return {
-    listen: _.partial(listen, config, ledgers, backend, routeBuilder, routeBroadcaster, messageRouter),
-    addPlugin: _.partial(addPlugin, config, ledgers, backend, routeBroadcaster),
-    removePlugin: _.partial(removePlugin, config, ledgers, backend, routingTables, routeBroadcaster),
-    getPlugin: _.partial(getPlugin, ledgers),
-    registerRequestHandler: _.partial(registerRequestHandler, ledgers)
+    listen: _.partial(listen, config, accounts, backend, routeBuilder, routeBroadcaster, messageRouter),
+    addPlugin: _.partial(addPlugin, config, accounts, backend, routeBroadcaster),
+    removePlugin: _.partial(removePlugin, config, accounts, backend, routeBroadcaster),
+    getPlugin: _.partial(getPlugin, accounts),
+    registerRequestHandler: _.partial(registerRequestHandler, accounts)
   }
 }
 

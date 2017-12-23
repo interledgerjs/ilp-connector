@@ -3,7 +3,7 @@
 const IlpPacket = require('ilp-packet')
 const InterledgerRejectionError = require('../errors/interledger-rejection-error')
 
-exports.createIlpError = (account, { code, message, data }) => {
+exports.createIlpRejection = (account, { code, message, data }) => {
   const err = new InterledgerRejectionError({
     message,
     ilpRejection: IlpPacket.serializeIlpRejection(Object.assign({

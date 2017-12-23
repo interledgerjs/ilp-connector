@@ -13,6 +13,7 @@ const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const _ = require('lodash')
 const NoRouteFoundError = require('../src/errors/no-route-found-error')
+const RouteBroadcaster = require('../src/lib/route-broadcaster')
 
 const PluginMock = require('./mocks/mockPlugin')
 mockRequire('ilp-plugin-mock', PluginMock)
@@ -23,48 +24,48 @@ describe('Modify Plugins', function () {
   beforeEach(async function () {
     appHelper.create(this)
 
-    const testLedgers = ['cad-ledger.', 'usd-ledger.', 'eur-ledger.', 'cny-ledger.']
+    const testLedgers = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
     _.map(testLedgers, (ledgerUri) => {
-      this.ledgers.getPlugin(ledgerUri).getBalance =
+      this.accounts.getPlugin(ledgerUri).getBalance =
         function () { return Promise.resolve('150000') }
     })
 
     await this.backend.connect(ratesResponse)
-    await this.ledgers.connect()
+    await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
   })
 
   describe('addPlugin', function () {
-    it('should add a new plugin to ledgers', async function () {
-      assert.equal(Object.keys(this.ledgers.plugins).length, 4)
-      await this.app.addPlugin('eur-ledger-2.', {
+    it('should add a new plugin to accounts', async function () {
+      assert.equal(Object.keys(this.accounts.plugins).length, 4)
+      await this.app.addPlugin('eur-ledger-2', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {}
       })
-      assert.equal(Object.keys(this.ledgers.plugins).length, 5)
+      assert.equal(Object.keys(this.accounts.plugins).length, 5)
     })
 
     it('should support new ledger', async function () {
       const quotePromise = this.routeBuilder.quoteBySource({
         sourceAmount: '100',
-        sourceAccount: 'eur-ledger-2.alice',
-        destinationAccount: 'usd-ledger.bob',
+        sourceAccount: 'usd-ledger',
+        destinationAccount: 'jpy-ledger.bob',
         destinationHoldDuration: 5000
       })
 
-      await assert.isRejected(quotePromise, NoRouteFoundError, /No route found from: eur-ledger-2\.alice to: usd-ledger\.bob/)
+      await assert.isRejected(quotePromise, NoRouteFoundError, /no route found. to=jpy.ledger\.bob/)
 
-      await this.app.addPlugin('eur-ledger-2.', {
-        currency: 'EUR',
+      await this.app.addPlugin('jpy-ledger', {
+        currency: 'JPY',
         plugin: 'ilp-plugin-mock',
         options: {}
       })
 
       const quotePromise2 = this.routeBuilder.quoteBySource({
         sourceAmount: '100',
-        sourceAccount: 'eur-ledger-2.alice',
-        destinationAccount: 'usd-ledger.bob',
+        sourceAccount: 'usd-ledger',
+        destinationAccount: 'jpy-ledger.bob',
         destinationHoldDuration: 5000
       })
 
@@ -72,84 +73,83 @@ describe('Modify Plugins', function () {
     })
 
     it('should add a peer for the added ledger', async function () {
-      await this.app.addPlugin('eur-ledger-2.', {
+      await this.app.addPlugin('eur-ledger-2', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {
-          prefix: 'eur-ledger-2.'
+          prefix: 'eur-ledger-2'
         }
       })
 
-      assert.isTrue(this.routeBroadcaster.peers['eur-ledger-2.'])
+      assert.instanceOf(this.routeBroadcaster.peers.get('eur-ledger-2'), RouteBroadcaster.Peer)
     })
 
     it('should override the plugin.getInfo function with overrideInfo data', async function () {
       const overrideInfo = {
         minBalance: '-10',
         maxBalance: '10000',
-        prefix: 'test.other.prefix.',
+        prefix: 'test.other.prefix',
         currencyCode: 'XYZ',
         currencyScale: 0
       }
-      await this.app.addPlugin('eur-ledger-2.', {
+      await this.app.addPlugin('eur-ledger-2', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
         options: {
-          prefix: 'eur-ledger-2.'
+          prefix: 'eur-ledger-2'
         },
         overrideInfo
       })
 
-      const info = this.ledgers.plugins['eur-ledger-2.'].getInfo()
+      const info = this.accounts.plugins['eur-ledger-2'].getInfo()
       assert.include(info, overrideInfo)
     })
   })
 
   describe('removePlugin', function () {
     beforeEach(async function () {
-      await this.app.addPlugin('eur-ledger-2.', {
+      await this.app.addPlugin('jpy-ledger', {
         currency: 'EUR',
         plugin: 'ilp-plugin-mock',
-        prefix: 'eur-ledger-2.',
         options: {
-          prefix: 'eur-ledger-2.'
+          prefix: 'jpy-ledger'
         }
       })
     })
 
-    it('should remove a plugin from ledgers', async function () {
-      assert.isOk(this.ledgers.getPlugin('eur-ledger-2.'))
-      await this.app.removePlugin('eur-ledger-2.')
-      assert.isNotOk(this.ledgers.getPlugin('eur-ledger-2.'))
+    it('should remove a plugin from accounts', async function () {
+      assert.isOk(this.accounts.getPlugin('jpy-ledger'))
+      await this.app.removePlugin('jpy-ledger')
+      assert.isNotOk(this.accounts.getPlugin('jpy-ledger'))
     })
 
     it('should no longer quote to that plugin', async function () {
       await this.routeBuilder.quoteBySource({
         sourceAmount: '100',
-        sourceAccount: 'eur-ledger-2.alice',
-        destinationAccount: 'cad-ledger.bob',
+        sourceAccount: 'usd-ledger',
+        destinationAccount: 'jpy-ledger.bob',
         destinationHoldDuration: 1.001
       })
 
-      await this.app.removePlugin('eur-ledger-2.')
+      await this.app.removePlugin('jpy-ledger')
 
       await this.routeBuilder.quoteBySource({
         sourceAmount: '100',
-        sourceAccount: 'eur-ledger-2.alice',
-        destinationAccount: 'usd-ledger.bob',
+        sourceAccount: 'usd-ledger',
+        destinationAccount: 'jpy-ledger.bob',
         destinationHoldDuration: 1.001
       }).then((quote) => {
         throw new Error()
       }).catch((err) => {
         expect(err.name).to.equal('NoRouteFoundError')
-        expect(err.message).to.match(/No route found from: eur-ledger-2\.alice to: usd-ledger\.bob/)
+        expect(err.message).to.match(/no route found. to=jpy-ledger.bob/)
       })
     })
 
     it('should depeer the removed ledger', async function () {
-      await this.app.removePlugin('eur-ledger-2.')
+      await this.app.removePlugin('jpy-ledger')
 
-      assert.isNotOk(this.routeBroadcaster.peers['eur-ledger-2.'])
+      assert.isNotOk(this.routeBroadcaster.peers['jpy-ledger'])
     })
   })
 })

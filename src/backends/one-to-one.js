@@ -43,15 +43,15 @@ class OneToOneBackend {
   /**
    * Get a liquidity curve for the given parameters.
    *
-   * @param {String} params.source_ledger The URI of the source ledger
-   * @param {String} params.destination_ledger The URI of the destination ledger
-   * @param {String} params.source_currency The source currency
-   * @param {String} params.destination_currency The destination currency
+   * @param {String} params.sourceAccount The URI of the source ledger
+   * @param {String} params.destinationAccount The URI of the destination ledger
+   * @param {String} params.sourceCurrency The source currency
+   * @param {String} params.destinationCurrency The destination currency
    * @returns {Promise.<Object>}
    */
   async getCurve (params) {
-    const sourceInfo = this.getInfo(params.source_ledger)
-    const destinationInfo = this.getInfo(params.destination_ledger)
+    const sourceInfo = this.getInfo(params.sourceAccount)
+    const destinationInfo = this.getInfo(params.destinationAccount)
 
     const scaleDiff = destinationInfo.currencyScale - sourceInfo.currencyScale
     // The spread is subtracted from the rate when going in either direction,
@@ -64,12 +64,12 @@ class OneToOneBackend {
 
     let limit
     if (sourceInfo.maxBalance !== undefined) {
-      let balanceIn = await this.getBalance(params.source_ledger)
+      let balanceIn = await this.getBalance(params.sourceAccount)
       let maxAmountIn = new BigNumber(sourceInfo.maxBalance).minus(balanceIn)
       limit = [ maxAmountIn.toString(), maxAmountIn.times(rate).toString() ]
     }
     if (destinationInfo.minBalance !== undefined) {
-      let balanceOut = await this.getBalance(params.destination_ledger)
+      let balanceOut = await this.getBalance(params.destinationAccount)
       let maxAmountOut = new BigNumber(balanceOut).minus(destinationInfo.minBalance)
       if (limit === undefined || maxAmountOut.lessThan(limit[1])) {
         limit = [ maxAmountOut.div(rate).toString(), maxAmountOut.toString() ]
@@ -95,12 +95,12 @@ class OneToOneBackend {
   /**
    * Dummy function because we're not actually going
    * to submit the payment to any real backend, we're
-   * just going to execute it on the ledgers we're connected to
+   * just going to execute it on the accounts we're connected to
    *
-   * @param {String} params.source_ledger The URI of the source ledger
-   * @param {String} params.destination_ledger The URI of the destination ledger
-   * @param {String} params.source_amount The amount of the source asset we want to send
-   * @param {String} params.destination_amount The amount of the destination asset we want to send
+   * @param {String} params.sourceAccount The URI of the source ledger
+   * @param {String} params.destinationAccount The URI of the destination ledger
+   * @param {String} params.sourceAmount The amount of the source asset we want to send
+   * @param {String} params.destinationAmount The amount of the destination asset we want to send
    * @return {Promise.<null>}
    */
   submitPayment (params) {

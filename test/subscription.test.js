@@ -26,7 +26,7 @@ describe('Subscriptions', function () {
   beforeEach(async function () {
     appHelper.create(this)
     await this.backend.connect(ratesResponse)
-    await this.ledgers.connect()
+    await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
 
     nock('http://usd-ledger.example').get('/')
@@ -100,7 +100,7 @@ describe('Subscriptions', function () {
     const fulfillment = 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'
     const fulfillmentData = Buffer.from('ABAB', 'base64')
     const sendStub = sinon.stub(
-      this.ledgers.getPlugin(destinationTransfer.ledger),
+      this.accounts.getPlugin(destinationTransfer.ledger),
       'sendTransfer')
       .resolves({
         fulfillment,
@@ -109,7 +109,7 @@ describe('Subscriptions', function () {
         })
       })
 
-    const result = await this.ledgers.getPlugin(sourceTransfer.ledger)
+    const result = await this.accounts.getPlugin(sourceTransfer.ledger)
       ._transferHandler({
         amount: sourceAmount,
         executionCondition: sourceTransfer.execution_condition,
@@ -140,7 +140,7 @@ describe('Subscriptions', function () {
     const fulfillment = 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'
     const fulfillmentData = Buffer.from('ABAB', 'base64')
     sinon.stub(
-      this.ledgers.getPlugin(destinationTransfer.ledger),
+      this.accounts.getPlugin(destinationTransfer.ledger),
       'sendTransfer')
       .resolves({
         fulfillment,
@@ -149,7 +149,7 @@ describe('Subscriptions', function () {
         })
       })
 
-    await this.ledgers.getPlugin(sourceTransfer.ledger)
+    await this.accounts.getPlugin(sourceTransfer.ledger)
       ._transferHandler({
         amount: sourceAmount,
         executionCondition: sourceTransfer.execution_condition,
@@ -163,10 +163,10 @@ describe('Subscriptions', function () {
 
     sinon.assert.calledOnce(backendSpy)
     sinon.assert.calledWith(backendSpy, {
-      source_ledger: sourceTransfer.ledger,
-      source_amount: sourceAmount,
-      destination_ledger: destinationTransfer.ledger,
-      destination_amount: destinationAmount
+      sourceAccount: sourceTransfer.ledger,
+      sourceAmount: sourceAmount,
+      destinationAccount: destinationTransfer.ledger,
+      destinationAmount: destinationAmount
     })
   })
 })

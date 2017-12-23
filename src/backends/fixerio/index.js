@@ -6,9 +6,6 @@ const BigNumber = require('bignumber.js')
 const log = require('../../common').log.create('fixerio')
 const ServerError = require('five-bells-shared/errors/server-error')
 const healthStatus = require('../../common/health.js')
-// This simple backend uses a fixed (large) source amount and a rate to generate
-// the destination amount for the curve.
-const PROBE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
 
 const RATES_API = 'https://api.fixer.io/latest'
 
@@ -29,7 +26,7 @@ class FixerIoBackend {
 
     this.spread = opts.spread || 0
     this.getInfo = opts.getInfo
-    this.getBalance = opts.getBalance
+    this.getCurrency = opts.getCurrency
     // this.ratesCacheTtl = opts.ratesCacheTtl || 24 * 3600000
 
     this.rates = {}
@@ -42,12 +39,12 @@ class FixerIoBackend {
    * Mock data can be provided for testing purposes
    */
   async connect (mockData) {
-    log.debug('connect')
-
     let apiData
     if (mockData) {
+      log.debug('connect using mock data.')
       apiData = mockData
     } else {
+      log.debug('connect. uri=' + RATES_API)
       let result = await request({
         uri: RATES_API,
         json: true
@@ -58,6 +55,7 @@ class FixerIoBackend {
     this.rates[apiData.base] = 1
     this.currencies = _.keys(this.rates)
     this.currencies.sort()
+    log.debug('data loaded. noCurrencies=' + this.currencies.length)
   }
 
   /**
@@ -80,27 +78,27 @@ class FixerIoBackend {
   /**
    * Get a liquidity curve for the given parameters.
    *
-   * @param {String} params.source_ledger The URI of the source ledger
-   * @param {String} params.destination_ledger The URI of the destination ledger
-   * @param {String} params.source_currency The source currency
-   * @param {String} params.destination_currency The destination currency
+   * @param {String} sourceAccount The URI of the source ledger
+   * @param {String} destinationAccount The URI of the destination ledger
    * @returns {Promise.<Object>}
    */
-  async getCurve (params) {
+  async getRate (sourceAccount, destinationAccount) {
+    const sourceCurrency = this.getCurrency(sourceAccount)
+    const destinationCurrency = this.getCurrency(destinationAccount)
     // Get ratio between currencies and apply spread
-    const destinationRate = this.rates[params.destination_currency]
-    const sourceRate = this.rates[params.source_currency]
+    const sourceRate = this.rates[sourceCurrency]
+    const destinationRate = this.rates[destinationCurrency]
 
     if (!sourceRate) {
-      throw new ServerError('No rate available for currency ' + params.source_currency)
+      throw new ServerError('No rate available for currency ' + sourceCurrency)
     }
 
     if (!destinationRate) {
-      throw new ServerError('No rate available for currency ' + params.destination_currency)
+      throw new ServerError('No rate available for currency ' + destinationCurrency)
     }
 
-    const sourceInfo = this.getInfo(params.source_ledger)
-    const destinationInfo = this.getInfo(params.destination_ledger)
+    const sourceInfo = this.getInfo(sourceAccount)
+    const destinationInfo = this.getInfo(destinationAccount)
 
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
@@ -111,24 +109,22 @@ class FixerIoBackend {
     const rate = new BigNumber(destinationRate).shift(destinationInfo.currencyScale)
       .div(new BigNumber(sourceRate).shift(sourceInfo.currencyScale))
       .times(new BigNumber(1).minus(this.spread))
+      .toPrecision(15)
 
-    // Make sure that neither amount exceeds 15 significant digits.
-    if (rate.gt(1)) {
-      return { points: [ [0, 0], [ PROBE_AMOUNT / rate, PROBE_AMOUNT ] ] }
-    } else {
-      return { points: [ [0, 0], [ PROBE_AMOUNT, PROBE_AMOUNT * rate ] ] }
-    }
+    log.debug('quoted rate. from=%s to=%s fromCur=%s toCur=%s rate=%s', sourceAccount, destinationAccount, sourceCurrency, destinationCurrency, rate)
+
+    return Number(rate)
   }
 
   /**
    * Dummy function because we're not actually going
    * to submit the payment to any real backend, we're
-   * just going to execute it on the ledgers we're connected to
+   * just going to execute it on the accounts we're connected to
    *
-   * @param {String} params.source_ledger The URI of the source ledger
-   * @param {String} params.destination_ledger The URI of the destination ledger
-   * @param {String} params.source_amount The amount of the source asset we want to send
-   * @param {String} params.destination_amount The amount of the destination asset we want to send
+   * @param {String} params.sourceAccount The URI of the source ledger
+   * @param {String} params.destinationAccount The URI of the destination ledger
+   * @param {String} params.sourceAmount The amount of the source asset we want to send
+   * @param {String} params.destinationAmount The amount of the destination asset we want to send
    * @return {Promise.<null>}
    */
   async submitPayment (params) {

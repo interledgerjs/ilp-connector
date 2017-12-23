@@ -1,27 +1,27 @@
 [
   [
-    "USD@usd-ledger.",
-    "EUR@eur-ledger."
+    "usd-ledger",
+    "eur-ledger"
   ], [
-    "EUR@eur-ledger.",
-    "USD@usd-ledger."
+    "eur-ledger",
+    "usd-ledger"
   ], [
-    "CAD@cad-ledger.",
-    "EUR@eur-ledger."
+    "cad-ledger",
+    "eur-ledger"
   ], [
-    "USD@usd-ledger.",
-    "CAD@cad-ledger."
+    "usd-ledger",
+    "cad-ledger"
   ], [
-    "CAD@cad-ledger.",
-    "USD@usd-ledger."
+    "cad-ledger",
+    "usd-ledger"
   ], [
-    "EUR@eur-ledger.",
-    "CAD@cad-ledger."
+    "eur-ledger",
+    "cad-ledger"
   ], [
-    "USD@usd-ledger.",
-    "CNY@cny-ledger."
+    "usd-ledger",
+    "cny-ledger"
   ], [
-    "CNY@cny-ledger.",
-    "USD@usd-ledger."
+    "cny-ledger",
+    "usd-ledger"
   ]
 ]

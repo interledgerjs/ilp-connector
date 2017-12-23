@@ -9,18 +9,18 @@ const env = _.cloneDeep(process.env)
 describe('ConnectorConfig', function () {
   describe('parseConnectorConfig', function () {
     beforeEach(function () {
-      process.env.CONNECTOR_LEDGERS = JSON.stringify({
-        'usd-ledger.': {
+      process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
+        'usd-ledger': {
           currency: 'USD',
           plugin: 'ilp-plugin-mock',
           options: {}
         },
-        'eur-ledger.': {
+        'eur-ledger': {
           currency: 'EUR',
           plugin: 'ilp-plugin-mock',
           options: {}
         },
-        'aud-ledger.': {
+        'aud-ledger': {
           currency: 'AUD',
           plugin: 'ilp-plugin-mock',
           options: {}
@@ -43,32 +43,32 @@ describe('ConnectorConfig', function () {
     it('should auto-generate pairs', async function () {
       const config = loadConnectorConfig()
       expect(config.get('tradingPairs')).to.deep.equal([[
-        'USD@usd-ledger.',
-        'USD@usd-ledger.'
+        'usd-ledger',
+        'usd-ledger'
       ], [
-        'USD@usd-ledger.',
-        'EUR@eur-ledger.'
+        'usd-ledger',
+        'eur-ledger'
       ], [
-        'EUR@eur-ledger.',
-        'USD@usd-ledger.'
+        'eur-ledger',
+        'usd-ledger'
       ], [
-        'USD@usd-ledger.',
-        'AUD@aud-ledger.'
+        'usd-ledger',
+        'aud-ledger'
       ], [
-        'AUD@aud-ledger.',
-        'USD@usd-ledger.'
+        'aud-ledger',
+        'usd-ledger'
       ], [
-        'EUR@eur-ledger.',
-        'EUR@eur-ledger.'
+        'eur-ledger',
+        'eur-ledger'
       ], [
-        'EUR@eur-ledger.',
-        'AUD@aud-ledger.'
+        'eur-ledger',
+        'aud-ledger'
       ], [
-        'AUD@aud-ledger.',
-        'EUR@eur-ledger.'
+        'aud-ledger',
+        'eur-ledger'
       ], [
-        'AUD@aud-ledger.',
-        'AUD@aud-ledger.'
+        'aud-ledger',
+        'aud-ledger'
       ]])
     })
 
@@ -76,8 +76,7 @@ describe('ConnectorConfig', function () {
       beforeEach(function () {
         this.routes = [{
           targetPrefix: 'a.',
-          connectorAccount: 'example.a',
-          connectorLedger: 'example.'
+          peerAddress: 'example.a'
         }]
       })
 
@@ -88,23 +87,12 @@ describe('ConnectorConfig', function () {
       it('parses routes correctly', function () {
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
         const config = loadConnectorConfig()
-        expect(config.get('configRoutes'))
+        expect(config.get('routes'))
           .to.deep.equal(this.routes)
       })
 
       it('won\'t parse routes with invalid ledger', function () {
-        this.routes[0].connectorLedger = 'garbage'
-        process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
-        try {
-          loadConnectorConfig()
-          assert(false)
-        } catch (e) {
-          assert.isTrue(true)
-        }
-      })
-
-      it('won\'t parse routes with non-matching ledger and connector', function () {
-        this.routes[0].connectorAccount = 'other.connector'
+        this.routes[0].peerAddress = 'garbage'
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
         try {
           loadConnectorConfig()
@@ -126,7 +114,7 @@ describe('ConnectorConfig', function () {
       })
 
       it('should not parse routes missing ledger', function () {
-        this.routes[0].connectorLedger = undefined
+        this.routes[0].peerAddress = undefined
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
         try {
           loadConnectorConfig()
@@ -150,21 +138,21 @@ describe('ConnectorConfig', function () {
 
     describe('ledger credentials', () => {
       it('should parse ledger credentials -- deprecated format', async function () {
-        const ledgerCredentials = require('./data/ledgerCredentials.json')
-        const ledgerCredsModified = _.cloneDeep(ledgerCredentials)
-        const usdLedgerCreds = ledgerCredsModified['usd-ledger.']
+        const accountCredentials = require('./data/accountCredentials.json')
+        const ledgerCredsModified = _.cloneDeep(accountCredentials)
+        const usdLedgerCreds = ledgerCredsModified['usd-ledger']
         usdLedgerCreds.options.account_uri = usdLedgerCreds.account
         delete usdLedgerCreds.account
-        process.env.CONNECTOR_LEDGERS = JSON.stringify(ledgerCredsModified)
+        process.env.CONNECTOR_ACCOUNTS = JSON.stringify(ledgerCredsModified)
 
         const config = loadConnectorConfig()
-        expect(config.get('ledgerCredentials'))
-          .to.deep.equal(ledgerCredentials)
+        expect(config.get('accountCredentials'))
+          .to.deep.equal(accountCredentials)
       })
 
       it('should parse ledger credentials', async function () {
-        const ledgerCredentialsEnv = {
-          'cad-ledger.': {
+        const accountCredentialsEnv = {
+          'cad-ledger': {
             currency: 'CAD',
             plugin: 'ilp-plugin-mock',
             options: {
@@ -173,7 +161,7 @@ describe('ConnectorConfig', function () {
               password: 'mark'
             }
           },
-          'usd-ledger.': {
+          'usd-ledger': {
             currency: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
@@ -187,11 +175,11 @@ describe('ConnectorConfig', function () {
         }
 
         process.env.UNIT_TEST_OVERRIDE = 'true'
-        process.env.CONNECTOR_LEDGERS = JSON.stringify(ledgerCredentialsEnv)
+        process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
         const config = loadConnectorConfig()
 
-        const ledgerCredentials = {
-          'cad-ledger.': {
+        const accountCredentials = {
+          'cad-ledger': {
             currency: 'CAD',
             plugin: 'ilp-plugin-mock',
             options: {
@@ -200,7 +188,7 @@ describe('ConnectorConfig', function () {
               password: 'mark'
             }
           },
-          'usd-ledger.': {
+          'usd-ledger': {
             currency: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
@@ -213,13 +201,13 @@ describe('ConnectorConfig', function () {
           }
         }
 
-        expect(config.get('ledgerCredentials'))
-          .to.deep.equal(ledgerCredentials)
+        expect(config.get('accountCredentials'))
+          .to.deep.equal(accountCredentials)
       })
 
       it('should parse another type of ledger\'s credentials', async function () {
-        const ledgerCredentialsEnv = {
-          'cad-ledger.': {
+        const accountCredentialsEnv = {
+          'cad-ledger': {
             currency: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
@@ -228,7 +216,7 @@ describe('ConnectorConfig', function () {
               type: 'other'
             }
           },
-          'usd-ledger.': {
+          'usd-ledger': {
             currency: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
@@ -240,11 +228,11 @@ describe('ConnectorConfig', function () {
         }
 
         process.env.UNIT_TEST_OVERRIDE = 'true'
-        process.env.CONNECTOR_LEDGERS = JSON.stringify(ledgerCredentialsEnv)
+        process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
         const config = loadConnectorConfig()
 
-        const ledgerCredentials = {
-          'cad-ledger.': {
+        const accountCredentials = {
+          'cad-ledger': {
             currency: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
@@ -253,7 +241,7 @@ describe('ConnectorConfig', function () {
               type: 'other'
             }
           },
-          'usd-ledger.': {
+          'usd-ledger': {
             currency: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
@@ -264,8 +252,8 @@ describe('ConnectorConfig', function () {
           }
         }
 
-        expect(config.get('ledgerCredentials'))
-          .to.deep.equal(ledgerCredentials)
+        expect(config.get('accountCredentials'))
+          .to.deep.equal(accountCredentials)
       })
     })
   })

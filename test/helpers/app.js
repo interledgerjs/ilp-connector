@@ -1,22 +1,22 @@
 'use strict'
 
-const log = require('../../src/common').log
-
 const loadConfig = require('../../src/lib/config')
-const RoutingTables = require('../../src/lib/routing-tables')
 const RouteBuilder = require('../../src/lib/route-builder')
 const RouteBroadcaster = require('../../src/lib/route-broadcaster')
+const PrefixMap = require('../../src/routing/prefix-map')
+const Accounts = require('../../src/lib/accounts')
 const Quoter = require('../../src/lib/quoter')
-const Ledgers = require('../../src/lib/ledgers')
 const TradingPairs = require('../../src/lib/trading-pairs')
 const MessageRouter = require('../../src/lib/message-router')
 
 const createApp = require('../../src').createApp
 
 exports.create = function (context, minBalance) {
+  process.env.CONNECTOR_ILP_ADDRESS = 'test.connie'
+
   // Set up test environment
-  if (!process.env.CONNECTOR_LEDGERS) {
-    process.env.CONNECTOR_LEDGERS = JSON.stringify(require('../data/ledgerCredentials.json'))
+  if (!process.env.CONNECTOR_ACCOUNTS) {
+    process.env.CONNECTOR_ACCOUNTS = JSON.stringify(require('../data/accountCredentials.json'))
   }
   if (!process.env.CONNECTOR_PAIRS) {
     process.env.CONNECTOR_PAIRS = JSON.stringify(require('../data/tradingPairs.json'))
@@ -26,61 +26,63 @@ exports.create = function (context, minBalance) {
   process.env.CONNECTOR_SECRET = 'VafuntVJRw6YzDTs4IgIU1IPJACywtgUUQJHh1u018w='
 
   const config = loadConfig()
+  const routingTable = new PrefixMap()
   const tradingPairs = new TradingPairs(config.get('tradingPairs'))
-  const routingTables = new RoutingTables({
-    backend: config.backend,
-    expiryDuration: config.routeExpiry,
-    slippage: config.slippage,
-    fxSpread: config.fxSpread
-  })
-  const ledgers = new Ledgers({config, log, routingTables})
-  const quoter = new Quoter(ledgers, {quoteExpiry: config.quoteExpiry})
+  const accounts = new Accounts({config, routingTable})
+  const quoter = new Quoter(accounts, config)
   const Backend = require('../../src/backends/' + config.get('backend'))
   const backend = new Backend({
     currencyWithLedgerPairs: tradingPairs,
     backendUri: config.get('backendUri'),
     spread: config.get('fxSpread'),
     getInfo: (ledger) => {
-      const info = ledgers.getPlugin(ledger).getInfo()
+      const info = accounts.getPlugin(ledger).getInfo()
       info.minBalance = minBalance
       return info
     },
-    getBalance: (ledger) => ledgers.getPlugin(ledger).getBalance()
+    getCurrency: (ledger) => {
+      return accounts.getCurrency(ledger)
+    }
   })
-  ledgers.addFromCredentialsConfig(config.get('ledgerCredentials'))
-  ledgers.setPairs(config.get('tradingPairs'))
+  accounts.setPairs(config.get('tradingPairs'))
   const routeBuilder = new RouteBuilder(
-    ledgers,
+    accounts,
+    routingTable,
+    backend,
     quoter,
     {
       minMessageWindow: config.expiry.minMessageWindow,
       maxHoldTime: config.expiry.maxHoldTime,
       slippage: config.slippage,
-      secret: config.secret
+      secret: config.secret,
+      address: config.address,
+      quoteExpiry: config.quoteExpiry,
+      reflectPayments: config.reflectPayments
     }
   )
-  const routeBroadcaster = new RouteBroadcaster(routingTables, backend, ledgers, {
+  const routeBroadcaster = new RouteBroadcaster(routingTable, backend, accounts, quoter, {
+    address: config.address,
     minMessageWindow: config.expiry.minMessageWindow,
     routeCleanupInterval: config.routeCleanupInterval,
     routeBroadcastInterval: config.routeBroadcastInterval,
     routeExpiry: config.routeExpiry,
     broadcastCurves: true,
     storeCurves: true,
-    autoloadPeers: true,
-    peers: [],
-    ledgerCredentials: config.ledgerCredentials,
-    configRoutes: config.configRoutes
+    peers: config.peers,
+    accountCredentials: config.accountCredentials,
+    routes: config.routes
   })
-  const messageRouter = new MessageRouter({config, ledgers, routingTables, routeBroadcaster, routeBuilder})
-  const app = createApp(config, ledgers, backend, quoter, routeBuilder, routeBroadcaster, routingTables, tradingPairs, messageRouter)
+  const messageRouter = new MessageRouter({config, accounts, routeBroadcaster, routeBuilder})
+  const app = createApp({ config, accounts, backend, routeBuilder, routeBroadcaster, routingTable, tradingPairs, messageRouter })
+
   context.app = app
   context.backend = backend
+  context.quoter = quoter
+  context.routingTable = routingTable
   context.tradingPairs = tradingPairs
-  context.routingTables = routingTables
   context.routeBroadcaster = routeBroadcaster
   context.routeBuilder = routeBuilder
-  context.quoter = quoter
-  context.ledgers = ledgers
+  context.accounts = accounts
   context.config = config
   context.messageRouter = messageRouter
 }

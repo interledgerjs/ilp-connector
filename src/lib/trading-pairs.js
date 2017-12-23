@@ -24,8 +24,8 @@ class TradingPairs {
     }
   }
 
-  // eg. add all combinations of USD@red.ilpdemo
-  // with EUR@blue.ilpdemo and XRP@example.virtual.
+  // eg. add all combinations of red.ilpdemo
+  // with blue.ilpdemo and example.virtual.
   add (from, to) {
     let source = this._sources.get(from)
     if (!source) {
@@ -38,7 +38,7 @@ class TradingPairs {
     this._pairsCache = null
   }
 
-  // eg. remove all of USD@red.ilpdemo.
+  // eg. remove all of red.ilpdemo.
   removeAll (id) {
     this._sources.delete(id)
     for (let destinationSet of this._sources.values()) {

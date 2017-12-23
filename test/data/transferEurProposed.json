@@ -1,6 +1,6 @@
 {
   "id": "http://eur-ledger.example/transfers/3968e526-b5ef-4c35-8923-0e7cfd0892d3",
-  "ledger":"eur-ledger.",
+  "ledger":"eur-ledger",
   "debits":[{
     "amount":"1.00",
     "account":"eur-ledger.mark"

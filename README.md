@@ -45,71 +45,63 @@ npm start
 
 #### Trading
 
-* `CONNECTOR_LEDGERS` (default: `{}`) Connector's login credentials for ledgers where it has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
+* `CONNECTOR_ACCOUNTS` (default: `{}`) Connector's login credentials for peers with whom it has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
 ```js
 {
   // Using Basic Auth
-  "example.usd-ledger.": {
+  "example.alice": {
     "store": true // if the plugin requires a store, it should set this to true
     "currency": "USD", // asset on this ledger
-    "plugin": "ilp-plugin-bells", // module for this ledger plugin
+    "plugin": "ilp-plugin-payment-channel-framework", // module for this ledger plugin
     "options": { // actual plugin options passed into plugin constructor
-      "account": "...",
-      "username": "...",
-      "password": "..."
-      "ca": "...", // Optional
+      // ...
     }
   },
 
   // Using Client Certificate Auth
-  "example.eur-ledger.": {
+  "example.bob": {
     "currency": "EUR",
-    "plugin": "ilp-plugin-bells",
+    "plugin": "ilp-plugin-payment-channel-framework",
     "options": {
-      "account": "...",
-      "username": "...",
-      "cert": "...",
-      "key": "...",
-      "ca": "...", // Optional
+      // ...
     }
   }
 }
 ```
+<!-- TODO ENLIGHTEN - Bring this back?
 * `CONNECTOR_PAIRS` (default: *[all possible combinations]*) Pairs to trade on, ex.
 ```js
 [
   [
-    'USD@example.ledger1.',
-    'EUR@example.ledger2.'
+    'example.alice',
+    'example.bob'
   ],[
-    'EUR@example.ledger2.',
-    'USD@example.ledger1.'
+    'example.bob',
+    'example.alice'
   ]
 ]
 ```
+-->
 
 * `CONNECTOR_ROUTES` (default: `[]`) Explicitly add routes to the connector. If `targetPrefix` is the most specific
-  route name that matches a destination, then the payment will be forwarded to `connectorAccount` on `connectorLedger`. ex:
+  route name that matches a destination, then the payment will be forwarded to `peerAddress`. ex:
 ```js
 [
   {
     "targetPrefix": "", // matches any destination
-    "connectorLedger": "ilpdemo.red."
-    "connectorAccount": "ilpdemo.red.connie"
+    "peerAddress": "ilpdemo.red."
   }, {
     "targetPrefix": "cny.",
-    "connectorLedger": "ilpdemo.red."
-    "connectorAccount": "lpdemo.red.cny_connector"
+    "peerAddress": "ilpdemo.red."
   }
 ]
 ```
 
 * `CONNECTOR_PEERS` (default: `''`) Provide a basic comma-separated list of peers. Each peer is a connector's ILP address, on which known routes are used in order to broadcast routes, to receive routes, and to send payments.
-* `CONNECTOR_AUTOLOAD_PEERS` (default: `false`) Whether to automatically populate the list of peers by calling getConnectors on all ledger plugins
 
 * `CONNECTOR_FX_SPREAD` (default: `0.002` =.2%) How much of a spread to add on top of the reference exchange rate. This determines the connector's margin.
 * `CONNECTOR_SLIPPAGE` (default: `0.001` = 0.1%) The ratio for overestimating exchange rates to prevent payment failure if the rate changes.
-* `CONNECTOR_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the connector wants to budget for getting a message to the ledgers its trading on. In seconds.
+* `CONNECTOR_MIN_MESSAGE_WINDOW` (default: `1`) Minimum time the connector wants to budget for getting a message to the accounts its trading on. In seconds.
 * `CONNECTOR_MAX_HOLD_TIME` (default: `10`) Maximum duration (seconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.
 * `CONNECTOR_AUTH_CLIENT_CERT_ENABLED` (default `0`) whether or not to enable TLS Client Certificate authentication (requires HTTPS).
 * `CONNECTOR_USE_HTTPS` (default `0`) whether or not to run the server using HTTPS.
@@ -124,9 +116,9 @@ npm start
 * `CONNECTOR_QUOTE_EXPIRY` (default: `45000`) the maximum age of a quote.
 * `CONNECTOR_BACKEND` (default: `'fixerio'`) the backend used to determine rates. This can either be a module name from `src/backends/` or a different module that will be `require()`ed by the connector.
 * `CONNECTOR_SECRET` (default: 32 random bytes) base64url-encoded 32-byte secret used by the connector to deterministically randomize transfer IDs
-* `CONNECTOR_UNWISE_USE_SAME_TRANSFER_ID` (default: false, obviously) use the same transfer id for the destination transfer as the source transfer. If ledgers enforce transfer ID uniqueness (as they SHOULD), this means that someone can squat on an ID on the destination ledger and make this connector seem unreliable
 * `CONNECTOR_BROADCAST_CURVES` (default: true) include the liquidity curve when broadcasting a route
 * `CONNECTOR_STORE_CURVES` (default: true) store liquidity curves from route broadcasts (current implementation only stores them in-memory)
+* `CONNECTOR_REFLECT_PAYMENTS` (default: true) whether the connector is willing to send payments back to the sender if it thinks that is the best route
 
 ## Running with Docker
 
@@ -165,28 +157,14 @@ As soon as the source transfer is prepared, the connector will authorize the deb
 |:--|:--|:--|
 | `opts` | `Object` | |
 | `opts.backendUri` | `URI` | (see `CONNECTOR_BACKEND_URI`) |
-| `opts.currencyWithLedgerPairs` | `TradingPairs` | currency pairs supported by the connector |
-| `opts.getInfo` | `Function(ledger) → LedgerInfo` | a function to retrieve ledger metadata |
+| `opts.getInfo` | `Function(account) → LedgerInfo` | a function to retrieve account metadata |
+| `opts.getCurrency` | `Function(account) → string` | a function to retrieve currency metadata for an account |
 | `opts.spread` | `Number` | (see `CONNECTOR_FX_SPREAD`) |
 
 #### connect
 <code>backend.connect() ⇒ Promise.&lt;null></code>
 
-#### getCurve
-<code>backend.getCurve( **params** : [CurveParams](#class-curveparams) ) ⇒ Promise.&lt;Curve></code>
+#### getRate
+<code>backend.getRate( **sourceAccount** : string, **nextHop** : string ) ⇒ Promise.&lt;number></code>
 
-### Class: CurveParams
-###### Fields
-| Type     | Name                   | Description |
-|:---------|:-----------------------|:--|
-| `String` | `source_ledger`        | The ILP prefix of the source ledger |
-| `String` | `destination_ledger`   | The ILP prefix of the destination ledger |
-| `String` | `source_currency`      | The source currency |
-| `String` | `destination_currency` | The destination currency |
-
-### Class: Curve
-###### Fields
-| Type      | Name              | Description |
-|:----------|:------------------|:--|
-| `Point[]` | `points`          | A list of `[sourceAmount:Number, destinationAmount:Number]` points representing a liquidity curve |
-| `Object`  | `additional_info` | Extra (optional) data to attach to the `Route` |
+Return the exchange rate between two accounts. When forwarding a transfer, the connector will apply the formula `destinationAmount = sourceAmount * rate`.
