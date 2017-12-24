@@ -3,15 +3,20 @@
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const packet = require('ilp-packet')
-const { codes, createIlpRejection } = require('./ilp-errors')
+const { codes, createIlpRejection } = require('../lib/ilp-errors')
 const NoRouteFoundError = require('../errors/no-route-found-error')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const LedgerNotConnectedError = require('../errors/ledger-not-connected-error')
 const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-error')
+const Accounts = require('./accounts')
+const RoutingTable = require('./routing-table')
+const RateBackend = require('./rate-backend')
+const Quoter = require('./quoter')
+const Config = require('./config')
 const LiquidityCurve = require('../routing/liquidity-curve')
 const log = require('../common/log').create('route-builder')
-const { getShortestUnambiguousPrefix } = require('./utils')
+const { getShortestUnambiguousPrefix } = require('../lib/utils')
 
 const PROBE_AMOUNT = new BigNumber(10).pow(14) // stays within 15 max digits for BigNumber from Number
 
@@ -27,32 +32,20 @@ function rateToCurve (rate) {
 }
 
 class RouteBuilder {
-  /**
-   * @param {Accounts} accounts
-   * @param {PrefixMap} routingTable
-   * @param {Backend} backend
-   * @param {Quoter} quoter
-   * @param {Object} config
-   * @param {Integer} config.minMessageWindow seconds
-   * @param {Integer} config.maxHoldTime seconds
-   * @param {Number} config.slippage
-   */
-  constructor (accounts, routingTable, backend, quoter, config) {
-    if (!accounts) {
-      throw new TypeError('Must be given a valid Accounts instance')
-    }
+  constructor (deps) {
+    this.accounts = deps(Accounts)
+    this.routingTable = deps(RoutingTable)
+    this.backend = deps(RateBackend)
+    this.quoter = deps(Quoter)
+    this.config = deps(Config)
 
-    this.accounts = accounts
-    this.routingTable = routingTable
-    this.backend = backend
-    this.quoter = quoter
-    this.minMessageWindow = config.minMessageWindow * 1000 // millseconds
-    this.maxHoldTime = config.maxHoldTime * 1000 // millseconds
-    this.quoteExpiryDuration = config.quoteExpiry // milliseconds
-    this.slippage = config.slippage
-    this.secret = config.secret
-    this.reflectPayments = config.reflectPayments
-    this.createIlpRejection = createIlpRejection.bind(null, config.address || '')
+    this.minMessageWindow = this.config.expiry.minMessageWindow * 1000 // millseconds
+    this.maxHoldTime = this.config.expiry.maxHoldTime * 1000 // millseconds
+    this.quoteExpiryDuration = this.config.quoteExpiry // milliseconds
+    this.slippage = this.config.slippage
+    this.secret = this.config.secret
+    this.reflectPayments = this.config.reflectPayments
+    this.createIlpRejection = createIlpRejection.bind(null, this.config.address || '')
   }
 
   getNextHop (sourceAccount, destinationAccount) {

@@ -13,7 +13,7 @@ const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const _ = require('lodash')
 const NoRouteFoundError = require('../src/errors/no-route-found-error')
-const RouteBroadcaster = require('../src/lib/route-broadcaster')
+const RouteBroadcaster = require('../src/services/route-broadcaster')
 
 const PluginMock = require('./mocks/mockPlugin')
 mockRequire('ilp-plugin-mock', PluginMock)

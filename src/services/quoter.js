@@ -2,6 +2,8 @@
 
 const IlpPacket = require('ilp-packet')
 const InterledgerRejectionError = require('../errors/interledger-rejection-error')
+const Accounts = require('./accounts')
+const Config = require('./config')
 const LiquidityCurve = require('../routing/liquidity-curve')
 const PrefixMap = require('../routing/prefix-map')
 const log = require('../common').log.create('quoter')
@@ -14,9 +16,9 @@ class Quoter {
    * @param {Object} config
    * @param {Integer} config.quoteExpiry
    */
-  constructor (accounts, config) {
-    this.accounts = accounts
-    this.quoteExpiryDuration = config.quoteExpiry // milliseconds
+  constructor (deps) {
+    this.accounts = deps(Accounts)
+    this.quoteExpiryDuration = deps(Config).quoteExpiry // milliseconds
     this.cache = new PrefixMap()
   }
 
