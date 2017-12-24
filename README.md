@@ -45,7 +45,7 @@ npm start
 
 #### Trading
 
-* `CONNECTOR_ACCOUNTS` (default: `{}`) Connector's login credentials for peers with whom it has accounts. Used to auto-generate `CONNECTOR_PAIRS`.
+* `CONNECTOR_ACCOUNTS` (default: `{}`) Connector's login credentials for peers with whom it has accounts.
 ```js
 {
   // Using Basic Auth
@@ -68,20 +68,6 @@ npm start
   }
 }
 ```
-<!-- TODO ENLIGHTEN - Bring this back?
-* `CONNECTOR_PAIRS` (default: *[all possible combinations]*) Pairs to trade on, ex.
-```js
-[
-  [
-    'example.alice',
-    'example.bob'
-  ],[
-    'example.bob',
-    'example.alice'
-  ]
-]
-```
--->
 
 * `CONNECTOR_ROUTES` (default: `[]`) Explicitly add routes to the connector. If `targetPrefix` is the most specific
   route name that matches a destination, then the payment will be forwarded to `peerAddress`. ex:

@@ -4,10 +4,10 @@ const _ = require('lodash')
 const EventEmitter = require('eventemitter2')
 const compat = require('ilp-compat-plugin')
 const PluginStore = require('../lib/pluginStore.js')
-const TradingPairs = require('./trading-pairs')
+const Config = require('./config')
 const logger = require('../common/log')
 const log = logger.create('accounts')
-const { createIlpRejection, codes } = require('./ilp-errors')
+const { createIlpRejection, codes } = require('../lib/ilp-errors')
 
 const PLUGIN_EVENTS = [
   'connect',
@@ -20,13 +20,15 @@ const PLUGIN_EVENTS = [
 ]
 
 class Accounts extends EventEmitter {
-  constructor ({ config, routingTable }) {
+  constructor (deps) {
     super()
+
+    const config = deps(Config)
+
     this.pluginList = [] // LedgerPlugin[]
     this.plugins = {} // { prefix ⇒ LedgerPlugin }
     this.prefixReverseMap = new Map() // { LedgerPlugin ⇒ prefix }
     this._config = config
-    this._pairs = new TradingPairs()
     this._accounts = new Map()
     this.requestHandler = this._requestHandler.bind(this)
     this.createIlpRejection = createIlpRejection.bind(null, config.address)
@@ -58,15 +60,6 @@ class Accounts extends EventEmitter {
 
   getPrefixes () {
     return Object.keys(this.plugins)
-  }
-
-  getPairs () {
-    return this._pairs.toArray()
-  }
-
-  setPairs (pairs) {
-    this._pairs.empty()
-    this._pairs.addPairs(pairs)
   }
 
   getCurrency (accountAddress) {

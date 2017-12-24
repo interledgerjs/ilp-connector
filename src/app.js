@@ -1,16 +1,16 @@
 'use strict'
 
+const reduct = require('reduct')
 const _ = require('lodash')
 const logger = require('./common/log')
 const log = logger.create('app')
 
-const Config = require('./lib/config')
-const PrefixMap = require('./routing/prefix-map')
-const Quoter = require('./lib/quoter')
-const RouteBuilder = require('./lib/route-builder')
-const RouteBroadcaster = require('./lib/route-broadcaster')
-const Accounts = require('./lib/accounts')
-const MessageRouter = require('./lib/message-router')
+const Config = require('./services/config')
+const RouteBuilder = require('./services/route-builder')
+const RouteBroadcaster = require('./services/route-broadcaster')
+const Accounts = require('./services/accounts')
+const RateBackend = require('./services/rate-backend')
+const MessageRouter = require('./services/message-router')
 const payments = require('./models/payments')
 
 function listen (config, accounts, backend, routeBuilder, routeBroadcaster, messageRouter) {
@@ -76,80 +76,15 @@ function registerRequestHandler (accounts, fn) {
   return accounts.registerExternalRequestHandler(fn)
 }
 
-function createApp ({ config, accounts, backend, routeBuilder, quoter, routeBroadcaster, routingTable, messageRouter } = {}) {
-  if (!config) {
-    config = new Config()
-  }
+function createApp (container) {
+  const deps = container || reduct()
 
-  if (!routingTable) {
-    routingTable = new PrefixMap()
-  }
-
-  if (!accounts) {
-    accounts = new Accounts({config, log: logger, routingTable})
-    accounts.setPairs(config.get('tradingPairs'))
-  }
-
-  if (!quoter) {
-    quoter = new Quoter(accounts, config)
-  }
-
-  if (!backend) {
-    const Backend = getBackend(config.get('backend'))
-    backend = new Backend({
-      currencyWithLedgerPairs: accounts.getPairs(),
-      backendUri: config.get('backendUri'),
-      spread: config.get('fxSpread'),
-      getInfo: (ledger) => accounts.getPlugin(ledger).getInfo()
-    })
-  }
-
-  if (!routeBuilder) {
-    routeBuilder = new RouteBuilder(
-      accounts,
-      routingTable,
-      backend,
-      quoter,
-      {
-        minMessageWindow: config.expiry.minMessageWindow,
-        maxHoldTime: config.expiry.maxHoldTime,
-        slippage: config.slippage,
-        secret: config.secret,
-        address: config.address,
-        quoteExpiry: config.quoteExpiry,
-        reflectPayments: config.reflectPayments
-      }
-    )
-  }
-
-  if (!routeBroadcaster) {
-    routeBroadcaster = new RouteBroadcaster(
-      routingTable,
-      backend,
-      accounts,
-      quoter,
-      {
-        address: config.address,
-        routes: config.routes,
-        minMessageWindow: config.expiry.minMessageWindow,
-        routeCleanupInterval: config.routeCleanupInterval,
-        routeBroadcastInterval: config.routeBroadcastInterval,
-        routeExpiry: config.routeExpiry,
-        broadcastCurves: config.broadcastCurves,
-        peers: config.peers,
-        accountCredentials: config.accountCredentials
-      }
-    )
-  }
-
-  if (!messageRouter) {
-    messageRouter = new MessageRouter({
-      config,
-      accounts,
-      routeBroadcaster,
-      routeBuilder
-    })
-  }
+  const accounts = deps(Accounts)
+  const config = deps(Config)
+  const routeBuilder = deps(RouteBuilder)
+  const routeBroadcaster = deps(RouteBroadcaster)
+  const backend = deps(RateBackend)
+  const messageRouter = deps(MessageRouter)
 
   accounts.registerTransferHandler(
     payments.handleIncomingTransfer.bind(payments, accounts, config, routeBuilder, backend)
@@ -170,21 +105,6 @@ function createApp ({ config, accounts, backend, routeBuilder, quoter, routeBroa
     removePlugin: _.partial(removePlugin, config, accounts, backend, routeBroadcaster),
     getPlugin: _.partial(getPlugin, accounts),
     registerRequestHandler: _.partial(registerRequestHandler, accounts)
-  }
-}
-
-function getBackend (backend) {
-  if (moduleExists('./backends/' + backend)) return require('./backends/' + backend)
-  if (moduleExists(backend)) return require(backend)
-  throw new Error('Backend not found at "' + backend + '" or "/backends/' + backend + '"')
-}
-
-function moduleExists (path) {
-  try {
-    require.resolve(path)
-    return true
-  } catch (err) {
-    return false
   }
 }
 

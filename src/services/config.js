@@ -153,30 +153,6 @@ class Config {
     return ret
   }
 
-  parseAccounts () {
-    // List of accounts this connector has accounts on (used to auto-generate pairs)
-    // e.g. {
-    //    "example.usd.ledger": {
-    //      "currency": "USD",
-    //      "plugin": 'ilp-plugin-example',
-    //      "options": {
-    //        // plugin options ...
-    //      }
-    //    },
-    //    "example.eur.ledger": {
-    //      "currency": "EUR",
-    //      "plugin": 'ilp-plugin-example',
-    //      "options": {
-    //        // plugin options ...
-    //      }
-    //    }
-    //  }
-    const accounts = JSON.parse(Config.getEnv(envPrefix, 'ACCOUNTS') || '{}')
-    return Object.keys(accounts).map((ledger) => {
-      return { currency: accounts[ledger].currency, ledger }
-    })
-  }
-
   parseRoutes () {
     const routes = JSON.parse(Config.getEnv(envPrefix, 'ROUTES') || '[]')
 
@@ -196,12 +172,6 @@ class Config {
   }
 
   getLocalConfig () {
-    const accounts = this.parseAccounts()
-    // Currency pairs traded should be specified as
-    // [["http://usd-ledger.example","http://eur-ledger.example"],...]
-    this.tradingPairs =
-    JSON.parse(Config.getEnv(envPrefix, 'PAIRS') || 'false') || this.generateDefaultPairs(accounts)
-
     // Routes to add to the connector, in the form:
     // [{
     //  "targetPrefix": "", // match any route

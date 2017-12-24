@@ -1,7 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
-const Config = require('../src/lib/config')
+const Config = require('../src/services/config')
 const expect = require('chai').expect
 const assert = require('chai').assert
 const env = _.cloneDeep(process.env)
@@ -38,38 +38,6 @@ describe('ConnectorConfig', function () {
       const config = new Config()
       expect(Buffer.isBuffer(config.secret)).to.be.true
       expect(config.secret).to.have.length(32)
-    })
-
-    it('should auto-generate pairs', async function () {
-      const config = new Config()
-      expect(config.get('tradingPairs')).to.deep.equal([[
-        'usd-ledger',
-        'usd-ledger'
-      ], [
-        'usd-ledger',
-        'eur-ledger'
-      ], [
-        'eur-ledger',
-        'usd-ledger'
-      ], [
-        'usd-ledger',
-        'aud-ledger'
-      ], [
-        'aud-ledger',
-        'usd-ledger'
-      ], [
-        'eur-ledger',
-        'eur-ledger'
-      ], [
-        'eur-ledger',
-        'aud-ledger'
-      ], [
-        'aud-ledger',
-        'eur-ledger'
-      ], [
-        'aud-ledger',
-        'aud-ledger'
-      ]])
     })
 
     describe('connector routes', () => {

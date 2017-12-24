@@ -7,7 +7,7 @@ mock('ilp-plugin-mock', mockPlugin)
 const { cloneDeep } = require('lodash')
 const { assert } = require('chai')
 const LiquidityCurve = require('../src/routing/liquidity-curve')
-const MessageRouter = require('../src/lib/message-router')
+const MessageRouter = require('../src/services/message-router')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
@@ -193,12 +193,7 @@ describe('RouteBroadcaster', function () {
     })
 
     it('ignores routes where source_ledger does not match source_account', async function () {
-      const config = this.config
-      const accounts = this.accounts
-      const routingTables = this.tables
-      const routeBroadcaster = this.routeBroadcaster
-      const routeBuilder = this.routeBuilder
-      const messageRouter = new MessageRouter({config, accounts, routingTables, routeBroadcaster, routeBuilder})
+      const messageRouter = this.messageRouter
       const newRoutes = [{
         source_ledger: ledgerA,
         destination_ledger: 'alpha',
