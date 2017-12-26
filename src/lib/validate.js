@@ -1,22 +1,27 @@
 'use strict'
 
-const Validator = require('five-bells-shared').Validator
-const InvalidBodyError = require('five-bells-shared').InvalidBodyError
-const path = require('path')
+const InvalidJsonBodyError = require('../errors/invalid-json-body-error')
 
-const validator = new Validator()
-validator.loadSharedSchemas()
-validator.loadSchemasFromDirectory(path.join(__dirname, '../../schemas'))
+const schemas = require('ilp-schemas')
+const Ajv = require('ajv')
+
+// create validator
+const ajv = new Ajv()
+
+ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'))
+
+// add all schemas
+Object.keys(schemas).forEach(name => ajv.addSchema(schemas[name], name))
 
 function isValid (schema, obj) {
-  return validator.create(schema)(obj)
+  return ajv.validate(schema, obj)
 }
 
 function validate (schema, obj) {
-  const validatorResult = validator.create(schema)(obj)
-  if (!validatorResult.valid) {
-    throw new InvalidBodyError(schema + ' schema validation error: ' +
-      validatorResult.errors[0].message, validatorResult.errors)
+  const validatorResult = ajv.validate(schema, obj)
+  if (!validatorResult) {
+    throw new InvalidJsonBodyError(schema + ' schema validation error: ' +
+      ajv.errors[0].message, ajv.errors)
   }
 }
 

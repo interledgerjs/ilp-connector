@@ -1,5 +1,7 @@
 'use strict'
 
+const crypto = require('crypto')
+
 /**
  * Get all possible pair combinations from an array, order sensitive.
  *
@@ -70,7 +72,12 @@ const getShortestUnambiguousPrefix = (prefixMap, address, prefix = '') => {
   return prefix
 }
 
+const fulfillmentToCondition = (fulfillment) => {
+  return crypto.createHash('sha256').update(fulfillment).digest()
+}
+
 module.exports = {
   getPairs,
-  getShortestUnambiguousPrefix
+  getShortestUnambiguousPrefix,
+  fulfillmentToCondition
 }

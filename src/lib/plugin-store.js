@@ -1,12 +1,30 @@
 'use strict'
 
 const Sequelize = require('sequelize')
-const Database = require('five-bells-shared').DB(Sequelize)
+const log = require('../common/log').create('plugin-store')
+const url = require('url')
 
 class PluginStore {
   constructor (uri, name) {
     this.name = name
-    this.db = new Database(uri)
+    const options = {
+      logging: log.debug,
+      omitNull: true,
+      // All transactions should be done with isolation level SERIALIZABLE
+      // TOOD:
+      isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE
+    }
+
+    const dbParts = url.parse(uri)
+
+    if (uri === 'sqlite://:memory:') {
+      options.storage = ':memory:'
+    } else if (dbParts.protocol === 'sqlite:') {
+      options.storage = dbParts.pathname
+    }
+
+    log.info('initialize database. uri=%s', uri)
+    this.db = new Sequelize(uri, options)
 
     if (!name.match(/^[A-Za-z0-9_\-~.]+$/)) {
       throw new Error('"' + name + '" includes forbidden characters.')

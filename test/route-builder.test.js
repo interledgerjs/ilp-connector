@@ -2,12 +2,11 @@
 
 const { assert } = require('chai')
 const sinon = require('sinon')
-const packet = require('ilp-packet')
 const { cloneDeep } = require('lodash')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
 const logger = require('../src/common/log')
-const InterledgerRejectionError = require('../src/errors/interledger-rejection-error')
+const InvalidPacketError = require('../src/errors/invalid-packet-error')
 const LiquidityCurve = require('../src/routing/liquidity-curve')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
@@ -32,11 +31,13 @@ describe('RouteBuilder', function () {
     const accountCredentials = {}
     accountCredentials[ledgerA] = {
       currency: 'USD',
+      currencyScale: 2,
       plugin: 'ilp-plugin-mock',
       options: {}
     }
     accountCredentials[ledgerB] = {
       currency: 'EUR',
+      currencyScale: 2,
       plugin: 'ilp-plugin-mock',
       options: {}
     }
@@ -51,12 +52,6 @@ describe('RouteBuilder', function () {
         USD: 1.8
       }
     })
-    this.accounts.getPlugin(ledgerA).getInfo = this.accounts.getPlugin(ledgerB).getInfo = function () {
-      return {
-        currencyCode: 'doesn\'t matter, the connector will ignore this',
-        currencyScale: 2
-      }
-    }
 
     this.clock = sinon.useFakeTimers(START_DATE)
 
@@ -68,70 +63,23 @@ describe('RouteBuilder', function () {
     process.env = cloneDeep(env)
   })
 
-  describe('getDestinationTransfer', function () {
-    it('returns the original destination transfer when the connector can settle it', async function () {
-      const { destinationAccount, destinationTransfer } = await this.routeBuilder.getDestinationTransfer(ledgerA, {
+  describe('getNextHopPacket', function () {
+    it('returns the destination packet if the connector is happy with the request', async function () {
+      const { nextHop, nextHopPacket } = await this.routeBuilder.getNextHopPacket(ledgerA, {
         amount: '100',
-        ilp: packet.serializeIlpPayment({
-          account: bobB,
-          amount: '50'
-        }),
+        destination: bobB,
         executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
-        expiresAt: (new Date(START_DATE + 2000)).toISOString(),
-        custom: { }
+        expiresAt: new Date(START_DATE + 2000),
+        data: Buffer.alloc(0)
       })
-      assert.equal(destinationAccount, ledgerB)
-      assert.deepEqual(destinationTransfer, {
+      assert.equal(nextHop, ledgerB)
+      assert.deepEqual(nextHopPacket, {
         amount: '50',
-        ilp: packet.serializeIlpPayment({
-          account: bobB,
-          amount: '50'
-        }),
+        destination: bobB,
         executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
-        expiresAt: (new Date(START_DATE + 1000)).toISOString(),
-        custom: { }
+        expiresAt: new Date(START_DATE + 1000),
+        data: Buffer.alloc(0)
       })
-    })
-
-    it('passes on the ILP packet', async function () {
-      const ilp = packet.serializeIlpForwardedPayment({
-        account: bobB
-      })
-      const { destinationAccount, destinationTransfer } = await this.routeBuilder.getDestinationTransfer(ledgerA, {
-        amount: '100',
-        ilp,
-        data: Buffer.from('ababab', 'hex'),
-        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
-        expiresAt: (new Date(START_DATE + 2000)).toISOString(),
-        custom: { ilpLegacyAmount: '50' }
-      })
-      assert.equal(destinationAccount, ledgerB)
-      assert.deepEqual(destinationTransfer.ilp, ilp)
-    })
-
-    it('uses best rate when packet is a forwarded payment', async function () {
-      const ilp = packet.serializeIlpForwardedPayment({
-        account: bobB
-      })
-      const { destinationAccount, destinationTransfer } = await this.routeBuilder.getDestinationTransfer(ledgerA, {
-        amount: '100',
-        ilp,
-        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
-        expiresAt: (new Date(START_DATE + 2000)).toISOString()
-      })
-      assert.equal(destinationAccount, ledgerB)
-      assert.deepEqual(destinationTransfer.amount, '50')
-      assert.deepEqual(destinationTransfer.ilp, ilp)
-    })
-
-    it('throws "Insufficient Source Amount" when the amount is too low', async function () {
-      await assert.isRejected(this.routeBuilder.getDestinationTransfer(ledgerA, {
-        amount: '97',
-        ilp: packet.serializeIlpPayment({
-          account: bobB,
-          amount: '50'
-        })
-      }), InterledgerRejectionError, 'Payment rate does not match the rate currently offered')
     })
 
     describe('with a route from ledgerB → ledgerC', function () {
@@ -147,52 +95,42 @@ describe('RouteBuilder', function () {
       })
 
       it('returns an intermediate destination transfer when the connector knows a route to the destination', async function () {
-        const { destinationAccount, destinationTransfer } = await this.routeBuilder.getDestinationTransfer(ledgerA, {
+        const { nextHop, nextHopPacket } = await this.routeBuilder.getNextHopPacket(ledgerA, {
           amount: '100',
-          ilp: packet.serializeIlpPayment({
-            account: carlC,
-            amount: '25'
-          }),
-          executionCondition: 'yes',
-          expiresAt: '2015-06-16T00:00:02.000Z',
-          custom: {
-            cancellationCondition: 'no'
-          }
+          destination: carlC,
+          executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+          expiresAt: new Date('2015-06-16T00:00:02.000Z'),
+          data: Buffer.alloc(0)
         })
-        assert.equal(destinationAccount, ledgerB)
-        assert.deepEqual(destinationTransfer, {
+        assert.equal(nextHop, ledgerB)
+        assert.deepEqual(nextHopPacket, {
           amount: '50',
-          ilp: packet.serializeIlpPayment({
-            account: carlC,
-            amount: '25'
-          }),
-          executionCondition: 'yes',
-          expiresAt: '2015-06-16T00:00:01.000Z',
-          custom: {
-            cancellationCondition: 'no'
-          }
+          destination: carlC,
+          executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+          expiresAt: new Date('2015-06-16T00:00:01.000Z'),
+          data: Buffer.alloc(0)
         })
       })
     })
 
     it('throws when there is no path from the source to the destination', async function () {
-      await assert.isRejected(this.routeBuilder.getDestinationTransfer(ledgerA, {
+      await assert.isRejected(this.routeBuilder.getNextHopPacket(ledgerA, {
         amount: '100',
-        ilp: packet.serializeIlpPayment({
-          account: carlC,
-          amount: '50'
-        })
+        destination: carlC,
+        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+        expiresAt: new Date('2015-06-16T00:00:01.000Z'),
+        data: Buffer.alloc(0)
       }), 'no route found. source=usd-ledger destination=cny-ledger.carl')
     })
 
     it('throws when the source transfer has no destination', async function () {
-      await assert.isRejected(this.routeBuilder.getDestinationTransfer(ledgerA, {
+      await assert.isRejected(this.routeBuilder.getNextHopPacket(ledgerA, {
         amount: '100',
-        ilp: packet.serializeIlpForwardedPayment({
-          account: ''
-        }),
-        data: {}
-      }), InterledgerRejectionError, 'missing destination.')
+        destination: '',
+        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+        expiresAt: new Date('2015-06-16T00:00:01.000Z'),
+        data: Buffer.alloc(0)
+      }), InvalidPacketError, 'missing destination.')
     })
   })
 })

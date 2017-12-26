@@ -40,6 +40,7 @@ describe('Modify Plugins', function () {
       assert.equal(Object.keys(this.accounts.plugins).length, 4)
       await this.app.addPlugin('eur-ledger-2', {
         currency: 'EUR',
+        currencyScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {}
       })
@@ -58,6 +59,7 @@ describe('Modify Plugins', function () {
 
       await this.app.addPlugin('jpy-ledger', {
         currency: 'JPY',
+        currencyScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {}
       })
@@ -69,12 +71,15 @@ describe('Modify Plugins', function () {
         destinationHoldDuration: 5000
       })
 
+      await quotePromise2
+
       await assert.isFulfilled(quotePromise2)
     })
 
     it('should add a peer for the added ledger', async function () {
       await this.app.addPlugin('eur-ledger-2', {
         currency: 'EUR',
+        currencyScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           prefix: 'eur-ledger-2'
@@ -84,16 +89,16 @@ describe('Modify Plugins', function () {
       assert.instanceOf(this.routeBroadcaster.peers.get('eur-ledger-2'), RouteBroadcaster.Peer)
     })
 
-    it('should override the plugin.getInfo function with overrideInfo data', async function () {
+    it('should override the accounts.getInfo function with overrideInfo data', async function () {
       const overrideInfo = {
         minBalance: '-10',
         maxBalance: '10000',
         prefix: 'test.other.prefix',
-        currencyCode: 'XYZ',
-        currencyScale: 0
+        currencyCode: 'XYZ'
       }
       await this.app.addPlugin('eur-ledger-2', {
         currency: 'EUR',
+        currencyScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           prefix: 'eur-ledger-2'
@@ -101,7 +106,7 @@ describe('Modify Plugins', function () {
         overrideInfo
       })
 
-      const info = this.accounts.plugins['eur-ledger-2'].getInfo()
+      const info = this.accounts.getInfo('eur-ledger-2')
       assert.include(info, overrideInfo)
     })
   })
@@ -110,6 +115,7 @@ describe('Modify Plugins', function () {
     beforeEach(async function () {
       await this.app.addPlugin('jpy-ledger', {
         currency: 'EUR',
+        currencyScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           prefix: 'jpy-ledger'

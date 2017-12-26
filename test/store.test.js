@@ -1,8 +1,12 @@
 'use strict'
-const PluginStore = require('../src/lib/pluginStore')
+const PluginStore = require('../src/lib/plugin-store')
 const assert = require('chai').assert
+const logger = require('../src/common/log')
+const logHelper = require('./helpers/log')
 
 describe('PluginStore', function () {
+  logHelper(logger)
+
   beforeEach(async function () {
     this.obj = new PluginStore('sqlite://:memory:', 'test')
   })

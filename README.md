@@ -52,6 +52,7 @@ npm start
   "example.alice": {
     "store": true // if the plugin requires a store, it should set this to true
     "currency": "USD", // asset on this ledger
+    "currencyScale": 9, // how much precision to use for this account, e.g. nanodollars
     "plugin": "ilp-plugin-payment-channel-framework", // module for this ledger plugin
     "options": { // actual plugin options passed into plugin constructor
       // ...
@@ -61,6 +62,7 @@ npm start
   // Using Client Certificate Auth
   "example.bob": {
     "currency": "EUR",
+    "currencyScale": 9,
     "plugin": "ilp-plugin-payment-channel-framework",
     "options": {
       // ...

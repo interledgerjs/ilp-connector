@@ -5,10 +5,12 @@ const Config = require('../../src/services/config')
 const RouteBuilder = require('../../src/services/route-builder')
 const RouteBroadcaster = require('../../src/services/route-broadcaster')
 const Accounts = require('../../src/services/accounts')
+const Balances = require('../../src/services/balances')
 const Quoter = require('../../src/services/quoter')
 const MessageRouter = require('../../src/services/message-router')
 const RateBackend = require('../../src/services/rate-backend')
 const RoutingTable = require('../../src/services/routing-table')
+const CcpController = require('../../src/controllers/ccp')
 
 const createApp = require('../../src').createApp
 
@@ -33,6 +35,8 @@ exports.create = function (context, minBalance) {
   context.routeBroadcaster = deps(RouteBroadcaster)
   context.routeBuilder = deps(RouteBuilder)
   context.accounts = deps(Accounts)
+  context.balances = deps(Balances)
   context.config = deps(Config)
   context.messageRouter = deps(MessageRouter)
+  context.ccpController = deps(CcpController)
 }

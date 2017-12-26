@@ -9,15 +9,18 @@ const Config = require('./services/config')
 const RouteBuilder = require('./services/route-builder')
 const RouteBroadcaster = require('./services/route-broadcaster')
 const Accounts = require('./services/accounts')
+const Balances = require('./services/balances')
 const RateBackend = require('./services/rate-backend')
 const MessageRouter = require('./services/message-router')
-const payments = require('./models/payments')
 
 function listen (config, accounts, backend, routeBuilder, routeBroadcaster, messageRouter) {
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
   return (async function () {
-    config.validate()
+    if (!config.validate()) {
+      log.error('invalid configuration, shutting down.')
+      return
+    }
 
     try {
       await backend.connect()
@@ -51,7 +54,6 @@ function listen (config, accounts, backend, routeBuilder, routeBroadcaster, mess
 
 function addPlugin (config, accounts, backend, routeBroadcaster, id, options, tradesTo, tradesFrom) {
   return (async function () {
-    options.prefix = id
     accounts.add(id, options, tradesTo, tradesFrom)
     routeBroadcaster.add(id)
 
@@ -72,22 +74,23 @@ function getPlugin (accounts, id) {
   return accounts.getPlugin(id)
 }
 
-function registerRequestHandler (accounts, fn) {
-  return accounts.registerExternalRequestHandler(fn)
-}
-
 function createApp (container) {
   const deps = container || reduct()
 
   const accounts = deps(Accounts)
+  const balances = deps(Balances)
   const config = deps(Config)
   const routeBuilder = deps(RouteBuilder)
   const routeBroadcaster = deps(RouteBroadcaster)
   const backend = deps(RateBackend)
   const messageRouter = deps(MessageRouter)
 
-  accounts.registerTransferHandler(
-    payments.handleIncomingTransfer.bind(payments, accounts, config, routeBuilder, backend)
+  accounts.registerDataHandler(
+    messageRouter.handleData.bind(messageRouter)
+  )
+
+  accounts.registerMoneyHandler(
+    balances.handleMoney.bind(balances)
   )
 
   const credentials = config.get('accountCredentials')
@@ -103,8 +106,7 @@ function createApp (container) {
     listen: _.partial(listen, config, accounts, backend, routeBuilder, routeBroadcaster, messageRouter),
     addPlugin: _.partial(addPlugin, config, accounts, backend, routeBroadcaster),
     removePlugin: _.partial(removePlugin, config, accounts, backend, routeBroadcaster),
-    getPlugin: _.partial(getPlugin, accounts),
-    registerRequestHandler: _.partial(registerRequestHandler, accounts)
+    getPlugin: _.partial(getPlugin, accounts)
   }
 }
 

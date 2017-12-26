@@ -18,10 +18,8 @@ const assert = chai.assert
 const expect = chai.expect
 chai.use(require('chai-as-promised'))
 const _ = require('lodash')
-const InterledgerRejectionError = require('../src/errors/interledger-rejection-error')
-const ExternalError = require('../src/errors/external-error')
+const RemoteQuoteError = require('../src/errors/remote-quote-error')
 const InvalidAmountSpecifiedError = require('../src/errors/invalid-amount-specified-error')
-const AssetsNotTradedError = require('../src/errors/assets-not-traded-error')
 const NoRouteFoundError = require('../src/errors/no-route-found-error')
 const UnacceptableAmountError = require('../src/errors/unacceptable-amount-error')
 const UnacceptableExpiryError = require('../src/errors/unacceptable-expiry-error')
@@ -92,32 +90,16 @@ describe('Quotes', function () {
     await assert.isRejected(quotePromise, NoRouteFoundError, 'no route from source. sourceAccount=fake-ledger')
   })
 
-  // This test doesn't currently pass - I think it's because the connector is
-  // smart enough to construct a route of A -> B -> C through itself, even if
-  // A -> C isn't a pair, but A -> B and B -> C are.
-  //
-  // This might actually be the desired behavior... if we're willing to trade
-  // A for B and B for C, we're implicitly willing to trade A for C.
-  it.skip('should return AssetsNotTradedError when the pair is not supported', async function () {
+  // Skipping because it needs to use an alternate curve to get a 0.
+  it('should return a UnacceptableAmountError if the quoted destinationAmount is 0', async function () {
     const quotePromise = this.routeBuilder.quoteBySource({
-      sourceAmount: '100',
-      sourceAccount: 'cad-ledger',
-      destinationAccount: 'cny-ledger.bob',
+      sourceAmount: '1',
+      sourceAccount: 'usd-ledger',
+      destinationAccount: 'eur-ledger.bob',
       destinationHoldDuration: 1.001
     })
 
-    await assert.isRejected(quotePromise, AssetsNotTradedError, 'This connector does not support the given asset pair')
-  })
-
-  // Skipping because it needs to use an alternate curve to get a 0.
-  it.skip('should return a UnacceptableAmountError if the quoted destinationAmount is 0', async function () {
-    const quotePromise = this.routeBuilder.quoteBySource({
-      sourceAmount: '0.00001',
-      sourceAccount: 'eur-ledger.alice',
-      destinationAccount: 'usd-ledger.bob'
-    })
-
-    await assert.isRejected(quotePromise, UnacceptableAmountError, 'Quoted destination is lower than minimum amount allowed')
+    await assert.isRejected(quotePromise, UnacceptableAmountError, 'quoted destination is lower than minimum amount allowed.')
   })
 
   it('should return NoRouteFoundError when the destination ledger is not supported', async function () {
@@ -139,27 +121,12 @@ describe('Quotes', function () {
       destinationHoldDuration: 10001
     })
 
-    await assert.isRejected(quotePromise, UnacceptableExpiryError, /Destination expiry duration is too long/)
+    await assert.isRejected(quotePromise, UnacceptableExpiryError, /destination expiry duration is too long/)
   })
 
   it('should not return an Error for insufficient liquidity', async function () {
     const quotePromise = this.routeBuilder.quoteByDestination({
       destinationAmount: '150001',
-      sourceAccount: 'eur-ledger',
-      destinationAccount: 'usd-ledger.bob',
-      destinationHoldDuration: 10
-    })
-
-    await assert.isFulfilled(quotePromise)
-  })
-
-  it('should not return an Error when unable to get balance from ledger', async function () {
-    nock.cleanAll()
-    this.accounts.getPlugin('usd-ledger')
-      .getBalance = async function () { throw new ExternalError() }
-
-    const quotePromise = this.routeBuilder.quoteBySource({
-      sourceAmount: '1500001',
       sourceAccount: 'eur-ledger',
       destinationAccount: 'usd-ledger.bob',
       destinationHoldDuration: 10
@@ -213,7 +180,7 @@ describe('Quotes', function () {
   it('should return remote liquidity curve quotes', async function () {
     const curve = new LiquidityCurve([ [0, 0], [10000, 20000] ]).toBuffer()
     this.routeBroadcaster.config.routeBroadcastEnabled = false
-    await this.messageRouter.receiveRoutes({
+    await this.ccpController.handle('eur-ledger', {
       new_routes: [{
         source_ledger: 'eur-ledger',
         destination_ledger: 'random-ledger',
@@ -223,7 +190,7 @@ describe('Quotes', function () {
       }],
       hold_down_time: 45000,
       unreachable_through_me: []
-    }, 'eur-ledger')
+    })
     this.routeBroadcaster.config.routeBroadcastEnabled = true
 
     const quote = await this.routeBuilder.quoteLiquidity({
@@ -309,7 +276,7 @@ describe('Quotes', function () {
   describe('if route has no curve, quotes a multi-hop route', function () {
     beforeEach(async function () {
       this.routeBroadcaster.config.routeBroadcastEnabled = false
-      await this.messageRouter.receiveRoutes({
+      await this.ccpController.handle('eur-ledger', {
         new_routes: [{
           source_ledger: 'eur-ledger',
           destination_ledger: 'random-ledger',
@@ -318,7 +285,7 @@ describe('Quotes', function () {
         }],
         hold_down_time: 1234,
         unreachable_through_me: []
-      }, 'eur-ledger')
+      })
       this.routeBroadcaster.config.routeBroadcastEnabled = true
     })
 
@@ -400,8 +367,8 @@ describe('Quotes', function () {
           destinationHoldDuration: 5000
         })
       } catch (err) {
-        expect(err).to.be.instanceof(InterledgerRejectionError)
-        expect(err.ilpRejection).to.deep.equal(errorPacket)
+        expect(err).to.be.instanceof(RemoteQuoteError)
+        expect(err.message).to.deep.equal('remote quote error.')
         return
       }
       assert(false, 'should have thrown an error')

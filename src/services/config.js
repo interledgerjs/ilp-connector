@@ -24,11 +24,49 @@ class Config {
     this.getLocalConfig()
   }
 
+  validateAccount (address, accountInfo) {
+    if (typeof accountInfo.currency !== 'string') {
+      log.error('currency not specified. account=%s', address)
+      return false
+    }
+
+    if (typeof accountInfo.currencyScale !== 'number') {
+      log.error('currency scale not specified. account=%s', address)
+      return false
+    }
+
+    if (typeof accountInfo.plugin !== 'string') {
+      log.error('plugin module not specified. account=%s', address)
+      return false
+    }
+
+    if (typeof accountInfo.options !== 'object') {
+      log.error('plugin options not specified. account=%s', address)
+      return false
+    }
+
+    if (accountInfo.store && typeof accountInfo.store !== 'boolean') {
+      log.error('plugin store should be either true or false. account=%s', address)
+      return false
+    }
+
+    return true
+  }
+
   validate () {
     if (!this.address) {
       log.error('please set required config setting CONNECTOR_ILP_ADDRESS.')
-      process.exit(1)
+      return false
     }
+
+    for (let k of Object.keys(this.accountCredentials)) {
+      const accountInfo = this.accountCredentials[k]
+      if (!this.validateAccount(k, accountInfo)) {
+        return false
+      }
+    }
+
+    return true
   }
 
   get (key) {
@@ -119,38 +157,7 @@ class Config {
       process.exit(1)
     }
 
-    const accounts = JSON.parse(Config.getEnv(envPrefix, 'ACCOUNTS') || '{}')
-    const ret = {}
-
-    Object.keys(accounts).forEach((k) => {
-      const ledger = accounts[k]
-
-      if (typeof ledger.currency !== 'string') {
-        console.error('currency not specified on "' + k + '"')
-      }
-
-      if (typeof ledger.plugin !== 'string') {
-        console.error('plugin module not specified on "' + k + '"')
-      }
-
-      if (typeof ledger.options !== 'object') {
-        console.error('plugin options not specified on "' + k + '"')
-      }
-
-      if (ledger.store && typeof ledger.store !== 'boolean') {
-        console.error('plugin store should be either true or false on "' + k + '"')
-      }
-
-      ret[k] = {
-        currency: ledger.currency,
-        store: ledger.store,
-        plugin: ledger.plugin,
-        overrideInfo: ledger.overrideInfo,
-        options: ledger.options
-      }
-    })
-
-    return ret
+    return JSON.parse(Config.getEnv(envPrefix, 'ACCOUNTS') || '{}')
   }
 
   parseRoutes () {

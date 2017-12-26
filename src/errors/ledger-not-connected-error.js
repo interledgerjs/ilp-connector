@@ -1,16 +1,14 @@
 'use strict'
 
-const UnprocessableEntityError =
-require('five-bells-shared/errors/unprocessable-entity-error')
+const BaseError = require('extensible-error')
 
-class LedgerNotConnectedError extends UnprocessableEntityError {
-  * handler (ctx, log) {
-    log.warn('Ledger Not Connected: ' + this.message)
-    ctx.status = 422
-    ctx.body = {
-      id: this.name,
-      message: this.message
-    }
+const { codes } = require('../lib/ilp-errors')
+
+class LedgerNotConnectedError extends BaseError {
+  constructor (message) {
+    super(message)
+
+    this.ilpErrorCode = codes.T01_LEDGER_UNREACHABLE
   }
 }
 

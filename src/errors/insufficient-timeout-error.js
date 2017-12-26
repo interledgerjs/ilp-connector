@@ -1,16 +1,15 @@
-
 'use strict'
 
 const BaseError = require('extensible-error')
 
 const { codes } = require('../lib/ilp-errors')
 
-class UnacceptableExpiryError extends BaseError {
+class InsufficientTimeoutError extends BaseError {
   constructor (message) {
     super(message)
 
-    this.ilpErrorCode = codes.F03_INVALID_AMOUNT
+    this.ilpErrorCode = codes.R02_INSUFFICIENT_TIMEOUT
   }
 }
 
-module.exports = UnacceptableExpiryError
+module.exports = InsufficientTimeoutError

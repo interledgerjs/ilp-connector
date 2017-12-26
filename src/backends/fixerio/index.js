@@ -4,7 +4,6 @@ const _ = require('lodash')
 const request = require('co-request')
 const BigNumber = require('bignumber.js')
 const log = require('../../common').log.create('fixerio')
-const ServerError = require('five-bells-shared/errors/server-error')
 const healthStatus = require('../../common/health.js')
 
 const RATES_API = 'https://api.fixer.io/latest'
@@ -90,11 +89,13 @@ class FixerIoBackend {
     const destinationRate = this.rates[destinationCurrency]
 
     if (!sourceRate) {
-      throw new ServerError('No rate available for currency ' + sourceCurrency)
+      log.warn('no rate available for source currency. currency=%s', sourceCurrency)
+      throw new Error('no rate available. currency=' + sourceCurrency)
     }
 
     if (!destinationRate) {
-      throw new ServerError('No rate available for currency ' + destinationCurrency)
+      log.warn('no rate available for destination currency. currency=%s', destinationCurrency)
+      throw new Error('no rate available. currency=' + destinationCurrency)
     }
 
     const sourceInfo = this.getInfo(sourceAccount)

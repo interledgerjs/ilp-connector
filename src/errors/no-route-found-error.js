@@ -1,17 +1,15 @@
+
 'use strict'
 
-const UnprocessableEntityError =
-require('five-bells-shared/errors/unprocessable-entity-error')
+const BaseError = require('extensible-error')
 
-class NoRouteFoundError extends UnprocessableEntityError {
+const { codes } = require('../lib/ilp-errors')
 
-  * handler (ctx, log) {
-    log.warn('No Route Found: ' + this.message)
-    ctx.status = 422
-    ctx.body = {
-      id: this.name,
-      message: this.message
-    }
+class NoRouteFoundError extends BaseError {
+  constructor (message) {
+    super(message)
+
+    this.ilpErrorCode = codes.F02_UNREACHABLE
   }
 }
 
