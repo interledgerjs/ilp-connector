@@ -1,16 +1,15 @@
+
 'use strict'
 
-const BaseError = require('five-bells-shared').BaseError
+const BaseError = require('extensible-error')
+
+const { codes } = require('../lib/ilp-errors')
 
 class InvalidAmountSpecifiedError extends BaseError {
+  constructor (message) {
+    super(message)
 
-  * handler (ctx, log) {
-    log.warn('Invalid Amount Specified: ' + this.message)
-    ctx.status = 400
-    ctx.body = {
-      id: this.name,
-      message: this.message
-    }
+    this.ilpErrorCode = codes.F00_BAD_REQUEST
   }
 }
 

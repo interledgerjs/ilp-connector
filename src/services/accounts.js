@@ -3,7 +3,7 @@
 const _ = require('lodash')
 const EventEmitter = require('eventemitter2')
 const compat = require('ilp-compat-plugin')
-const PluginStore = require('../lib/pluginStore.js')
+const PluginStore = require('../lib/plugin-store.js')
 const Config = require('./config')
 const logger = require('../common/log')
 const log = logger.create('accounts')
@@ -25,13 +25,15 @@ class Accounts extends EventEmitter {
 
     const config = deps(Config)
 
-    this.pluginList = [] // LedgerPlugin[]
+    this._pluginList = [] // LedgerPlugin[]
     this.plugins = {} // { prefix ⇒ LedgerPlugin }
-    this.prefixReverseMap = new Map() // { LedgerPlugin ⇒ prefix }
+    this._prefixReverseMap = new Map() // { LedgerPlugin ⇒ prefix }
     this._config = config
     this._accounts = new Map()
-    this.requestHandler = this._requestHandler.bind(this)
+    this._accountInfo = new Map()
     this.createIlpRejection = createIlpRejection.bind(null, config.address)
+    this._dataHandler = null
+    this._moneyHandler = null
 
     const accounts = this
     this._relayEvents = {}
@@ -44,7 +46,7 @@ class Accounts extends EventEmitter {
   }
 
   connect (options) {
-    return Promise.all(this.pluginList.map((plugin) => plugin.connect(options)))
+    return Promise.all(this._pluginList.map((plugin) => plugin.connect(options)))
   }
 
   getPlugin (accountAddress) {
@@ -55,7 +57,7 @@ class Accounts extends EventEmitter {
   }
 
   getPlugins () {
-    return this.pluginList
+    return this._pluginList
   }
 
   getPrefixes () {
@@ -77,8 +79,12 @@ class Accounts extends EventEmitter {
     log.info('add account. peerAddress=' + accountAddress)
 
     creds = _.cloneDeep(creds)
-    let store = null
 
+    if (!this._config.validateAccount(accountAddress, creds)) {
+      throw new Error('error while adding account, see error log for details.')
+    }
+
+    let store = null
     if (creds.store) {
       if (!this._config.databaseUri) {
         throw new Error('missing DB_URI; cannot create plugin store for ' + accountAddress)
@@ -89,33 +95,35 @@ class Accounts extends EventEmitter {
     creds.options.prefix = accountAddress
     const Plugin = require(creds.plugin)
     const plugin = compat(new Plugin(Object.assign({}, creds.options, {
+      prefix: accountAddress + '.',
       debugReplyNotifications: this._config.features.debugReplyNotifications,
       // non JSON-stringifiable fields are prefixed with an underscore
       _store: store,
       _log: logger.create(creds.plugin)
     })))
+
     if (creds.overrideInfo) {
-      const _getInfo = plugin.getInfo.bind(plugin)
-      plugin.getInfo = () => {
-        const info = Object.assign({}, _getInfo(), creds.overrideInfo)
-        log.debug('using overridden info for plugin', accountAddress, info)
-        return info
-      }
+      log.debug('using overridden info for plugin. account=%s info=%j', accountAddress, creds.overrideInfo)
     }
+    const accountInfo = Object.assign({
+      currency: creds.currency,
+      currencyScale: creds.currencyScale
+    }, creds.overrideInfo)
+    this._accountInfo.set(accountAddress, accountInfo)
 
     if (accountAddress.slice(-1) === '.') {
       throw new Error('peer address must not end with "."')
     }
-    this.prefixReverseMap.set(plugin, accountAddress)
-    this.pluginList.push(plugin)
+    this._prefixReverseMap.set(plugin, accountAddress)
+    this._pluginList.push(plugin)
     this.plugins[accountAddress] = plugin
 
     this._accounts.set(accountAddress, {
       currency: creds.currency,
       plugin
     })
-    plugin.registerTransferHandler(this._handleTransfer.bind(this, accountAddress))
-    plugin.registerRequestHandler(this.requestHandler)
+    plugin.registerDataHandler(this._handleData.bind(this, accountAddress))
+    plugin.registerMoneyHandler(this._handleMoney.bind(this, accountAddress))
   }
 
   remove (accountAddress) {
@@ -124,58 +132,65 @@ class Accounts extends EventEmitter {
       return
     }
     log.info('remove account. peerAddress=' + accountAddress)
-    plugin.deregisterTransferHandler()
-    this.pluginList.splice(this.pluginList.indexOf(plugin), 1)
+    plugin.deregisterDataHandler()
+    plugin.deregisterMoneyHandler()
+    this._pluginList.splice(this._pluginList.indexOf(plugin), 1)
     delete this.plugins[accountAddress]
-    this.prefixReverseMap.delete(plugin)
+    this._accountInfo.delete(accountAddress)
+    this._prefixReverseMap.delete(plugin)
     this._accounts.delete(accountAddress)
     return plugin
   }
 
-  async _handleTransfer (prefix, transfer) {
-    if (!this._transferHandler) {
+  async _handleData (address, data) {
+    if (!this._dataHandler) {
+      log.debug('no data handler, rejecting. from=%s', address)
       throw this.createIlpRejection({
         code: codes.F02_UNREACHABLE,
         message: 'Connector not ready'
       })
     }
 
-    return this._transferHandler(prefix, transfer)
+    return this._dataHandler(address, data)
   }
 
-  registerTransferHandler (transferHandler) {
-    if (this._transferHandler) {
-      throw new Error('Transfer handler already registered')
+  async _handleMoney (address, amount) {
+    if (!this._moneyHandler) {
+      log.debug('no money handler, ignoring. from=%s', address)
+      return
     }
-    this._transferHandler = transferHandler
+
+    return this._moneyHandler(address, amount)
   }
 
-  deregisterTransferHandler () {
-    this._transferHandler = null
-  }
-
-  async _requestHandler (requestMessage) {
-    if (this._externalRequestHandler) {
-      const responseMessage = await this._externalRequestHandler(requestMessage)
-      if (responseMessage) return responseMessage
+  registerDataHandler (dataHandler) {
+    if (this._dataHandler) {
+      throw new Error('data handler already registered.')
     }
-    if (this._internalRequestHandler) {
-      const responseMessage = await this._internalRequestHandler(requestMessage)
-      if (responseMessage) return responseMessage
+    this._dataHandler = dataHandler
+  }
+
+  deregisterDataHandler () {
+    this._dataHandler = null
+  }
+
+  registerMoneyHandler (moneyHandler) {
+    if (this._moneyHandler) {
+      throw new Error('money handler already registered.')
     }
-    throw new Error('Invalid request method')
+    this._moneyHandler = moneyHandler
   }
 
-  registerInternalRequestHandler (requestHandler) {
-    this._internalRequestHandler = requestHandler
-  }
-
-  registerExternalRequestHandler (requestHandler) {
-    this._externalRequestHandler = requestHandler
+  deregisterMoneyHandler () {
+    this._moneyHandler = null
   }
 
   getPrefix (plugin) {
-    return this.prefixReverseMap.get(plugin)
+    return this._prefixReverseMap.get(plugin)
+  }
+
+  getInfo (prefix) {
+    return this._accountInfo.get(prefix)
   }
 
   isLocal (address) {

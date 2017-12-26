@@ -1,16 +1,14 @@
 'use strict'
 
-const UnprocessableEntityError =
-require('five-bells-shared/errors/unprocessable-entity-error')
+const BaseError = require('extensible-error')
 
-class UnacceptableAmountError extends UnprocessableEntityError {
-  * handler (ctx, log) {
-    log.warn('Unacceptable Amount: ' + this.message)
-    ctx.status = 422
-    ctx.body = {
-      id: this.name,
-      message: this.message
-    }
+const { codes } = require('../lib/ilp-errors')
+
+class UnacceptableAmountError extends BaseError {
+  constructor (message) {
+    super(message)
+
+    this.ilpErrorCode = codes.F03_INVALID_AMOUNT
   }
 }
 

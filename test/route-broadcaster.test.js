@@ -7,7 +7,6 @@ mock('ilp-plugin-mock', mockPlugin)
 const { cloneDeep } = require('lodash')
 const { assert } = require('chai')
 const LiquidityCurve = require('../src/routing/liquidity-curve')
-const MessageRouter = require('../src/services/message-router')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
@@ -24,9 +23,9 @@ describe('RouteBroadcaster', function () {
   beforeEach(async function () {
     // process.env.CONNECTOR_BACKEND = 'one-to-one'
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
-      'cad-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'CAD'},
-      'usd-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'USD'},
-      'eur-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'EUR'}
+      'cad-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'CAD', currencyScale: 4},
+      'usd-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'USD', currencyScale: 4},
+      'eur-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'EUR', currencyScale: 4}
     })
     process.env.CONNECTOR_ROUTES = JSON.stringify([
       {
@@ -158,19 +157,19 @@ describe('RouteBroadcaster', function () {
         points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
       }]
       assert.equal(this.routingTable.keys().length, 4)
-      await this.messageRouter.receiveRoutes({
+      await this.ccpController.handle(ledgerB, {
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: [],
         request_full_table: false
-      }, ledgerB)
+      })
       assert.equal(this.routingTable.keys().length, 5)
-      await this.messageRouter.receiveRoutes({
+      await this.ccpController.handle(ledgerB, {
         new_routes: [],
         hold_down_time: 1234,
         unreachable_through_me: [ledgerD],
         request_full_table: false
-      }, ledgerB)
+      })
       assert.equal(this.routingTable.keys().length, 4)
     })
 
@@ -183,17 +182,16 @@ describe('RouteBroadcaster', function () {
         points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
       }]
       assert.equal(this.routingTable.keys().length, 4)
-      await this.messageRouter.receiveRoutes({
+      await this.ccpController.handle(ledgerB, {
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: [],
         request_full_table: false
-      }, ledgerB)
+      })
       assert.equal(this.routingTable.keys().length, 4)
     })
 
     it('ignores routes where source_ledger does not match source_account', async function () {
-      const messageRouter = this.messageRouter
       const newRoutes = [{
         source_ledger: ledgerA,
         destination_ledger: 'alpha',
@@ -202,12 +200,12 @@ describe('RouteBroadcaster', function () {
         points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
       }]
       assert.equal(this.routingTable.keys().length, 4)
-      await messageRouter.receiveRoutes({
+      await this.ccpController.handle(ledgerB, {
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: [],
         request_full_table: false
-      }, ledgerB)
+      })
       assert.equal(this.routingTable.keys().length, 4)
     })
 

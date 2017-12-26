@@ -1,20 +1,14 @@
 'use strict'
 
 const IlpPacket = require('ilp-packet')
-const InterledgerRejectionError = require('../errors/interledger-rejection-error')
 
 exports.createIlpRejection = (account, { code, message, data }) => {
-  const err = new InterledgerRejectionError({
+  return IlpPacket.serializeIlpReject(Object.assign({
+    code,
+    triggeredBy: account,
     message,
-    ilpRejection: IlpPacket.serializeIlpRejection(Object.assign({
-      code,
-      triggeredBy: account,
-      message,
-      data: data || Buffer.alloc(0)
-    }))
-  })
-
-  return err
+    data: data || Buffer.alloc(0)
+  }))
 }
 
 exports.codes = {
@@ -22,7 +16,7 @@ exports.codes = {
   F01_INVALID_PACKET: 'F01',
   F02_UNREACHABLE: 'F02',
   F03_INVALID_AMOUNT: 'F03',
-  F04_INSUFFICIENT_DESTINATION: 'F04',
+  F04_INSUFFICIENT_DESTINATION_AMOUNT: 'F04',
   F05_WRONG_CONDITION: 'F05',
   F06_UNEXPECTED_PAYMENT: 'F06',
   F07_CANNOT_RECEIVE: 'F07',

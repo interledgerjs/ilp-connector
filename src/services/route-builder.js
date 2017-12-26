@@ -2,13 +2,14 @@
 
 const _ = require('lodash')
 const BigNumber = require('bignumber.js')
-const packet = require('ilp-packet')
-const { codes, createIlpRejection } = require('../lib/ilp-errors')
 const NoRouteFoundError = require('../errors/no-route-found-error')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
 const UnacceptableAmountError = require('../errors/unacceptable-amount-error')
 const LedgerNotConnectedError = require('../errors/ledger-not-connected-error')
 const InvalidAmountSpecifiedError = require('../errors/invalid-amount-specified-error')
+const InvalidPacketError = require('../errors/invalid-packet-error')
+const UnreachableError = require('../errors/unreachable-error')
+const InsufficientTimeoutError = require('../errors/insufficient-timeout-error')
 const Accounts = require('./accounts')
 const RoutingTable = require('./routing-table')
 const RateBackend = require('./rate-backend')
@@ -45,7 +46,6 @@ class RouteBuilder {
     this.slippage = this.config.slippage
     this.secret = this.config.secret
     this.reflectPayments = this.config.reflectPayments
-    this.createIlpRejection = createIlpRejection.bind(null, this.config.address || '')
   }
 
   getNextHop (sourceAccount, destinationAccount) {
@@ -146,8 +146,8 @@ class RouteBuilder {
   }
 
   _getScaleAdjustment (sourceAccount, destinationAccount) {
-    const sourceScale = this.accounts.getPlugin(sourceAccount).getInfo().currencyScale
-    const destinationScale = this.accounts.getPlugin(destinationAccount).getInfo().currencyScale
+    const sourceScale = this.accounts.getInfo(sourceAccount).currencyScale
+    const destinationScale = this.accounts.getInfo(destinationAccount).currencyScale
     if (sourceScale === destinationScale && this.isTrivialRate) return 0
     return 1
   }
@@ -187,10 +187,10 @@ class RouteBuilder {
 
       destinationAmount = quote.curve.amountAt(params.sourceAmount).times(rate).floor().toString()
       sourceHoldDuration = params.destinationHoldDuration + quote.minMessageWindow + this.minMessageWindow
+    }
 
-      if (destinationAmount === '0') {
-        throw new UnacceptableAmountError('Quoted destination is lower than minimum amount allowed')
-      }
+    if (destinationAmount === '0') {
+      throw new UnacceptableAmountError('quoted destination is lower than minimum amount allowed.')
     }
 
     this._verifyPluginIsConnected(params.sourceAccount)
@@ -253,104 +253,64 @@ class RouteBuilder {
   }
 
   /**
-   * Given a source transfer with an embedded final transfer, get the next
-   * transfer in the chain.
-   *
-   * It works as follows:
-   * Given `sourceTransfer` A→C, find the next hop B on the route from A to C.
-   * If the next hop is the final one (B == C), return the final transfer.
-   * Otherwise, return a transfer at B, with the final transfer C embedded.
-   *
-   * @param {Transfer} sourceTransfer
-   * @returns {Transfer} destinationTransfer
+   * @typedef {Object} NextHopPacketInfo
+   * @property {string} nextHop Address of the next peer to forward the packet to
+   * @property {Buffer} nextHopPacket Outgoing packet
    */
-  async getDestinationTransfer (sourceAccount, sourceTransfer) {
-    let ilpPacket
-    try {
-      ilpPacket = packet.deserializeIlpPacket(sourceTransfer.ilp)
-    } catch (err) {
-      const errInfo = (typeof err === 'object' && err.stack) ? err.stack : err
-      log.debug('error parsing ILP packet ' + sourceTransfer.ilp.toString('base64') + ' - ' + errInfo)
-      throw this.createIlpRejection({
-        code: codes.F01_INVALID_PACKET,
-        message: 'Source transfer has invalid ILP packet'
-      })
-    }
-    log.info('constructing destination transfer. ' +
+
+  /**
+   * Get next ILP prepare packet.
+   *
+   * Given a previous ILP prepare packet, returns the next ILP prepare packet in
+   * the chain.
+   *
+   * @param {string} sourceAccount ILP address of our peer who sent us the packet
+   * @param {IlpPrepare} sourcePacket (Parsed packet that we received
+   * @returns {NextHopPacketInfo} Account and packet for next hop
+   */
+  async getNextHopPacket (sourceAccount, sourcePacket) {
+    const {
+      amount,
+      executionCondition,
+      expiresAt,
+      destination,
+      data
+    } = sourcePacket
+
+    log.info('constructing next hop packet. ' +
       'sourceAccount=%s sourceAmount=%s destination=%s',
-      sourceAccount, sourceTransfer.amount, ilpPacket.data.account)
+      sourceAccount, amount, destination)
 
-    if (ilpPacket.type === packet.Type.TYPE_ILP_PAYMENT) {
-      log.debug('routing ilp delivered amount packet.')
-    } else if (ilpPacket.type === packet.Type.TYPE_ILP_FORWARDED_PAYMENT) {
-      log.debug('routing ilp forwarded packet.')
-    } else {
-      throw this.createIlpRejection({
-        code: codes.F01_INVALID_PACKET,
-        message: 'invalid packet type. type=' + ilpPacket.type
-      })
+    if (destination.length < 1) {
+      throw new InvalidPacketError('missing destination.')
     }
 
-    if (ilpPacket.data.account.length < 1) {
-      throw this.createIlpRejection({
-        code: codes.F01_INVALID_PACKET,
-        message: 'missing destination.'
-      })
-    }
-
-    const nextHop = this.routingTable.resolve(ilpPacket.data.account)
+    const nextHop = this.routingTable.resolve(destination)
 
     if (!nextHop) {
-      log.info(`could not find route for transfer. sourceAccount=${sourceAccount} sourceAmount=${sourceTransfer.amount} destinationAccount=${ilpPacket.data.account}`)
-      throw this.createIlpRejection({
-        code: codes.F02_UNREACHABLE,
-        message: 'no route found. source=' + sourceAccount + ' destination=' + ilpPacket.data.account
-      })
+      log.info('could not find route for transfer. sourceAccount=%s sourceAmount=%s destinationAccount=%s', sourceAccount, amount, destination)
+      throw new UnreachableError('no route found. source=' + sourceAccount + ' destination=' + destination)
     }
 
-    log.debug('determined next hop. nextHop=' + nextHop)
+    log.debug('determined next hop. nextHop=%s', nextHop)
 
     const rate = await this.backend.getRate(sourceAccount, nextHop)
 
-    log.debug('determined local rate. rate=' + rate)
+    log.debug('determined local rate. rate=%s', rate)
 
     this._verifyPluginIsConnected(nextHop)
 
-    let nextAmount = new BigNumber(sourceTransfer.amount).times(rate).floor()
-    if (ilpPacket.type === packet.Type.TYPE_ILP_PAYMENT && this.accounts.isLocal(ilpPacket.data.account)) {
-      // Make sure that we would have delivered more than the fixed amount
-      // requested.
-      if (nextAmount.lessThan(ilpPacket.data.amount)) {
-        throw this.createIlpRejection({
-          code: codes.R01_INSUFFICIENT_SOURCE_AMOUNT,
-          message: 'Payment rate does not match the rate currently offered'
-        })
-      }
-
-      nextAmount = ilpPacket.data.amount
-    }
-
-    // TODO: Verify atomic mode notaries are trusted
-
-    const custom = {}
-
-    // Carry forward atomic mode fields
-    if (sourceTransfer.custom && sourceTransfer.custom.cancellationCondition) {
-      custom.cancellationCondition = sourceTransfer.custom.cancellationCondition
-    }
-    if (sourceTransfer.custom && sourceTransfer.custom.cases) {
-      custom.cases = sourceTransfer.custom.cases
-    }
+    const nextAmount = new BigNumber(amount).times(rate).floor()
 
     return {
-      destinationAccount: nextHop,
-      destinationTransfer: _.omitBy({
+      nextHop,
+      nextHopPacket: {
         amount: nextAmount.toString(),
-        ilp: sourceTransfer.ilp,
-        executionCondition: sourceTransfer.executionCondition,
-        expiresAt: this._getDestinationExpiry(sourceTransfer.expiresAt),
-        custom
-      }, _.isUndefined)
+        expiresAt: this._getDestinationExpiry(expiresAt),
+        executionCondition,
+        destination,
+        data
+      }
     }
   }
 
@@ -358,41 +318,35 @@ class RouteBuilder {
   _validateHoldDurations (sourceHoldDuration, destinationHoldDuration) {
     // Check destination_expiry_duration
     if (destinationHoldDuration > this.maxHoldTime) {
-      throw new UnacceptableExpiryError('Destination expiry duration ' +
-        'is too long, destinationHoldDuration: ' + destinationHoldDuration +
-        ', maxHoldTime: ' + this.maxHoldTime)
+      throw new UnacceptableExpiryError('destination expiry duration ' +
+        'is too long. destinationHoldDuration=' + destinationHoldDuration +
+        ' maxHoldTime=' + this.maxHoldTime)
     }
 
     // Check difference between destination_expiry_duration and source_expiry_duration
     if (sourceHoldDuration - destinationHoldDuration < this.minMessageWindow) {
-      throw new UnacceptableExpiryError('The difference between the ' +
+      throw new UnacceptableExpiryError('the difference between the ' +
         'destination expiry duration and the source expiry duration ' +
         'is insufficient to ensure that we can execute the ' +
-        'source transfers')
+        'source transfers.')
     }
   }
 
   _getDestinationExpiry (sourceExpiry) {
     if (!sourceExpiry) return
-    const sourceExpiryTime = (new Date(sourceExpiry)).getTime()
+    const sourceExpiryTime = sourceExpiry.getTime()
 
     if (sourceExpiryTime < Date.now()) {
-      throw this.createIlpRejection({
-        code: codes.R02_INSUFFICIENT_TIMEOUT,
-        message: 'source transfer has already expired. sourceExpiry=' + sourceExpiry + ' currentTime=' + (new Date().toISOString())
-      })
+      throw new InsufficientTimeoutError('source transfer has already expired. sourceExpiry=' + sourceExpiry.toISOString() + ' currentTime=' + (new Date().toISOString()))
     }
 
     const destinationExpiryTime = Math.min(sourceExpiryTime - this.minMessageWindow, Date.now() + this.maxHoldTime)
 
     if ((destinationExpiryTime - Date.now()) < this.minMessageWindow) {
-      throw this.createIlpRejection({
-        code: codes.R02_INSUFFICIENT_TIMEOUT,
-        message: 'source transfer expires too soon to complete payment. actualSourceExpiry=' + sourceExpiry + ' requiredSourceExpiry=' + (new Date(Date.now() + 2 * this.minMessageWindow).toISOString()) + ' currentTime=' + (new Date().toISOString())
-      })
+      throw new InsufficientTimeoutError('source transfer expires too soon to complete payment. actualSourceExpiry=' + sourceExpiry.toISOString() + ' requiredSourceExpiry=' + (new Date(Date.now() + 2 * this.minMessageWindow).toISOString()) + ' currentTime=' + (new Date().toISOString()))
     }
 
-    return (new Date(destinationExpiryTime)).toISOString()
+    return new Date(destinationExpiryTime)
   }
 
   _verifyPluginIsConnected (account) {

@@ -12,8 +12,8 @@ class RateBackend {
     this.backend = new Backend({
       backendUri: config.get('backendUri'),
       spread: config.get('fxSpread'),
-      getInfo: (ledger) => accounts.getPlugin(ledger).getInfo(),
-      getCurrency: (ledger) => accounts.getCurrency(ledger)
+      getInfo: (account) => accounts.getInfo(account),
+      getCurrency: (account) => accounts.getCurrency(account)
     })
   }
 

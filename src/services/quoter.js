@@ -1,7 +1,7 @@
 'use strict'
 
 const IlpPacket = require('ilp-packet')
-const InterledgerRejectionError = require('../errors/interledger-rejection-error')
+const RemoteQuoteError = require('../errors/remote-quote-error')
 const Accounts = require('./accounts')
 const Config = require('./config')
 const LiquidityCurve = require('../routing/liquidity-curve')
@@ -63,10 +63,7 @@ class Quoter {
         minMessageWindow: data.sourceHoldDuration - DESTINATION_HOLD_DURATION
       }
     } else {
-      throw new InterledgerRejectionError({
-        message: 'remote quote error.',
-        ilpRejection: quoteResponsePacket
-      })
+      throw new RemoteQuoteError('remote quote error.')
     }
   }
 

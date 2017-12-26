@@ -1,16 +1,15 @@
-
 'use strict'
 
 const BaseError = require('extensible-error')
 
 const { codes } = require('../lib/ilp-errors')
 
-class UnacceptableExpiryError extends BaseError {
+class UnreachableError extends BaseError {
   constructor (message) {
     super(message)
 
-    this.ilpErrorCode = codes.F03_INVALID_AMOUNT
+    this.ilpErrorCode = codes.F02_UNREACHABLE
   }
 }
 
-module.exports = UnacceptableExpiryError
+module.exports = UnreachableError

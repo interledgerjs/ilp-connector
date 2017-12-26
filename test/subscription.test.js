@@ -93,80 +93,79 @@ describe('Subscriptions', function () {
   })
 
   it('should initiate and complete a universal mode payment', async function () {
-    const sourceTransfer = this.transferUsdPrepared
-    const destinationTransfer = this.transferEurProposed
+    const sourceAccount = 'usd-ledger'
+    const destinationAccount = 'eur-ledger'
+    const destination = 'eur-ledger.bob'
+    const executionCondition = Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64')
+    const expiresAt = new Date('2015-06-16T00:00:11.000Z')
+    const data = Buffer.from('BABA', 'base64')
     const sourceAmount = '10700'
-    const destinationAmount = '10000'
-    const fulfillment = 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'
-    const fulfillmentData = Buffer.from('ABAB', 'base64')
-    const sendStub = sinon.stub(
-      this.accounts.getPlugin(destinationTransfer.ledger),
-      'sendTransfer')
-      .resolves({
-        fulfillment,
-        ilp: IlpPacket.serializeIlpFulfillment({
-          data: fulfillmentData
-        })
-      })
+    const destinationAmount = '10081'
+    const ilpFulfill = {
+      fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
+      data: Buffer.from('ABAB', 'base64')
+    }
+    const sendStub = sinon.stub(this.accounts.getPlugin(destinationAccount), 'sendData')
+      .resolves(IlpPacket.serializeIlpFulfill(ilpFulfill))
+    const sendMoneyStub = sinon.stub(this.accounts.getPlugin(destinationAccount), 'sendMoney')
+      .resolves()
 
-    const result = await this.accounts.getPlugin(sourceTransfer.ledger)
-      ._transferHandler({
+    const result = await this.accounts.getPlugin(sourceAccount)
+      ._dataHandler(IlpPacket.serializeIlpPrepare({
         amount: sourceAmount,
-        executionCondition: sourceTransfer.execution_condition,
-        expiresAt: new Date(sourceTransfer.expires_at),
-        ilp: IlpPacket.serializeIlpPayment({
-          account: destinationTransfer.credits[0].account,
-          amount: destinationAmount
-        }),
-        custom: { }
-      })
+        executionCondition,
+        expiresAt,
+        destination,
+        data
+      }))
 
     sinon.assert.calledOnce(sendStub)
-
-    assert.deepEqual(result, {
-      fulfillment,
-      ilp: IlpPacket.serializeIlpFulfillment({
-        data: fulfillmentData
-      })
-    })
+    sinon.assert.calledWith(sendStub, sinon.match(packet => assert.deepEqual(IlpPacket.deserializeIlpPrepare(packet), {
+      amount: destinationAmount,
+      executionCondition,
+      expiresAt: new Date(expiresAt - 1000),
+      destination,
+      data
+    }) || true))
+    sinon.assert.calledOnce(sendMoneyStub)
+    sinon.assert.calledWith(sendMoneyStub, destinationAmount)
+    assert.deepEqual(IlpPacket.deserializeIlpFulfill(result), ilpFulfill)
   })
 
   it('should notify the backend of a successful payment', async function () {
-    const sourceTransfer = this.transferUsdPrepared
-    const destinationTransfer = this.transferEurProposed
-    const backendSpy = sinon.spy(this.backend, 'submitPayment')
+    const sourceAccount = 'usd-ledger'
+    const destinationAccount = 'eur-ledger'
+    const destination = 'eur-ledger.bob'
+    const executionCondition = Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64')
+    const expiresAt = new Date('2015-06-16T00:00:11.000Z')
+    const data = Buffer.from('BABA', 'base64')
     const sourceAmount = '10700'
-    const destinationAmount = '10000'
-    const fulfillment = 'HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok'
-    const fulfillmentData = Buffer.from('ABAB', 'base64')
-    sinon.stub(
-      this.accounts.getPlugin(destinationTransfer.ledger),
-      'sendTransfer')
-      .resolves({
-        fulfillment,
-        ilp: IlpPacket.serializeIlpFulfillment({
-          data: fulfillmentData
-        })
-      })
+    const destinationAmount = '10081'
+    const ilpFulfill = {
+      fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
+      data: Buffer.from('ABAB', 'base64')
+    }
+    sinon.stub(this.accounts.getPlugin(destinationAccount), 'sendData')
+      .resolves(IlpPacket.serializeIlpFulfill(ilpFulfill))
+    sinon.stub(this.accounts.getPlugin(destinationAccount), 'sendMoney')
+      .resolves()
+    const backendSpy = sinon.spy(this.backend, 'submitPayment')
 
-    await this.accounts.getPlugin(sourceTransfer.ledger)
-      ._transferHandler({
+    await this.accounts.getPlugin(sourceAccount)
+      ._dataHandler(IlpPacket.serializeIlpPrepare({
         amount: sourceAmount,
-        executionCondition: sourceTransfer.execution_condition,
-        expiresAt: new Date(sourceTransfer.expires_at),
-        ilp: IlpPacket.serializeIlpPayment({
-          account: destinationTransfer.credits[0].account,
-          amount: destinationAmount
-        }),
-        custom: { }
-      })
+        executionCondition,
+        expiresAt,
+        destination,
+        data
+      }))
 
     sinon.assert.calledOnce(backendSpy)
     sinon.assert.calledWith(backendSpy, {
-      sourceAccount: sourceTransfer.ledger,
-      sourceAmount: sourceAmount,
-      destinationAccount: destinationTransfer.ledger,
-      destinationAmount: destinationAmount
+      sourceAccount,
+      sourceAmount,
+      destinationAccount,
+      destinationAmount
     })
   })
 })
