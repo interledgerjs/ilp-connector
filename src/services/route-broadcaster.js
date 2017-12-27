@@ -206,7 +206,6 @@ class RouteBroadcaster {
 
     // Some plugins may not support timeouts, so we make sure we don't get stuck
     const timeout = this.config.routeBroadcastInterval
-    const timeoutPromise = new Promise(resolve => setTimeout(resolve, timeout))
 
     // Using Promise.all to ensure all route broadcasts are sent in parallel.
     const broadcastPromise = Promise.all(peers.map(peer => {
@@ -226,7 +225,13 @@ class RouteBroadcaster {
         })
     }))
 
-    await Promise.race([broadcastPromise, timeoutPromise])
+    await new Promise(resolve => {
+      const timeoutId = setTimeout(resolve, timeout)
+      broadcastPromise.then(() => {
+        clearTimeout(timeoutId)
+        resolve()
+      })
+    })
   }
 
   async broadcastSoon () {
