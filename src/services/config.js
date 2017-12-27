@@ -214,7 +214,7 @@ class Config {
 
     expiry.maxHoldTime = +Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || DEFAULT_MAX_HOLD_TIME
 
-    this.databaseUri = Config.getEnv('DB_URI')
+    this.databaseUri = Config.getEnv(envPrefix, 'DB_URI')
 
     // The spread is added to every quoted rate
     const fxSpreadString = Config.getEnv(envPrefix, 'FX_SPREAD')
