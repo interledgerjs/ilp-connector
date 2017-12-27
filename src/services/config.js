@@ -271,8 +271,8 @@ class Config {
     // that cannot be guessed and squatted on by others
     const secretString = Config.getEnv(envPrefix, 'SECRET')
     this.secret = secretString
-    ? Buffer.from(secretString, 'base64')
-    : crypto.randomBytes(32)
+      ? Buffer.from(secretString, 'base64')
+      : crypto.randomBytes(32)
   }
 }
 

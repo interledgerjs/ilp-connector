@@ -56,7 +56,7 @@ class PluginStore {
         where: { key: key }
       })
     }).then((res) => {
-      return res && res.dataValues.value || undefined
+      return (res && res.dataValues.value) || undefined
     })
   }
 

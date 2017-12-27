@@ -16,7 +16,7 @@ class JsonController {
     }
 
     if (payload.method === 'broadcast_routes') {
-      return await this.ccpController.handle(sourceAccount, payload.data)
+      return this.ccpController.handle(sourceAccount, payload.data)
     }
 
     log.warn('ignoring unkown request method', payload.method)

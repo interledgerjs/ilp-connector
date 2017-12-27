@@ -36,7 +36,7 @@ describe('ConnectorConfig', function () {
     it('should generate a secret if one is not provided', async function () {
       delete process.env.CONNECTOR_SECRET
       const config = new Config()
-      expect(Buffer.isBuffer(config.secret)).to.be.true
+      assert.isTrue(Buffer.isBuffer(config.secret))
       expect(config.secret).to.have.length(32)
     })
 
