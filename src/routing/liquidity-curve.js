@@ -94,11 +94,11 @@ class LiquidityCurve {
    */
   combine (curve) {
     const combined = this._mapToMax(curve.points)
-        .concat(curve._mapToMax(this.points))
-        .concat(this._crossovers(curve))
-        .sort(comparePoints)
-        .map(roundCoords)
-        .filter(omitDuplicates)
+      .concat(curve._mapToMax(this.points))
+      .concat(this._crossovers(curve))
+      .sort(comparePoints)
+      .map(roundCoords)
+      .filter(omitDuplicates)
 
     // The following check is technically redundant, since LiquidityCurve#setPoints
     // will do the same, and more checks.

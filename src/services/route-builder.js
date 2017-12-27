@@ -1,6 +1,5 @@
 'use strict'
 
-const _ = require('lodash')
 const BigNumber = require('bignumber.js')
 const NoRouteFoundError = require('../errors/no-route-found-error')
 const UnacceptableExpiryError = require('../errors/unacceptable-expiry-error')
@@ -277,9 +276,10 @@ class RouteBuilder {
       data
     } = sourcePacket
 
-    log.info('constructing next hop packet. ' +
-      'sourceAccount=%s sourceAmount=%s destination=%s',
-      sourceAccount, amount, destination)
+    log.info(
+      'constructing next hop packet. sourceAccount=%s sourceAmount=%s destination=%s',
+      sourceAccount, amount, destination
+    )
 
     if (destination.length < 1) {
       throw new InvalidPacketError('missing destination.')
