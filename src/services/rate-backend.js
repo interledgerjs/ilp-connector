@@ -1,7 +1,10 @@
 'use strict'
 
+const path = require('path')
 const Config = require('./config')
 const Accounts = require('./accounts')
+
+const { loadModuleFromPathOrDirectly } = require('../lib/utils')
 
 class RateBackend {
   constructor (deps) {
@@ -31,18 +34,13 @@ class RateBackend {
 }
 
 function getBackend (backend) {
-  if (moduleExists('../backends/' + backend)) return require('../backends/' + backend)
-  if (moduleExists(backend)) return require(backend)
-  throw new Error('Backend not found at "' + backend + '" or "/backends/' + backend + '"')
-}
+  const module = loadModuleFromPathOrDirectly(path.resolve(__dirname, '../backends/'), backend)
 
-function moduleExists (path) {
-  try {
-    require.resolve(path)
-    return true
-  } catch (err) {
-    return false
+  if (!module) {
+    throw new Error('Backend not found at "' + backend + '" or "/backends/' + backend + '"')
   }
+
+  return require(module)
 }
 
 module.exports = RateBackend

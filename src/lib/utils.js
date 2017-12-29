@@ -1,6 +1,7 @@
 'use strict'
 
 const crypto = require('crypto')
+const path = require('path')
 
 /**
  * Get all possible pair combinations from an array, order sensitive.
@@ -76,8 +77,30 @@ const fulfillmentToCondition = (fulfillment) => {
   return crypto.createHash('sha256').update(fulfillment).digest()
 }
 
+function moduleExists (path) {
+  try {
+    require.resolve(path)
+    return true
+  } catch (err) {
+    return false
+  }
+}
+
+const loadModuleFromPathOrDirectly = (searchPath, module) => {
+  const localPath = path.resolve(searchPath, module)
+  if (moduleExists(localPath)) {
+    return localPath
+  } else if (moduleExists(module)) {
+    return module
+  } else {
+    return null
+  }
+}
+
 module.exports = {
   getPairs,
   getShortestUnambiguousPrefix,
-  fulfillmentToCondition
+  fulfillmentToCondition,
+  moduleExists,
+  loadModuleFromPathOrDirectly
 }

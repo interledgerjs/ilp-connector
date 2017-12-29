@@ -1,6 +1,10 @@
 'use strict'
 
 const reduct = require('reduct')
+const mockRequire = require('mock-require')
+
+mockRequire('leveldown', require('memdown'))
+
 const Config = require('../../src/services/config')
 const RouteBuilder = require('../../src/services/route-builder')
 const RouteBroadcaster = require('../../src/services/route-broadcaster')
@@ -11,6 +15,7 @@ const MessageRouter = require('../../src/services/message-router')
 const RateBackend = require('../../src/services/rate-backend')
 const RoutingTable = require('../../src/services/routing-table')
 const CcpController = require('../../src/controllers/ccp')
+const Store = require('../../src/services/store')
 
 const createApp = require('../../src').createApp
 
@@ -39,4 +44,5 @@ exports.create = function (context, minBalance) {
   context.config = deps(Config)
   context.messageRouter = deps(MessageRouter)
   context.ccpController = deps(CcpController)
+  context.store = deps(Store)
 }

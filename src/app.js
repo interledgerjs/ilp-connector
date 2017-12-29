@@ -11,9 +11,10 @@ const RouteBroadcaster = require('./services/route-broadcaster')
 const Accounts = require('./services/accounts')
 const Balances = require('./services/balances')
 const RateBackend = require('./services/rate-backend')
+const Store = require('./services/store')
 const MessageRouter = require('./services/message-router')
 
-function listen (config, accounts, backend, routeBuilder, routeBroadcaster, messageRouter) {
+function listen (config, accounts, backend, store, routeBuilder, routeBroadcaster, messageRouter) {
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
   return (async function () {
@@ -83,6 +84,7 @@ function createApp (container) {
   const routeBuilder = deps(RouteBuilder)
   const routeBroadcaster = deps(RouteBroadcaster)
   const backend = deps(RateBackend)
+  const store = deps(Store)
   const messageRouter = deps(MessageRouter)
 
   accounts.registerDataHandler(
@@ -103,7 +105,7 @@ function createApp (container) {
   }
 
   return {
-    listen: _.partial(listen, config, accounts, backend, routeBuilder, routeBroadcaster, messageRouter),
+    listen: _.partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, messageRouter),
     addPlugin: _.partial(addPlugin, config, accounts, backend, routeBroadcaster),
     removePlugin: _.partial(removePlugin, config, accounts, backend, routeBroadcaster),
     getPlugin: _.partial(getPlugin, accounts)
