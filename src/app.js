@@ -36,7 +36,7 @@ function listen (config, accounts, backend, store, routeBuilder, routeBroadcaste
       allAccountsConnected = true
     } catch (err) {
       allAccountsConnected = false
-      log.warn('one or more accounts failed to connect; broadcasting routes anyway; error=', err.message)
+      log.warn('one or more accounts failed to connect, broadcasting routes anyway. error=', err.message)
     }
 
     if (config.routeBroadcastEnabled) {
@@ -44,11 +44,11 @@ function listen (config, accounts, backend, store, routeBuilder, routeBroadcaste
     }
 
     if (allAccountsConnected) {
-      log.info('connector ready (republic attitude)')
+      log.info('connector ready (republic attitude). address=%s', config.address)
     } else {
       accounts.connect({timeout: Infinity})
         .then(() => routeBroadcaster.reloadLocalRoutes())
-        .then(() => log.info('connector ready (republic attitude)'))
+        .then(() => log.info('connector ready (republic attitude). address=%s', config.address))
     }
   })().catch((err) => log.error(err))
 }
