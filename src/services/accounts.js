@@ -3,7 +3,7 @@
 const _ = require('lodash')
 const EventEmitter = require('eventemitter2')
 const compat = require('ilp-compat-plugin')
-const PluginStore = require('../lib/plugin-store.js')
+const Store = require('../services/store.js')
 const Config = require('./config')
 const logger = require('../common/log')
 const log = logger.create('accounts')
@@ -24,6 +24,7 @@ class Accounts extends EventEmitter {
     super()
 
     const config = deps(Config)
+    this.store = deps(Store)
 
     this._pluginList = [] // LedgerPlugin[]
     this.plugins = {} // { prefix ⇒ LedgerPlugin }
@@ -84,13 +85,7 @@ class Accounts extends EventEmitter {
       throw new Error('error while adding account, see error log for details.')
     }
 
-    let store = null
-    if (creds.store) {
-      if (!this._config.databaseUri) {
-        throw new Error('missing DB_URI; cannot create plugin store for ' + accountAddress)
-      }
-      store = new PluginStore(this._config.databaseUri, accountAddress)
-    }
+    const store = this.store.getPluginStore(accountAddress)
 
     creds.options.prefix = accountAddress
     const Plugin = require(creds.plugin)

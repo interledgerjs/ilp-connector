@@ -59,6 +59,9 @@ class Config {
       return false
     }
 
+    if (this.store === 'leveldown' && !this.storePath) {
+    }
+
     for (let k of Object.keys(this.accountCredentials)) {
       const accountInfo = this.accountCredentials[k]
       if (!this.validateAccount(k, accountInfo)) {
@@ -201,6 +204,11 @@ class Config {
     // can be found in src/backends
     this.backend = Config.getEnv(envPrefix, 'BACKEND') || 'fixerio'
 
+    this.store = Config.getEnv(envPrefix, 'STORE') || 'leveldown'
+
+    this.storePath = Config.getEnv(envPrefix, 'STORE_PATH')
+    this.storeConfig = JSON.parse(Config.getEnv(envPrefix, 'STORE_CONFIG') || '{}')
+
     const expiry = this.expiry = {}
     expiry.minMessageWindow =
     +Config.getEnv(envPrefix, 'MIN_MESSAGE_WINDOW') || DEFAULT_MIN_MESSAGE_WINDOW
@@ -213,8 +221,6 @@ class Config {
     }
 
     expiry.maxHoldTime = +Config.getEnv(envPrefix, 'MAX_HOLD_TIME') || DEFAULT_MAX_HOLD_TIME
-
-    this.databaseUri = Config.getEnv(envPrefix, 'DB_URI')
 
     // The spread is added to every quoted rate
     const fxSpreadString = Config.getEnv(envPrefix, 'FX_SPREAD')

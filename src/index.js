@@ -1,17 +1,17 @@
 'use strict'
-const createApp = require('./app')
 
-const connector = createApp()
+const createApp = require('./app')
+const log = require('./common/log').create('app')
 
 module.exports = {
-  createApp: createApp,
-  addPlugin: connector.addPlugin,
-  removePlugin: connector.removePlugin,
-  getPlugin: connector.getPlugin,
-  registerRequestHandler: connector.registerRequestHandler,
-  listen: connector.listen
+  createApp: createApp
 }
 
 if (!module.parent) {
+  const connector = createApp()
   connector.listen()
+    .catch(err => {
+      const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : err
+      log.error(errInfo)
+    })
 }

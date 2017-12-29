@@ -1,59 +1,57 @@
 'use strict'
-const PluginStore = require('../src/lib/plugin-store')
+
 const assert = require('chai').assert
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
+const appHelper = require('./helpers/app')
 
-describe('PluginStore', function () {
+describe('Store', function () {
   logHelper(logger)
 
   beforeEach(async function () {
-    this.obj = new PluginStore('sqlite://:memory:', 'test')
+    appHelper.create(this)
   })
 
   it('should create an object', function () {
-    assert.isObject(this.obj)
+    assert.isObject(this.store)
   })
 
-  it('should support deletion', function (done) {
-    this.obj.put('k', 'v').then(() => {
-      return this.obj.del('k')
-    }).then(() => {
-      return this.obj.get('k')
-    }).then((value) => {
-      assert(value === undefined)
-      done()
-    })
+  it('should support adding elements', async function () {
+    await this.store.put('k', 'v')
+    const value = await this.store.get('k')
+    assert(value === 'v', 'value should match v')
   })
 
-  it('should support adding elements', function (done) {
-    this.obj.put('k', 'v').then(() => {
-      return this.obj.get('k')
-    }).then((value) => {
-      assert(value === 'v')
-      done()
-    }).catch((err) => { console.error(err) })
+  it('should support deletion', async function () {
+    await this.store.put('k', 'v')
+    const value1 = await this.store.get('k')
+    assert(value1 === 'v', 'value should match v')
+    await this.store.del('k')
+    const value2 = await this.store.get('k')
+    assert(value2 === undefined, 'value should be undefined again')
   })
 
   it('should store a long string', async function () {
     const str = ('long string. another ').repeat(1000)
-    await this.obj.put('k', str)
-    assert.equal(await this.obj.get('k'), str)
+    await this.store.put('k', str)
+    assert.equal(await this.store.get('k'), str)
   })
 
-  it('should not create a store with an invalid name', async function () {
-    const name = ('"; drop table "Users; --')
-    try {
-      const store = new PluginStore('sqlite://:memory:', name)
-      assert(!store, 'constructor should have thrown an error')
-    } catch (e) {
-      assert.match(e.message, new RegExp(name))
-    }
-  })
+  describe('getPluginStore', function () {
+    it('should not create a store with an invalid name', async function () {
+      const name = ('"; drop table "Users; --')
+      try {
+        const store = this.store.getPluginStore(name)
+        assert(!store, 'constructor should have thrown an error')
+      } catch (e) {
+        assert.match(e.message, new RegExp(name))
+      }
+    })
 
-  it('should create a store with dashes in the name', async function () {
-    const name = ('a-name-with-dashes')
-    const store = new PluginStore('sqlite://:memory:', name)
-    assert.isOk(store)
+    it('should create a store with dashes in the name', async function () {
+      const name = ('a-name-with-dashes')
+      const store = this.store.getPluginStore(name)
+      assert.isOk(store)
+    })
   })
 })
