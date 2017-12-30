@@ -23,17 +23,40 @@ describe('RouteBroadcaster', function () {
   beforeEach(async function () {
     // process.env.CONNECTOR_BACKEND = 'one-to-one'
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
-      'cad-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'CAD', currencyScale: 4},
-      'usd-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'USD', currencyScale: 4},
-      'eur-ledger': {plugin: 'ilp-plugin-mock', options: {username: 'mark'}, currency: 'EUR', currencyScale: 4}
+      'cad-ledger': {
+        relation: 'peer',
+        currency: 'CAD',
+        currencyScale: 4,
+        plugin: 'ilp-plugin-mock',
+        options: {
+          username: 'mark'
+        }
+      },
+      'usd-ledger': {
+        relation: 'peer',
+        currency: 'USD',
+        currencyScale: 4,
+        plugin: 'ilp-plugin-mock',
+        options: {
+          username: 'mark'
+        }
+      },
+      'eur-ledger': {
+        relation: 'peer',
+        currency: 'EUR',
+        currencyScale: 4,
+        plugin: 'ilp-plugin-mock',
+        options: {
+          username: 'mark'
+        }
+      }
     })
     process.env.CONNECTOR_ROUTES = JSON.stringify([
       {
         targetPrefix: 'prefix',
-        peerAddress: 'cad-ledger'
+        peerId: 'cad-ledger'
       }
     ])
-    process.env.CONNECTOR_PEERS = 'cad-ledger,usd-ledger'
     appHelper.create(this)
     this.routeBroadcaster.reloadLocalRoutes()
   })
@@ -44,7 +67,7 @@ describe('RouteBroadcaster', function () {
 
   describe('add', function () {
     it('loads peers from CONNECTOR_PEERS if set', async function () {
-      process.env.CONNECTOR_PEERS = ['eur-ledger', 'usd-ledger'].join(',')
+      process.env.CONNECTOR_PEERS = JSON.stringify(['eur-ledger', 'usd-ledger'])
       appHelper.create(this)
       assert.ok(this.routeBroadcaster.peers.get('eur-ledger'))
       assert.ok(this.routeBroadcaster.peers.get('usd-ledger'))
@@ -60,7 +83,7 @@ describe('RouteBroadcaster', function () {
     it('prefers configured routes over local ones', async function () {
       process.env.CONNECTOR_ROUTES = JSON.stringify([{
         targetPrefix: 'cad-ledger',
-        peerAddress: 'usd-ledger'
+        peerId: 'usd-ledger'
       }])
       appHelper.create(this)
       this.routeBroadcaster.reloadLocalRoutes()

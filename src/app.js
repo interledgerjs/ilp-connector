@@ -18,11 +18,6 @@ function listen (config, accounts, backend, store, routeBuilder, routeBroadcaste
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
   return (async function () {
-    if (!config.validate()) {
-      log.error('invalid configuration, shutting down.')
-      return
-    }
-
     try {
       await backend.connect()
     } catch (error) {
@@ -44,11 +39,11 @@ function listen (config, accounts, backend, store, routeBuilder, routeBroadcaste
     }
 
     if (allAccountsConnected) {
-      log.info('connector ready (republic attitude). address=%s', config.address)
+      log.info('connector ready (republic attitude). address=%s', config.ilpAddress)
     } else {
       accounts.connect({timeout: Infinity})
         .then(() => routeBroadcaster.reloadLocalRoutes())
-        .then(() => log.info('connector ready (republic attitude). address=%s', config.address))
+        .then(() => log.info('connector ready (republic attitude). address=%s', config.ilpAddress))
     }
   })().catch((err) => log.error(err))
 }
@@ -75,12 +70,32 @@ function getPlugin (accounts, id) {
   return accounts.getPlugin(id)
 }
 
-function createApp (container) {
+function createApp (opts, container) {
   const deps = container || reduct()
+
+  const config = deps(Config)
+
+  if (opts) {
+    config.loadFromOpts(opts)
+  } else {
+    config.loadFromEnv()
+  }
+
+  try {
+    config.validate()
+  } catch (err) {
+    if (err.name === 'InvalidJsonBodyError') {
+      log.warn('config validation error.')
+      err.debugPrint(log.warn)
+      log.error('invalid configuration, shutting down.')
+      throw new Error('failed to initialize due to invalid configuration.')
+    }
+
+    throw err
+  }
 
   const accounts = deps(Accounts)
   const balances = deps(Balances)
-  const config = deps(Config)
   const routeBuilder = deps(RouteBuilder)
   const routeBroadcaster = deps(RouteBroadcaster)
   const backend = deps(RateBackend)
@@ -95,16 +110,17 @@ function createApp (container) {
     balances.handleMoney.bind(balances)
   )
 
-  const credentials = config.get('accountCredentials')
+  const credentials = config.accounts
   // We have two separate for loops to make the logs look nicer :)
-  for (let address of Object.keys(credentials)) {
-    accounts.add(address, credentials[address])
+  for (let id of Object.keys(credentials)) {
+    accounts.add(id, credentials[id])
   }
-  for (let address of Object.keys(credentials)) {
-    routeBroadcaster.add(address)
+  for (let id of Object.keys(credentials)) {
+    routeBroadcaster.add(id)
   }
 
   return {
+    config,
     listen: _.partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, messageRouter),
     addPlugin: _.partial(addPlugin, config, accounts, backend, routeBroadcaster),
     removePlugin: _.partial(removePlugin, config, accounts, backend, routeBroadcaster),

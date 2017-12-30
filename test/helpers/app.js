@@ -26,12 +26,9 @@ exports.create = function (context, minBalance) {
   if (!process.env.CONNECTOR_ACCOUNTS) {
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify(require('../data/accountCredentials.json'))
   }
-  process.env.CONNECTOR_DEBUG_REPLY_NOTIFICATIONS = 'true'
-
-  process.env.CONNECTOR_SECRET = 'VafuntVJRw6YzDTs4IgIU1IPJACywtgUUQJHh1u018w='
 
   const deps = reduct()
-  const app = createApp(deps)
+  const app = createApp(null, deps)
 
   context.app = app
   context.backend = deps(RateBackend)

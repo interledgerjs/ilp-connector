@@ -77,8 +77,8 @@ class FixerIoBackend {
   /**
    * Get a liquidity curve for the given parameters.
    *
-   * @param {String} sourceAccount The URI of the source ledger
-   * @param {String} destinationAccount The URI of the destination ledger
+   * @param {String} sourceAccount The account ID of the source account
+   * @param {String} destinationAccount The account ID of the next hop account
    * @returns {Promise.<Object>}
    */
   async getRate (sourceAccount, destinationAccount) {
@@ -112,7 +112,7 @@ class FixerIoBackend {
       .times(new BigNumber(1).minus(this.spread))
       .toPrecision(15)
 
-    log.debug('quoted rate. from=%s to=%s fromCur=%s toCur=%s rate=%s', sourceAccount, destinationAccount, sourceCurrency, destinationCurrency, rate)
+    log.debug('quoted rate. from=%s to=%s fromCur=%s toCur=%s rate=%s spread=%s', sourceAccount, destinationAccount, sourceCurrency, destinationCurrency, rate, this.spread)
 
     return Number(rate)
   }

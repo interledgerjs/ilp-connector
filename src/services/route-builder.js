@@ -39,8 +39,8 @@ class RouteBuilder {
     this.quoter = deps(Quoter)
     this.config = deps(Config)
 
-    this.minMessageWindow = this.config.expiry.minMessageWindow * 1000 // millseconds
-    this.maxHoldTime = this.config.expiry.maxHoldTime * 1000 // millseconds
+    this.minMessageWindow = this.config.minMessageWindow * 1000 // millseconds
+    this.maxHoldTime = this.config.maxHoldTime * 1000 // millseconds
     this.quoteExpiryDuration = this.config.quoteExpiry // milliseconds
     this.slippage = this.config.slippage
     this.secret = this.config.secret

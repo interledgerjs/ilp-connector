@@ -39,6 +39,7 @@ describe('Modify Plugins', function () {
     it('should add a new plugin to accounts', async function () {
       assert.equal(Object.keys(this.accounts.plugins).length, 4)
       await this.app.addPlugin('eur-ledger-2', {
+        relation: 'peer',
         currency: 'EUR',
         currencyScale: 4,
         plugin: 'ilp-plugin-mock',
@@ -58,6 +59,7 @@ describe('Modify Plugins', function () {
       await assert.isRejected(quotePromise, NoRouteFoundError, /no route found. to=jpy.ledger\.bob/)
 
       await this.app.addPlugin('jpy-ledger', {
+        relation: 'peer',
         currency: 'JPY',
         currencyScale: 4,
         plugin: 'ilp-plugin-mock',
@@ -78,6 +80,7 @@ describe('Modify Plugins', function () {
 
     it('should add a peer for the added ledger', async function () {
       await this.app.addPlugin('eur-ledger-2', {
+        relation: 'peer',
         currency: 'EUR',
         currencyScale: 4,
         plugin: 'ilp-plugin-mock',
@@ -97,6 +100,7 @@ describe('Modify Plugins', function () {
         currencyCode: 'XYZ'
       }
       await this.app.addPlugin('eur-ledger-2', {
+        relation: 'peer',
         currency: 'EUR',
         currencyScale: 4,
         plugin: 'ilp-plugin-mock',
@@ -114,6 +118,7 @@ describe('Modify Plugins', function () {
   describe('removePlugin', function () {
     beforeEach(async function () {
       await this.app.addPlugin('jpy-ledger', {
+        relation: 'peer',
         currency: 'EUR',
         currencyScale: 4,
         plugin: 'ilp-plugin-mock',
