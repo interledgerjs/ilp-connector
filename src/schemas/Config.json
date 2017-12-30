@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema",
+  "id": "Config.json",
+  "title": "Config",
+  "description": "Connector configuration schema.",
+  "type": "object",
+  "properties": {
+    "ilpAddress": {
+      "description": "ILP address of the connector. This property can be omitted if an account with `relation=parent` is configured under `accounts`.",
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._~-]+$",
+      "default": "example.noname"
+    },
+    "accounts": {
+      "description": "Description of connector account plugins.",
+      "type": "object",
+      "default": {},
+      "additionalProperties": {
+        "description": "Description of individual account.",
+        "type": "object",
+        "properties": {
+          "relation": {
+            "description": "Relationship between the connector and the counterparty that the account is with.",
+            "enum": ["parent", "peer", "child"]
+          },
+          "plugin": {
+            "description": "Name of the ILP plugin that should be used for this account.",
+            "type": "string"
+          },
+          "currency": {
+            "description": "Currency code that will be passed to the backend to select the correct rate for this account.",
+            "type": "string"
+          },
+          "currencyScale": {
+            "description": "Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "options": {
+            "description": "Options that will be passed to the plugin constructor.",
+            "type": "object",
+            "additionalProperties": true
+          },
+          "ilpAddressSegment": {
+            "description": "What segment will be appended to the connector's ILP address to form this account's ILP address. Only applicable to accounts with `relation=child`. Defaults to the id of the account, i.e. the key used in the `accounts` config object.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "relation",
+          "plugin",
+          "currency",
+          "currencyScale"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "peers": {
+      "description": "Which accounts should be use as peers for routing purposes. Defaults to the set of accounts set to `relation=peer`.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "description": "Key from the `accounts` map to identify the account.",
+        "type": "string"
+      }
+    },
+    "routes": {
+      "description": "Additional routes to add to the connector's routing table.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "description": "Description of a route entry.",
+        "type": "object",
+        "properties": {
+          "targetPrefix": {
+            "description": "ILP address prefix that this route applies to. Configured routes take precedence over the same or shorter prefixes that are local or published by peers. More specific prefixes will still take precedence.",
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9._~-]+$"
+          },
+          "peerId": {
+            "description": "ID of the account that destinations matching `targetPrefix` should be forwarded to. Must be one of the accounts in `accounts`.",
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9._~-]+$"
+          }
+        },
+        "required": ["targetPrefix", "peerId"]
+      }
+    },
+    "fxSpread": {
+      "description": "How much of a spread to add on top of the reference exchange rate. Determines the connector's margin.",
+      "type": "number",
+      "default": 0.002
+    },
+    "slippage": {
+      "description": "The ratio for overestimating exchange rates during quotes to prevent payment failure if the rate changes.",
+      "type": "number",
+      "default": 0.001
+    },
+    "minMessageWindow": {
+      "description": "Minimum time the connector wants to budget for getting a message to the accounts its trading on. In seconds.",
+      "type": "number",
+      "default": 1
+    },
+    "maxHoldTime": {
+      "description": "Maximum duration (seconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.",
+      "type": "number",
+      "default": 10
+    },
+    "routeBroadcastEnabled": {
+      "description": "Whether to broadcast known routes.",
+      "type": "boolean",
+      "default": true
+    },
+    "routeBroadcastInterval": {
+      "description": "Frequency at which the connector broadcasts its routes to adjacent connectors. (in milliseconds)",
+      "type": "number",
+      "default": 30000
+    },
+    "routeCleanupInterval": {
+      "description": "The frequency at which the connector checks for expired routes. (in milliseconds)",
+      "type": "number",
+      "default": 1000
+    },
+    "routeExpiry": {
+      "description": "The maximum age of a route provided by this connector. (in milliseconds)",
+      "type": "number",
+      "default": 45000
+    },
+    "quoteExpiry": {
+      "description": "The maximum age of a quote provided by this connector. (in milliseconds)",
+      "type": "number",
+      "default": 45000
+    },
+    "backend": {
+      "description": "Name of the backend (can be built-in or a require-able module name). Built-in modules are: fixerio, fixerio-plus-xrp, fixerio-plus-coinmarketcap, one-to-one",
+      "type": "string",
+      "default": "fixerio"
+    },
+    "store": {
+      "description": "Name of the store (can be built-in or a require-able module name). Built-in modules are: leveldown",
+      "type": "string",
+      "default": "leveldown"
+    },
+    "broadcastCurves": {
+      "description": "Whether to include liquidity curves when broadcasting routes.",
+      "type": "boolean",
+      "default": true
+    },
+    "reflectPayments": {
+      "description": "Whether to allow routing payments back to the account that sent them.",
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": ["accounts"]
+}

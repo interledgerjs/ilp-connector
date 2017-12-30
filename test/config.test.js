@@ -4,24 +4,34 @@ const _ = require('lodash')
 const Config = require('../src/services/config')
 const expect = require('chai').expect
 const assert = require('chai').assert
+const logger = require('../src/common/log')
+const logHelper = require('./helpers/log')
 const env = _.cloneDeep(process.env)
 
-describe('ConnectorConfig', function () {
+describe('Config', function () {
+  logHelper(logger)
+
   describe('parseConnectorConfig', function () {
     beforeEach(function () {
       process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
         'usd-ledger': {
+          relation: 'peer',
           currency: 'USD',
+          currencyScale: 4,
           plugin: 'ilp-plugin-mock',
           options: {}
         },
         'eur-ledger': {
+          relation: 'peer',
           currency: 'EUR',
+          currencyScale: 4,
           plugin: 'ilp-plugin-mock',
           options: {}
         },
         'aud-ledger': {
+          relation: 'peer',
           currency: 'AUD',
+          currencyScale: 4,
           plugin: 'ilp-plugin-mock',
           options: {}
         }
@@ -33,18 +43,11 @@ describe('ConnectorConfig', function () {
       process.env = _.cloneDeep(env)
     })
 
-    it('should generate a secret if one is not provided', async function () {
-      delete process.env.CONNECTOR_SECRET
-      const config = new Config()
-      assert.isTrue(Buffer.isBuffer(config.secret))
-      expect(config.secret).to.have.length(32)
-    })
-
     describe('connector routes', () => {
       beforeEach(function () {
         this.routes = [{
           targetPrefix: 'a.',
-          peerAddress: 'example.a'
+          peerId: 'example.a'
         }]
       })
 
@@ -55,50 +58,44 @@ describe('ConnectorConfig', function () {
       it('parses routes correctly', function () {
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
         const config = new Config()
+        config.loadFromEnv()
         expect(config.get('routes'))
           .to.deep.equal(this.routes)
       })
 
       it('won\'t parse routes with invalid ledger', function () {
-        this.routes[0].peerAddress = 'garbage!'
+        this.routes[0].peerId = 'garbage!'
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
+        const config = new Config()
+        config.loadFromEnv()
         assert.throws(() => {
-          return new Config()
-        })
+          config.validate()
+        }, 'config failed to validate. error=should match pattern "^[a-zA-Z0-9._~-]+$" dataPath=.routes[0].peerId')
       })
 
       it('should not parse routes missing prefix', function () {
         this.routes[0].targetPrefix = undefined
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
+        const config = new Config()
+        config.loadFromEnv()
         assert.throws(() => {
-          return new Config()
-        })
+          config.validate()
+        }, 'config failed to validate. error=should have required property \'targetPrefix\' dataPath=.routes[0]')
       })
 
       it('should not parse routes missing ledger', function () {
-        this.routes[0].peerAddress = undefined
+        this.routes[0].peerId = undefined
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
 
+        const config = new Config()
+        config.loadFromEnv()
         assert.throws(() => {
-          return new Config()
-        })
+          config.validate()
+        }, 'config failed to validate. error=should have required property \'peerId\' dataPath=.routes[0]')
       })
     })
 
     describe('ledger credentials', () => {
-      it('should parse ledger credentials -- deprecated format', async function () {
-        const accountCredentials = require('./data/accountCredentials.json')
-        const ledgerCredsModified = _.cloneDeep(accountCredentials)
-        const usdLedgerCreds = ledgerCredsModified['usd-ledger']
-        usdLedgerCreds.options.account_uri = usdLedgerCreds.account
-        delete usdLedgerCreds.account
-        process.env.CONNECTOR_ACCOUNTS = JSON.stringify(ledgerCredsModified)
-
-        const config = new Config()
-        expect(config.get('accountCredentials'))
-          .to.deep.equal(accountCredentials)
-      })
-
       it('should parse ledger credentials', async function () {
         const accountCredentialsEnv = {
           'cad-ledger': {
@@ -126,6 +123,7 @@ describe('ConnectorConfig', function () {
         process.env.UNIT_TEST_OVERRIDE = 'true'
         process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
         const config = new Config()
+        config.loadFromEnv()
 
         const accountCredentials = {
           'cad-ledger': {
@@ -150,7 +148,7 @@ describe('ConnectorConfig', function () {
           }
         }
 
-        expect(config.get('accountCredentials'))
+        expect(config.accounts)
           .to.deep.equal(accountCredentials)
       })
 
@@ -179,6 +177,7 @@ describe('ConnectorConfig', function () {
         process.env.UNIT_TEST_OVERRIDE = 'true'
         process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
         const config = new Config()
+        config.loadFromEnv()
 
         const accountCredentials = {
           'cad-ledger': {
@@ -201,7 +200,7 @@ describe('ConnectorConfig', function () {
           }
         }
 
-        expect(config.get('accountCredentials'))
+        expect(config.accounts)
           .to.deep.equal(accountCredentials)
       })
     })

@@ -18,7 +18,7 @@ class RouteBroadcaster {
     this.quoter = deps(Quoter)
     this.config = deps(Config)
 
-    this.peers = new Map() // peerAddress:string -> peer:Peer
+    this.peers = new Map() // peerId:string -> peer:Peer
     this.currentEpoch = 0
     this.formerRoutes = new Set()
     this.routeEpochs = {}
@@ -45,21 +45,23 @@ class RouteBroadcaster {
       // don't log duplicates
       return
     }
+    log.debug('this.config.peers', this.config.peers)
     if (this.config && this.config.peers && this.config.peers.length &&
       this.config.peers.indexOf(address) === -1) {
       // when using an explicitly configured list of peers,
       // only allow peers that are listed
-      log.info('peer is not listed in configuration, ignoring. peerAddress=%s', address)
+      log.info('peer is not listed in configuration, ignoring. peerId=%s', address)
       return
     }
-    if (address.startsWith(this.config.address)) {
-      log.debug('not broadcasting routes to downstream account; override with CONNECTOR_PEERS. peerAddress=%s myAddress=%s', address, this.config.address)
+    const accountInfo = this.accounts.getInfo(address)
+    if (accountInfo.relation === 'child') {
+      log.debug('not broadcasting routes to child connector; change account `relation` or override with CONNECTOR_PEERS. peerId=%s myAddress=%s', address, this.config.ilpAddress)
       return
     }
-    if (this.config.address.startsWith(address)) {
-      log.debug('not broadcasting routes to upstream account; override with CONNECTOR_PEERS. peerAddress=%s myAddress=%s', address, this.config.address)
+    if (accountInfo.relation === 'parent') {
+      log.debug('not broadcasting routes to parent connector; change account `relation` or override with CONNECTOR_PEERS. peerId=%s myAddress=%s', address, this.config.ilpAddress)
     }
-    log.debug('add peer. peerAddress=' + address)
+    log.debug('add peer. peerId=' + address)
     this.peers.set(address, new Peer({ address }))
   }
 
@@ -70,7 +72,7 @@ class RouteBroadcaster {
       return
     }
 
-    log.info('remove peer. peerAddress=' + address)
+    log.info('remove peer. peerId=' + address)
     this.peers.delete(address)
 
     for (let prefix of peer.getPrefixes()) {
@@ -166,7 +168,7 @@ class RouteBroadcaster {
     // configured routes have highest priority
     const configuredRoute = find(this.config.routes, { targetPrefix: prefix })
     if (configuredRoute) {
-      return configuredRoute.peerAddress
+      return configuredRoute.peerId
     }
 
     // next are local routes

@@ -7,7 +7,7 @@ const PEER_PROTOCOL_PREFIX = 'peer'
 
 class Peer {
   constructor ({ address }) {
-    this.address = address
+    this.ilpAddress = address
     this.routes = new PrefixMap()
     this.epoch = -1
     this.expiry = 0
@@ -18,7 +18,7 @@ class Peer {
   }
 
   getAddress () {
-    return this.address
+    return this.ilpAddress
   }
 
   getExpiry () {
@@ -95,19 +95,19 @@ class Peer {
   }
 
   async broadcastRoutes ({ accounts, routes, broadcastCurves, holdDownTime, unreachableAccounts, requestFullTable = false, currentEpoch, timeout }) {
-    const newRoutes = routes.filter(route => route.epoch > this.epoch && route.nextHop !== this.address).map(route => ({
-      source_ledger: this.address,
+    const newRoutes = routes.filter(route => route.epoch > this.epoch && route.nextHop !== this.ilpAddress).map(route => ({
+      source_ledger: this.ilpAddress,
       destination_ledger: route.prefix,
       min_message_window: 1,
-      source_account: this.address,
+      source_account: this.ilpAddress,
       paths: [ [] ]
     }))
 
     const unreachableThroughMe = unreachableAccounts.filter(route => route.epoch > this.epoch).map(route => route.prefix)
 
-    log.debug('broadcasting routes to peer. peer=%s routeCount=%s unreachableCount=%s', this.address, newRoutes.length, unreachableThroughMe.length)
+    log.debug('broadcasting routes to peer. peer=%s routeCount=%s unreachableCount=%s', this.ilpAddress, newRoutes.length, unreachableThroughMe.length)
 
-    await accounts.getPlugin(this.address).sendRequest({
+    await accounts.getPlugin(this.ilpAddress).sendRequest({
       custom: {
         method: 'broadcast_routes',
         data: {

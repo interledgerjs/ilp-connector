@@ -24,19 +24,10 @@ describe('IlpPrepareController', function () {
   })
 
   beforeEach(async function () {
-    const pairs = [
-      [
-        'mock.test1',
-        'mock.test2'
-      ],
-      [
-        'mock.test2',
-        'mock.test1'
-      ]
-    ]
     process.env.UNIT_TEST_OVERRIDE = '1'
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
       'mock.test1': {
+        relation: 'peer',
         currency: 'USD',
         currencyScale: 4,
         plugin: 'ilp-plugin-mock',
@@ -49,6 +40,7 @@ describe('IlpPrepareController', function () {
         }
       },
       'mock.test2': {
+        relation: 'peer',
         currency: 'EUR',
         currencyScale: 4,
         plugin: 'ilp-plugin-mock',
@@ -61,7 +53,6 @@ describe('IlpPrepareController', function () {
         }
       }
     })
-    process.env.CONNECTOR_PAIRS = JSON.stringify(pairs)
     nock('http://test1.mock').get('/')
       .reply(200, { precision: 10, scale: 4 })
     nock('http://test2.mock').get('/')

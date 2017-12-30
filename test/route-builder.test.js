@@ -30,19 +30,21 @@ describe('RouteBuilder', function () {
   beforeEach(async function () {
     const accountCredentials = {}
     accountCredentials[ledgerA] = {
+      relation: 'peer',
       currency: 'USD',
       currencyScale: 2,
       plugin: 'ilp-plugin-mock',
       options: {}
     }
     accountCredentials[ledgerB] = {
+      relation: 'peer',
       currency: 'EUR',
       currencyScale: 2,
       plugin: 'ilp-plugin-mock',
       options: {}
     }
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentials)
-    process.env.CONNECTOR_FX_SPREAD = 0.1
+    process.env.CONNECTOR_FX_SPREAD = '0.1'
     appHelper.create(this)
     this.routeBroadcaster.reloadLocalRoutes()
     await this.backend.connect({

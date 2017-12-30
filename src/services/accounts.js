@@ -32,9 +32,10 @@ class Accounts extends EventEmitter {
     this._config = config
     this._accounts = new Map()
     this._accountInfo = new Map()
-    this.createIlpRejection = createIlpRejection.bind(null, config.address)
+    this.createIlpRejection = createIlpRejection.bind(null, config.ilpAddress)
     this._dataHandler = null
     this._moneyHandler = null
+    this._parentAccount = null
 
     const accounts = this
     this._relayEvents = {}
@@ -50,11 +51,11 @@ class Accounts extends EventEmitter {
     return Promise.all(this._pluginList.map((plugin) => plugin.connect(options)))
   }
 
-  getPlugin (accountAddress) {
-    if (accountAddress.slice(-1) === '.') {
+  getPlugin (accountId) {
+    if (accountId.slice(-1) === '.') {
       throw new Error('peer address must not end with "."')
     }
-    return this.plugins[accountAddress] || null
+    return this.plugins[accountId] || null
   }
 
   getPlugins () {
@@ -65,75 +66,96 @@ class Accounts extends EventEmitter {
     return Object.keys(this.plugins)
   }
 
-  getCurrency (accountAddress) {
-    const account = this._accounts.get(accountAddress)
+  getCurrency (accountId) {
+    const account = this._accounts.get(accountId)
 
     if (!account) {
-      log.debug('no currency found. account=' + accountAddress)
+      log.debug('no currency found. account=' + accountId)
       return null
     }
 
     return account.currency
   }
 
-  add (accountAddress, creds, tradesTo, tradesFrom) {
-    log.info('add account. peerAddress=' + accountAddress)
+  add (accountId, creds, tradesTo, tradesFrom) {
+    log.info('add account. peerId=' + accountId)
 
     creds = _.cloneDeep(creds)
 
-    if (!this._config.validateAccount(accountAddress, creds)) {
-      throw new Error('error while adding account, see error log for details.')
+    try {
+      this._config.validateAccount(accountId, creds)
+    } catch (err) {
+      if (err.name === 'InvalidJsonBodyError') {
+        log.warn('validation error in account config. id=%s', accountId)
+        err.debugPrint(log.warn)
+        throw new Error('error while adding account, see error log for details.')
+      }
+
+      throw err
     }
 
-    const store = this.store.getPluginStore(accountAddress)
+    if (creds.relation === 'parent') {
+      if (this._parentAccount) {
+        throw new Error('only one account may be marked as relation=parent. id=' + accountId)
+      }
 
-    creds.options.prefix = accountAddress
+      this._parentAccount = accountId
+    }
+
+    const store = this.store.getPluginStore(accountId)
+
+    creds.options.prefix = accountId
     const Plugin = require(creds.plugin)
     const plugin = compat(new Plugin(Object.assign({}, creds.options, {
-      prefix: accountAddress + '.',
-      debugReplyNotifications: this._config.features.debugReplyNotifications,
+      prefix: accountId + '.',
       // non JSON-stringifiable fields are prefixed with an underscore
       _store: store,
       _log: logger.create(creds.plugin)
     })))
 
     if (creds.overrideInfo) {
-      log.debug('using overridden info for plugin. account=%s info=%j', accountAddress, creds.overrideInfo)
+      log.debug('using overridden info for plugin. account=%s info=%j', accountId, creds.overrideInfo)
     }
     const accountInfo = Object.assign({
+      relation: creds.relation,
       currency: creds.currency,
       currencyScale: creds.currencyScale
     }, creds.overrideInfo)
-    this._accountInfo.set(accountAddress, accountInfo)
+    this._accountInfo.set(accountId, accountInfo)
 
-    if (accountAddress.slice(-1) === '.') {
+    if (accountId.slice(-1) === '.') {
       throw new Error('peer address must not end with "."')
     }
-    this._prefixReverseMap.set(plugin, accountAddress)
+    this._prefixReverseMap.set(plugin, accountId)
     this._pluginList.push(plugin)
-    this.plugins[accountAddress] = plugin
+    this.plugins[accountId] = plugin
 
-    this._accounts.set(accountAddress, {
+    this._accounts.set(accountId, {
       currency: creds.currency,
       plugin
     })
-    plugin.registerDataHandler(this._handleData.bind(this, accountAddress))
-    plugin.registerMoneyHandler(this._handleMoney.bind(this, accountAddress))
+    plugin.registerDataHandler(this._handleData.bind(this, accountId))
+    plugin.registerMoneyHandler(this._handleMoney.bind(this, accountId))
   }
 
-  remove (accountAddress) {
-    const plugin = this.getPlugin(accountAddress)
+  remove (accountId) {
+    const plugin = this.getPlugin(accountId)
     if (!plugin) {
       return
     }
-    log.info('remove account. peerAddress=' + accountAddress)
+    log.info('remove account. peerId=' + accountId)
     plugin.deregisterDataHandler()
     plugin.deregisterMoneyHandler()
     this._pluginList.splice(this._pluginList.indexOf(plugin), 1)
-    delete this.plugins[accountAddress]
-    this._accountInfo.delete(accountAddress)
+
+    if (this._parentAccount === accountId) {
+      this._parentAccount = null
+    }
+
+    delete this.plugins[accountId]
+    this._accountInfo.delete(accountId)
     this._prefixReverseMap.delete(plugin)
-    this._accounts.delete(accountAddress)
+    this._accounts.delete(accountId)
     return plugin
   }
 

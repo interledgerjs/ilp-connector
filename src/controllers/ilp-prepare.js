@@ -45,7 +45,7 @@ class IlpPrepareController {
         const { fulfillment } = IlpPacket.deserializeIlpFulfill(result)
 
         if (!fulfillmentToCondition(fulfillment).equals(executionCondition)) {
-          log.warn('got invalid fulfillment from peer, not paying. peerAddress=%s', nextHop)
+          log.warn('got invalid fulfillment from peer, not paying. peerId=%s', nextHop)
 
           // We think the fulfillment is invalid, so we'll return a rejection
           throw new UnreachableError('received an invalid fulfillment.')
@@ -57,7 +57,7 @@ class IlpPrepareController {
         this.sendMoneyToPeer(nextHop, nextHopPacket.amount)
           .catch(err => {
             const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : err
-            log.warn('sending money to peer failed. peerAddress=%s amount=%s error=%s', nextHop, nextHopPacket.amount, errInfo)
+            log.warn('sending money to peer failed. peerId=%s amount=%s error=%s', nextHop, nextHopPacket.amount, errInfo)
           })
       }
 
@@ -79,14 +79,14 @@ class IlpPrepareController {
       return IlpPacket.serializeIlpReject({
         code: err.ilpErrorCode || codes.F00_BAD_REQUEST,
         message: (err && typeof err === 'object' && err.message) ? err.message : String(err),
-        triggeredBy: this.config.address
+        triggeredBy: this.config.ilpAddress
       })
     }
   }
 
-  async sendDataToPeer (address, data) {
+  async sendDataToPeer (peerId, data) {
     try {
-      return await this.accounts.getPlugin(address).sendData(data)
+      return await this.accounts.getPlugin(peerId).sendData(data)
     } catch (err) {
       if (err && typeof err === 'object') {
         const newError = new UnreachableError('failed to forward ilp prepare: ' + err.message)
@@ -100,8 +100,8 @@ class IlpPrepareController {
     }
   }
 
-  async sendMoneyToPeer (address, amount) {
-    return this.accounts.getPlugin(address).sendMoney(amount)
+  async sendMoneyToPeer (peerId, amount) {
+    return this.accounts.getPlugin(peerId).sendMoney(amount)
   }
 }
 
