@@ -60,7 +60,7 @@ class MockPlugin extends EventEmitter {
       prefix: this._prefix,
       connectors: ['mark'],
       currencyCode: 'doesn\'t matter, the connector will ignore this',
-      currencyScale: 4,
+      assetScale: 4,
       minBalance: this._minBalance
     }
   }

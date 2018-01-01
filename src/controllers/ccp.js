@@ -21,8 +21,8 @@ class CcpController {
           ? null
           : {
             peer: sourceAccount,
-            prefix: route.target_prefix || route.destination_ledger,
-            distance: Math.max((route.paths && route.paths[0] && route.paths[0].length) || 1, 1),
+            prefix: route.prefix,
+            path: route.path,
             curve: route.points && new LiquidityCurve(route.points),
             minMessageWindow: route.min_message_window * 1000
           }

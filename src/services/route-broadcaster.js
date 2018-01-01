@@ -19,6 +19,7 @@ class RouteBroadcaster {
     this.config = deps(Config)
 
     this.peers = new Map() // peerId:string -> peer:Peer
+    this.localRoutes = new Map()
     this.currentEpoch = 0
     this.formerRoutes = new Set()
     this.routeEpochs = {}
@@ -45,7 +46,6 @@ class RouteBroadcaster {
       // don't log duplicates
       return
     }
-    log.debug('this.config.peers', this.config.peers)
     if (this.config && this.config.peers && this.config.peers.length &&
       this.config.peers.indexOf(address) === -1) {
       // when using an explicitly configured list of peers,
@@ -119,7 +119,31 @@ class RouteBroadcaster {
   reloadLocalRoutes () {
     log.debug('reload local and configured routes.')
 
-    const localPrefixes = this.accounts.getPrefixes()
+    this.localRoutes = new Map()
+    const localAccounts = this.accounts.getAccountIds()
+
+    for (let accountId of localAccounts) {
+      const info = this.accounts.getInfo(accountId)
+      switch (info.relation) {
+        case 'parent':
+          this.localRoutes.set('', {
+            nextHop: accountId,
+            path: []
+          })
+          break
+        case 'peer':
+          // For peers, we rely on their route updates
+          break
+        case 'child':
+          this.localRoutes.set(this.accounts.getChildAddress(accountId), {
+            nextHop: accountId,
+            path: []
+          })
+          break
+      }
+    }
+
+    const localPrefixes = Array.from(this.localRoutes.keys())
     const configuredPrefixes = this.config.routes.map(r => r.targetPrefix)
 
     for (let prefix of localPrefixes.concat(configuredPrefixes)) {
@@ -131,17 +155,20 @@ class RouteBroadcaster {
     const currentBest = this.routingTable.get(prefix)
     const newBest = this.getBestPeerForPrefix(prefix)
 
-    if (newBest !== currentBest) {
+    const currentNextHop = currentBest && currentBest.nextHop
+    const newNextHop = newBest && newBest.nextHop
+
+    if (newNextHop !== currentNextHop) {
       const epoch = ++this.currentEpoch
       this.routeEpochs[prefix] = epoch
 
       if (newBest) {
-        log.debug('new best route for prefix. prefix=%s oldBest=%s newBest=%s epoch=%s', prefix, currentBest, newBest, epoch)
+        log.debug('new best route for prefix. prefix=%s oldBest=%s newBest=%s epoch=%s', prefix, currentNextHop, newNextHop, epoch)
 
         this.routingTable.insert(prefix, newBest)
         this.formerRoutes.delete(prefix)
 
-        const peer = this.peers.get(newBest)
+        const peer = this.peers.get(newNextHop)
         const route = peer && peer.getPrefix(prefix)
         if (route && route.curve) {
           this.quoter.cacheCurve({
@@ -157,8 +184,6 @@ class RouteBroadcaster {
         this.formerRoutes.add(prefix)
       }
       return true
-    } else {
-      log.debug('prefix unchanged. prefix=%s', prefix)
     }
 
     return false
@@ -168,24 +193,36 @@ class RouteBroadcaster {
     // configured routes have highest priority
     const configuredRoute = find(this.config.routes, { targetPrefix: prefix })
     if (configuredRoute) {
-      return configuredRoute.peerId
-    }
-
-    // next are local routes
-    if (this.accounts.getPlugin(prefix)) {
-      return prefix
-    }
-
-    let bestRoute = { distance: Infinity }
-    for (let peer of this.peers.values()) {
-      const peerRoute = peer.getPrefix(prefix)
-
-      if (peerRoute && peerRoute.distance < bestRoute.distance) {
-        bestRoute = peerRoute
+      if (this.accounts.exists(configuredRoute.peerId)) {
+        return {
+          nextHop: configuredRoute.peerId,
+          path: []
+        }
+      } else {
+        log.warn('ignoring configured route, account does not exist. prefix=%s accountId=%s', configuredRoute.targetPrefix, configuredRoute.peerId)
       }
     }
 
-    return bestRoute.peer
+    const localRoute = this.localRoutes.get(prefix)
+    if (localRoute) {
+      return localRoute
+    }
+
+    let bestRoute = null
+    let bestDistance = Infinity
+    for (let peer of this.peers.values()) {
+      const peerRoute = peer.getPrefix(prefix)
+
+      if (peerRoute && peerRoute.path.length < bestDistance) {
+        bestRoute = peerRoute
+        bestDistance = peerRoute.path.length
+      }
+    }
+
+    return bestRoute && {
+      nextHop: bestRoute.peer,
+      path: bestRoute.path
+    }
   }
 
   async broadcast (requestFullTable = false) {
@@ -196,11 +233,25 @@ class RouteBroadcaster {
 
     log.info('broadcasting to %d peers. epoch=%s', peers.length, this.currentEpoch)
 
-    const routes = this.routingTable.keys().map(prefix => ({
-      prefix,
-      nextHop: this.routingTable.get(prefix),
-      epoch: this.routeEpochs[prefix]
-    }))
+    const selfRoute = {
+      prefix: this.accounts.getOwnAddress(),
+      // no next hop, since we are the final destination for this route
+      nextHop: null,
+      epoch: 0,
+      path: []
+    }
+
+    const routingTableRoutes = this.routingTable.keys().map(prefix => {
+      const entry = this.routingTable.get(prefix)
+      return {
+        prefix,
+        nextHop: entry.nextHop,
+        epoch: this.routeEpochs[prefix],
+        path: entry.path
+      }
+    })
+
+    const routes = [selfRoute, ...routingTableRoutes]
     const unreachableAccounts = Array.from(this.formerRoutes).map(prefix => ({
       prefix,
       epoch: this.routeEpochs[prefix]

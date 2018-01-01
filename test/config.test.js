@@ -16,22 +16,22 @@ describe('Config', function () {
       process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
         'usd-ledger': {
           relation: 'peer',
-          currency: 'USD',
-          currencyScale: 4,
+          assetCode: 'USD',
+          assetScale: 4,
           plugin: 'ilp-plugin-mock',
           options: {}
         },
         'eur-ledger': {
           relation: 'peer',
-          currency: 'EUR',
-          currencyScale: 4,
+          assetCode: 'EUR',
+          assetScale: 4,
           plugin: 'ilp-plugin-mock',
           options: {}
         },
         'aud-ledger': {
           relation: 'peer',
-          currency: 'AUD',
-          currencyScale: 4,
+          assetCode: 'AUD',
+          assetScale: 4,
           plugin: 'ilp-plugin-mock',
           options: {}
         }
@@ -99,7 +99,7 @@ describe('Config', function () {
       it('should parse ledger credentials', async function () {
         const accountCredentialsEnv = {
           'cad-ledger': {
-            currency: 'CAD',
+            assetCode: 'CAD',
             plugin: 'ilp-plugin-mock',
             options: {
               account: 'http://cad-ledger.example:1000/accounts/mark',
@@ -108,7 +108,7 @@ describe('Config', function () {
             }
           },
           'usd-ledger': {
-            currency: 'USD',
+            assetCode: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
               account: 'http://cad-ledger.example:1000/accounts/mark',
@@ -127,7 +127,7 @@ describe('Config', function () {
 
         const accountCredentials = {
           'cad-ledger': {
-            currency: 'CAD',
+            assetCode: 'CAD',
             plugin: 'ilp-plugin-mock',
             options: {
               account: 'http://cad-ledger.example:1000/accounts/mark',
@@ -136,7 +136,7 @@ describe('Config', function () {
             }
           },
           'usd-ledger': {
-            currency: 'USD',
+            assetCode: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
               account: 'http://cad-ledger.example:1000/accounts/mark',
@@ -155,7 +155,7 @@ describe('Config', function () {
       it('should parse another type of ledger\'s credentials', async function () {
         const accountCredentialsEnv = {
           'cad-ledger': {
-            currency: 'USD',
+            assetCode: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
               token: 'iv8qhtm9qcmjmo8tcmjo4a',
@@ -164,7 +164,7 @@ describe('Config', function () {
             }
           },
           'usd-ledger': {
-            currency: 'USD',
+            assetCode: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
               token: 'iv8qhtm9qcmjmo8tcmjo4a',
@@ -181,7 +181,7 @@ describe('Config', function () {
 
         const accountCredentials = {
           'cad-ledger': {
-            currency: 'USD',
+            assetCode: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
               token: 'iv8qhtm9qcmjmo8tcmjo4a',
@@ -190,7 +190,7 @@ describe('Config', function () {
             }
           },
           'usd-ledger': {
-            currency: 'USD',
+            assetCode: 'USD',
             plugin: 'ilp-plugin-mock',
             options: {
               token: 'iv8qhtm9qcmjmo8tcmjo4a',

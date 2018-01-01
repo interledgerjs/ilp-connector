@@ -25,7 +25,7 @@ class FixerIoBackend {
 
     this.spread = opts.spread || 0
     this.getInfo = opts.getInfo
-    this.getCurrency = opts.getCurrency
+    this.getAssetCode = opts.getAssetCode
     // this.ratesCacheTtl = opts.ratesCacheTtl || 24 * 3600000
 
     this.rates = {}
@@ -82,8 +82,8 @@ class FixerIoBackend {
    * @returns {Promise.<Object>}
    */
   async getRate (sourceAccount, destinationAccount) {
-    const sourceCurrency = this.getCurrency(sourceAccount)
-    const destinationCurrency = this.getCurrency(destinationAccount)
+    const sourceCurrency = this.getAssetCode(sourceAccount)
+    const destinationCurrency = this.getAssetCode(destinationAccount)
     // Get ratio between currencies and apply spread
     const sourceRate = this.rates[sourceCurrency]
     const destinationRate = this.rates[destinationCurrency]
@@ -107,8 +107,8 @@ class FixerIoBackend {
     //
     //   SourceAmount * Rate * (1 - Spread) = DestinationAmount
     //
-    const rate = new BigNumber(destinationRate).shift(destinationInfo.currencyScale)
-      .div(new BigNumber(sourceRate).shift(sourceInfo.currencyScale))
+    const rate = new BigNumber(destinationRate).shift(destinationInfo.assetScale)
+      .div(new BigNumber(sourceRate).shift(sourceInfo.assetScale))
       .times(new BigNumber(1).minus(this.spread))
       .toPrecision(15)
 

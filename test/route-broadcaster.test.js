@@ -25,8 +25,8 @@ describe('RouteBroadcaster', function () {
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
       'cad-ledger': {
         relation: 'peer',
-        currency: 'CAD',
-        currencyScale: 4,
+        assetCode: 'CAD',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           username: 'mark'
@@ -34,8 +34,8 @@ describe('RouteBroadcaster', function () {
       },
       'usd-ledger': {
         relation: 'peer',
-        currency: 'USD',
-        currencyScale: 4,
+        assetCode: 'USD',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           username: 'mark'
@@ -43,8 +43,8 @@ describe('RouteBroadcaster', function () {
       },
       'eur-ledger': {
         relation: 'peer',
-        currency: 'EUR',
-        currencyScale: 4,
+        assetCode: 'EUR',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           username: 'mark'
@@ -55,10 +55,30 @@ describe('RouteBroadcaster', function () {
       {
         targetPrefix: 'prefix',
         peerId: 'cad-ledger'
+      }, {
+        targetPrefix: 'eur-ledger',
+        peerId: 'eur-ledger'
       }
     ])
+    process.env.CONNECTOR_PEERS = JSON.stringify(['cad-ledger', 'usd-ledger'])
     appHelper.create(this)
     this.routeBroadcaster.reloadLocalRoutes()
+
+    const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger']
+    for (let accountId of testAccounts) {
+      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
+        method: 'broadcast_routes',
+        data: {
+          hold_down_time: 45000,
+          unreachable_through_me: [],
+          request_full_table: false,
+          new_routes: [{
+            prefix: accountId,
+            path: []
+          }]
+        }
+      })))
+    }
   })
 
   afterEach(function () {
@@ -77,7 +97,10 @@ describe('RouteBroadcaster', function () {
 
   describe('reloadLocalRoutes', function () {
     it('loads routes from CONNECTOR_ROUTES', async function () {
-      assert.equal(this.routingTable.resolve('prefix.mary'), 'cad-ledger')
+      assert.deepEqual(this.routingTable.resolve('prefix.mary'), {
+        nextHop: 'cad-ledger',
+        path: []
+      })
     })
 
     it('prefers configured routes over local ones', async function () {
@@ -88,58 +111,50 @@ describe('RouteBroadcaster', function () {
       appHelper.create(this)
       this.routeBroadcaster.reloadLocalRoutes()
 
-      assert.equal(this.routingTable.resolve('cad-ledger.mary'), 'usd-ledger')
+      assert.equal(this.routingTable.resolve('cad-ledger.mary').nextHop, 'usd-ledger')
     })
   })
 
   describe('broadcast', function () {
     const routesWithSourceLedgerA = [
       {
-        source_ledger: ledgerA,
-        destination_ledger: ledgerB,
-        min_message_window: 1,
-        source_account: ledgerA,
-        paths: [ [] ]
+        prefix: 'test.connie',
+        path: []
       }, {
-        source_ledger: ledgerA,
-        destination_ledger: ledgerC,
-        min_message_window: 1,
-        source_account: ledgerA,
-        paths: [ [] ]
+        prefix: ledgerB,
+        path: []
+      }, {
+        prefix: ledgerC,
+        path: []
       }
     ]
     const routesWithSourceLedgerB = [
       {
-        source_ledger: ledgerB,
-        destination_ledger: ledgerC,
-        min_message_window: 1,
-        source_account: ledgerB,
-        paths: [ [] ]
+        prefix: 'test.connie',
+        path: []
+      },
+      {
+        prefix: ledgerC,
+        path: []
       }, {
-        source_ledger: ledgerB,
-        destination_ledger: ledgerA,
-        min_message_window: 1,
-        source_account: ledgerB,
-        paths: [ [] ]
+        prefix: ledgerA,
+        path: []
       }, {
-        source_ledger: ledgerB,
-        destination_ledger: 'prefix',
-        min_message_window: 1,
-        source_account: ledgerB,
-        paths: [ [] ]
+        prefix: 'prefix',
+        path: []
       }
     ]
 
     it('sends the combined routes to all adjacent connectors', async function () {
       let ledgerABroadcast
-      this.accounts.getPlugin(ledgerA).sendRequest = function (message) {
-        ledgerABroadcast = message
+      this.accounts.getPlugin(ledgerA).sendData = function (message) {
+        ledgerABroadcast = JSON.parse(message.toString('utf8'))
         return Promise.resolve(null)
       }
 
       let ledgerBBroadcast
-      this.accounts.getPlugin(ledgerB).sendRequest = function (message) {
-        ledgerBBroadcast = message
+      this.accounts.getPlugin(ledgerB).sendData = function (message) {
+        ledgerBBroadcast = JSON.parse(message.toString('utf8'))
         return Promise.resolve(null)
       }
 
@@ -173,11 +188,10 @@ describe('RouteBroadcaster', function () {
     it('invalidates routes', async function () {
       const ledgerD = 'xrp.ledger'
       const newRoutes = [{
-        source_ledger: ledgerB,
-        destination_ledger: ledgerD,
-        source_account: ledgerB,
+        prefix: ledgerD,
         min_message_window: 1,
-        points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
+        points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64'),
+        path: []
       }]
       assert.equal(this.routingTable.keys().length, 4)
       await this.ccpController.handle(ledgerB, {
@@ -198,29 +212,10 @@ describe('RouteBroadcaster', function () {
 
     it('does not add peer routes', async function () {
       const newRoutes = [{
-        source_ledger: ledgerB,
-        destination_ledger: 'peer.do.not.add.me',
-        source_account: ledgerB + 'mark',
+        prefix: 'peer.do.not.add.me',
         min_message_window: 1,
-        points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
-      }]
-      assert.equal(this.routingTable.keys().length, 4)
-      await this.ccpController.handle(ledgerB, {
-        new_routes: newRoutes,
-        hold_down_time: 1234,
-        unreachable_through_me: [],
-        request_full_table: false
-      })
-      assert.equal(this.routingTable.keys().length, 4)
-    })
-
-    it('ignores routes where source_ledger does not match source_account', async function () {
-      const newRoutes = [{
-        source_ledger: ledgerA,
-        destination_ledger: 'alpha',
-        source_account: ledgerB,
-        min_message_window: 1,
-        points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64')
+        points: new LiquidityCurve([ [0, 0], [50, 60] ]).toBuffer().toString('base64'),
+        path: []
       }]
       assert.equal(this.routingTable.keys().length, 4)
       await this.ccpController.handle(ledgerB, {
@@ -247,11 +242,11 @@ describe('RouteBroadcaster', function () {
         }
 
       let routesWithSourceLedgerASent, routesWithSourceLedgerBSent
-      this.accounts.getPlugin(ledgerA).sendRequest = function (message) {
+      this.accounts.getPlugin(ledgerA).sendData = function (message) {
         routesWithSourceLedgerASent = true
         return Promise.reject(new Error('something went wrong but the connector should continue anyway'))
       }
-      this.accounts.getPlugin(ledgerB).sendRequest = function (message) {
+      this.accounts.getPlugin(ledgerB).sendData = function (message) {
         routesWithSourceLedgerBSent = true
         return Promise.resolve(null)
       }
@@ -261,13 +256,13 @@ describe('RouteBroadcaster', function () {
       assert(routesWithSourceLedgerBSent)
     })
 
-    it('should send all routes even if plugin.sendRequest hangs', async function () {
+    it('should send all routes even if plugin.sendData hangs', async function () {
       let routesWithSourceLedgerASent, routesWithSourceLedgerBSent
-      this.accounts.getPlugin(ledgerA).sendRequest = function (message) {
+      this.accounts.getPlugin(ledgerA).sendData = function (message) {
         routesWithSourceLedgerASent = true
         return new Promise(resolve => {})
       }
-      this.accounts.getPlugin(ledgerB).sendRequest = function (message) {
+      this.accounts.getPlugin(ledgerB).sendData = function (message) {
         routesWithSourceLedgerBSent = true
         return Promise.resolve(null)
       }

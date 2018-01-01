@@ -26,6 +26,16 @@ class MessageRouter {
 
   async handleData (account, data) {
     try {
+      if (!this.accounts.getInfo(account)) {
+        log.warn('got data from unknown account id. accountId=%s', account)
+        throw new Error('got data from unknown account id. accountId=' + account)
+      }
+
+      if (!Buffer.isBuffer(data)) {
+        log.warn('data handler was passed a non-buffer. typeof=%s data=%s', typeof data, data)
+        throw new Error('data handler was passed a non-buffer. typeof=' + typeof data)
+      }
+
       switch (data[0]) {
         case IlpPacket.Type.TYPE_ILP_PREPARE:
           return this.ilpPrepareController.handle(account, data)
