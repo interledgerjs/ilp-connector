@@ -31,15 +31,15 @@ describe('RouteBuilder', function () {
     const accountCredentials = {}
     accountCredentials[ledgerA] = {
       relation: 'peer',
-      currency: 'USD',
-      currencyScale: 2,
+      assetCode: 'USD',
+      assetScale: 2,
       plugin: 'ilp-plugin-mock',
       options: {}
     }
     accountCredentials[ledgerB] = {
       relation: 'peer',
-      currency: 'EUR',
-      currencyScale: 2,
+      assetCode: 'EUR',
+      assetScale: 2,
       plugin: 'ilp-plugin-mock',
       options: {}
     }
@@ -47,6 +47,24 @@ describe('RouteBuilder', function () {
     process.env.CONNECTOR_FX_SPREAD = '0.1'
     appHelper.create(this)
     this.routeBroadcaster.reloadLocalRoutes()
+
+    const testAccounts = [ledgerA, ledgerB]
+    for (let accountId of testAccounts) {
+      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
+        method: 'broadcast_routes',
+        data: {
+          hold_down_time: 45000,
+          unreachable_through_me: [],
+          request_full_table: false,
+          new_routes: [{
+            prefix: accountId,
+            min_message_window: 1,
+            path: []
+          }]
+        }
+      })))
+    }
+
     await this.backend.connect({
       base: 'EUR',
       date: '2015-03-18',
@@ -87,7 +105,10 @@ describe('RouteBuilder', function () {
     describe('with a route from ledgerB → ledgerC', function () {
       beforeEach(async function () {
         const points = [ [0, 0], [200, 100] ]
-        this.routingTable.insert(ledgerC, ledgerB)
+        this.routingTable.insert(ledgerC, {
+          nextHop: ledgerB,
+          path: []
+        })
         this.quoter.cacheCurve({
           prefix: ledgerC,
           curve: new LiquidityCurve(points),

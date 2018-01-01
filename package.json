@@ -40,7 +40,7 @@
     "extensible-error": "^1.0.2",
     "ilp-compat-plugin": "^2.0.0",
     "ilp-packet": "^2.0.0",
-    "ilp-schemas": "^1.1.0",
+    "ilp-schemas": "^2.0.0",
     "level-sublevel": "^6.6.1",
     "leveldown": "^2.1.1",
     "levelup": "^2.0.1",
@@ -49,6 +49,7 @@
     "oer-utils": "^1.3.4",
     "reduct": "^3.1.0",
     "riverpig": "^1.1.0",
+    "source-map-support": "^0.5.0",
     "through2": "^2.0.1",
     "vis-why": "^1.2.2"
   },

@@ -27,11 +27,11 @@
             "description": "Name of the ILP plugin that should be used for this account.",
             "type": "string"
           },
-          "currency": {
-            "description": "Currency code that will be passed to the backend to select the correct rate for this account.",
+          "assetCode": {
+            "description": "Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.",
             "type": "string"
           },
-          "currencyScale": {
+          "assetScale": {
             "description": "Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.",
             "type": "integer",
             "minimum": 0,
@@ -51,8 +51,8 @@
         "required": [
           "relation",
           "plugin",
-          "currency",
-          "currencyScale"
+          "assetCode",
+          "assetScale"
         ],
         "additionalProperties": true
       }

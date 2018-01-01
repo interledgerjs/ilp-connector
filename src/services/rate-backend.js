@@ -16,7 +16,7 @@ class RateBackend {
       backendUri: config.get('backendUri'),
       spread: config.get('fxSpread'),
       getInfo: (account) => accounts.getInfo(account),
-      getCurrency: (account) => accounts.getCurrency(account)
+      getAssetCode: (account) => accounts.getAssetCode(account)
     })
   }
 

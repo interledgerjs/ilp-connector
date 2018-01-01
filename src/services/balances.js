@@ -3,7 +3,7 @@ class Balances {
     this.balances = new Map()
   }
 
-  handleMoney (amount) {
+  handleMoney (accountId, amount) {
     // TODO: Implement balance logic
   }
 }

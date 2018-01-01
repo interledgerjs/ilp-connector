@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema",
+  "id": "RoutingUpdate.json",
+  "title": "RoutingUpdate",
+  "description": "A routing update object",
+  "type": "object",
+  "properties": {
+    "hold_down_time": {
+      "description": "Time in milliseconds for which the sending connector claims its routes to be fresh, without another heartbeat",
+      "type": "integer",
+      "minimum": 1
+    },
+    "unreachable_through_me": {
+      "description": "A list of accounts that have become unreachable through the sending connector",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "IlpAddress.json"
+      }
+    },
+    "request_full_table": {
+      "description": "On this route broadcast, piggy-back a request for the other peer to send their full table in *their* next route broadcast",
+      "type": "boolean"
+    },
+    "new_routes": {
+      "description": "A list of Routes that have been added to the sending connector's table since the last update it has sent you.  May replace previously broadcast routes.",
+      "$ref": "Routes.json"
+    }
+  },
+  "required": [
+    "hold_down_time",
+    "unreachable_through_me",
+    "new_routes"
+  ]
+}

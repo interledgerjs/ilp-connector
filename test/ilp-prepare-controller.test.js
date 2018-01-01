@@ -28,8 +28,8 @@ describe('IlpPrepareController', function () {
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
       'mock.test1': {
         relation: 'peer',
-        currency: 'USD',
-        currencyScale: 4,
+        assetCode: 'USD',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           type: 'mock',
@@ -41,8 +41,8 @@ describe('IlpPrepareController', function () {
       },
       'mock.test2': {
         relation: 'peer',
-        currency: 'EUR',
-        currencyScale: 4,
+        assetCode: 'EUR',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           type: 'mock',
@@ -53,6 +53,13 @@ describe('IlpPrepareController', function () {
         }
       }
     })
+    process.env.CONNECTOR_ROUTES = JSON.stringify([{
+      targetPrefix: 'mock.test1',
+      peerId: 'mock.test1'
+    }, {
+      targetPrefix: 'mock.test2',
+      peerId: 'mock.test2'
+    }])
     nock('http://test1.mock').get('/')
       .reply(200, { precision: 10, scale: 4 })
     nock('http://test2.mock').get('/')

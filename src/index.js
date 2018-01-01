@@ -1,5 +1,7 @@
 'use strict'
 
+require('source-map-support').install()
+
 const createApp = require('./app')
 const log = require('./common/log').create('app')
 

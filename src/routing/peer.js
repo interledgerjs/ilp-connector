@@ -96,30 +96,27 @@ class Peer {
 
   async broadcastRoutes ({ accounts, routes, broadcastCurves, holdDownTime, unreachableAccounts, requestFullTable = false, currentEpoch, timeout }) {
     const newRoutes = routes.filter(route => route.epoch > this.epoch && route.nextHop !== this.ilpAddress).map(route => ({
-      source_ledger: this.ilpAddress,
-      destination_ledger: route.prefix,
-      min_message_window: 1,
-      source_account: this.ilpAddress,
-      paths: [ [] ]
+      prefix: route.prefix,
+      path: route.path
     }))
 
     const unreachableThroughMe = unreachableAccounts.filter(route => route.epoch > this.epoch).map(route => route.prefix)
 
     log.debug('broadcasting routes to peer. peer=%s routeCount=%s unreachableCount=%s', this.ilpAddress, newRoutes.length, unreachableThroughMe.length)
 
-    await accounts.getPlugin(this.ilpAddress).sendRequest({
+    await accounts.getPlugin(this.ilpAddress).sendData(Buffer.from(JSON.stringify({
       custom: {
         method: 'broadcast_routes',
         data: {
           new_routes: newRoutes,
           hold_down_time: holdDownTime,
-          unreachable_through_me: unreachableAccounts,
+          unreachable_through_me: unreachableThroughMe,
           request_full_table: requestFullTable
         }
       },
       // timeout the plugin.sendRequest Promise just so we don't have it hanging around forever
       timeout
-    })
+    }), 'utf8'))
 
     this.epoch = currentEpoch
   }

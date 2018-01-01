@@ -49,10 +49,7 @@ class Quoter {
     })
     const plugin = this.accounts.getPlugin(nextHop)
     log.debug('sending quote request packet. connector=%s', nextHop)
-    const response = await plugin.sendRequest({
-      ilp: quoteRequestPacket.toString('base64')
-    })
-    const quoteResponsePacket = Buffer.from(response.ilp, 'base64')
+    const quoteResponsePacket = await plugin.sendData(quoteRequestPacket)
 
     if (quoteResponsePacket[0] === IlpPacket.Type.TYPE_ILQP_LIQUIDITY_RESPONSE) {
       const { data } = IlpPacket.deserializeIlpPacket(quoteResponsePacket)

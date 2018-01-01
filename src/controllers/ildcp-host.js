@@ -10,14 +10,15 @@ class IldcpHostController {
   }
 
   async handle (sourceAccount, data) {
-    log.debug('responding to ILDCP config request. clientName=' + sourceAccount)
+    const peerAddress = this.accounts.getChildAddress(sourceAccount)
+    log.debug('responding to ILDCP config request. clientAddress=' + peerAddress)
 
     const info = this.accounts.getInfo(sourceAccount)
 
     const writer = new Writer()
-    writer.writeVarOctetString(Buffer.from(sourceAccount, 'ascii'))
-    writer.writeUInt8(info.currencyScale)
-    writer.writeVarOctetString(Buffer.from(info.currency, 'utf8'))
+    writer.writeVarOctetString(Buffer.from(peerAddress, 'ascii'))
+    writer.writeUInt8(info.assetScale)
+    writer.writeVarOctetString(Buffer.from(info.assetCode, 'utf8'))
     return writer.getBuffer()
   }
 }

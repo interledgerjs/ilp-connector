@@ -17,7 +17,6 @@ const chai = require('chai')
 const assert = chai.assert
 const expect = chai.expect
 chai.use(require('chai-as-promised'))
-const _ = require('lodash')
 const RemoteQuoteError = require('../src/errors/remote-quote-error')
 const InvalidAmountSpecifiedError = require('../src/errors/invalid-amount-specified-error')
 const NoRouteFoundError = require('../src/errors/no-route-found-error')
@@ -34,9 +33,20 @@ describe('Quotes', function () {
     this.clock = sinon.useFakeTimers(START_DATE)
 
     const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
-    _.map(testAccounts, (ledgerUri) => {
-      this.accounts.getPlugin(ledgerUri)._balance = '150000'
-    })
+    for (let accountId of testAccounts) {
+      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
+        method: 'broadcast_routes',
+        data: {
+          hold_down_time: 45000,
+          unreachable_through_me: [],
+          request_full_table: false,
+          new_routes: [{
+            prefix: accountId,
+            path: []
+          }]
+        }
+      })))
+    }
 
     await this.backend.connect(ratesResponse)
     await this.accounts.connect()
@@ -182,11 +192,10 @@ describe('Quotes', function () {
     this.routeBroadcaster.config.routeBroadcastEnabled = false
     await this.ccpController.handle('eur-ledger', {
       new_routes: [{
-        source_ledger: 'eur-ledger',
-        destination_ledger: 'random-ledger',
+        prefix: 'random-ledger',
         min_message_window: 1,
-        source_account: 'eur-ledger',
-        points: curve.toString('base64')
+        points: curve.toString('base64'),
+        path: []
       }],
       hold_down_time: 45000,
       unreachable_through_me: []
@@ -209,7 +218,10 @@ describe('Quotes', function () {
   it('should return liquidity curve quotes with the correct appliesToPrefix', async function () {
     const curve = new LiquidityCurve([ [1, 0], [1001, 1000] ])
     for (let targetPrefix of ['', 'a', 'a.b']) {
-      this.routingTable.insert(targetPrefix, 'eur-ledger')
+      this.routingTable.insert(targetPrefix, {
+        nextHop: 'eur-ledger',
+        path: []
+      })
       this.quoter.cacheCurve({
         prefix: targetPrefix,
         curve,
@@ -278,10 +290,9 @@ describe('Quotes', function () {
       this.routeBroadcaster.config.routeBroadcastEnabled = false
       await this.ccpController.handle('eur-ledger', {
         new_routes: [{
-          source_ledger: 'eur-ledger',
-          destination_ledger: 'random-ledger',
+          prefix: 'random-ledger',
           min_message_window: 1,
-          source_account: 'eur-ledger'
+          path: []
         }],
         hold_down_time: 1234,
         unreachable_through_me: []
@@ -290,19 +301,17 @@ describe('Quotes', function () {
     })
 
     it('returns a quote when appliesToPrefix is more general than targetPrefix', async function () {
-      this.accounts.getPlugin('eur-ledger').sendRequest = (request) => {
-        assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(Buffer.from(request.ilp, 'base64')), {
+      this.accounts.getPlugin('eur-ledger').sendData = (request) => {
+        assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(request), {
           destinationAccount: 'random-ledger.bob',
           destinationHoldDuration: 5000
         })
-        return Promise.resolve({
-          ilp: IlpPacket.serializeIlqpLiquidityResponse({
-            liquidityCurve: new LiquidityCurve([ [0, 0], [1000, 2000] ]).toBuffer(),
-            appliesToPrefix: 'random',
-            sourceHoldDuration: 6000,
-            expiresAt: new Date(START_DATE + 10000)
-          })
-        })
+        return Promise.resolve(IlpPacket.serializeIlqpLiquidityResponse({
+          liquidityCurve: new LiquidityCurve([ [0, 0], [1000, 2000] ]).toBuffer(),
+          appliesToPrefix: 'random',
+          sourceHoldDuration: 6000,
+          expiresAt: new Date(START_DATE + 10000)
+        }))
       }
 
       const quote = await this.routeBuilder.quoteBySource({
@@ -318,19 +327,17 @@ describe('Quotes', function () {
     })
 
     it('returns a quote when appliesToPrefix is more specific than targetPrefix', async function () {
-      this.accounts.getPlugin('eur-ledger').sendRequest = (request) => {
-        assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(Buffer.from(request.ilp, 'base64')), {
+      this.accounts.getPlugin('eur-ledger').sendData = (request) => {
+        assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(request), {
           destinationAccount: 'random-ledger.bob',
           destinationHoldDuration: 5000
         })
-        return Promise.resolve({
-          ilp: IlpPacket.serializeIlqpLiquidityResponse({
-            liquidityCurve: new LiquidityCurve([ [0, 0], [1000, 2000] ]).toBuffer(),
-            appliesToPrefix: 'random-ledger.b',
-            sourceHoldDuration: 6000,
-            expiresAt: new Date(START_DATE + 10000)
-          })
-        })
+        return Promise.resolve(IlpPacket.serializeIlqpLiquidityResponse({
+          liquidityCurve: new LiquidityCurve([ [0, 0], [1000, 2000] ]).toBuffer(),
+          appliesToPrefix: 'random-ledger.b',
+          sourceHoldDuration: 6000,
+          expiresAt: new Date(START_DATE + 10000)
+        }))
       }
 
       const quote = await this.routeBuilder.quoteBySource({
@@ -355,8 +362,8 @@ describe('Quotes', function () {
         triggeredAt: new Date(),
         data: JSON.stringify({ foo: 'bar' })
       })
-      this.accounts.getPlugin('eur-ledger').sendRequest = (request) => {
-        return Promise.resolve({ ilp: errorPacket })
+      this.accounts.getPlugin('eur-ledger').sendData = (request) => {
+        return Promise.resolve(errorPacket)
       }
 
       try {

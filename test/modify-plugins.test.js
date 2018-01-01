@@ -37,15 +37,15 @@ describe('Modify Plugins', function () {
 
   describe('addPlugin', function () {
     it('should add a new plugin to accounts', async function () {
-      assert.equal(Object.keys(this.accounts.plugins).length, 4)
+      assert.equal(this.accounts._accounts.size, 4)
       await this.app.addPlugin('eur-ledger-2', {
         relation: 'peer',
-        currency: 'EUR',
-        currencyScale: 4,
+        assetCode: 'EUR',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {}
       })
-      assert.equal(Object.keys(this.accounts.plugins).length, 5)
+      assert.equal(this.accounts._accounts.size, 5)
     })
 
     it('should support new ledger', async function () {
@@ -60,11 +60,24 @@ describe('Modify Plugins', function () {
 
       await this.app.addPlugin('jpy-ledger', {
         relation: 'peer',
-        currency: 'JPY',
-        currencyScale: 4,
+        assetCode: 'JPY',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {}
       })
+
+      this.accounts.getPlugin('jpy-ledger')._dataHandler(Buffer.from(JSON.stringify({
+        method: 'broadcast_routes',
+        data: {
+          hold_down_time: 45000,
+          unreachable_through_me: [],
+          request_full_table: false,
+          new_routes: [{
+            prefix: 'jpy-ledger',
+            path: []
+          }]
+        }
+      })))
 
       const quotePromise2 = this.routeBuilder.quoteBySource({
         sourceAmount: '100',
@@ -81,8 +94,8 @@ describe('Modify Plugins', function () {
     it('should add a peer for the added ledger', async function () {
       await this.app.addPlugin('eur-ledger-2', {
         relation: 'peer',
-        currency: 'EUR',
-        currencyScale: 4,
+        assetCode: 'EUR',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           prefix: 'eur-ledger-2'
@@ -91,47 +104,38 @@ describe('Modify Plugins', function () {
 
       assert.instanceOf(this.routeBroadcaster.peers.get('eur-ledger-2'), RouteBroadcaster.Peer)
     })
-
-    it('should override the accounts.getInfo function with overrideInfo data', async function () {
-      const overrideInfo = {
-        minBalance: '-10',
-        maxBalance: '10000',
-        prefix: 'test.other.prefix',
-        currencyCode: 'XYZ'
-      }
-      await this.app.addPlugin('eur-ledger-2', {
-        relation: 'peer',
-        currency: 'EUR',
-        currencyScale: 4,
-        plugin: 'ilp-plugin-mock',
-        options: {
-          prefix: 'eur-ledger-2'
-        },
-        overrideInfo
-      })
-
-      const info = this.accounts.getInfo('eur-ledger-2')
-      assert.include(info, overrideInfo)
-    })
   })
 
   describe('removePlugin', function () {
     beforeEach(async function () {
       await this.app.addPlugin('jpy-ledger', {
         relation: 'peer',
-        currency: 'EUR',
-        currencyScale: 4,
+        assetCode: 'EUR',
+        assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
           prefix: 'jpy-ledger'
         }
       })
+
+      this.accounts.getPlugin('jpy-ledger')._dataHandler(Buffer.from(JSON.stringify({
+        method: 'broadcast_routes',
+        data: {
+          hold_down_time: 45000,
+          unreachable_through_me: [],
+          request_full_table: false,
+          new_routes: [{
+            prefix: 'jpy-ledger',
+            path: []
+          }]
+        }
+      })))
     })
 
     it('should remove a plugin from accounts', async function () {
       assert.isOk(this.accounts.getPlugin('jpy-ledger'))
       await this.app.removePlugin('jpy-ledger')
-      assert.isNotOk(this.accounts.getPlugin('jpy-ledger'))
+      assert.throws(() => this.accounts.getPlugin('jpy-ledger'), 'unknown account id. accountId=jpy-ledger')
     })
 
     it('should no longer quote to that plugin', async function () {

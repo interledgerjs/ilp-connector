@@ -48,30 +48,30 @@ class RouteBuilder {
   }
 
   getNextHop (sourceAccount, destinationAccount) {
-    const nextHop = this.routingTable.resolve(destinationAccount)
+    const route = this.routingTable.resolve(destinationAccount)
 
-    if (!nextHop) {
+    if (!route) {
       log.info('no route found for quote. destinationAccount=' + destinationAccount)
       throw new NoRouteFoundError('no route found. to=' + destinationAccount)
     }
 
-    if (!this.reflectPayments && sourceAccount === nextHop) {
+    if (!this.reflectPayments && sourceAccount === route.nextHop) {
       log.info('refusing to route payments back to sender. sourceAccount=%s destinationAccount=%s', sourceAccount, destinationAccount)
       throw new NoRouteFoundError('refusing to route payments back to sender. sourceAccount=' + sourceAccount + ' destinationAccount=' + destinationAccount)
     }
 
-    return nextHop
+    return route.nextHop
   }
 
   async quoteLocal (sourceAccount, destinationAccount) {
-    if (!this.accounts.getCurrency(sourceAccount)) {
+    if (!this.accounts.getAssetCode(sourceAccount)) {
       log.info('source account is unavailable. sourceAccount=' + sourceAccount)
       throw new NoRouteFoundError('no route from source. sourceAccount=' + sourceAccount)
     }
 
     const nextHop = this.getNextHop(sourceAccount, destinationAccount)
 
-    if (!this.accounts.getCurrency(nextHop)) {
+    if (!this.accounts.getAssetCode(nextHop)) {
       log.info('next hop is unavailable. nextHop=' + nextHop)
       throw new NoRouteFoundError('no route to next hop. nextHop=' + nextHop)
     }
@@ -145,8 +145,8 @@ class RouteBuilder {
   }
 
   _getScaleAdjustment (sourceAccount, destinationAccount) {
-    const sourceScale = this.accounts.getInfo(sourceAccount).currencyScale
-    const destinationScale = this.accounts.getInfo(destinationAccount).currencyScale
+    const sourceScale = this.accounts.getInfo(sourceAccount).assetScale
+    const destinationScale = this.accounts.getInfo(destinationAccount).assetScale
     if (sourceScale === destinationScale && this.isTrivialRate) return 0
     return 1
   }
@@ -235,6 +235,7 @@ class RouteBuilder {
       log.debug('remote destination. quote=%j', quote)
 
       nextHopAmount = quote.curve.amountReverse(params.destinationAmount).toString()
+      nextHopHoldDuration = params.destinationHoldDuration + quote.minMessageWindow
     }
 
     const sourceAmount = new BigNumber(nextHopAmount).div(rate).ceil().toString()
@@ -285,12 +286,14 @@ class RouteBuilder {
       throw new InvalidPacketError('missing destination.')
     }
 
-    const nextHop = this.routingTable.resolve(destination)
+    const route = this.routingTable.resolve(destination)
 
-    if (!nextHop) {
+    if (!route) {
       log.info('could not find route for transfer. sourceAccount=%s sourceAmount=%s destinationAccount=%s', sourceAccount, amount, destination)
       throw new UnreachableError('no route found. source=' + sourceAccount + ' destination=' + destination)
     }
+
+    const nextHop = route.nextHop
 
     log.debug('determined next hop. nextHop=%s', nextHop)
 

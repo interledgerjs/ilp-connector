@@ -29,6 +29,23 @@ describe('Subscriptions', function () {
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
 
+    const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
+    for (let accountId of testAccounts) {
+      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
+        method: 'broadcast_routes',
+        data: {
+          hold_down_time: 45000,
+          unreachable_through_me: [],
+          request_full_table: false,
+          new_routes: [{
+            prefix: accountId,
+            min_message_window: 1,
+            path: []
+          }]
+        }
+      })))
+    }
+
     nock('http://usd-ledger.example').get('/')
       .reply(200, {
         currency_code: 'doesn\'t matter, the connector will ignore this',
