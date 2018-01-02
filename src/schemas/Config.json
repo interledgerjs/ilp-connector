@@ -143,6 +143,16 @@
       "type": "string",
       "default": "leveldown"
     },
+    "storePath": {
+      "description": "Shorthand for config.storeConfig.path.",
+      "type": "string",
+      "default": ""
+    },
+    "storeConfig": {
+      "description": "Additional options to be passed to the store constructor.",
+      "type": "object",
+      "default": {}
+    },
     "broadcastCurves": {
       "description": "Whether to include liquidity curves when broadcasting routes.",
       "type": "boolean",
