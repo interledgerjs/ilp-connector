@@ -3,12 +3,17 @@
 const path = require('path')
 const levelup = require('levelup')
 const leveldown = require('leveldown')
-const log = require('../common/log').create('plugin-store')
+const log = require('../common/log').create('leveldown')
 
 class LeveldownStore {
-  constructor ({ path: dbPath }) {
+  constructor ({ db, path: dbPath }) {
+    if (db) {
+      this.db = db
+      return
+    }
+
     if (!dbPath) {
-      log.warn('no CONNECTOR_STORE_PATH set, defaulting to $CWD/data.')
+      log.warn('no CONNECTOR_STORE_PATH set, defaulting to ./data.')
       dbPath = path.resolve(process.cwd(), 'data')
     }
 
