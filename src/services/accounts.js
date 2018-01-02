@@ -1,7 +1,6 @@
 'use strict'
 
 const _ = require('lodash')
-const EventEmitter = require('eventemitter2')
 const compat = require('ilp-compat-plugin')
 const Store = require('../services/store.js')
 const Config = require('./config')
@@ -9,20 +8,8 @@ const logger = require('../common/log')
 const log = logger.create('accounts')
 const { createIlpRejection, codes } = require('../lib/ilp-errors')
 
-const PLUGIN_EVENTS = [
-  'connect',
-  'disconnect',
-  'incoming_transfer',
-  'incoming_prepare',
-  'outgoing_fulfill',
-  'outgoing_cancel',
-  'outgoing_reject'
-]
-
-class Accounts extends EventEmitter {
+class Accounts {
   constructor (deps) {
-    super()
-
     const config = deps(Config)
     this.store = deps(Store)
 
@@ -32,15 +19,6 @@ class Accounts extends EventEmitter {
     this._dataHandler = null
     this._moneyHandler = null
     this._parentAccount = null
-
-    const accounts = this
-    this._relayEvents = {}
-    PLUGIN_EVENTS.forEach((event) => {
-      this._relayEvents[event] = function () {
-        const args = Array.prototype.slice.call(arguments)
-        return accounts.emitAsync.apply(accounts, [event, this].concat(args))
-      }
-    })
   }
 
   connect (options) {

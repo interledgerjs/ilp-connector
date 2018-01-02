@@ -1,6 +1,6 @@
 'use strict'
 
-const EventEmitter = require('eventemitter2')
+const EventEmitter = require('events').EventEmitter
 
 class MockPlugin extends EventEmitter {
   constructor (options) {
