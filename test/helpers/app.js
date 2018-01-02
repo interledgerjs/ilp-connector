@@ -1,10 +1,6 @@
 'use strict'
 
 const reduct = require('reduct')
-const mockRequire = require('mock-require')
-
-mockRequire('leveldown', require('memdown'))
-
 const Config = require('../../src/services/config')
 const RouteBuilder = require('../../src/services/route-builder')
 const RouteBroadcaster = require('../../src/services/route-broadcaster')
@@ -20,6 +16,7 @@ const Store = require('../../src/services/store')
 const createApp = require('../../src').createApp
 
 exports.create = function (context, minBalance) {
+  process.env.CONNECTOR_STORE = 'memdown'
   process.env.CONNECTOR_ILP_ADDRESS = 'test.connie'
 
   // Set up test environment
