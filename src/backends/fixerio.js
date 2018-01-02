@@ -1,10 +1,10 @@
 'use strict'
 
 const _ = require('lodash')
-const request = require('co-request')
+const fetch = require('node-fetch')
 const BigNumber = require('bignumber.js')
-const log = require('../../common').log.create('fixerio')
-const healthStatus = require('../../common/health.js')
+const log = require('../common').log.create('fixerio')
+const healthStatus = require('../common/health.js')
 
 const RATES_API = 'https://api.fixer.io/latest'
 
@@ -44,11 +44,8 @@ class FixerIoBackend {
       apiData = mockData
     } else {
       log.debug('connect. uri=' + RATES_API)
-      let result = await request({
-        uri: RATES_API,
-        json: true
-      })
-      apiData = result.body
+      let result = await fetch(RATES_API)
+      apiData = await result.json()
     }
     this.rates = apiData.rates
     this.rates[apiData.base] = 1

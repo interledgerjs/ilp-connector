@@ -1,6 +1,5 @@
 'use strict'
 
-const simplify = require('vis-why')
 const Long = require('long')
 const BigNumber = require('bignumber.js')
 
@@ -74,15 +73,6 @@ class LiquidityCurve {
     return dx.mul(y.sub(pointA[1])).div(dy)
       .add(pointA[0])
       .floor()
-  }
-
-  /**
-   * Simplify route to contain a maximum number of points.
-   *
-   * Uses the Visvalingam-Whyatt line simplification algorithm.
-   */
-  simplify (maxPoints) {
-    return new LiquidityCurve(simplify(this.getPoints(), maxPoints))
   }
 
   /**

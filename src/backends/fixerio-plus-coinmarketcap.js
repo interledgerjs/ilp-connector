@@ -1,6 +1,6 @@
 'use strict'
 
-const request = require('co-request')
+const fetch = require('node-fetch')
 const FixerIoBackend = require('./fixerio')
 const COINMARKETCAP_API = 'https://api.coinmarketcap.com/v1/ticker/'
 const fromPairs = require('lodash/fromPairs')
@@ -16,15 +16,12 @@ class FixerIoCoinMarketCapBackend extends FixerIoBackend {
   }
 
   async _getCCRates (usdRate) {
-    let rateRes = await request({
-      method: 'get',
-      uri: COINMARKETCAP_API,
-      json: true
-    })
-    if (rateRes.statusCode !== 200) {
-      throw new Error('Unexpected status from coinmarketcap.com: ' + rateRes.statusCode)
+    const rateRes = await fetch(COINMARKETCAP_API)
+    if (rateRes.status !== 200) {
+      throw new Error('Unexpected status from coinmarketcap.com: ' + rateRes.status)
     }
-    return fromPairs(rateRes.body.map((rateInfo) => {
+    const body = await rateRes.json()
+    return fromPairs(body.map((rateInfo) => {
       return [rateInfo.symbol, Math.floor(ROUNDING_FACTOR / (rateInfo.price_usd * usdRate)) / ROUNDING_FACTOR]
     }))
   }
