@@ -26,15 +26,15 @@ export default class Store {
     }
 
     return {
-      get (key: string) {
+      get: (key: string) => {
         return this.store.get(name + key)
       },
 
-      put (key: string, value: string) {
+      put: (key: string, value: string) => {
         return this.store.put(name + key, value)
       },
 
-      del (key: string) {
+      del: (key: string) => {
         return this.store.del(name + key)
       }
     }

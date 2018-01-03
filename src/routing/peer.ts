@@ -6,7 +6,7 @@ import { Route, BroadcastRoute, RouteUpdateParams, IncomingRoute } from '../type
 import { create as createLogger } from '../common/log'
 const log = createLogger('routing-peer')
 
-const PEER_PROTOCOL_PREFIX = 'peer'
+const PEER_PROTOCOL_PREFIX = 'peer.'
 
 export interface BroadcastRoutesParams {
   accounts: Accounts,
@@ -79,9 +79,10 @@ export default class Peer {
 
     for (const route of newRoutes) {
       // The destination_ledger can be any ledger except one that starts with `peer.`
+      // TODO Should ignore anything other than `g.`` in prod and `test.`` etc. in testing
       // TODO Route filters should be much more configurable
       if (route.prefix.startsWith(PEER_PROTOCOL_PREFIX)) {
-        log.debug('ignoring route starting with "peer". prefix=%s', route.prefix)
+        log.debug('ignoring route starting with "%s". prefix=%s', PEER_PROTOCOL_PREFIX, route.prefix)
         continue
       }
 
