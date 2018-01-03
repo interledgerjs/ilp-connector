@@ -346,7 +346,16 @@ function serializePoints (points: LooselyTypedPoint[]) {
 }
 
 function deserializePoints (buffer: Buffer) {
-  const array = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.length / 4)
+  let array
+  if (buffer.byteOffset % 4 === 0) {
+    // fast method - only possible when byteOffset is a multiple of 4
+    array = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.length / 4)
+  } else {
+    // slow method - fallback
+    array = new Uint32Array(buffer.length / 4)
+    const arrBuffer = Buffer.from(array.buffer)
+    buffer.copy(arrBuffer)
+  }
   const points: Point[] = []
   for (let i = 0; i < array.length; i += 4) {
     const xHi = array[i]
