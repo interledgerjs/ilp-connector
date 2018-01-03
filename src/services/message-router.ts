@@ -53,7 +53,8 @@ export default class MessageRouter {
       case IlpPacket.Type.TYPE_ILQP_BY_DESTINATION_REQUEST:
         return this.ilqpController.handle(account, data)
       case '{'.charCodeAt(0):
-        return this.jsonController.handle(account, JSON.parse(data.toString('utf8')))
+        const result = this.jsonController.handle(account, JSON.parse(data.toString('utf8')))
+        return Buffer.from(JSON.stringify(result), 'utf8')
       default:
         log.warn('received invalid packet type. source=%s type=%s', account, data[0])
         throw new InvalidPacketError('invalid packet type received. type=' + data[0])

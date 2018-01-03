@@ -171,7 +171,13 @@ export default class Accounts {
         throw new UnreachableError('connector not ready.')
       }
 
-      return await this.dataHandler(accountId, data)
+      const response = await this.dataHandler(accountId, data)
+
+      if (!Buffer.isBuffer(response)) {
+        throw new Error('handler did not return a value.')
+      }
+
+      return response
     } catch (e) {
       let err = e
       if (!err || typeof err !== 'object') {
