@@ -99,14 +99,14 @@
       "default": 0.001
     },
     "minMessageWindow": {
-      "description": "Minimum time the connector wants to budget for getting a message to the accounts its trading on. In seconds.",
+      "description": "Minimum time the connector wants to budget for getting a message to the accounts its trading on. In milliseconds.",
       "type": "number",
-      "default": 1
+      "default": 1000
     },
     "maxHoldTime": {
-      "description": "Maximum duration (seconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.",
+      "description": "Maximum duration (in milliseconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.",
       "type": "number",
-      "default": 10
+      "default": 10000
     },
     "routeBroadcastEnabled": {
       "description": "Whether to broadcast known routes.",

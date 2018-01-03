@@ -1,7 +1,7 @@
 'use strict'
 
 const assert = require('assert')
-const PrefixMap = require('../src/routing/prefix-map')
+const PrefixMap = require('../src/routing/prefix-map').default
 
 describe('PrefixMap', function () {
   beforeEach(function () {

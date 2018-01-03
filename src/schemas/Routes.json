@@ -1,2 +1,36 @@
 {
+  "$schema": "http://json-schema.org/draft-06/schema",
+  "id": "Routes.json",
+  "title": "Routes",
+  "description": "A list of routes from a connector",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "min_message_window": {
+        "type": "number",
+        "minimum": 0,
+        "description": "the minimum difference (in seconds) between the source and destination transfers' expiries"
+      },
+      "prefix": {
+        "$ref": "IlpAddress.json",
+        "description": "ILP address prefix that this route advertisement covers."
+      },
+      "points": {
+        "$ref": "Base64.json",
+        "description": "A list of points describing the exchange rate curve (deprecated)"
+      },
+      "path": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "A list of ILP addresses of the connectors between the destination prefix and the advertising peer, exclusively. The list is ordered from closest to the destination first to furthest from the destination last."
+      }
+    },
+    "required": [
+      "prefix",
+      "path"
+    ]
+  }
 }

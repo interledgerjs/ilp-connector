@@ -31,5 +31,6 @@
     "hold_down_time",
     "unreachable_through_me",
     "new_routes"
-  ]
+  ],
+  "additionalProperties": false
 }

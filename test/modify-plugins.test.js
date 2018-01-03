@@ -13,7 +13,7 @@ const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const _ = require('lodash')
 const NoRouteFoundError = require('../src/errors/no-route-found-error')
-const RouteBroadcaster = require('../src/services/route-broadcaster')
+const Peer = require('../src/routing/peer').default
 
 const PluginMock = require('./mocks/mockPlugin')
 mockRequire('ilp-plugin-mock', PluginMock)
@@ -37,7 +37,7 @@ describe('Modify Plugins', function () {
 
   describe('addPlugin', function () {
     it('should add a new plugin to accounts', async function () {
-      assert.equal(this.accounts._accounts.size, 4)
+      assert.equal(this.accounts.accounts.size, 4)
       await this.app.addPlugin('eur-ledger-2', {
         relation: 'peer',
         assetCode: 'EUR',
@@ -45,7 +45,7 @@ describe('Modify Plugins', function () {
         plugin: 'ilp-plugin-mock',
         options: {}
       })
-      assert.equal(this.accounts._accounts.size, 5)
+      assert.equal(this.accounts.accounts.size, 5)
     })
 
     it('should support new ledger', async function () {
@@ -102,7 +102,7 @@ describe('Modify Plugins', function () {
         }
       })
 
-      assert.instanceOf(this.routeBroadcaster.peers.get('eur-ledger-2'), RouteBroadcaster.Peer)
+      assert.instanceOf(this.routeBroadcaster.peers.get('eur-ledger-2'), Peer)
     })
   })
 

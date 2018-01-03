@@ -6,8 +6,8 @@ const { cloneDeep } = require('lodash')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
 const logger = require('../src/common/log')
-const InvalidPacketError = require('../src/errors/invalid-packet-error')
-const LiquidityCurve = require('../src/routing/liquidity-curve')
+const InvalidPacketError = require('../src/errors/invalid-packet-error').default
+const LiquidityCurve = require('../src/routing/liquidity-curve').default
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 

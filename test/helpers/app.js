@@ -1,17 +1,17 @@
 'use strict'
 
 const reduct = require('reduct')
-const Config = require('../../src/services/config')
-const RouteBuilder = require('../../src/services/route-builder')
-const RouteBroadcaster = require('../../src/services/route-broadcaster')
-const Accounts = require('../../src/services/accounts')
-const Balances = require('../../src/services/balances')
-const Quoter = require('../../src/services/quoter')
-const MessageRouter = require('../../src/services/message-router')
-const RateBackend = require('../../src/services/rate-backend')
-const RoutingTable = require('../../src/services/routing-table')
-const CcpController = require('../../src/controllers/ccp')
-const Store = require('../../src/services/store')
+const Config = require('../../src/services/config').default
+const RouteBuilder = require('../../src/services/route-builder').default
+const RouteBroadcaster = require('../../src/services/route-broadcaster').default
+const Accounts = require('../../src/services/accounts').default
+const Balances = require('../../src/services/balances').default
+const Quoter = require('../../src/services/quoter').default
+const MessageRouter = require('../../src/services/message-router').default
+const RateBackend = require('../../src/services/rate-backend').default
+const RoutingTable = require('../../src/services/routing-table').default
+const CcpController = require('../../src/controllers/ccp').default
+const Store = require('../../src/services/store').default
 
 const createApp = require('../../src').createApp
 
