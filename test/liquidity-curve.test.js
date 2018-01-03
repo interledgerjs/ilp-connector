@@ -1,7 +1,7 @@
 'use strict'
 
 const assert = require('assert')
-const LiquidityCurve = require('../src/routing/liquidity-curve')
+const LiquidityCurve = require('../src/routing/liquidity-curve').default
 
 describe('LiquidityCurve', function () {
   describe('constructor', function () {

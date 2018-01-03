@@ -1,7 +1,7 @@
 'use strict'
 
 const _ = require('lodash')
-const Config = require('../src/services/config')
+const Config = require('../src/services/config').default
 const expect = require('chai').expect
 const assert = require('chai').assert
 const logger = require('../src/common/log')

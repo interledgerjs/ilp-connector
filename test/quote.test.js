@@ -4,7 +4,7 @@ const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
 mock('ilp-plugin-mock', mockPlugin)
 
-const LiquidityCurve = require('../src/routing/liquidity-curve')
+const LiquidityCurve = require('../src/routing/liquidity-curve').default
 const sinon = require('sinon')
 const nock = require('nock')
 const IlpPacket = require('ilp-packet')
@@ -17,12 +17,12 @@ const chai = require('chai')
 const assert = chai.assert
 const expect = chai.expect
 chai.use(require('chai-as-promised'))
-const RemoteQuoteError = require('../src/errors/remote-quote-error')
-const InvalidAmountSpecifiedError = require('../src/errors/invalid-amount-specified-error')
-const NoRouteFoundError = require('../src/errors/no-route-found-error')
-const UnacceptableAmountError = require('../src/errors/unacceptable-amount-error')
-const UnacceptableExpiryError = require('../src/errors/unacceptable-expiry-error')
-const LedgerNotConnectedError = require('../src/errors/ledger-not-connected-error')
+const RemoteQuoteError = require('../src/errors/remote-quote-error').default
+const InvalidAmountSpecifiedError = require('../src/errors/invalid-amount-specified-error').default
+const NoRouteFoundError = require('../src/errors/no-route-found-error').default
+const UnacceptableAmountError = require('../src/errors/unacceptable-amount-error').default
+const UnacceptableExpiryError = require('../src/errors/unacceptable-expiry-error').default
+const LedgerNotConnectedError = require('../src/errors/ledger-not-connected-error').default
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
 describe('Quotes', function () {
@@ -396,7 +396,7 @@ describe('Quotes', function () {
   })
 
   it('reject same-ledger quotes if CONNECTOR_REFLECT_PAYMENTS is false', async function () {
-    this.routeBuilder.reflectPayments = false
+    this.config.reflectPayments = false
     const quotePromise = this.routeBuilder.quoteBySource({
       sourceAmount: '100',
       sourceAccount: 'usd-ledger',
