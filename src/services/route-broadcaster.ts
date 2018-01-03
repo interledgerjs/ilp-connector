@@ -41,7 +41,7 @@ export default class RouteBroadcaster {
 
   async start () {
     try {
-      await this.reloadLocalRoutes()
+      this.reloadLocalRoutes()
       this.broadcast(true)
     } catch (e) {
       if (e.name === 'SystemError' ||
@@ -307,7 +307,7 @@ export default class RouteBroadcaster {
     await new Promise(resolve => setTimeout(resolve, this.config.routeBroadcastInterval))
 
     try {
-      await this.reloadLocalRoutes()
+      this.reloadLocalRoutes()
       await this.broadcast()
     } catch (err) {
       log.warn('broadcasting routes failed')

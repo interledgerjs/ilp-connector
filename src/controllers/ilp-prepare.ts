@@ -66,14 +66,14 @@ export default class IlpPrepareController {
           const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : err
           log.warn('sending money to peer failed. peerId=%s amount=%s error=%s', nextHop, nextHopPacket.amount, errInfo)
         })
-    }
 
-    this.backend.submitPayment({
-      sourceAccount: sourceAccount,
-      sourceAmount: amount,
-      destinationAccount: nextHop,
-      destinationAmount: nextHopPacket.amount
-    })
+      this.backend.submitPayment({
+        sourceAccount: sourceAccount,
+        sourceAmount: amount,
+        destinationAccount: nextHop,
+        destinationAmount: nextHopPacket.amount
+      })
+    }
 
     return result
   }

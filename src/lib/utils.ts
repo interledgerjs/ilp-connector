@@ -36,7 +36,7 @@ export const getShortestUnambiguousPrefix = <T> (prefixMap: PrefixMap<T>, addres
 
       if (nextSegmentEnd === -1) {
         prefix = address
-        return false
+        return
       } else {
         prefix = address.slice(0, nextSegmentEnd)
       }
