@@ -34,5 +34,7 @@ export default class CcpController {
     }
 
     this.routeBroadcaster.handleRouteUpdate(sourceAccount, routeUpdate)
+
+    return {}
   }
 }
