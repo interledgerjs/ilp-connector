@@ -160,28 +160,22 @@ describe('RouteBroadcaster', function () {
 
       await this.routeBroadcaster.broadcast()
       assert.deepEqual(ledgerABroadcast, {
-        custom: {
-          method: 'broadcast_routes',
-          data: {
-            hold_down_time: 45000,
-            unreachable_through_me: [],
-            request_full_table: false,
-            new_routes: routesWithSourceLedgerA
-          }
-        },
-        timeout: 30000
+        method: 'broadcast_routes',
+        data: {
+          hold_down_time: 45000,
+          unreachable_through_me: [],
+          request_full_table: false,
+          new_routes: routesWithSourceLedgerA
+        }
       })
       assert.deepEqual(ledgerBBroadcast, {
-        custom: {
-          method: 'broadcast_routes',
-          data: {
-            hold_down_time: 45000,
-            unreachable_through_me: [],
-            request_full_table: false,
-            new_routes: routesWithSourceLedgerB
-          }
-        },
-        timeout: 30000
+        method: 'broadcast_routes',
+        data: {
+          hold_down_time: 45000,
+          unreachable_through_me: [],
+          request_full_table: false,
+          new_routes: routesWithSourceLedgerB
+        }
       })
     })
 

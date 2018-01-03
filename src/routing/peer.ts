@@ -134,17 +134,13 @@ export default class Peer {
     log.debug('broadcasting routes to peer. peer=%s routeCount=%s unreachableCount=%s', this.accountId, newRoutes.length, unreachableThroughMe.length)
 
     await accounts.getPlugin(this.accountId).sendData(Buffer.from(JSON.stringify({
-      custom: {
-        method: 'broadcast_routes',
-        data: {
-          new_routes: newRoutes,
-          hold_down_time: holdDownTime,
-          unreachable_through_me: unreachableThroughMe,
-          request_full_table: requestFullTable
-        }
-      },
-      // timeout the plugin.sendRequest Promise just so we don't have it hanging around forever
-      timeout
+      method: 'broadcast_routes',
+      data: {
+        new_routes: newRoutes,
+        hold_down_time: holdDownTime,
+        unreachable_through_me: unreachableThroughMe,
+        request_full_table: requestFullTable
+      }
     }), 'utf8'))
 
     this.epoch = currentEpoch
