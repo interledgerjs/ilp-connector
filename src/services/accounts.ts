@@ -15,6 +15,7 @@ import {
   DataHandler,
   MoneyHandler
 } from '../types/plugin'
+import ILDCP = require('ilp-protocol-ildcp')
 
 import { create as createLogger } from '../common/log'
 const log = createLogger('accounts')
@@ -36,6 +37,7 @@ export default class Accounts {
   protected config: Config
   protected store: Store
 
+  protected address: string
   protected accounts: Map<string, AccountEntry>
   protected dataHandler?: GenericDataHandler
   protected moneyHandler?: GenericMoneyHandler
@@ -46,19 +48,40 @@ export default class Accounts {
     this.config = deps(Config)
     this.store = deps(Store)
 
+    this.address = this.config.ilpAddress || 'unknown'
     this.accounts = new Map()
     this.dataHandler = undefined
     this.moneyHandler = undefined
     this.parentAccount = undefined
   }
 
-  connect (options: ConnectOptions) {
+  async connect (options: ConnectOptions) {
+    // If we have no configured ILP address, try to get one via ILDCP
+    if (this.config.ilpAddress === 'unknown') {
+      if (this.parentAccount) {
+        const parent = this.getPlugin(this.parentAccount)
+
+        await parent.connect({})
+
+        const ildcpInfo = await ILDCP.fetch(parent.sendData.bind(parent))
+
+        this.setOwnAddress(ildcpInfo.clientAddress)
+      } else {
+        log.error('no ilp address configured and no parent account found, cannot determing ilp address.')
+        throw new Error('no ilp address configured.')
+      }
+    }
     const accounts = Array.from(this.accounts.values())
     return Promise.all(accounts.map(account => account.plugin.connect(options)))
   }
 
   getOwnAddress () {
-    return this.config.ilpAddress || 'example.unknown'
+    return this.address
+  }
+
+  setOwnAddress (newAddress) {
+    log.info('setting ilp address. oldAddress=%s newAddress=%s', this.address, newAddress)
+    this.address = newAddress
   }
 
   getPlugin (accountId: string) {
@@ -88,15 +111,15 @@ export default class Accounts {
     const account = this.accounts.get(accountId)
 
     if (!account) {
-      log.debug('no currency found. account=' + accountId)
-      return null
+      log.debug('no currency found. account=%s', accountId)
+      return
     }
 
     return account.info.assetCode
   }
 
   add (accountId: string, creds: any) {
-    log.info('add account. accountId=' + accountId)
+    log.info('add account. accountId=%s', accountId)
 
     creds = cloneDeep(creds)
 
