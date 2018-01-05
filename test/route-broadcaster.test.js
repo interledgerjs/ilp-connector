@@ -87,10 +87,27 @@ describe('RouteBroadcaster', function () {
 
   describe('add', function () {
     it('loads peers from CONNECTOR_PEERS if set', async function () {
-      process.env.CONNECTOR_PEERS = JSON.stringify(['eur-ledger', 'usd-ledger'])
+      const accounts = JSON.parse(process.env.CONNECTOR_ACCOUNTS)
+
+      // On one ledger we disable sending only
+      accounts['usd-ledger'].sendRoutes = false
+
+      // For the other ledger we disable sending and receiving routes
+      accounts['cad-ledger'].sendRoutes = false
+      accounts['cad-ledger'].receiveRoutes = false
+      process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accounts)
       appHelper.create(this)
-      assert.ok(this.routeBroadcaster.peers.get('eur-ledger'))
-      assert.ok(this.routeBroadcaster.peers.get('usd-ledger'))
+
+      // By default, everything should be enabled
+      assert.ok(this.routeBroadcaster.peers.get('eur-ledger').sendRoutes)
+      assert.ok(this.routeBroadcaster.peers.get('eur-ledger').receiveRoutes)
+
+      // On this ledger only receiving should be disabled
+      assert.notOk(this.routeBroadcaster.peers.get('usd-ledger').sendRoutes)
+      assert.ok(this.routeBroadcaster.peers.get('usd-ledger').receiveRoutes)
+
+      // When sending and receiving is disabled, the peer should not even be
+      // instantiated by the routing system.
       assert.notOk(this.routeBroadcaster.peers.get('cad-ledger'))
     })
   })

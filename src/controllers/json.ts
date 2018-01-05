@@ -13,17 +13,17 @@ export default class JsonController {
     this.ccpController = deps(CcpController)
   }
 
-  async handle (sourceAccount: string, payload: any) {
+  async handle (sourceAccount: string, payload: object) {
     if (!payload || typeof payload !== 'object') {
       log.warn('received non-object JSON payload, ignoring. payload=%j', payload)
       return {}
     }
 
-    if (payload.method === 'broadcast_routes') {
-      return this.ccpController.handle(sourceAccount, payload.data)
+    if (payload['method'] === 'broadcast_routes') {
+      return this.ccpController.handle(sourceAccount, payload['data'])
     }
 
-    log.warn('ignoring unkown request method', payload.method)
+    log.warn('ignoring unkown request method', payload['method'])
     return {}
   }
 }

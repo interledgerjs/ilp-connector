@@ -35,13 +35,13 @@ export default class OneToOneBackend implements IBackend {
   }
 
   /**
-   * Get a liquidity curve for the given parameters.
+   * Get a rate for the given parameters.
    *
-   * @param {String} params.sourceAccount The URI of the source ledger
-   * @param {String} params.destinationAccount The URI of the destination ledger
-   * @param {String} params.sourceCurrency The source currency
-   * @param {String} params.destinationCurrency The destination currency
-   * @returns {Promise.<Object>}
+   * The one-to-one backend applies an exchange of 1, however, it will subtract
+   * the spread if a spread is set in the configuration.
+   *
+   * @param sourceAccount The account ID of the previous party
+   * @param destinationAccount The account ID of the next hop party
    */
   async getRate (sourceAccount: string, destinationAccount: string) {
     const sourceInfo = this.getInfo(sourceAccount)
@@ -60,15 +60,9 @@ export default class OneToOneBackend implements IBackend {
   }
 
   /**
-   * Dummy function because we're not actually going
-   * to submit the payment to any real backend, we're
-   * just going to execute it on the accounts we're connected to
+   * This method is called to allow statistics to be collected by the backend.
    *
-   * @param {String} params.sourceAccount The URI of the source ledger
-   * @param {String} params.destinationAccount The URI of the destination ledger
-   * @param {String} params.sourceAmount The amount of the source asset we want to send
-   * @param {String} params.destinationAmount The amount of the destination asset we want to send
-   * @return {Promise.<null>}
+   * The fixerio backend does not support this functionality.
    */
   submitPayment () {
     return Promise.resolve()

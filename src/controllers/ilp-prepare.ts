@@ -34,13 +34,13 @@ export default class IlpPrepareController {
   }
 
   async handle (sourceAccount: string, packet: Buffer) {
-    log.debug('handling ilp prepare. sourceAccount=%s', sourceAccount)
-
     const parsedPacket = IlpPacket.deserializeIlpPrepare(packet)
-    const { amount, executionCondition, destination } = parsedPacket
+    const { amount, executionCondition, destination, expiresAt } = parsedPacket
+
+    log.debug('handling ilp prepare. sourceAccount=%s destination=%s amount=%s condition=%s expiry=%s packet=%s', sourceAccount, destination, amount, executionCondition.toString('base64'), expiresAt.toISOString(), packet.toString('base64'))
 
     if (destination.startsWith(PEER_PROTOCOL_PREFIX)) {
-      return this.peerProtocolController.handle(sourceAccount, parsedPacket)
+      return this.peerProtocolController.handle(sourceAccount, packet, { parsedPacket })
     }
 
     const { nextHop, nextHopPacket } = await this.routeBuilder.getNextHopPacket(sourceAccount, parsedPacket)
@@ -73,6 +73,10 @@ export default class IlpPrepareController {
         destinationAccount: nextHop,
         destinationAmount: nextHopPacket.amount
       })
+        .catch(err => {
+          const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : String(err)
+          log.warn('error while submitting payment to backend. error=%s', errInfo)
+        })
     }
 
     return result

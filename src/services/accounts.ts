@@ -8,7 +8,7 @@ import Store from '../services/store'
 import Config from './config'
 import UnreachableError from '../errors/unreachable-error'
 import { codes } from '../lib/ilp-errors'
-import {} from '../types/ilp'
+import { AccountInfo } from '../types/accounts'
 import {
   ConnectOptions,
   IPlugin,
@@ -18,15 +18,6 @@ import {
 
 import { create as createLogger } from '../common/log'
 const log = createLogger('accounts')
-
-export interface AccountInfo {
-  relation: 'parent' | 'peer' | 'child',
-  plugin: string,
-  assetCode: string,
-  assetScale: number,
-  options: object,
-  ilpAddressSegment: string
-}
 
 export interface AccountEntry {
   plugin: IPlugin,

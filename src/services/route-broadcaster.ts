@@ -68,15 +68,31 @@ export default class RouteBroadcaster {
       return
     }
     const accountInfo = this.accounts.getInfo(accountId)
-    if (accountInfo.relation === 'child') {
-      log.debug('not broadcasting routes to child connector; change account `relation` or override with CONNECTOR_PEERS. peerId=%s myAddress=%s', accountId, this.config.ilpAddress)
-      return
+
+    let sendRoutes
+    if (typeof accountInfo.sendRoutes === 'boolean') {
+      sendRoutes = accountInfo.sendRoutes
+    } else if (accountInfo.relation === 'peer') {
+      sendRoutes = true
+    } else {
+      sendRoutes = false
     }
-    if (accountInfo.relation === 'parent') {
-      log.debug('not broadcasting routes to parent connector; change account `relation` or override with CONNECTOR_PEERS. peerId=%s myAddress=%s', accountId, this.config.ilpAddress)
+
+    let receiveRoutes
+    if (typeof accountInfo.receiveRoutes === 'boolean') {
+      receiveRoutes = accountInfo.receiveRoutes
+    } else if (accountInfo.relation === 'peer') {
+      receiveRoutes = true
+    } else {
+      receiveRoutes = false
     }
-    log.debug('add peer. peerId=' + accountId)
-    this.peers.set(accountId, new Peer({ accountId }))
+
+    if (sendRoutes || receiveRoutes) {
+      log.debug('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
+      this.peers.set(accountId, new Peer({ accountId, sendRoutes, receiveRoutes }))
+    } else {
+      log.debug('not sending/receiving routes for peer, set sendRoutes/receiveRoutes to override. accountId=%s', accountId)
+    }
   }
 
   remove (accountId: string) {

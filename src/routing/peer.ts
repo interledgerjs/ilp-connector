@@ -19,14 +19,24 @@ export interface BroadcastRoutesParams {
   timeout: number
 }
 
+export interface PeerOpts {
+  accountId: string,
+  sendRoutes: boolean,
+  receiveRoutes: boolean
+}
+
 export default class Peer {
   protected accountId: string
+  protected sendRoutes: boolean
+  protected receiveRoutes: boolean
   protected routes: PrefixMap<IncomingRoute>
   protected epoch: number
   protected expiry: number
 
-  constructor ({ accountId }: { accountId: string }) {
+  constructor ({ accountId, sendRoutes, receiveRoutes }: PeerOpts) {
     this.accountId = accountId
+    this.sendRoutes = sendRoutes
+    this.receiveRoutes = receiveRoutes
     this.routes = new PrefixMap()
     this.epoch = -1
     this.expiry = 0
@@ -54,6 +64,11 @@ export default class Peer {
     requestFullTable,
     holdDownTime
   }: RouteUpdateParams) {
+    if (!this.receiveRoutes) {
+      log.info('ignoring incoming route update from peer. accountId=%s', this.accountId)
+      return
+    }
+
     this.bump(holdDownTime)
 
     if (requestFullTable) {
@@ -124,6 +139,10 @@ export default class Peer {
     currentEpoch,
     timeout
   }: BroadcastRoutesParams) {
+    if (!this.sendRoutes) {
+      return
+    }
+
     const newRoutes = routes.filter(route => route.epoch > this.epoch && route.nextHop !== this.accountId).map(route => ({
       prefix: route.prefix,
       path: route.path
