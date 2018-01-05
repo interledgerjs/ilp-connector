@@ -49,11 +49,11 @@ function listen (
     }
 
     if (allAccountsConnected) {
-      log.info('connector ready (republic attitude). address=%s', config.ilpAddress)
+      log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
     } else {
       accounts.connect({ timeout: Infinity })
         .then(() => routeBroadcaster.reloadLocalRoutes())
-        .then(() => log.info('connector ready (republic attitude). address=%s', config.ilpAddress))
+        .then(() => log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress()))
     }
   })().catch((err) => log.error(err))
 }

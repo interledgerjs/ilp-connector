@@ -9,7 +9,7 @@
       "description": "ILP address of the connector. This property can be omitted if an account with `relation=parent` is configured under `accounts`.",
       "type": "string",
       "pattern": "^[a-zA-Z0-9._~-]+$",
-      "default": "example.noname"
+      "default": "unknown"
     },
     "accounts": {
       "description": "Description of connector account plugins.",

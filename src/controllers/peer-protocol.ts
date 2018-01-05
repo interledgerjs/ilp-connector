@@ -24,10 +24,7 @@ export default class PeerProtocolController {
       case 'peer.config':
         const result = await this.ildcpHostController.handle(sourceAccount, data)
 
-        return IlpPacket.serializeIlpFulfill({
-          fulfillment: PEER_PROTOCOL_FULFILLMENT,
-          data: result
-        })
+        return result
       default:
         throw new InvalidPacketError('unknown peer protocol.')
     }
