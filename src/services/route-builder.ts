@@ -15,7 +15,6 @@ import RateBackend from './rate-backend'
 import Quoter from './quoter'
 import Config from './config'
 import LiquidityCurve from '../routing/liquidity-curve'
-import { getShortestUnambiguousPrefix } from '../lib/utils'
 import reduct = require('reduct')
 import { IlpPrepare } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
@@ -164,7 +163,7 @@ export default class RouteBuilder {
       // prefix, the curve must ALWAYS apply because people may cache it.
       // So we need the shortest prefix of the destination for which this
       // cached curve will ALWAYS apply.
-      appliesToPrefix: getShortestUnambiguousPrefix(this.routingTable, params.destinationAccount, appliesToPrefix),
+      appliesToPrefix: this.routingTable.getShortestUnambiguousPrefix(params.destinationAccount, appliesToPrefix),
       sourceHoldDuration,
       expiresAt: new Date(expiresAt)
     }

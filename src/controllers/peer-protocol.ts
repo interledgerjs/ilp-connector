@@ -15,14 +15,14 @@ export default class PeerProtocolController {
     this.ildcpHostController = deps(IldcpHostController)
   }
 
-  async handle (sourceAccount: string, parsedPacket: IlpPacket.IlpPrepare) {
+  async handle (sourceAccount: string, data: Buffer, { parsedPacket }: { parsedPacket: IlpPacket.IlpPrepare }) {
     if (!PEER_PROTOCOL_CONDITION.equals(parsedPacket.executionCondition)) {
       throw new InvalidPacketError('condition must be null.')
     }
 
     switch (parsedPacket.destination) {
       case 'peer.config':
-        const result = await this.ildcpHostController.handle(sourceAccount, parsedPacket.data)
+        const result = await this.ildcpHostController.handle(sourceAccount, data)
 
         return IlpPacket.serializeIlpFulfill({
           fulfillment: PEER_PROTOCOL_FULFILLMENT,

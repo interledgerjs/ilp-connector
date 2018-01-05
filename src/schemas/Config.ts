@@ -37,6 +37,14 @@ export class Config {
        */
       assetScale: number;
       /**
+       * Whether we should broadcast routes to this peer. Defaults to `true` for `relation=peer` and `false` otherwise.
+       */
+      sendRoutes?: boolean;
+      /**
+       * Whether we should receive and process route broadcasts from this peer. Defaults to `true` for `relation=peer` and `false` otherwise.
+       */
+      receiveRoutes?: boolean;
+      /**
        * Options that will be passed to the plugin constructor.
        */
       options?: {
@@ -49,10 +57,6 @@ export class Config {
       [k: string]: any;
     };
   };
-  /**
-   * Which accounts should be use as peers for routing purposes. Defaults to the set of accounts set to `relation=peer`.
-   */
-  peers?: string[];
   /**
    * Additional routes to add to the connector's routing table.
    */

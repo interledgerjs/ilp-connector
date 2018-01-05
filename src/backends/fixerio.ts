@@ -20,6 +20,7 @@ export interface FixerIoOptions {
  */
 export default class FixerIoBackend implements IBackend {
   protected spread: number
+  protected ratesApiUrl: string
   protected getInfo: (accountId: string) => AccountInfo
   protected getAssetCode: (accountId: string) => string
 
@@ -31,11 +32,14 @@ export default class FixerIoBackend implements IBackend {
   /**
    * Constructor.
    *
-   * @param {Integer} opts.spread The spread we will use to mark up the FX rates
-   * @param {String} opts.ratesApiUrl The API endpoint we will request rates from
+   * @param opts.spread The spread we will use to mark up the FX rates
+   * @param opts.ratesApiUrl The URL for querying Fixer.io
+   * @param opts.getInfo Method which maps account IDs to AccountInfo objects
+   * @param opts.getAssetCode Method which maps account IDs to asset code
    */
   constructor (opts: FixerIoOptions) {
     this.spread = opts.spread || 0
+    this.ratesApiUrl = opts.ratesApiUrl || RATES_API
     this.getInfo = opts.getInfo
     this.getAssetCode = opts.getAssetCode
     // this.ratesCacheTtl = opts.ratesCacheTtl || 24 * 3600000
@@ -55,8 +59,8 @@ export default class FixerIoBackend implements IBackend {
       log.debug('connect using mock data.')
       apiData = mockData
     } else {
-      log.debug('connect. uri=' + RATES_API)
-      let result = await fetchUri(RATES_API)
+      log.debug('connect. uri=' + this.ratesApiUrl)
+      let result = await fetchUri(this.ratesApiUrl)
       apiData = await result.json()
     }
     this.rates = apiData.rates
@@ -75,11 +79,11 @@ export default class FixerIoBackend implements IBackend {
   }
 
   /**
-   * Get a liquidity curve for the given parameters.
+   * Get a rate for the given parameters.
    *
-   * @param {String} sourceAccount The account ID of the source account
-   * @param {String} destinationAccount The account ID of the next hop account
-   * @returns {Promise.<Object>}
+   * @param sourceAccount The account ID of the source account
+   * @param destinationAccount The account ID of the next hop account
+   * @returns Exchange rate with spread applied
    */
   async getRate (sourceAccount: string, destinationAccount: string) {
     const sourceCurrency = this.getAssetCode(sourceAccount)
@@ -118,15 +122,9 @@ export default class FixerIoBackend implements IBackend {
   }
 
   /**
-   * Dummy function because we're not actually going
-   * to submit the payment to any real backend, we're
-   * just going to execute it on the accounts we're connected to
+   * This method is called to allow statistics to be collected by the backend.
    *
-   * @param {String} params.sourceAccount The URI of the source ledger
-   * @param {String} params.destinationAccount The URI of the destination ledger
-   * @param {String} params.sourceAmount The amount of the source asset we want to send
-   * @param {String} params.destinationAmount The amount of the destination asset we want to send
-   * @return {Promise.<null>}
+   * The fixerio backend does not support this functionality.
    */
   async submitPayment () {
     return Promise.resolve(undefined)

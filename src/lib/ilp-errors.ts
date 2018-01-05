@@ -8,15 +8,6 @@ export interface RejectionInfo {
   data: Buffer
 }
 
-export const createIlpRejection = (account: string, { code, message, data }: RejectionInfo) => {
-  return IlpPacket.serializeIlpReject(Object.assign({
-    code,
-    triggeredBy: account,
-    message,
-    data: data || Buffer.alloc(0)
-  }))
-}
-
 export const codes = {
   F00_BAD_REQUEST: 'F00',
   F01_INVALID_PACKET: 'F01',

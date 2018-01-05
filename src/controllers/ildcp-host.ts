@@ -3,6 +3,7 @@
 import Accounts from '../services/accounts'
 import { Writer } from 'oer-utils'
 import { create as createLogger } from '../common/log'
+import ILDCP = require('ilp-protocol-ildcp')
 const log = createLogger('ildcp-host')
 import reduct = require('reduct')
 
@@ -14,15 +15,18 @@ export default class IldcpHostController {
   }
 
   async handle (sourceAccount: string, data: Buffer) {
-    const peerAddress = this.accounts.getChildAddress(sourceAccount)
-    log.debug('responding to ILDCP config request. clientAddress=' + peerAddress)
-
+    const clientAddress = this.accounts.getChildAddress(sourceAccount)
     const info = this.accounts.getInfo(sourceAccount)
+    log.debug('responding to ILDCP config request. clientAddress=%s', clientAddress)
 
-    const writer = new Writer()
-    writer.writeVarOctetString(Buffer.from(peerAddress, 'ascii'))
-    writer.writeUInt8(info.assetScale)
-    writer.writeVarOctetString(Buffer.from(info.assetCode, 'utf8'))
-    return writer.getBuffer()
+    return ILDCP.serve({
+      requestPacket: data,
+      handler: () => ({
+        clientAddress,
+        assetScale: info.assetScale,
+        assetCode: info.assetCode
+      }),
+      serverAddress: this.accounts.getOwnAddress()
+    })
   }
 }
