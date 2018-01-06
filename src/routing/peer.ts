@@ -66,7 +66,7 @@ export default class Peer {
   }: RouteUpdateParams) {
     if (!this.receiveRoutes) {
       log.info('ignoring incoming route update from peer. accountId=%s', this.accountId)
-      return
+      return []
     }
 
     this.bump(holdDownTime)
