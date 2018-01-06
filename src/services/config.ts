@@ -38,6 +38,9 @@ export default class Config extends ConfigSchemaTyping {
   public maxHoldTime: number
   public routeBroadcastInterval: number
 
+  protected _validate: Ajv.ValidateFunction
+  protected _validateAccount: Ajv.ValidateFunction
+
   constructor () {
     super()
 
@@ -56,6 +59,7 @@ export default class Config extends ConfigSchemaTyping {
       env = process.env
     }
 
+    const config = {}
     for (let key of Object.keys(schema.properties)) {
       const envKey = ENV_PREFIX + constantCase(key)
       const envValue = env[envKey]
@@ -63,48 +67,51 @@ export default class Config extends ConfigSchemaTyping {
       if (typeof envValue === 'string') {
         switch (schema.properties[key].type) {
           case 'string':
-            this[key] = envValue
+            config[key] = envValue
             break
           case 'object':
           case 'array':
             try {
-              this[key] = JSON.parse(envValue)
+              config[key] = JSON.parse(envValue)
             } catch (err) {
               log.warn('unable to parse config. key=%s', envKey)
             }
             break
           case 'boolean':
-            this[key] = BOOLEAN_VALUES[envValue] || false
+            config[key] = BOOLEAN_VALUES[envValue] || false
             break
           case 'number':
-            this[key] = Number(envValue)
+            config[key] = Number(envValue)
             break
           default:
             throw new TypeError('Unknown JSON schema type: ' + schema.properties[key].type)
         }
       }
     }
+
+    this.validate(config)
+
+    Object.assign(this, config)
   }
 
   loadFromOpts (opts: object) {
-    if (!this._validate(opts)) {
-      const firstError = this._validate.errors[0]
-      throw new InvalidJsonBodyError('config failed to validate. error=' + firstError.message + ' dataPath=' + firstError.dataPath, this._validate.errors)
-    }
+    this.validate(opts)
 
     Object.assign(this, opts)
   }
 
-  validate () {
-    if (!this._validate(this)) {
-      const firstError = this._validate.errors[0]
-      throw new InvalidJsonBodyError('config failed to validate. error=' + firstError.message + ' dataPath=' + firstError.dataPath, this._validate.errors)
+  validate (config: object) {
+    if (!this._validate(config)) {
+      const firstError = this._validate.errors && this._validate.errors[0]
+        ? this._validate.errors[0]
+        : { message: 'unknown validation error', dataPath: '' }
+      throw new InvalidJsonBodyError('config failed to validate. error=' + firstError.message + ' dataPath=' + firstError.dataPath, this._validate.errors || [])
     }
   }
 
   validateAccount (id: string, accountInfo: any) {
     if (!this._validateAccount(accountInfo)) {
-      throw new InvalidJsonBodyError('account config failed to validate. id=' + id, this._validateAccount.errors)
+      throw new InvalidJsonBodyError('account config failed to validate. id=' + id, this._validateAccount.errors || [])
     }
   }
 

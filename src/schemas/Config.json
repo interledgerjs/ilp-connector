@@ -62,7 +62,7 @@
           "assetCode",
           "assetScale"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       }
     },
     "routes": {
@@ -84,7 +84,8 @@
             "pattern": "^[a-zA-Z0-9._~-]+$"
           }
         },
-        "required": ["targetPrefix", "peerId"]
+        "required": ["targetPrefix", "peerId"],
+        "additionalProperties": false
       }
     },
     "fxSpread": {
@@ -163,5 +164,6 @@
       "default": true
     }
   },
-  "required": ["accounts"]
+  "required": ["accounts"],
+  "additionalProperties": false
 }

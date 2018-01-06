@@ -67,7 +67,7 @@ export default class Accounts {
 
         this.setOwnAddress(ildcpInfo.clientAddress)
       } else {
-        log.error('no ilp address configured and no parent account found, cannot determing ilp address.')
+        log.error('no ilp address configured and no parent account found, cannot determine ilp address.')
         throw new Error('no ilp address configured.')
       }
     }

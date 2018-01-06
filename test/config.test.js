@@ -67,9 +67,8 @@ describe('Config', function () {
         this.routes[0].peerId = 'garbage!'
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
         const config = new Config()
-        config.loadFromEnv()
         assert.throws(() => {
-          config.validate()
+          config.loadFromEnv()
         }, 'config failed to validate. error=should match pattern "^[a-zA-Z0-9._~-]+$" dataPath=.routes[0].peerId')
       })
 
@@ -77,9 +76,8 @@ describe('Config', function () {
         this.routes[0].targetPrefix = undefined
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
         const config = new Config()
-        config.loadFromEnv()
         assert.throws(() => {
-          config.validate()
+          config.loadFromEnv()
         }, 'config failed to validate. error=should have required property \'targetPrefix\' dataPath=.routes[0]')
       })
 
@@ -88,9 +86,8 @@ describe('Config', function () {
         process.env.CONNECTOR_ROUTES = JSON.stringify(this.routes)
 
         const config = new Config()
-        config.loadFromEnv()
         assert.throws(() => {
-          config.validate()
+          config.loadFromEnv()
         }, 'config failed to validate. error=should have required property \'peerId\' dataPath=.routes[0]')
       })
     })
@@ -99,7 +96,9 @@ describe('Config', function () {
       it('should parse ledger credentials', async function () {
         const accountCredentialsEnv = {
           'cad-ledger': {
+            relation: 'peer',
             assetCode: 'CAD',
+            assetScale: 9,
             plugin: 'ilp-plugin-mock',
             options: {
               account: 'http://cad-ledger.example:1000/accounts/mark',
@@ -108,7 +107,9 @@ describe('Config', function () {
             }
           },
           'usd-ledger': {
+            relation: 'peer',
             assetCode: 'USD',
+            assetScale: 9,
             plugin: 'ilp-plugin-mock',
             options: {
               account: 'http://cad-ledger.example:1000/accounts/mark',
@@ -127,7 +128,9 @@ describe('Config', function () {
 
         const accountCredentials = {
           'cad-ledger': {
+            relation: 'peer',
             assetCode: 'CAD',
+            assetScale: 9,
             plugin: 'ilp-plugin-mock',
             options: {
               account: 'http://cad-ledger.example:1000/accounts/mark',
@@ -136,7 +139,9 @@ describe('Config', function () {
             }
           },
           'usd-ledger': {
+            relation: 'peer',
             assetCode: 'USD',
+            assetScale: 9,
             plugin: 'ilp-plugin-mock',
             options: {
               account: 'http://cad-ledger.example:1000/accounts/mark',
@@ -155,7 +160,9 @@ describe('Config', function () {
       it('should parse another type of ledger\'s credentials', async function () {
         const accountCredentialsEnv = {
           'cad-ledger': {
+            relation: 'peer',
             assetCode: 'USD',
+            assetScale: 9,
             plugin: 'ilp-plugin-mock',
             options: {
               token: 'iv8qhtm9qcmjmo8tcmjo4a',
@@ -164,7 +171,9 @@ describe('Config', function () {
             }
           },
           'usd-ledger': {
+            relation: 'peer',
             assetCode: 'USD',
+            assetScale: 9,
             plugin: 'ilp-plugin-mock',
             options: {
               token: 'iv8qhtm9qcmjmo8tcmjo4a',
@@ -181,7 +190,9 @@ describe('Config', function () {
 
         const accountCredentials = {
           'cad-ledger': {
+            relation: 'peer',
             assetCode: 'USD',
+            assetScale: 9,
             plugin: 'ilp-plugin-mock',
             options: {
               token: 'iv8qhtm9qcmjmo8tcmjo4a',
@@ -190,7 +201,9 @@ describe('Config', function () {
             }
           },
           'usd-ledger': {
+            relation: 'peer',
             assetCode: 'USD',
+            assetScale: 9,
             plugin: 'ilp-plugin-mock',
             options: {
               token: 'iv8qhtm9qcmjmo8tcmjo4a',

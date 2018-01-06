@@ -60,13 +60,7 @@ export default class RouteBroadcaster {
       // don't log duplicates
       return
     }
-    if (this.config && this.config.peers && this.config.peers.length &&
-      this.config.peers.indexOf(accountId) === -1) {
-      // when using an explicitly configured list of peers,
-      // only allow peers that are listed
-      log.info('peer is not listed in configuration, ignoring. peerId=%s', accountId)
-      return
-    }
+
     const accountInfo = this.accounts.getInfo(accountId)
 
     let sendRoutes
