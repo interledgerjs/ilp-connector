@@ -1,15 +1,27 @@
-*.cluster
-/npm-debug.log
-/integration-test/
-*.log
-/web/
-/.tags*
+# Connector default data directory
 /data/
+
+# NPM
 /node_modules/
+/npm-debug.log
+
+# NYC code coverage output
 /.nyc_output/
 /coverage/
+
+# TypeScript compiler output
 /src/**/*.js
 /src/**/*.js.map
 /src/**/*.d.ts
-!wallaby.js
-!scripts/*.js
+
+# Generated typings for schemas should not be checked in
+/src/schemas/*.ts
+
+# Five Bells Integration Test
+/integration-test/
+
+# Miscellaneous
+*.cluster
+*.log
+/.tags*
+/web/
