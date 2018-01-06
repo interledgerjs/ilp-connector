@@ -51,7 +51,7 @@ function listen (
     if (allAccountsConnected) {
       log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
     } else {
-      accounts.connect({ timeout: Infinity })
+      await accounts.connect({ timeout: Infinity })
         .then(() => routeBroadcaster.reloadLocalRoutes())
         .then(() => log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress()))
     }
@@ -105,14 +105,12 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
 
   const config = deps(Config)
 
-  if (opts) {
-    config.loadFromOpts(opts)
-  } else {
-    config.loadFromEnv()
-  }
-
   try {
-    config.validate()
+    if (opts) {
+      config.loadFromOpts(opts)
+    } else {
+      config.loadFromEnv()
+    }
   } catch (err) {
     if (err.name === 'InvalidJsonBodyError') {
       log.warn('config validation error.')
