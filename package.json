@@ -17,6 +17,9 @@
     "url": "https://github.com/interledgerjs/ilp-connector/issues"
   },
   "main": "src/index.js",
+  "bin": {
+    "ilp-connector": "./src/index.js"
+  },
   "scripts": {
     "start": "node src/index.js",
     "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} src/index.js",
