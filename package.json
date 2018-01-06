@@ -28,7 +28,7 @@
     "test": "istanbul test -- _mocha",
     "report-coverage": "codecov",
     "integration": "integration-loader && integration all",
-    "bump": "version-bump"
+    "commitmsg": "commitlint -e $GIT_PARAMS"
   },
   "engines": {
     "node": ">=6.6.0"
@@ -54,6 +54,8 @@
     "through2": "^2.0.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^5.2.8",
+    "@commitlint/config-conventional": "^5.2.3",
     "@types/debug": "0.0.30",
     "@types/lodash": "^4.14.91",
     "@types/long": "^3.0.32",
@@ -71,6 +73,7 @@
     "eslint-plugin-promise": "^3.6.0",
     "eslint-plugin-standard": "^3.0.1",
     "five-bells-integration-test-loader": "^1.4.0",
+    "husky": "^0.14.3",
     "istanbul": "^0.4.5",
     "json-schema-to-typescript": "^5.2.2",
     "memdown": "^1.4.1",
