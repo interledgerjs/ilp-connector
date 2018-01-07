@@ -69,7 +69,7 @@ export default class RouteBuilder {
 
     this.isTrivialRate =
       this.config.backend === 'one-to-one' &&
-      this.config.fxSpread === 0
+      this.config.spread === 0
   }
 
   getNextHop (sourceAccount: string, destinationAccount: string) {

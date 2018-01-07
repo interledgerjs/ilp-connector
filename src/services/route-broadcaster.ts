@@ -24,6 +24,7 @@ export default class RouteBroadcaster {
   protected currentEpoch: number
   protected formerRoutes: Set<string>
   protected routeEpochs: { [key: string]: number }
+  protected broadcastTimer?: NodeJS.Timer
 
   constructor (deps: reduct.Injector) {
     this.routingTable = deps(RoutingTable)
@@ -53,6 +54,12 @@ export default class RouteBroadcaster {
       }
     }
     this.broadcastSoon()
+  }
+
+  stop () {
+    if (this.broadcastTimer) {
+      clearTimeout(this.broadcastTimer)
+    }
   }
 
   add (accountId: string) {
@@ -314,7 +321,7 @@ export default class RouteBroadcaster {
   }
 
   async broadcastSoon () {
-    await new Promise(resolve => setTimeout(resolve, this.config.routeBroadcastInterval))
+    await new Promise(resolve => this.broadcastTimer = setTimeout(resolve, this.config.routeBroadcastInterval))
 
     try {
       this.reloadLocalRoutes()

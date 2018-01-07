@@ -100,12 +100,12 @@
     },
     "minMessageWindow": {
       "description": "Minimum time the connector wants to budget for getting a message to the accounts its trading on. In milliseconds.",
-      "type": "number",
+      "type": "integer",
       "default": 1000
     },
     "maxHoldTime": {
       "description": "Maximum duration (in milliseconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.",
-      "type": "number",
+      "type": "integer",
       "default": 10000
     },
     "routeBroadcastEnabled": {
@@ -115,22 +115,22 @@
     },
     "routeBroadcastInterval": {
       "description": "Frequency at which the connector broadcasts its routes to adjacent connectors. (in milliseconds)",
-      "type": "number",
+      "type": "integer",
       "default": 30000
     },
     "routeCleanupInterval": {
       "description": "The frequency at which the connector checks for expired routes. (in milliseconds)",
-      "type": "number",
+      "type": "integer",
       "default": 1000
     },
     "routeExpiry": {
       "description": "The maximum age of a route provided by this connector. (in milliseconds)",
-      "type": "number",
+      "type": "integer",
       "default": 45000
     },
     "quoteExpiry": {
       "description": "The maximum age of a quote provided by this connector. (in milliseconds)",
-      "type": "number",
+      "type": "integer",
       "default": 45000
     },
     "backend": {
@@ -162,6 +162,11 @@
       "description": "Whether to allow routing payments back to the account that sent them.",
       "type": "boolean",
       "default": true
+    },
+    "initialConnectTimeout": {
+      "description": "How long the connector should wait for account plugins to connect before launching other subsystems. (in milliseconds)",
+      "type": "integer",
+      "default": 10000
     }
   },
   "required": ["accounts"],

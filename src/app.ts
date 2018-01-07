@@ -35,26 +35,39 @@ function listen (
       process.exit(1)
     }
 
-    let allAccountsConnected
-    try {
-      await accounts.connect({ timeout: 10000 })
-      allAccountsConnected = true
-    } catch (err) {
-      allAccountsConnected = false
-      log.warn('one or more accounts failed to connect, broadcasting routes anyway. error=', err.message)
+    // If we have no configured ILP address, try to get one via ILDCP
+    if (config.ilpAddress === 'unknown') {
+      if (!accounts.getParentId()) {
+        log.error('no ilp address configured and no parent account found, cannot determine ilp address.')
+        throw new Error('no ilp address configured.')
+      }
+
+      await accounts.connectToParent()
+
+      if (accounts.getOwnAddress() === 'unknown') {
+        log.error('could not get ilp address from parent.')
+        throw new Error('no ilp address configured.')
+      }
     }
+
+    // Connect other plugins, give up after initialConnectTimeout
+    await new Promise((resolve, reject) => {
+      const connectTimeout = setTimeout(() => {
+        log.warn('one or more accounts failed to connect within the time limit, continuing anyway.')
+        resolve()
+      }, config.initialConnectTimeout)
+      accounts.connect({ timeout: config.initialConnectTimeout })
+        .then(() => {
+          clearTimeout(connectTimeout)
+          resolve()
+        }, reject)
+    })
 
     if (config.routeBroadcastEnabled) {
       await routeBroadcaster.start()
     }
 
-    if (allAccountsConnected) {
-      log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
-    } else {
-      await accounts.connect({ timeout: Infinity })
-        .then(() => routeBroadcaster.reloadLocalRoutes())
-        .then(() => log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress()))
-    }
+    log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
   })().catch((err) => log.error(err))
 }
 
@@ -98,6 +111,14 @@ function getPlugin (
   id: string
 ) {
   return accounts.getPlugin(id)
+}
+
+function shutdown (
+  accounts: Accounts,
+  routeBroadcaster: RouteBroadcaster
+) {
+  routeBroadcaster.stop()
+  return accounts.disconnect()
 }
 
 export default function createApp (opts?: object, container?: reduct.Injector) {
@@ -152,6 +173,7 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
     listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, messageRouter),
     addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster),
     removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster),
-    getPlugin: partial(getPlugin, accounts)
+    getPlugin: partial(getPlugin, accounts),
+    shutdown: partial(shutdown, accounts, routeBroadcaster)
   }
 }

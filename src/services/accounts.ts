@@ -55,24 +55,30 @@ export default class Accounts {
     this.parentAccount = undefined
   }
 
-  async connect (options: ConnectOptions) {
-    // If we have no configured ILP address, try to get one via ILDCP
-    if (this.config.ilpAddress === 'unknown') {
-      if (this.parentAccount) {
-        const parent = this.getPlugin(this.parentAccount)
+  async connectToParent () {
+    if (this.parentAccount) {
+      const parent = this.getPlugin(this.parentAccount)
 
-        await parent.connect({})
+      await parent.connect({})
 
-        const ildcpInfo = await ILDCP.fetch(parent.sendData.bind(parent))
+      const ildcpInfo = await ILDCP.fetch(parent.sendData.bind(parent))
 
-        this.setOwnAddress(ildcpInfo.clientAddress)
-      } else {
-        log.error('no ilp address configured and no parent account found, cannot determine ilp address.')
-        throw new Error('no ilp address configured.')
-      }
+      this.setOwnAddress(ildcpInfo.clientAddress)
+    } else {
+      throw new Error('no parent account specified.')
     }
-    const accounts = Array.from(this.accounts.values())
-    return Promise.all(accounts.map(account => account.plugin.connect(options)))
+  }
+
+  async connect (options: ConnectOptions) {
+    const unconnectedAccounts = Array.from(this.accounts.values())
+      .filter(account => !account.plugin.isConnected())
+    return Promise.all(unconnectedAccounts.map(account => account.plugin.connect(options)))
+  }
+
+  async disconnect () {
+    const connectedAccounts = Array.from(this.accounts.values())
+      .filter(account => account.plugin.isConnected())
+    return Promise.all(connectedAccounts.map(account => account.plugin.disconnect()))
   }
 
   getOwnAddress () {
