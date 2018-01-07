@@ -18,7 +18,7 @@ export default class RateBackend implements IBackend {
     const Backend = getBackend(config.get('backend'))
     this.backend = new Backend({
       backendUri: config.get('backendUri'),
-      spread: config.get('fxSpread'),
+      spread: config.get('spread'),
       getInfo: (account: string) => accounts.getInfo(account),
       getAssetCode: (account: string) => accounts.getAssetCode(account)
     })
