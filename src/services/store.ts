@@ -15,9 +15,9 @@ export default class Store {
     this.config = deps(Config)
 
     const Store = getStore(this.config.store)
-    this.store = new Store({
+    this.store = new Store(Object.assign({
       path: this.config.storePath
-    }, this.config.storeConfig)
+    }, this.config.storeConfig))
   }
 
   getPluginStore (name: string) {
