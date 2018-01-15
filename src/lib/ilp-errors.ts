@@ -1,13 +1,3 @@
-'use strict'
-
-import * as IlpPacket from 'ilp-packet'
-
-export interface RejectionInfo {
-  code: string,
-  message: string,
-  data: Buffer
-}
-
 export const codes = {
   F00_BAD_REQUEST: 'F00',
   F01_INVALID_PACKET: 'F01',

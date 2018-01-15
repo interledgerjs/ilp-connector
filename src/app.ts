@@ -1,5 +1,3 @@
-'use strict'
-
 import reduct = require('reduct')
 import { partial } from 'lodash'
 import { create as createLogger } from './common/log'
@@ -9,12 +7,11 @@ import Config from './services/config'
 import RouteBuilder from './services/route-builder'
 import RouteBroadcaster from './services/route-broadcaster'
 import Accounts from './services/accounts'
-import Balances from './services/balances'
 import RateBackend from './services/rate-backend'
 import Store from './services/store'
-import MessageRouter from './services/message-router'
+import MiddlewareManager from './services/middleware-manager'
 
-import { IPlugin } from './types/plugin'
+import { PluginInstance } from './types/plugin'
 
 function listen (
   config: Config,
@@ -23,7 +20,7 @@ function listen (
   store: Store,
   routeBuilder: RouteBuilder,
   routeBroadcaster: RouteBroadcaster,
-  messageRouter: MessageRouter
+  middlewareManager: MiddlewareManager
 ) {
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
@@ -34,6 +31,8 @@ function listen (
       log.error(error)
       process.exit(1)
     }
+
+    await middlewareManager.setup()
 
     // If we have no configured ILP address, try to get one via ILDCP
     if (config.ilpAddress === 'unknown') {
@@ -71,38 +70,40 @@ function listen (
   })().catch((err) => log.error(err))
 }
 
-function addPlugin (
+async function addPlugin (
   config: Config,
   accounts: Accounts,
   backend: RateBackend,
   routeBroadcaster: RouteBroadcaster,
+  middlewareManager: MiddlewareManager,
 
   id: string,
   options: any
 ) {
-  return (async function () {
-    accounts.add(id, options)
-    routeBroadcaster.add(id)
+  accounts.add(id, options)
+  const plugin = accounts.getPlugin(id)
+  routeBroadcaster.add(id)
+  await middlewareManager.addPlugin(id, plugin)
 
-    await accounts.getPlugin(id).connect({ timeout: Infinity })
-    await routeBroadcaster.reloadLocalRoutes()
-  })()
+  await plugin.connect({ timeout: Infinity })
+  routeBroadcaster.reloadLocalRoutes()
 }
 
-function removePlugin (
+async function removePlugin (
   config: Config,
   accounts: Accounts,
   backend: RateBackend,
   routeBroadcaster: RouteBroadcaster,
+  middlewareManager: MiddlewareManager,
 
   id: string
 ) {
-  return (async function () {
-    await accounts.getPlugin(id).disconnect()
-    accounts.remove(id)
-    routeBroadcaster.remove(id)
-    routeBroadcaster.reloadLocalRoutes()
-  })()
+  const plugin = accounts.getPlugin(id)
+  middlewareManager.removePlugin(id, plugin)
+  await plugin.disconnect()
+  accounts.remove(id)
+  routeBroadcaster.remove(id)
+  routeBroadcaster.reloadLocalRoutes()
 }
 
 function getPlugin (
@@ -144,20 +145,11 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   }
 
   const accounts = deps(Accounts)
-  const balances = deps(Balances)
   const routeBuilder = deps(RouteBuilder)
   const routeBroadcaster = deps(RouteBroadcaster)
   const backend = deps(RateBackend)
   const store = deps(Store)
-  const messageRouter = deps(MessageRouter)
-
-  accounts.registerDataHandler(
-    messageRouter.handleData.bind(messageRouter)
-  )
-
-  accounts.registerMoneyHandler(
-    balances.handleMoney.bind(balances)
-  )
+  const middlewareManager = deps(MiddlewareManager)
 
   const credentials = config.accounts
   // We have two separate for loops to make the logs look nicer :)
@@ -170,9 +162,9 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
 
   return {
     config,
-    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, messageRouter),
-    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster),
-    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster),
+    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager),
+    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
+    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
     getPlugin: partial(getPlugin, accounts),
     shutdown: partial(shutdown, accounts, routeBroadcaster)
   }

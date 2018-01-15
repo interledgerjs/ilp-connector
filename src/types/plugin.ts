@@ -10,7 +10,7 @@ export interface MoneyHandler {
   (amount: string): Promise<void>
 }
 
-export interface IPlugin {
+export interface PluginInstance {
   connect (options: ConnectOptions): Promise<void>
   disconnect (): Promise<void>
   isConnected (): boolean

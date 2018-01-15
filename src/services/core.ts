@@ -1,20 +1,17 @@
-'use strict'
-
 import * as IlpPacket from 'ilp-packet'
 import InvalidPacketError from '../errors/invalid-packet-error'
-import Config from './config'
-import Accounts from './accounts'
-import RouteBroadcaster from './route-broadcaster'
-import RouteBuilder from './route-builder'
+import Config from '../services/config'
+import Accounts from '../services/accounts'
+import RouteBroadcaster from '../services/route-broadcaster'
+import RouteBuilder from '../services/route-builder'
 import IlpPrepareController from '../controllers/ilp-prepare'
 import IlqpController from '../controllers/ilqp'
 import JsonController from '../controllers/json'
 import { create as createLogger } from '../common/log'
-const log = createLogger('message-router')
-import { codes } from '../lib/ilp-errors'
+const log = createLogger('core-middleware')
 import reduct = require('reduct')
 
-export default class MessageRouter {
+export default class Core {
   protected config: Config
   protected accounts: Accounts
   protected routeBroadcaster: RouteBroadcaster
@@ -34,10 +31,10 @@ export default class MessageRouter {
     this.jsonController = deps(JsonController)
   }
 
-  async handleData (account: string, data: Buffer) {
-    if (!this.accounts.getInfo(account)) {
-      log.warn('got data from unknown account id. accountId=%s', account)
-      throw new Error('got data from unknown account id. accountId=' + account)
+  async processData (data: Buffer, accountId: string, outbound: (data: Buffer, accountId: string) => Promise<Buffer>): Promise<Buffer> {
+    if (!this.accounts.getInfo(accountId)) {
+      log.warn('got data from unknown account id. accountId=%s', accountId)
+      throw new Error('got data from unknown account id. accountId=' + accountId)
     }
 
     if (!Buffer.isBuffer(data)) {
@@ -47,16 +44,15 @@ export default class MessageRouter {
 
     switch (data[0]) {
       case IlpPacket.Type.TYPE_ILP_PREPARE:
-        return this.ilpPrepareController.handle(account, data)
+        return this.ilpPrepareController.sendData(data, accountId, outbound)
       case IlpPacket.Type.TYPE_ILQP_LIQUIDITY_REQUEST:
       case IlpPacket.Type.TYPE_ILQP_BY_SOURCE_REQUEST:
       case IlpPacket.Type.TYPE_ILQP_BY_DESTINATION_REQUEST:
-        return this.ilqpController.handle(account, data)
+        return this.ilqpController.sendData(data, accountId)
       case '{'.charCodeAt(0):
-        const result = this.jsonController.handle(account, JSON.parse(data.toString('utf8')))
-        return Buffer.from(JSON.stringify(result), 'utf8')
+        return this.jsonController.sendData(data, accountId)
       default:
-        log.warn('received invalid packet type. source=%s type=%s', account, data[0])
+        log.warn('received invalid packet type. source=%s type=%s', accountId, data[0])
         throw new InvalidPacketError('invalid packet type received. type=' + data[0])
     }
   }

@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { resolve } from 'path'
-import PrefixMap from '../routing/prefix-map'
+import { MiddlewareMethod } from '../types/middleware'
 
 export const fulfillmentToCondition = (fulfillment: Buffer) => {
   return createHash('sha256').update(fulfillment).digest()
@@ -26,6 +26,25 @@ export const loadModuleFromPathOrDirectly = (searchPath: string, module: string)
   }
 }
 
+export const loadModuleOfType = (type: string, name: string) => {
+  const module = loadModuleFromPathOrDirectly(resolve(__dirname, `../${type}s/`), name)
+
+  if (!module) {
+    throw new Error(`${type} not found as a module name or under /${type}s/. moduleName=${name}`)
+  }
+
+  const loadedModule = require(module)
+
+  if (loadedModule && typeof loadedModule === 'object' && typeof loadedModule.default === 'function') {
+    // support ES6 modules
+    return loadedModule.default
+  } else if (typeof loadedModule === 'function') {
+    return loadedModule
+  } else {
+    throw new TypeError(`${type} does not export a constructor. module=${module}`)
+  }
+}
+
 export const extractDefaultsFromSchema = (schema: any, path = '') => {
   if (typeof schema.default !== 'undefined') {
     return schema.default
@@ -40,5 +59,25 @@ export const extractDefaultsFromSchema = (schema: any, path = '') => {
       return result
     default:
       throw new Error('No default found for schema path: ' + path)
+  }
+}
+
+export function composeMiddleware<T, U> (
+  middleware: MiddlewareMethod<T, U>[]
+): MiddlewareMethod<T, U> {
+  return function (val: T, next: MiddlewareMethod<T, U>) {
+    // last called middleware #
+    let index = -1
+    return dispatch(0, val)
+    async function dispatch (i: number, val: T): Promise<U> {
+      if (i <= index) {
+        throw new Error('next() called multiple times.')
+      }
+      index = i
+      const fn = (i === middleware.length) ? next : middleware[i]
+      return fn(val, function next (val: T) {
+        return dispatch(i + 1, val)
+      })
+    }
   }
 }

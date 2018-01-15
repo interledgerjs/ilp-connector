@@ -4,6 +4,7 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('json-controller')
 
 import CcpController from './ccp'
+import InvalidPacketError from '../errors/invalid-packet-error'
 import reduct = require('reduct')
 
 export default class JsonController {
@@ -13,17 +14,20 @@ export default class JsonController {
     this.ccpController = deps(CcpController)
   }
 
-  async handle (sourceAccount: string, payload: object) {
+  async sendData (packet: Buffer, sourceAccount: string) {
+    const payload = JSON.parse(packet.toString('utf8'))
+
     if (!payload || typeof payload !== 'object') {
-      log.warn('received non-object JSON payload, ignoring. payload=%j', payload)
-      return {}
+      log.warn('received non-object JSON payload, rejecting. payload=%j', payload)
+      throw new InvalidPacketError('non-object json payload.')
     }
 
     if (payload['method'] === 'broadcast_routes') {
-      return this.ccpController.handle(sourceAccount, payload['data'])
+      const result = await this.ccpController.handle(payload['data'], sourceAccount)
+      return Buffer.from(JSON.stringify(result), 'utf8')
     }
 
-    log.warn('ignoring unkown request method', payload['method'])
-    return {}
+    log.warn('rejecting unknown request method. method=%s', payload['method'])
+    throw new InvalidPacketError('unknown request method.')
   }
 }

@@ -2,7 +2,7 @@
 
 import PrefixMap from './prefix-map'
 import Accounts from '../services/accounts'
-import { Route, BroadcastRoute, RouteUpdateParams, IncomingRoute } from '../types/routing'
+import { BroadcastRoute, RouteUpdateParams, IncomingRoute } from '../types/routing'
 import { create as createLogger } from '../common/log'
 const log = createLogger('routing-peer')
 

@@ -1,26 +1,28 @@
-'use strict'
-
-import { resolve } from 'path'
 import Config from './config'
 import Accounts from './accounts'
 import reduct = require('reduct')
-import { IBackend, SubmitPaymentParams } from '../types/backend'
+import {
+  BackendConstructor,
+  BackendInstance,
+  SubmitPaymentParams
+} from '../types/backend'
 
-const { loadModuleFromPathOrDirectly } = require('../lib/utils')
+import { loadModuleOfType } from '../lib/utils'
 
-export default class RateBackend implements IBackend {
-  protected backend: IBackend
+const DEFAULT_BACKEND = 'one-to-one'
+
+export default class RateBackend implements BackendInstance {
+  protected backend: BackendInstance
 
   constructor (deps: reduct.Injector) {
     const config = deps(Config)
     const accounts = deps(Accounts)
 
-    const Backend = getBackend(config.get('backend'))
-    this.backend = new Backend({
-      backendUri: config.get('backendUri'),
-      spread: config.get('spread'),
-      getInfo: (account: string) => accounts.getInfo(account),
-      getAssetCode: (account: string) => accounts.getAssetCode(account)
+    const Backend: BackendConstructor = loadModuleOfType('backend', config.backend || DEFAULT_BACKEND)
+    this.backend = new Backend(Object.assign({
+      spread: config.spread
+    }, config.backendConfig), {
+      getInfo: (account: string) => accounts.getInfo(account)
     })
   }
 
@@ -35,14 +37,4 @@ export default class RateBackend implements IBackend {
   submitPayment (params: SubmitPaymentParams) {
     return this.backend.submitPayment(params)
   }
-}
-
-function getBackend (backend: string) {
-  const module = loadModuleFromPathOrDirectly(resolve(__dirname, '../backends/'), backend)
-
-  if (!module) {
-    throw new Error('Backend not found at "' + backend + '" or "/backends/' + backend + '"')
-  }
-
-  return require(module).default
 }

@@ -2,7 +2,6 @@
 
 import InvalidJsonBodyError from '../errors/invalid-json-body-error'
 import { constantCase } from 'change-case'
-import reduct = require('reduct')
 import { create as createLogger } from '../common/log'
 import { Config as ConfigSchemaTyping } from '../schemas/Config'
 const log = createLogger('config')

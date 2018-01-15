@@ -193,17 +193,29 @@ ILP address of the connector. This property can be omitted if an account with `r
 * Type: `object`
 * Default: `{}`
 
-| Name                  | Type    | Description                                                                                                                                                                                                                                                                                         |
-| --------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `*`                   | object  | Description of individual account.                                                                                                                                                                                                                                                                  |
-| `*.relation`          | string  | Relationship between the connector and the counterparty that the account is with.                                                                                                                                                                                                                   |
-| `*.plugin`            | string  | Name of the ILP plugin that should be used for this account.                                                                                                                                                                                                                                        |
-| `*.assetCode`         | string  | Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.                                                                                                                                                                             |
-| `*.assetScale`        | integer | Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars. |
-| `*.ilpAddressSegment` | string  | _Optional_ What segment will be appended to the connector's ILP address to form this account's ILP address. Only applicable to accounts with `relation=child`. Defaults to the id of the account, i.e. the key used in the `accounts` config object.                                                |
-| `*.options.*`         | object  | _Optional_                                                                                                                                                                                                                                                                                          |
-| `*.receiveRoutes`     | boolean | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `true` for `relation=peer` and `false` otherwise.                                                                                                                                                     |
-| `*.sendRoutes`        | boolean | _Optional_ Whether we should broadcast routes to this peer. Defaults to `true` for `relation=peer` and `false` otherwise.                                                                                                                                                                           |
+| Name                          | Type    | Description                                                                                                                                                                                                                                                                                                 |
+| ----------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`                           | object  | Description of individual account.                                                                                                                                                                                                                                                                          |
+| `*.relation`                  | string  | Relationship between the connector and the counterparty that the account is with.                                                                                                                                                                                                                           |
+| `*.plugin`                    | string  | Name of the ILP plugin that should be used for this account.                                                                                                                                                                                                                                                |
+| `*.assetCode`                 | string  | Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.                                                                                                                                                                                     |
+| `*.assetScale`                | integer | Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.         |
+| `*.balance`                   | object  | _Optional_ Defines whether the connector should maintain and enforce a balance for this account. This setting is enforced by the built-in `balance` middleware.                                                                                                                                             |
+| `*.balance.maximumDebt`       | string  | How much money (in atomic units) this counterparty is allowed to owe us before we start rejecting their packets. Each incoming ILP prepare packet increases the amount owed, each incoming settlement lowers it. Provided as an integer in a string.                                                        |
+| `*.balance.settle`            | boolean | _Optional_ Whether the balance middleware should settle with this counterparty using `sendMoney`.                                                                                                                                                                                                           |
+| `*.ilpAddressSegment`         | string  | _Optional_ What segment will be appended to the connector's ILP address to form this account's ILP address. Only applicable to accounts with `relation=child`. Defaults to the id of the account, i.e. the key used in the `accounts` config object.                                                        |
+| `*.maxPacketAmount`           | string  | _Optional_ Maximum amount per packet for incoming prepare packets. Connector will reject any incoming prepare packets from this account with a higher amount. Amount should be provided as an integer in a string (in atomic units). This setting is enforced by the built-in `maxPacketAmount` middleware. |
+| `*.options.*`                 | object  | _Optional_                                                                                                                                                                                                                                                                                                  |
+| `*.rateLimit`                 | object  | _Optional_ Maximum rate of incoming packets. Limit is implemented as a token bucket with a constant refill rate. When the token bucket is empty, all requests are immediately rejected. This setting is enforced by the built-in `rateLimit` middleware.                                                    |
+| `*.rateLimit.capacity`        | integer | _Optional_ Maximum number of tokens in the bucket.                                                                                                                                                                                                                                                          |
+| `*.rateLimit.refillCount`     | integer | _Optional_ How many tokens are refilled per period. The default refill period is one second, so this would be the average number of requests per second.                                                                                                                                                    |
+| `*.rateLimit.refillPeriod`    | integer | _Optional_ Length of time (in milliseconds) during which the token balance increases by `refillCount` tokens. Defaults to one second.                                                                                                                                                                       |
+| `*.receiveRoutes`             | boolean | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `true` for `relation=peer` and `false` otherwise.                                                                                                                                                             |
+| `*.sendRoutes`                | boolean | _Optional_ Whether we should broadcast routes to this peer. Defaults to `true` for `relation=peer` and `false` otherwise.                                                                                                                                                                                   |
+| `*.throughput`                | object  | _Optional_ Configuration to limit the total amount sent via Interledger per unit of time. This setting is enforced by the built-in `throughput` middleware.                                                                                                                                                 |
+| `*.throughput.incomingAmount` | string  | _Optional_ Maximum incoming throughput amount (in atomic units; per second) for incoming packets. If this setting is not set, the incoming throughput limit is disabled.                                                                                                                                    |
+| `*.throughput.outgoingAmount` | string  | _Optional_ Maximum throughput amount (in atomic units; per second) for outgoing packets. If this setting is not set, the outgoing throughput limit is disabled.                                                                                                                                             |
+| `*.throughput.refillPeriod`   | integer | _Optional_ Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.                                                                                                                                                   |
 
 #### `routes`
 
@@ -297,6 +309,14 @@ The maximum age of a quote provided by this connector. (in milliseconds)
 
 Name of the backend (can be built-in or a require-able module name). Built-in modules are: fixerio, fixerio-plus-xrp, fixerio-plus-coinmarketcap, one-to-one
 
+#### `backendConfig`
+
+* Environment: `CONNECTOR_BACKEND_CONFIG`
+* Type: `object`
+* Default: `{}`
+
+Additional configuration for the backend.
+
 #### `store`
 
 * Environment: `CONNECTOR_STORE`
@@ -320,6 +340,29 @@ Shorthand for `config.storeConfig.path`.
 * Default: `{}`
 
 Additional options to be passed to the `store`'s constructor.
+
+#### `middlewares`
+
+* Environment: `CONNECTOR_MIDDLEWARES`
+* Type: `array`
+* Default: `[]`
+
+| Name           | Type    | Description                                                              |
+| -------------- | ------- | ------------------------------------------------------------------------ |
+| `[]`           | object  | Object describing middleware instance.                                   |
+| `[].type`      | string  | NPM module that should be `require`d to load the middleware constructor. |
+| `[].priority`  | integer | Priority at which this middleware should be inserted. Must be unique.    |
+| `[].options.*` | object  | _Optional_                                                               |
+
+#### `disableMiddleware`
+
+* Environment: `CONNECTOR_DISABLE_MIDDLEWARE`
+* Type: `array`
+* Default: `[]`
+
+| Name | Type   | Description                           |
+| ---- | ------ | ------------------------------------- |
+| `[]` | string | Name of the middleware to be removed. |
 
 #### `broadcastCurves`
 
@@ -405,7 +448,61 @@ Pure in-memory store. Resets every time the connector is run. Useful for develop
 
 ### Extensibility: Middlewares
 
-**TODO**
+#### Built-in: errorHandler
+
+* Pipelines: incomingData, incomingMoney
+
+First middleware in the pipeline. Handles any errors that occur anywhere else and converts them into ILP rejections.
+
+The `errorHandler` middleware will check the thrown error for a field called `ilpErrorCode` which should contain a three-character ILP error code. Otherwise it uses `'F00'` by default. For the `message` it uses the error message and for `triggeredBy` the connector's address. If the error object has a field `ilpErrorData` which is a `Buffer`, it will also attach the provided data to the error. Otherwise, it will attach an empty `data` buffer.
+
+#### Built-in: deduplicate
+
+* Pipelines: outgoingData
+
+Prevents sending duplicate packets which helps reduce the impact of routing loops.
+
+This middleware keeps track of all prepared transfers. If there is a transfer with the same `destination`, `executionCondition`, `data` and an equal or greater `amount` and `expiresAt` already prepared, then we simply link the new packet to the existing packet's outcome. If a packet is being routed in a loop, it will fulfill these requirements, the loop will be terminated, and the packet will time out.
+
+See also: <https://github.com/interledger/rfcs/issues/330#issuecomment-348750488>
+
+#### Built-in: rateLimit
+
+* Pipelines: incomingData, incomingMoney, outgoingData, outgoingMoney
+
+Reduces the maximum number of total requests incoming from or outgoing to any account.
+
+Used for basic rate limiting and to help with DoS.
+
+#### Built-in: maxPacketAmount
+
+* Pipelines: incomingData, outgoingData
+
+Rejects packets with an amount greater than the specified value.
+
+#### Built-in: throughput
+
+* Pipelines: incomingData, outgoingData
+
+Limits the throughput for a given account. Throughput is the amount of money transferred per time.
+
+#### Built-in: balance
+
+* Pipelines: incomingData, incomingMoney, outgoingData, outgoingMoney
+
+Tracks the balance of a given account from the perspective of the connector. This is also the subsystem that triggers settlements.
+
+#### Built-in: validateFulfillment
+
+* Pipelines: outgoingData
+
+Validates fulfillments in incoming ILP fulfill responses. If the fulfillment is invalid, it converts the fulfillment into a rejection.
+
+#### Built-in: expire
+
+* Pipelines: outgoingData
+
+Expires outgoing ILP packets at their designated `expiresAt` time. Returns a rejection when this occurs.
 
 ### Extensibility: Backends
 

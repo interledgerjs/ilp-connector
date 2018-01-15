@@ -1,7 +1,7 @@
 import fetchUri from 'node-fetch'
 import BigNumber from 'bignumber.js'
 import { AccountInfo } from '../types/accounts'
-import { IBackend } from '../types/backend'
+import { BackendInstance, BackendServices } from '../types/backend'
 
 import { create as createLogger } from '../common/log'
 const log = createLogger('fixerio')
@@ -11,18 +11,15 @@ const RATES_API = 'https://api.fixer.io/latest'
 export interface FixerIoOptions {
   spread: number,
   ratesApiUrl: string,
-  getInfo: (accountId: string) => AccountInfo,
-  getAssetCode: (accountId: string) => string
 }
 
 /**
  * Dummy backend that uses Fixer.io API for FX rates
  */
-export default class FixerIoBackend implements IBackend {
+export default class FixerIoBackend implements BackendInstance {
   protected spread: number
   protected ratesApiUrl: string
-  protected getInfo: (accountId: string) => AccountInfo
-  protected getAssetCode: (accountId: string) => string
+  protected getInfo: (accountId: string) => AccountInfo | undefined
 
   protected rates: {
     [key: string]: number
@@ -34,14 +31,13 @@ export default class FixerIoBackend implements IBackend {
    *
    * @param opts.spread The spread we will use to mark up the FX rates
    * @param opts.ratesApiUrl The URL for querying Fixer.io
-   * @param opts.getInfo Method which maps account IDs to AccountInfo objects
-   * @param opts.getAssetCode Method which maps account IDs to asset code
+   * @param api.getInfo Method which maps account IDs to AccountInfo objects
+   * @param api.getAssetCode Method which maps account IDs to asset code
    */
-  constructor (opts: FixerIoOptions) {
+  constructor (opts: FixerIoOptions, api: BackendServices) {
     this.spread = opts.spread || 0
     this.ratesApiUrl = opts.ratesApiUrl || RATES_API
-    this.getInfo = opts.getInfo
-    this.getAssetCode = opts.getAssetCode
+    this.getInfo = api.getInfo
     // this.ratesCacheTtl = opts.ratesCacheTtl || 24 * 3600000
 
     this.rates = {}
@@ -86,8 +82,21 @@ export default class FixerIoBackend implements IBackend {
    * @returns Exchange rate with spread applied
    */
   async getRate (sourceAccount: string, destinationAccount: string) {
-    const sourceCurrency = this.getAssetCode(sourceAccount)
-    const destinationCurrency = this.getAssetCode(destinationAccount)
+    const sourceInfo = this.getInfo(sourceAccount)
+    const destinationInfo = this.getInfo(destinationAccount)
+
+    if (!sourceInfo) {
+      log.warn('unable to fetch account info for source account. accountId=%s', sourceAccount)
+      throw new Error('unable to fetch account info for source account. accountId=' + sourceAccount)
+    }
+    if (!destinationInfo) {
+      log.warn('unable to fetch account info for destination account. accountId=%s', destinationAccount)
+      throw new Error('unable to fetch account info for destination account. accountId=' + destinationAccount)
+    }
+
+    const sourceCurrency = sourceInfo.assetCode
+    const destinationCurrency = destinationInfo.assetCode
+
     // Get ratio between currencies and apply spread
     const sourceRate = this.rates[sourceCurrency]
     const destinationRate = this.rates[destinationCurrency]
@@ -101,9 +110,6 @@ export default class FixerIoBackend implements IBackend {
       log.warn('no rate available for destination currency. currency=%s', destinationCurrency)
       throw new Error('no rate available. currency=' + destinationCurrency)
     }
-
-    const sourceInfo = this.getInfo(sourceAccount)
-    const destinationInfo = this.getInfo(destinationAccount)
 
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than

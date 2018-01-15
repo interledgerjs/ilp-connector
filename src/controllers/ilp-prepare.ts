@@ -14,7 +14,6 @@ import PeerProtocolController from '../controllers/peer-protocol'
 import UnreachableError from '../errors/unreachable-error'
 
 const { fulfillmentToCondition } = require('../lib/utils')
-const { codes } = require('../lib/ilp-errors')
 
 const PEER_PROTOCOL_PREFIX = 'peer.'
 
@@ -33,20 +32,24 @@ export default class IlpPrepareController {
     this.peerProtocolController = deps(PeerProtocolController)
   }
 
-  async handle (sourceAccount: string, packet: Buffer) {
+  async sendData (
+    packet: Buffer,
+    sourceAccount: string,
+    outbound: (data: Buffer, accountId: string) => Promise<Buffer>
+  ) {
     const parsedPacket = IlpPacket.deserializeIlpPrepare(packet)
     const { amount, executionCondition, destination, expiresAt } = parsedPacket
 
     log.debug('handling ilp prepare. sourceAccount=%s destination=%s amount=%s condition=%s expiry=%s packet=%s', sourceAccount, destination, amount, executionCondition.toString('base64'), expiresAt.toISOString(), packet.toString('base64'))
 
     if (destination.startsWith(PEER_PROTOCOL_PREFIX)) {
-      return this.peerProtocolController.handle(sourceAccount, packet, { parsedPacket })
+      return this.peerProtocolController.handle(packet, sourceAccount, { parsedPacket })
     }
 
     const { nextHop, nextHopPacket } = await this.routeBuilder.getNextHopPacket(sourceAccount, parsedPacket)
 
     log.debug('sending outbound ilp prepare. destination=%s amount=%s', destination, nextHopPacket.amount)
-    const result = await this.sendDataToPeer(nextHop, IlpPacket.serializeIlpPrepare(nextHopPacket))
+    const result = await outbound(IlpPacket.serializeIlpPrepare(nextHopPacket), nextHop)
 
     if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
       const { fulfillment } = IlpPacket.deserializeIlpFulfill(result)
@@ -59,13 +62,6 @@ export default class IlpPrepareController {
       }
 
       log.debug('got fulfillment, paying. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
-
-      // asynchronously send money to peer, we don't want to wait for this
-      this.sendMoneyToPeer(nextHop, nextHopPacket.amount)
-        .catch(err => {
-          const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : err
-          log.warn('sending money to peer failed. peerId=%s amount=%s error=%s', nextHop, nextHopPacket.amount, errInfo)
-        })
 
       this.backend.submitPayment({
         sourceAccount: sourceAccount,
@@ -80,25 +76,5 @@ export default class IlpPrepareController {
     }
 
     return result
-  }
-
-  async sendDataToPeer (peerId: string, data: Buffer) {
-    try {
-      return await this.accounts.getPlugin(peerId).sendData(data)
-    } catch (err) {
-      if (err && typeof err === 'object') {
-        const newError = new UnreachableError('failed to forward ilp prepare: ' + err.message)
-        if (err.stack) {
-          newError.stack = err.stack
-        }
-        throw newError
-      } else {
-        throw new Error('non-object thrown: ' + err)
-      }
-    }
-  }
-
-  async sendMoneyToPeer (peerId: string, amount: string) {
-    return this.accounts.getPlugin(peerId).sendMoney(amount)
   }
 }

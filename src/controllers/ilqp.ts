@@ -14,7 +14,7 @@ export default class IlqpController {
     this.routeBuilder = deps(RouteBuilder)
   }
 
-  async handle (sourceAccount: string, packet: Buffer) {
+  async sendData (packet: Buffer, sourceAccount: string) {
     log.debug('responding to ILQP quote request. clientName=' + sourceAccount)
 
     const packetData = Object.assign(

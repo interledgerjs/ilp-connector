@@ -1,7 +1,6 @@
 'use strict'
 
 import Accounts from '../services/accounts'
-import { Writer } from 'oer-utils'
 import { create as createLogger } from '../common/log'
 import ILDCP = require('ilp-protocol-ildcp')
 const log = createLogger('ildcp-host')
@@ -14,7 +13,7 @@ export default class IldcpHostController {
     this.accounts = deps(Accounts)
   }
 
-  async handle (sourceAccount: string, data: Buffer) {
+  async handle (data: Buffer, sourceAccount: string) {
     const clientAddress = this.accounts.getChildAddress(sourceAccount)
     const info = this.accounts.getInfo(sourceAccount)
     log.debug('responding to ILDCP config request. clientAddress=%s', clientAddress)
