@@ -1,5 +1,3 @@
-'use strict'
-
 import BaseError = require('extensible-error')
 
 const { codes } = require('../lib/ilp-errors')

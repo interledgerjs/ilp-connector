@@ -1,5 +1,3 @@
-'use strict'
-
 import BaseError = require('extensible-error')
 import { ErrorObject } from 'ajv'
 

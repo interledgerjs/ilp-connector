@@ -1,10 +1,8 @@
-'use strict'
-
 import memdown from 'memdown'
 import levelup from 'levelup'
 import LeveldownStore = require('./leveldown')
 import { create as createLogger } from '../common/log'
-const log = createLogger('memdown')
+const log = createLogger('memdown-store')
 
 class MemdownStore extends LeveldownStore {
   constructor ({ path }: { path?: string }) {

@@ -1,6 +1,9 @@
 import BigNumber from 'bignumber.js'
 import { AccountInfo } from '../types/accounts'
-import { IBackend } from '../types/backend'
+import { BackendInstance, BackendServices } from '../types/backend'
+
+import { create as createLogger } from '../common/log'
+const log = createLogger('one-to-one-backend')
 
 export interface OneToOneOptions {
   spread: number,
@@ -12,9 +15,9 @@ export interface OneToOneOptions {
 /**
  * Backend which charges no spread and trades everything one-to-one.
  */
-export default class OneToOneBackend implements IBackend {
+export default class OneToOneBackend implements BackendInstance {
   protected spread: number
-  protected getInfo: (accountId: string) => AccountInfo
+  protected getInfo: (accountId: string) => AccountInfo | undefined
   protected getAssetCode: (accountId: string) => string
 
   /**
@@ -22,9 +25,9 @@ export default class OneToOneBackend implements IBackend {
    *
    * @param {Integer} opts.spread The spread we will use to mark up the FX rates
    */
-  constructor (opts: OneToOneOptions) {
+  constructor (opts: OneToOneOptions, api: BackendServices) {
     this.spread = opts.spread || 0
-    this.getInfo = opts.getInfo
+    this.getInfo = api.getInfo
   }
 
   /**
@@ -46,6 +49,15 @@ export default class OneToOneBackend implements IBackend {
   async getRate (sourceAccount: string, destinationAccount: string) {
     const sourceInfo = this.getInfo(sourceAccount)
     const destinationInfo = this.getInfo(destinationAccount)
+
+    if (!sourceInfo) {
+      log.warn('unable to fetch account info for source account. accountId=%s', sourceAccount)
+      throw new Error('unable to fetch account info for source account. accountId=' + sourceAccount)
+    }
+    if (!destinationInfo) {
+      log.warn('unable to fetch account info for destination account. accountId=%s', destinationAccount)
+      throw new Error('unable to fetch account info for destination account. accountId=' + destinationAccount)
+    }
 
     const scaleDiff = destinationInfo.assetScale - sourceInfo.assetScale
     // The spread is subtracted from the rate when going in either direction,

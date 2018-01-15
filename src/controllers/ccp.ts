@@ -16,7 +16,7 @@ export default class CcpController {
     this.routeBroadcaster = deps(RouteBroadcaster)
   }
 
-  async handle (sourceAccount: string, payload: RoutingUpdate) {
+  async handle (payload: RoutingUpdate, sourceAccount: string) {
     validate('RoutingUpdate', payload)
     log.debug('received routes. sender=%s', sourceAccount)
 

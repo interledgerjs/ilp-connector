@@ -37,6 +37,84 @@
             "minimum": 0,
             "maximum": 255
           },
+          "balance": {
+            "description": "Defines whether the connector should maintain and enforce a balance for this account. The balance is always from the connector's perspective. Therefore, a negative balance implies the connector owes money to the counterparty and a positive balance implies the counterparty owes money to the connector. This setting is enforced by the built-in `balance` middleware.",
+            "type": "object",
+            "properties": {
+              "minimum": {
+                "description": "Minimum balance (in this account's indivisible base units) the connector must maintain. The connector will reject outgoing packets if they would put it below this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `\"-Infinity\"` or `\"Infinity\"`.",
+                "type": "string",
+                "pattern": "^(0|-?([1-9][0-9]*|Infinity))$"
+              },
+              "maximum": {
+                "description": "Maximum balance (in this account's indivisible base units) the connector will allow. The connector will reject incoming packets if they would put it above this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `\"-Infinity\"` or `\"Infinity\"`.",
+                "type": "string",
+                "pattern": "^(0|-?([1-9][0-9]*|Infinity))$"
+              },
+              "settleThreshold": {
+                "description": "Balance (in this account's indivisible base units) numerically below which the connector will automatically initiate a settlement. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value) or `\"-Infinity\"`.",
+                "type": "string",
+                "pattern": "^(0|(-?[1-9][0-9]*|-Infinity))$"
+              },
+              "settleTo": {
+                "description": "Balance (in this account's indivisible base units) the connector will attempt to reach when settling. The format is an integer (which may be prefixed with `-` to indicate a negative value) as a string.",
+                "type": "string",
+                "pattern": "^(0|-?[1-9][0-9]*)$",
+                "default": "0"
+              }
+            },
+            "additionalProperties": false,
+            "required": ["maximum"]
+          },
+          "maxPacketAmount": {
+            "description": "Maximum amount per packet for incoming prepare packets. Connector will reject any incoming prepare packets from this account with a higher amount. Amount should be provided as an integer in a string (in atomic units). This setting is enforced by the built-in `maxPacketAmount` middleware.",
+            "type": "string",
+            "pattern": "^[1-9][0-9]*$"
+          },
+          "throughput": {
+            "description": "Configuration to limit the total amount sent via Interledger per unit of time. This setting is enforced by the built-in `throughput` middleware.",
+            "type": "object",
+            "properties": {
+              "refillPeriod": {
+                "description": "Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.",
+                "type": "integer",
+                "minimum": 100
+              },
+              "incomingAmount": {
+                "description": "Maximum incoming throughput amount (in atomic units; per second) for incoming packets. If this setting is not set, the incoming throughput limit is disabled.",
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$"
+              },
+              "outgoingAmount": {
+                "description": "Maximum throughput amount (in atomic units; per second) for outgoing packets. If this setting is not set, the outgoing throughput limit is disabled.",
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$"
+              }
+            },
+            "additionalProperties": false
+          },
+          "rateLimit": {
+            "description": "Maximum rate of incoming packets. Limit is implemented as a token bucket with a constant refill rate. When the token bucket is empty, all requests are immediately rejected. This setting is enforced by the built-in `rateLimit` middleware.",
+            "type": "object",
+            "properties": {
+              "refillPeriod": {
+                "description": "Length of time (in milliseconds) during which the token balance increases by `refillCount` tokens. Defaults to one second.",
+                "type": "integer",
+                "minimum": 100
+              },
+              "refillCount": {
+                "description": "How many tokens are refilled per period. The default refill period is one second, so this would be the average number of requests per second.",
+                "type": "integer",
+                "minimum": 1
+              },
+              "capacity": {
+                "description": "Maximum number of tokens in the bucket.",
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          },
           "sendRoutes": {
             "description": "Whether we should broadcast routes to this peer. Defaults to `true` for `relation=peer` and `false` otherwise.",
             "type": "boolean"
@@ -138,6 +216,12 @@
       "type": "string",
       "default": "fixerio"
     },
+    "backendConfig": {
+      "description": "Additional configuration for the backend.",
+      "type": "object",
+      "default": {},
+      "additionalProperties": true
+    },
     "store": {
       "description": "Name of the store (can be built-in or a require-able module name). Built-in modules are: leveldown",
       "type": "string",
@@ -153,6 +237,45 @@
       "type": "object",
       "default": {},
       "additionalProperties": true
+    },
+    "middlewares": {
+      "description": "Additional middleware that should be added to the middleware stack.",
+      "type": "array",
+      "items": {
+        "description": "Object describing middleware instance.",
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "NPM module that should be `require`d to load the middleware constructor.",
+            "type": "string"
+          },
+          "priority": {
+            "description": "Priority at which this middleware should be inserted. Must be unique.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 19999
+          },
+          "options": {
+            "description": "Options that will be passed to the middleware constructor.",
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "type",
+          "priority"
+        ]
+      },
+      "default": []
+    },
+    "disableMiddleware": {
+      "description": "List of built-in middlewares that should be disabled. Can be used to replace built-in middleware with your own custom version.",
+      "type": "array",
+      "items": {
+        "description": "Name of the middleware to be removed.",
+        "enum": ["errorHandler", "rateLimit", "balance", "maxPacketAmount", "throughput", "deduplicate", "validateFulfillment", "expire"]
+      },
+      "default": []
     },
     "broadcastCurves": {
       "description": "Whether to include liquidity curves when broadcasting routes.",

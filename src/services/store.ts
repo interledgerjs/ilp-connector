@@ -1,23 +1,20 @@
-'use strict'
-
-import { resolve } from 'path'
 import Config from './config'
 import reduct = require('reduct')
-import { IStore } from '../types/store'
+import { StoreConstructor, StoreInstance } from '../types/store'
 
-import { loadModuleFromPathOrDirectly } from '../lib/utils'
+import { loadModuleOfType } from '../lib/utils'
 
 export default class Store {
   protected config: Config
-  protected store: IStore
+  protected store: StoreInstance
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
 
-    const Store = getStore(this.config.store)
+    const Store: StoreConstructor = loadModuleOfType('store', this.config.store)
     this.store = new Store(Object.assign({
       path: this.config.storePath
-    }, this.config.storeConfig))
+    }, this.config.storeConfig), {})
   }
 
   getPluginStore (name: string) {
@@ -51,14 +48,4 @@ export default class Store {
   async del (key: string) {
     return this.store.del(key)
   }
-}
-
-function getStore (store: string) {
-  const module = loadModuleFromPathOrDirectly(resolve(__dirname, '../stores/'), store)
-
-  if (!module) {
-    throw new Error('Store not found at "' + store + '" or "/stores/' + store + '"')
-  }
-
-  return require(module)
 }

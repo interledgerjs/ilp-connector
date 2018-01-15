@@ -9,6 +9,16 @@ export type Point = [BigNumber, BigNumber]
 export type LooselyTypedNumber = BigNumber | string | number
 export type LooselyTypedPoint = [LooselyTypedNumber, LooselyTypedNumber]
 
+export class InvalidLiquidityCurveError extends Error {
+  constructor (message: string, points?: any) {
+    if (points) {
+      message = message + ' points:' + JSON.stringify(points)
+    }
+    super(message)
+    this.name = 'InvalidLiquidityCurveError'
+  }
+}
+
 // TODO use integer math
 export default class LiquidityCurve {
   protected data: Buffer
@@ -280,20 +290,20 @@ function intersectLineSegments (p1: Point, p2: Point, p3: Point, p4: Point): Poi
     p4[0], p4[1])
 
   // Parallel lines.
-  if (denominator.isZero()) return
+  if (denominator.isZero()) return undefined
   const x = determinant(
     topLeft, p1[0].sub(p2[0]),
     bottomLeft, p3[0].sub(p4[0])
   ).div(denominator)
   // Ensure that the intersection is within the line segments, not just the lines.
-  if (x.lt(p1[0]) || p2[0].lt(x)) return
-  if (x.lt(p3[0]) || p4[0].lt(x)) return
+  if (x.lt(p1[0]) || p2[0].lt(x)) return undefined
+  if (x.lt(p3[0]) || p4[0].lt(x)) return undefined
   const y = determinant(
     topLeft, p1[1].sub(p2[1]),
     bottomLeft, p3[1].sub(p4[1])
   ).div(denominator)
-  if (y.lt(p1[1]) || p2[1].lt(y)) return
-  if (y.lt(p3[1]) || p4[1].lt(y)) return
+  if (y.lt(p1[1]) || p2[1].lt(y)) return undefined
+  if (y.lt(p3[1]) || p4[1].lt(y)) return undefined
   return [x, y]
 }
 
@@ -368,14 +378,4 @@ function deserializePoints (buffer: Buffer) {
     ])
   }
   return points
-}
-
-export class InvalidLiquidityCurveError extends Error {
-  constructor (message: string, points?: any) {
-    if (points) {
-      message = message + ' points:' + JSON.stringify(points)
-    }
-    super(message)
-    this.name = 'InvalidLiquidityCurveError'
-  }
 }

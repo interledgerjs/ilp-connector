@@ -1,19 +1,13 @@
-'use strict'
-
-import * as IlpPacket from 'ilp-packet'
 import reduct = require('reduct')
 import { cloneDeep } from 'lodash'
 import compat from 'ilp-compat-plugin'
 import Store from '../services/store'
 import Config from './config'
-import UnreachableError from '../errors/unreachable-error'
-import { codes } from '../lib/ilp-errors'
+import { EventEmitter } from 'events'
 import { AccountInfo } from '../types/accounts'
 import {
   ConnectOptions,
-  IPlugin,
-  DataHandler,
-  MoneyHandler
+  PluginInstance
 } from '../types/plugin'
 import ILDCP = require('ilp-protocol-ildcp')
 
@@ -21,37 +15,27 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('accounts')
 
 export interface AccountEntry {
-  plugin: IPlugin,
+  plugin: PluginInstance,
   info: AccountInfo
 }
 
-export interface GenericDataHandler {
-  (accountId: string, data: Buffer): Promise<Buffer>
-}
-
-export interface GenericMoneyHandler {
-  (accountId: string, amount: string): Promise<void>
-}
-
-export default class Accounts {
+export default class Accounts extends EventEmitter {
   protected config: Config
   protected store: Store
 
   protected address: string
   protected accounts: Map<string, AccountEntry>
-  protected dataHandler?: GenericDataHandler
-  protected moneyHandler?: GenericMoneyHandler
 
   protected parentAccount?: string
 
   constructor (deps: reduct.Injector) {
+    super()
+
     this.config = deps(Config)
     this.store = deps(Store)
 
     this.address = this.config.ilpAddress || 'unknown'
     this.accounts = new Map()
-    this.dataHandler = undefined
-    this.moneyHandler = undefined
     this.parentAccount = undefined
   }
 
@@ -118,7 +102,7 @@ export default class Accounts {
 
     if (!account) {
       log.debug('no currency found. account=%s', accountId)
-      return
+      return undefined
     }
 
     return account.info.assetCode
@@ -152,29 +136,32 @@ export default class Accounts {
     const store = this.store.getPluginStore(accountId)
 
     const Plugin = require(creds.plugin)
+    const api = {
+      store,
+      log: createLogger(`${creds.plugin}[${accountId}]`)
+    }
     const plugin = compat(new Plugin(Object.assign({}, creds.options, {
-      // non JSON-stringifiable fields are prefixed with an underscore
+      // these underscore-prefixed properties are deprecated, use the second parameter instead
       _store: store,
-      _log: createLogger(creds.plugin)
-    })))
+      _log: api.log
+    }), api))
 
     this.accounts.set(accountId, {
       info: creds,
       plugin
     })
 
-    plugin.registerDataHandler(this._handleData.bind(this, accountId))
-    plugin.registerMoneyHandler(this._handleMoney.bind(this, accountId))
+    this.emit('add', accountId, plugin)
   }
 
   remove (accountId: string) {
     const plugin = this.getPlugin(accountId)
     if (!plugin) {
-      return
+      return undefined
     }
     log.info('remove account. accountId=' + accountId)
-    plugin.deregisterDataHandler()
-    plugin.deregisterMoneyHandler()
+
+    this.emit('remove', accountId, plugin)
 
     if (this.parentAccount === accountId) {
       this.parentAccount = undefined
@@ -182,72 +169,6 @@ export default class Accounts {
 
     this.accounts.delete(accountId)
     return plugin
-  }
-
-  async _handleData (accountId: string, data: Buffer) {
-    try {
-      if (!this.dataHandler) {
-        log.debug('no data handler, rejecting. from=%s', accountId)
-        throw new UnreachableError('connector not ready.')
-      }
-
-      const response = await this.dataHandler(accountId, data)
-
-      if (!Buffer.isBuffer(response)) {
-        throw new Error('handler did not return a value.')
-      }
-
-      return response
-    } catch (e) {
-      let err = e
-      if (!err || typeof err !== 'object') {
-        err = new Error('Non-object thrown: ' + e)
-      }
-
-      log.debug('error in data handler. error=%s', err.stack ? err.stack : err)
-
-      if (err.name === 'InsufficientBalanceError') {
-        err.ilpErrorCode = codes.T04_INSUFFICIENT_LIQUIDITY
-      }
-
-      return IlpPacket.serializeIlpReject({
-        code: err.ilpErrorCode || codes.F00_BAD_REQUEST,
-        message: err.message ? err.message : String(err),
-        triggeredBy: this.getOwnAddress(),
-        data: Buffer.alloc(0)
-      })
-    }
-  }
-
-  async _handleMoney (accountId: string, amount: string) {
-    if (!this.moneyHandler) {
-      log.debug('no money handler, ignoring. from=%s', accountId)
-      return
-    }
-
-    return this.moneyHandler(accountId, amount)
-  }
-
-  registerDataHandler (dataHandler: GenericDataHandler) {
-    if (this.dataHandler) {
-      throw new Error('data handler already registered.')
-    }
-    this.dataHandler = dataHandler
-  }
-
-  deregisterDataHandler () {
-    this.dataHandler = undefined
-  }
-
-  registerMoneyHandler (moneyHandler: GenericMoneyHandler) {
-    if (this.moneyHandler) {
-      throw new Error('money handler already registered.')
-    }
-    this.moneyHandler = moneyHandler
-  }
-
-  deregisterMoneyHandler () {
-    this.moneyHandler = undefined
   }
 
   getInfo (accountId: string) {

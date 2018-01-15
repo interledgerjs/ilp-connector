@@ -1,13 +1,11 @@
-'use strict'
-
 import { resolve } from 'path'
 import levelup, { LevelUp } from 'levelup'
 import leveldown from 'leveldown'
-import { IStore } from '../types/store'
+import { StoreInstance } from '../types/store'
 import { create as createLogger } from '../common/log'
-const log = createLogger('leveldown')
+const log = createLogger('leveldown-store')
 
-class LeveldownStore implements IStore {
+class LeveldownStore implements StoreInstance {
   db: LevelUp
 
   constructor ({ db, path: dbPath }: {db?: LevelUp, path?: string}) {
