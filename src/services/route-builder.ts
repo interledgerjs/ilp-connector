@@ -16,7 +16,7 @@ import Quoter from './quoter'
 import Config from './config'
 import LiquidityCurve from '../routing/liquidity-curve'
 import reduct = require('reduct')
-import { IlpPrepare } from 'ilp-packet'
+import * as IlpPacket from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('route-builder')
 
@@ -31,24 +31,16 @@ function rateToCurve (rate: number) {
   }
 }
 
-export interface QuoteLiquidityParams {
+export interface QuoteLiquidityParams extends IlpPacket.IlqpLiquidityRequest {
   sourceAccount: string
-  destinationAccount: string
-  destinationHoldDuration: number
 }
 
-export interface QuoteBySourceParams {
+export interface QuoteBySourceParams extends IlpPacket.IlqpBySourceRequest {
   sourceAccount: string
-  destinationAccount: string
-  sourceAmount: string
-  destinationHoldDuration: number
 }
 
-export interface QuoteByDestinationParams {
+export interface QuoteByDestinationParams extends IlpPacket.IlqpByDestinationRequest {
   sourceAccount: string
-  destinationAccount: string
-  destinationAmount: string
-  destinationHoldDuration: number
 }
 
 export default class RouteBuilder {
@@ -111,17 +103,17 @@ export default class RouteBuilder {
   }
 
   /**
-   * @param {Object} params
-   * @param {String} params.sourceAccount
-   * @param {String} params.destinationAccount
-   * @param {Number} params.destinationHoldDuration
+   * @param {String} sourceAccount
+   * @param {Object} packet
+   * @param {String} packet.destinationAccount
+   * @param {Number} packet.destinationHoldDuration
    * @returns {QuoteLiquidityResponse}
    */
-  async quoteLiquidity (params: QuoteLiquidityParams) {
+  async quoteLiquidity (sourceAccount: string, packet: IlpPacket.IlqpLiquidityRequest) {
     log.info('creating liquidity quote. sourceAccount=%s destinationAccount=%s',
-      params.sourceAccount, params.destinationAccount)
+      sourceAccount, packet.destinationAccount)
 
-    const { nextHop, rate } = await this.quoteLocal(params.sourceAccount, params.destinationAccount)
+    const { nextHop, rate } = await this.quoteLocal(sourceAccount, packet.destinationAccount)
     const localQuoteExpiry = Date.now() + (this.config.quoteExpiry)
 
     const localCurve = rateToCurve(rate)
@@ -130,30 +122,30 @@ export default class RouteBuilder {
     let appliesToPrefix
     let sourceHoldDuration
     let expiresAt
-    if (params.destinationAccount.startsWith(nextHop)) {
+    if (packet.destinationAccount.startsWith(nextHop)) {
       log.debug('local destination.')
       liquidityCurve = localCurve
       appliesToPrefix = nextHop
-      sourceHoldDuration = params.destinationHoldDuration + this.config.minMessageWindow
+      sourceHoldDuration = packet.destinationHoldDuration + this.config.minMessageWindow
       expiresAt = localQuoteExpiry
     } else {
-      const quote = await this.quoter.quoteLiquidity(nextHop, params.destinationAccount)
+      const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
-        log.info('no quote found. params=%j', params)
-        throw new NoRouteFoundError('no quote found. to=' + params.destinationAccount)
+        log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
+        throw new NoRouteFoundError('no quote found. to=' + packet.destinationAccount)
       }
       log.debug('remote destination. quote=%j', quote)
 
       liquidityCurve = localCurve.join(quote.curve)
       appliesToPrefix = quote.prefix
-      sourceHoldDuration = params.destinationHoldDuration + quote.minMessageWindow + this.config.minMessageWindow
+      sourceHoldDuration = packet.destinationHoldDuration + quote.minMessageWindow + this.config.minMessageWindow
       expiresAt = Math.min(Number(quote.expiry), localQuoteExpiry)
     }
 
     this._verifyPluginIsConnected(nextHop)
-    this._validateHoldDurations(sourceHoldDuration, params.destinationHoldDuration)
+    this._validateHoldDurations(sourceHoldDuration, packet.destinationHoldDuration)
 
-    const shiftBy = this._getScaleAdjustment(params.sourceAccount, nextHop)
+    const shiftBy = this._getScaleAdjustment(sourceAccount, nextHop)
 
     return {
       // Shifting the curve right by one unit effectively makes it so the client
@@ -163,7 +155,7 @@ export default class RouteBuilder {
       // prefix, the curve must ALWAYS apply because people may cache it.
       // So we need the shortest prefix of the destination for which this
       // cached curve will ALWAYS apply.
-      appliesToPrefix: this.routingTable.getShortestUnambiguousPrefix(params.destinationAccount, appliesToPrefix),
+      appliesToPrefix: this.routingTable.getShortestUnambiguousPrefix(packet.destinationAccount, appliesToPrefix),
       sourceHoldDuration,
       expiresAt: new Date(expiresAt)
     }
@@ -177,49 +169,49 @@ export default class RouteBuilder {
   }
 
   /**
-   * @param {Object} params
-   * @param {String} params.sourceAccount
-   * @param {String} params.destinationAccount
-   * @param {Number} params.destinationHoldDuration
-   * @param {String} params.sourceAmount
+   * @param {String} sourceAccount
+   * @param {Object} packet
+   * @param {String} packet.destinationAccount
+   * @param {Number} packet.destinationHoldDuration
+   * @param {String} packet.sourceAmount
    * @returns {QuoteBySourceResponse}
    */
-  async quoteBySource (params: QuoteBySourceParams) {
+  async quoteBySource (sourceAccount: string, packet: IlpPacket.IlqpBySourceRequest) {
     log.info('creating quote by source amount. sourceAccount=%s destinationAccount=%s sourceAmount=%s',
-      params.sourceAccount, params.destinationAccount, params.sourceAmount)
+      sourceAccount, packet.destinationAccount, packet.sourceAmount)
 
-    if (params.sourceAmount === '0') {
+    if (packet.sourceAmount === '0') {
       throw new InvalidAmountSpecifiedError('sourceAmount must be positive')
     }
 
-    const { nextHop, rate } = await this.quoteLocal(params.sourceAccount, params.destinationAccount)
+    const { nextHop, rate } = await this.quoteLocal(sourceAccount, packet.destinationAccount)
 
-    const nextAmount = new BigNumber(params.sourceAmount).times(rate).floor().toString()
+    const nextAmount = new BigNumber(packet.sourceAmount).times(rate).floor().toString()
     let destinationAmount
     let sourceHoldDuration
-    if (params.destinationAccount.startsWith(nextHop)) {
+    if (packet.destinationAccount.startsWith(nextHop)) {
       log.debug('local destination. destinationAmount=' + nextAmount)
       destinationAmount = nextAmount
-      sourceHoldDuration = params.destinationHoldDuration + this.config.minMessageWindow
+      sourceHoldDuration = packet.destinationHoldDuration + this.config.minMessageWindow
     } else {
-      const quote = await this.quoter.quoteLiquidity(nextHop, params.destinationAccount)
+      const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
-        log.info('no quote found. params=%j', params)
-        throw new NoRouteFoundError('no quote found. to=' + params.destinationAccount)
+        log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
+        throw new NoRouteFoundError('no quote found. to=' + packet.destinationAccount)
       }
       log.debug('remote destination. quote=%j', quote)
 
-      destinationAmount = quote.curve.amountAt(params.sourceAmount).times(rate).floor().toString()
-      sourceHoldDuration = params.destinationHoldDuration + quote.minMessageWindow + this.config.minMessageWindow
+      destinationAmount = quote.curve.amountAt(packet.sourceAmount).times(rate).floor().toString()
+      sourceHoldDuration = packet.destinationHoldDuration + quote.minMessageWindow + this.config.minMessageWindow
     }
 
     if (destinationAmount === '0') {
       throw new UnacceptableAmountError('quoted destination is lower than minimum amount allowed.')
     }
 
-    this._verifyPluginIsConnected(params.sourceAccount)
+    this._verifyPluginIsConnected(sourceAccount)
     this._verifyPluginIsConnected(nextHop)
-    this._validateHoldDurations(sourceHoldDuration, params.destinationHoldDuration)
+    this._validateHoldDurations(sourceHoldDuration, packet.destinationHoldDuration)
 
     return {
       destinationAmount,
@@ -228,39 +220,39 @@ export default class RouteBuilder {
   }
 
   /**
-   * @param {Object} params
-   * @param {String} params.sourceAccount
-   * @param {String} params.destinationAccount
-   * @param {Number} params.destinationHoldDuration
-   * @param {String} params.destinationAmount
+   * @param {String} sourceAccount
+   * @param {Object} packet
+   * @param {String} packet.destinationAccount
+   * @param {Number} packet.destinationHoldDuration
+   * @param {String} packet.destinationAmount
    * @returns {QuoteByDestinationResponse}
    */
-  async quoteByDestination (params: QuoteByDestinationParams) {
+  async quoteByDestination (sourceAccount: string, packet: IlpPacket.IlqpByDestinationRequest) {
     log.info('creating quote by destination amount. sourceAccount=%s destinationAccount=%s destinationAmount=%s',
-      params.sourceAccount, params.destinationAccount, params.destinationAmount)
+      sourceAccount, packet.destinationAccount, packet.destinationAmount)
 
-    if (params.destinationAmount === '0') {
+    if (packet.destinationAmount === '0') {
       throw new InvalidAmountSpecifiedError('destinationAmount must be positive')
     }
 
-    const { nextHop, rate } = await this.quoteLocal(params.sourceAccount, params.destinationAccount)
+    const { nextHop, rate } = await this.quoteLocal(sourceAccount, packet.destinationAccount)
 
     let nextHopAmount
     let nextHopHoldDuration
-    if (params.destinationAccount.startsWith(nextHop)) {
+    if (packet.destinationAccount.startsWith(nextHop)) {
       log.debug('local destination.')
-      nextHopAmount = params.destinationAmount
-      nextHopHoldDuration = params.destinationHoldDuration
+      nextHopAmount = packet.destinationAmount
+      nextHopHoldDuration = packet.destinationHoldDuration
     } else {
-      const quote = await this.quoter.quoteLiquidity(nextHop, params.destinationAccount)
+      const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
-        log.info('no quote found. params=%j', params)
-        throw new NoRouteFoundError('no quote found. to=' + params.destinationAccount)
+        log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
+        throw new NoRouteFoundError('no quote found. to=' + packet.destinationAccount)
       }
       log.debug('remote destination. quote=%j', quote)
 
-      nextHopAmount = quote.curve.amountReverse(params.destinationAmount).toString()
-      nextHopHoldDuration = params.destinationHoldDuration + quote.minMessageWindow
+      nextHopAmount = quote.curve.amountReverse(packet.destinationAmount).toString()
+      nextHopHoldDuration = packet.destinationHoldDuration + quote.minMessageWindow
     }
 
     const sourceAmount = new BigNumber(nextHopAmount).div(rate).ceil().toString()
@@ -268,9 +260,9 @@ export default class RouteBuilder {
     if (sourceAmount === '0') {
       throw new UnacceptableAmountError('Quoted source is lower than minimum amount allowed')
     }
-    this._verifyPluginIsConnected(params.sourceAccount)
+    this._verifyPluginIsConnected(sourceAccount)
     this._verifyPluginIsConnected(nextHop)
-    this._validateHoldDurations(sourceHoldDuration, params.destinationHoldDuration)
+    this._validateHoldDurations(sourceHoldDuration, packet.destinationHoldDuration)
     return {
       sourceAmount,
       sourceHoldDuration
@@ -293,7 +285,7 @@ export default class RouteBuilder {
    * @param {IlpPrepare} sourcePacket (Parsed packet that we received
    * @returns {NextHopPacketInfo} Account and packet for next hop
    */
-  async getNextHopPacket (sourceAccount: string, sourcePacket: IlpPrepare) {
+  async getNextHopPacket (sourceAccount: string, sourcePacket: IlpPacket.IlpPrepare) {
     const {
       amount,
       executionCondition,

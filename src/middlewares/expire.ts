@@ -24,9 +24,10 @@ export default class ExpireMiddleware implements Middleware {
             }, duration)
           })
 
-          promise.then(() => clearTimeout(timeout))
-
-          return Promise.race([promise, timeoutPromise])
+          return Promise.race([
+            promise.then((data) => { clearTimeout(timeout); return data }),
+            timeoutPromise
+          ])
         }
 
         return next(data)

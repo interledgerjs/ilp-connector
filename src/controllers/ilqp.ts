@@ -17,21 +17,27 @@ export default class IlqpController {
   async sendData (packet: Buffer, sourceAccount: string) {
     log.debug('responding to ILQP quote request. clientName=' + sourceAccount)
 
-    const packetData = Object.assign(
-      { sourceAccount },
-      IlpPacket.deserializeIlpPacket(packet).data)
     switch (packet[0]) {
       case IlpPacket.Type.TYPE_ILQP_LIQUIDITY_REQUEST:
         return IlpPacket.serializeIlqpLiquidityResponse(
-          await this.routeBuilder.quoteLiquidity(packetData as IlpPacket.IlqpLiquidityRequest & { sourceAccount: string })
+          await this.routeBuilder.quoteLiquidity(
+            sourceAccount,
+            IlpPacket.deserializeIlqpLiquidityRequest(packet)
+          )
         )
       case IlpPacket.Type.TYPE_ILQP_BY_SOURCE_REQUEST:
         return IlpPacket.serializeIlqpBySourceResponse(
-          await this.routeBuilder.quoteBySource(packetData as IlpPacket.IlqpBySourceRequest & { sourceAccount: string })
+          await this.routeBuilder.quoteBySource(
+            sourceAccount,
+            IlpPacket.deserializeIlqpBySourceRequest(packet)
+          )
         )
       case IlpPacket.Type.TYPE_ILQP_BY_DESTINATION_REQUEST:
         return IlpPacket.serializeIlqpByDestinationResponse(
-          await this.routeBuilder.quoteByDestination(packetData as IlpPacket.IlqpByDestinationRequest & { sourceAccount: string })
+          await this.routeBuilder.quoteByDestination(
+            sourceAccount,
+            IlpPacket.deserializeIlqpByDestinationRequest(packet)
+          )
         )
       default:
         throw new InvalidPacketError('packet has unexpected type.')

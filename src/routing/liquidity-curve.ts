@@ -3,6 +3,13 @@
 import Long = require('long')
 import BigNumber from 'bignumber.js'
 
+// Fix missing type declaration in bignumber.js
+declare module 'bignumber.js' {
+  export interface BigNumber {
+    isBigNumber: true
+  }
+}
+
 BigNumber.config({ DECIMAL_PLACES: 19 })
 
 export type Point = [BigNumber, BigNumber]
@@ -331,7 +338,7 @@ function bnFromValue (rawValue: string | number | BigNumber) {
       throw new InvalidLiquidityCurveError('Cannot parse negative value: ' + value)
     }
   } else if (typeof value === 'object') {
-    if ((value as any).isBigNumber && value.isNegative()) {
+    if (value.isBigNumber && value.isNegative()) {
       throw new InvalidLiquidityCurveError('Cannot parse negative value: ' + value.toString())
     }
   } else {

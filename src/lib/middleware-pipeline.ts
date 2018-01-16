@@ -41,7 +41,7 @@ export default class MiddlewarePipeline<T,U> implements Pipeline<T,U> {
     ]
   }
 
-  getMethods () {
+  getMethods (): MiddlewareMethod<T,U>[] {
     return this.entries.map(e => e.method)
   }
 }
