@@ -61,7 +61,7 @@ export default class IlpPrepareController {
         throw new UnreachableError('received an invalid fulfillment.')
       }
 
-      log.debug('got fulfillment, paying. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
+      log.debug('got fulfillment. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
 
       this.backend.submitPayment({
         sourceAccount: sourceAccount,

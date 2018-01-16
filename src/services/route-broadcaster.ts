@@ -43,7 +43,7 @@ export default class RouteBroadcaster {
   async start () {
     try {
       this.reloadLocalRoutes()
-      this.broadcast(true)
+      await this.broadcast(true)
     } catch (e) {
       if (e.name === 'SystemError' ||
           e.name === 'ServerError') {
@@ -311,26 +311,35 @@ export default class RouteBroadcaster {
         })
     }))
 
-    await new Promise(resolve => {
+    await new Promise((resolve, reject) => {
       const timeoutId = setTimeout(resolve, timeout)
       broadcastPromise.then(() => {
         clearTimeout(timeoutId)
         resolve()
-      })
+      }, reject)
     })
   }
 
-  async broadcastSoon () {
-    await new Promise(resolve => this.broadcastTimer = setTimeout(resolve, this.config.routeBroadcastInterval))
-
-    try {
-      this.reloadLocalRoutes()
-      await this.broadcast()
-    } catch (err) {
-      log.warn('broadcasting routes failed')
-      log.debug(err)
+  broadcastSoon () {
+    if (this.broadcastTimer) {
+      return
     }
 
-    await this.broadcastSoon()
+    (async () => {
+      await new Promise(resolve => this.broadcastTimer = setTimeout(resolve, this.config.routeBroadcastInterval))
+
+      this.reloadLocalRoutes()
+      await this.broadcast()
+
+      this.broadcastSoon()
+    })()
+      .catch(e => {
+        let err = e
+        if (!err || typeof err !== 'object') {
+          err = new Error('Non-object thrown: ' + e)
+        }
+
+        log.warn('broadcasting routes failed. errInfo=%s', err.stack ? err.stack : err)
+      })
   }
 }

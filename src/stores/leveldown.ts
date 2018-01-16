@@ -8,19 +8,19 @@ const log = createLogger('leveldown-store')
 class LeveldownStore implements StoreInstance {
   db: LevelUp
 
-  constructor ({ db, path: dbPath }: {db?: LevelUp, path?: string}) {
+  constructor ({ db, path }: {db?: LevelUp, path?: string}) {
     if (db) {
       this.db = db
       return
     }
 
-    if (!dbPath) {
+    if (!path) {
       log.warn('no CONNECTOR_STORE_PATH set, defaulting to ./data.')
-      dbPath = resolve(process.cwd(), 'data')
+      path = resolve(process.cwd(), 'data')
     }
 
-    log.info('initialize database. path=%s', dbPath)
-    this.db = levelup(leveldown(dbPath))
+    log.info('initialize database. path=%s', path)
+    this.db = levelup(leveldown(path))
   }
 
   async get (key: string) {
