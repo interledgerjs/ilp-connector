@@ -87,6 +87,7 @@ export default class Config extends ConfigSchemaTyping {
           case 'boolean':
             config[key] = BOOLEAN_VALUES[envValue] || false
             break
+          case 'integer':
           case 'number':
             config[key] = Number(envValue)
             break

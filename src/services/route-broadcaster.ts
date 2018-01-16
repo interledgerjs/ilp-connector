@@ -140,10 +140,9 @@ export default class RouteBroadcaster {
     }
     if (haveRoutesChanged && this.config.routeBroadcastEnabled) {
       // this.routeBroadcaster.markAccountsUnreachable(lostLedgerLinks)
-      // this.routeBroadcaster.broadcast()
-      //   .catch(function (err) {
-      //     log.warn('error broadcasting routes: ' + err.message)
-      //   })
+      this.broadcast().catch((err) => {
+        log.warn('failed to relay route update error=%s', err.message)
+      })
     }
   }
 
