@@ -12,6 +12,7 @@ import {
   Middleware,
   MiddlewareDefinition,
   MiddlewareMethod,
+  MiddlewareConstructor,
   Pipeline,
   Pipelines
 } from '../types/middleware'
@@ -79,9 +80,10 @@ export default class MiddlewareManager {
 
   construct (name: string, definition: MiddlewareDefinition): Middleware {
     // Custom middleware
-    const Middleware = loadModuleOfType('middleware', definition.type)
+    const Middleware: MiddlewareConstructor =
+      loadModuleOfType('middleware', definition.type)
 
-    return new Middleware(definition.options, {
+    return new Middleware(definition.options || {}, {
       getInfo: accountId => this.accounts.getInfo(accountId),
       getOwnAddress: () => this.accounts.getOwnAddress(),
       sendData: this.sendData.bind(this),
