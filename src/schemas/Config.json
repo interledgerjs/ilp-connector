@@ -171,11 +171,6 @@
       "type": "number",
       "default": 0.002
     },
-    "slippage": {
-      "description": "The ratio for overestimating exchange rates during quotes to prevent payment failure if the rate changes.",
-      "type": "number",
-      "default": 0.001
-    },
     "minMessageWindow": {
       "description": "Minimum time the connector wants to budget for getting a message to the accounts its trading on. In milliseconds.",
       "type": "integer",
@@ -248,12 +243,6 @@
           "type": {
             "description": "NPM module that should be `require`d to load the middleware constructor.",
             "type": "string"
-          },
-          "priority": {
-            "description": "Priority at which this middleware should be inserted. Must be unique.",
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 19999
           },
           "options": {
             "description": "Options that will be passed to the middleware constructor.",
