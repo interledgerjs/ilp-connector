@@ -58,10 +58,18 @@ export default class Config extends ConfigSchemaTyping {
       env = process.env
     }
 
+    // Copy all env vars starting with ENV_PREFIX into a set so we can check off
+    // the ones we recognize and warn the user about any we don't recognize.
+    const unrecognizedEnvKeys = new Set(
+      Object.keys(env).filter(key => key.startsWith(ENV_PREFIX))
+    )
+
     const config = {}
     for (let key of Object.keys(schema.properties)) {
       const envKey = ENV_PREFIX + constantCase(key)
       const envValue = env[envKey]
+
+      unrecognizedEnvKeys.delete(envKey)
 
       if (typeof envValue === 'string') {
         switch (schema.properties[key].type) {
@@ -86,6 +94,10 @@ export default class Config extends ConfigSchemaTyping {
             throw new TypeError('Unknown JSON schema type: ' + schema.properties[key].type)
         }
       }
+    }
+
+    for (const key of unrecognizedEnvKeys) {
+      log.warn('unrecognized environment variable. key=%s', key)
     }
 
     this.validate(config)
