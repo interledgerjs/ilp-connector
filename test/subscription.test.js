@@ -32,7 +32,7 @@ describe('Subscriptions', function () {
 
     const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
     for (let accountId of testAccounts) {
-      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
+      await this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
         method: 'broadcast_routes',
         data: {
           hold_down_time: 45000,
