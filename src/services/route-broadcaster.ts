@@ -312,6 +312,8 @@ export default class RouteBroadcaster {
 
     await new Promise((resolve, reject) => {
       const timeoutId = setTimeout(resolve, timeout)
+      // we don't want this timeout to keep node running
+      timeoutId.unref()
       broadcastPromise.then(() => {
         clearTimeout(timeoutId)
         resolve()
