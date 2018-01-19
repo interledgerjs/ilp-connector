@@ -100,6 +100,8 @@ describe('IlpPrepareController', function () {
 
     sinon.stub(this.mockPlugin2Wrapped, 'sendData')
       .resolves(fulfillPacket)
+
+    await this.middlewareManager.setup()
     const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
     assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
@@ -120,12 +122,14 @@ describe('IlpPrepareController', function () {
 
     sinon.stub(this.mockPlugin2Wrapped, 'sendData')
       .resolves(fulfillPacket)
+
+    await this.middlewareManager.setup()
     const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
     assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
     assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'F02',
-      message: 'received an invalid fulfillment.',
+      message: 'fulfillment did not match expected value.',
       triggeredBy: 'test.connie',
       data: Buffer.alloc(0)
     })
@@ -137,6 +141,8 @@ describe('IlpPrepareController', function () {
         fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
         data: Buffer.alloc(0)
       }))
+
+    await this.middlewareManager.setup()
     await this.mockPlugin1Wrapped._dataHandler(IlpPacket.serializeIlpPrepare({
       amount: '100',
       executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
@@ -161,6 +167,8 @@ describe('IlpPrepareController', function () {
         fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
         data: Buffer.alloc(0)
       }))
+
+    await this.middlewareManager.setup()
     await this.mockPlugin1Wrapped._dataHandler(IlpPacket.serializeIlpPrepare({
       amount: '100',
       executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
@@ -259,12 +267,14 @@ describe('IlpPrepareController', function () {
 
     sinon.stub(this.mockPlugin2Wrapped, 'sendData')
       .rejects(new Error('fail!'))
+
+    await this.middlewareManager.setup()
     const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
     assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
     assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'F02',
-      message: 'failed to forward ilp prepare: fail!',
+      message: 'failed to send packet: fail!',
       triggeredBy: 'test.connie',
       data: Buffer.alloc(0)
     })
@@ -288,6 +298,7 @@ describe('IlpPrepareController', function () {
     sinon.stub(this.mockPlugin2Wrapped, 'sendMoney')
       .rejects(new Error('fail!'))
 
+    await this.middlewareManager.setup()
     const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
     assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
@@ -332,6 +343,7 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
+    await this.middlewareManager.setup()
     const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
     assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
@@ -352,6 +364,7 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
+    await this.middlewareManager.setup()
     const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
     assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
@@ -382,6 +395,7 @@ describe('IlpPrepareController', function () {
         data: Buffer.alloc(0)
       })
 
+      await this.middlewareManager.setup()
       const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
       sinon.assert.calledOnce(rejectStub)
@@ -407,6 +421,7 @@ describe('IlpPrepareController', function () {
         data: Buffer.alloc(0)
       })
 
+      await this.middlewareManager.setup()
       await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
       sinon.assert.calledOnce(dataStub)

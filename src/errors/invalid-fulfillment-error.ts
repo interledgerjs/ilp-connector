@@ -9,6 +9,6 @@ export default class InvalidFulfillmentError extends BaseError {
     super(message)
 
     // TODO: We shouldcreate a more specific error code
-    this.ilpErrorCode = codes.T00_INTERNAL_ERROR
+    this.ilpErrorCode = codes.F02_UNREACHABLE
   }
 }

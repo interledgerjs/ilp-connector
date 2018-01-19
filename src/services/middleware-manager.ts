@@ -18,6 +18,7 @@ import {
 } from '../types/middleware'
 import { PluginInstance, DataHandler, MoneyHandler } from '../types/plugin'
 import MiddlewarePipeline from '../lib/middleware-pipeline'
+import { codes } from '../lib/ilp-errors'
 
 const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   errorHandler: {
@@ -119,7 +120,24 @@ export default class MiddlewareManager {
     }
 
     // Generate outgoing middleware
-    const submitData = plugin.sendData.bind(plugin)
+    const submitData = async (data: Buffer) => {
+      try {
+        return await plugin.sendData(data)
+      } catch (e) {
+        let err = e
+        if (!err || typeof err !== 'object') {
+          err = new Error('non-object thrown. value=' + e)
+        }
+
+        if (!err.ilpErrorCode) {
+          err.ilpErrorCode = codes.F02_UNREACHABLE
+        }
+
+        err.message = 'failed to send packet: ' + err.message
+
+        throw err
+      }
+    }
     const submitMoney = plugin.sendMoney.bind(plugin)
     const outgoingDataHandler: DataHandler =
       this.createHandler(pipelines.outgoingData, accountId, submitData)

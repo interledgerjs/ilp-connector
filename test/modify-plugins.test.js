@@ -33,6 +33,7 @@ describe('Modify Plugins', function () {
     await this.backend.connect(ratesResponse)
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
+    await this.middlewareManager.setup()
   })
 
   describe('addPlugin', function () {
@@ -49,9 +50,8 @@ describe('Modify Plugins', function () {
     })
 
     it('should support new ledger', async function () {
-      const quotePromise = this.routeBuilder.quoteBySource({
+      const quotePromise = this.routeBuilder.quoteBySource('usd-ledger', {
         sourceAmount: '100',
-        sourceAccount: 'usd-ledger',
         destinationAccount: 'jpy-ledger.bob',
         destinationHoldDuration: 5000
       })
@@ -79,9 +79,8 @@ describe('Modify Plugins', function () {
         }
       })))
 
-      const quotePromise2 = this.routeBuilder.quoteBySource({
+      const quotePromise2 = this.routeBuilder.quoteBySource('usd-ledger', {
         sourceAmount: '100',
-        sourceAccount: 'usd-ledger',
         destinationAccount: 'jpy-ledger.bob',
         destinationHoldDuration: 5000
       })
@@ -139,18 +138,16 @@ describe('Modify Plugins', function () {
     })
 
     it('should no longer quote to that plugin', async function () {
-      await this.routeBuilder.quoteBySource({
+      await this.routeBuilder.quoteBySource('usd-ledger', {
         sourceAmount: '100',
-        sourceAccount: 'usd-ledger',
         destinationAccount: 'jpy-ledger.bob',
         destinationHoldDuration: 1.001
       })
 
       await this.app.removePlugin('jpy-ledger')
 
-      await this.routeBuilder.quoteBySource({
+      await this.routeBuilder.quoteBySource('usd-ledger', {
         sourceAmount: '100',
-        sourceAccount: 'usd-ledger',
         destinationAccount: 'jpy-ledger.bob',
         destinationHoldDuration: 1.001
       }).then((quote) => {

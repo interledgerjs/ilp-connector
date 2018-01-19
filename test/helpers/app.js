@@ -10,6 +10,7 @@ const Quoter = require('../../src/services/quoter').default
 const MessageRouter = require('../../src/services/message-router').default
 const RateBackend = require('../../src/services/rate-backend').default
 const RoutingTable = require('../../src/services/routing-table').default
+const MiddlewareManager = require('../../src/services/middleware-manager').default
 const CcpController = require('../../src/controllers/ccp').default
 const Store = require('../../src/services/store').default
 
@@ -36,6 +37,7 @@ exports.create = function (context, minBalance) {
   context.accounts = deps(Accounts)
   context.balances = deps(Balances)
   context.config = deps(Config)
+  context.middlewareManager = deps(MiddlewareManager)
   context.messageRouter = deps(MessageRouter)
   context.ccpController = deps(CcpController)
   context.store = deps(Store)
