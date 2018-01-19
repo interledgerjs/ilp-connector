@@ -111,7 +111,13 @@ export default class Accounts extends EventEmitter {
   add (accountId: string, creds: any) {
     log.info('add account. accountId=%s', accountId)
 
-    creds = cloneDeep(creds)
+    // Although cloning the options object that comes in from
+    // code that includes ilp-connector is good practice,
+    // this breaks for instance when the plugin options
+    // contain for instance a https server like in `wsOpts` in
+    // https://github.com/interledgerjs/ilp-plugin-mini-accounts/blob/a77f1a6b984b6816856a0948dfa57fe95e7ddd8b/README.md#example
+    //
+    // creds = cloneDeep(creds)
 
     try {
       this.config.validateAccount(accountId, creds)
