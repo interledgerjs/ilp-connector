@@ -251,8 +251,7 @@
           }
         },
         "required": [
-          "type",
-          "priority"
+          "type"
         ]
       },
       "default": []
