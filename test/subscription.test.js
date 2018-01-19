@@ -28,6 +28,7 @@ describe('Subscriptions', function () {
     await this.backend.connect(ratesResponse)
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
+    await this.middlewareManager.setup()
 
     const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
     for (let accountId of testAccounts) {
@@ -124,8 +125,6 @@ describe('Subscriptions', function () {
     }
     const sendStub = sinon.stub(this.accounts.getPlugin(destinationAccount), 'sendData')
       .resolves(IlpPacket.serializeIlpFulfill(ilpFulfill))
-    const sendMoneyStub = sinon.stub(this.accounts.getPlugin(destinationAccount), 'sendMoney')
-      .resolves()
 
     const result = await this.accounts.getPlugin(sourceAccount)
       ._dataHandler(IlpPacket.serializeIlpPrepare({
@@ -144,8 +143,6 @@ describe('Subscriptions', function () {
       destination,
       data
     }) || true))
-    sinon.assert.calledOnce(sendMoneyStub)
-    sinon.assert.calledWith(sendMoneyStub, destinationAmount)
     assert.deepEqual(IlpPacket.deserializeIlpFulfill(result), ilpFulfill)
   })
 

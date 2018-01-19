@@ -51,7 +51,7 @@ export default class ErrorHandlerMiddleware implements Middleware {
         } catch (e) {
           let err = e
           if (!err || typeof err !== 'object') {
-            err = new Error('Non-object thrown: ' + e)
+            err = new Error('non-object thrown. value=' + e)
           }
 
           log.debug('error in money handler. error=%s', err.stack ? err.stack : err)

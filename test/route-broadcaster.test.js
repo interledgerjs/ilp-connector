@@ -63,6 +63,7 @@ describe('RouteBroadcaster', function () {
     process.env.CONNECTOR_PEERS = JSON.stringify(['cad-ledger', 'usd-ledger'])
     appHelper.create(this)
     this.routeBroadcaster.reloadLocalRoutes()
+    await this.middlewareManager.setup()
 
     const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger']
     for (let accountId of testAccounts) {
@@ -205,19 +206,19 @@ describe('RouteBroadcaster', function () {
         path: []
       }]
       assert.equal(this.routingTable.keys().length, 4)
-      await this.ccpController.handle(ledgerB, {
+      await this.ccpController.handle({
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: [],
         request_full_table: false
-      })
+      }, ledgerB)
       assert.equal(this.routingTable.keys().length, 5)
-      await this.ccpController.handle(ledgerB, {
+      await this.ccpController.handle({
         new_routes: [],
         hold_down_time: 1234,
         unreachable_through_me: [ledgerD],
         request_full_table: false
-      })
+      }, ledgerB)
       assert.equal(this.routingTable.keys().length, 4)
     })
 
@@ -229,12 +230,12 @@ describe('RouteBroadcaster', function () {
         path: []
       }]
       assert.equal(this.routingTable.keys().length, 4)
-      await this.ccpController.handle(ledgerB, {
+      await this.ccpController.handle({
         new_routes: newRoutes,
         hold_down_time: 1234,
         unreachable_through_me: [],
         request_full_table: false
-      })
+      }, ledgerB)
       assert.equal(this.routingTable.keys().length, 4)
     })
 
