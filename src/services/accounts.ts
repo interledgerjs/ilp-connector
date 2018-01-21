@@ -43,6 +43,7 @@ export default class Accounts extends EventEmitter {
     if (this.parentAccount) {
       const parent = this.getPlugin(this.parentAccount)
 
+      log.debug('connecting to parent. accountId=%s', this.parentAccount)
       await parent.connect({})
 
       const ildcpInfo = await ILDCP.fetch(parent.sendData.bind(parent))
@@ -215,6 +216,6 @@ export default class Accounts extends EventEmitter {
 
     const ilpAddressSegment = info.ilpAddressSegment || accountId
 
-    return this.config.ilpAddress + '.' + ilpAddressSegment
+    return this.address + '.' + ilpAddressSegment
   }
 }
