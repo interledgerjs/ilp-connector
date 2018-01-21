@@ -218,7 +218,7 @@
       "additionalProperties": true
     },
     "store": {
-      "description": "Name of the store (can be built-in or a require-able module name). Built-in modules are: leveldown",
+      "description": "Name of the store (can be built-in or a require-able module name). Built-in modules are: leveldown, memdown",
       "type": "string",
       "default": "leveldown"
     },
