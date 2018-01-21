@@ -179,7 +179,7 @@
     "maxHoldTime": {
       "description": "Maximum duration (in milliseconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.",
       "type": "integer",
-      "default": 10000
+      "default": 30000
     },
     "routeBroadcastEnabled": {
       "description": "Whether to broadcast known routes.",
