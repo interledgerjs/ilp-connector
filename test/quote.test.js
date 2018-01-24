@@ -122,7 +122,7 @@ describe('Quotes', function () {
     const quotePromise = this.routeBuilder.quoteBySource('eur-ledger', {
       sourceAmount: '100',
       destinationAccount: 'usd-ledger.bob',
-      destinationHoldDuration: 10001
+      destinationHoldDuration: 30001
     })
 
     await assert.isRejected(quotePromise, UnacceptableExpiryError, /destination expiry duration is too long/)

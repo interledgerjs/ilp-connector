@@ -14,7 +14,7 @@ const Store = require('../../src/services/store').default
 
 const createApp = require('../../src').createApp
 
-exports.create = function (context, minBalance) {
+exports.create = function (context, opts) {
   process.env.CONNECTOR_STORE = 'memdown'
   process.env.CONNECTOR_ILP_ADDRESS = 'test.connie'
 
@@ -24,7 +24,7 @@ exports.create = function (context, minBalance) {
   }
 
   const deps = reduct()
-  const app = createApp(null, deps)
+  const app = createApp(opts || null, deps)
 
   context.app = app
   context.backend = deps(RateBackend)

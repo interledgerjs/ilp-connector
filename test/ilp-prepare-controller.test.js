@@ -24,7 +24,6 @@ describe('IlpPrepareController', function () {
   })
 
   beforeEach(async function () {
-    process.env.UNIT_TEST_OVERRIDE = '1'
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
       'mock.test1': {
         relation: 'peer',
@@ -60,10 +59,6 @@ describe('IlpPrepareController', function () {
       targetPrefix: 'mock.test2',
       peerId: 'mock.test2'
     }])
-    nock('http://test1.mock').get('/')
-      .reply(200, { precision: 10, scale: 4 })
-    nock('http://test2.mock').get('/')
-      .reply(200, { precision: 10, scale: 4 })
 
     appHelper.create(this)
     await this.backend.connect(ratesResponse)
@@ -181,7 +176,7 @@ describe('IlpPrepareController', function () {
     sinon.assert.calledWithMatch(sendSpy, sinon.match(packet => assert.deepEqual(IlpPacket.deserializeIlpPrepare(packet), {
       amount: '94',
       executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-      expiresAt: new Date(START_DATE + 10000),
+      expiresAt: new Date(START_DATE + 30000),
       destination: 'mock.test2.bob',
       data: Buffer.alloc(0)
     }) || true))
@@ -503,6 +498,232 @@ describe('IlpPrepareController', function () {
           source_transfer_ledger: 'mock.test1',
           source_transfer_amount: '100'
         }
+      })
+    })
+  })
+
+  describe('peer protocol', function () {
+    beforeEach(function () {
+      this.accounts.add('mock.test3', {
+        relation: 'child',
+        assetCode: 'USD',
+        assetScale: 4,
+        plugin: 'ilp-plugin-mock',
+        options: {}
+      })
+      this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+      this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
+    })
+
+    it('handles ILDCP requests', async function () {
+      const preparePacket = IlpPacket.serializeIlpPrepare({
+        amount: '0',
+        executionCondition: Buffer.from('Zmh6rfhivXdsj8GLjp+OIAiXFIVu4jOzkCpZHQ1fKSU=', 'base64'),
+        expiresAt: new Date(START_DATE + 60000),
+        destination: 'peer.config',
+        data: Buffer.alloc(0)
+      })
+      const fulfillPacket = IlpPacket.serializeIlpFulfill({
+        fulfillment: Buffer.alloc(32),
+        data: Buffer.from('FnRlc3QuY29ubmllLm1vY2sudGVzdDMEA1VTRA==', 'base64')
+      })
+
+      await this.middlewareManager.setup()
+      const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
+      assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+    })
+  })
+
+  describe('with balance middleware', function () {
+    beforeEach(async function () {
+      this.accounts.add('mock.test3', {
+        relation: 'child',
+        assetCode: 'USD',
+        assetScale: 4,
+        plugin: 'ilp-plugin-mock',
+        balance: {minimum: '-50', maximum: '100'}
+      })
+      this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
+      await this.accounts.connect()
+      this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+      this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
+    })
+
+    it('rejects when balance exceeds maximum', async function () {
+      const preparePacket = IlpPacket.serializeIlpPrepare({
+        amount: '101',
+        executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
+        expiresAt: new Date(START_DATE + 2000),
+        destination: 'mock.test1.bob',
+        data: Buffer.alloc(0)
+      })
+
+      await this.middlewareManager.setup()
+      const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
+
+      assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+      assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+        code: 'F00',
+        message: 'exceeded maximum balance.',
+        triggeredBy: 'test.connie',
+        data: Buffer.alloc(0)
+      })
+    })
+
+    it('fulfills when the incoming balance isn\'t too high', async function () {
+      const preparePacket = IlpPacket.serializeIlpPrepare({
+        amount: '99',
+        executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
+        expiresAt: new Date(START_DATE + 2000),
+        destination: 'mock.test1.bob',
+        data: Buffer.alloc(0)
+      })
+      const fulfillPacket = IlpPacket.serializeIlpFulfill({
+        fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
+        data: Buffer.alloc(0)
+      })
+
+      sinon.stub(this.mockPlugin1Wrapped, 'sendData')
+        .resolves(fulfillPacket)
+
+      await this.middlewareManager.setup()
+      const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
+
+      assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+    })
+
+    it('rejects when the payment has insufficient funds', async function () {
+      const preparePacket = IlpPacket.serializeIlpPrepare({
+        amount: '55',
+        executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
+        expiresAt: new Date(START_DATE + 2000),
+        destination: 'mock.test3.bob',
+        data: Buffer.alloc(0)
+      })
+      const fulfillPacket = IlpPacket.serializeIlpFulfill({
+        fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
+        data: Buffer.alloc(0)
+      })
+
+      sinon.stub(this.mockPlugin3Wrapped, 'sendData')
+        .resolves(fulfillPacket)
+
+      await this.middlewareManager.setup()
+      const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+
+      assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+      assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+        code: 'F00',
+        message: 'insufficient funds. oldBalance=0 proposedBalance=-54',
+        triggeredBy: 'test.connie',
+        data: Buffer.alloc(0)
+      })
+    })
+
+    it('fulfills when the outgoing balance isn\'t too low', async function () {
+      const preparePacket = IlpPacket.serializeIlpPrepare({
+        amount: '49',
+        executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
+        expiresAt: new Date(START_DATE + 2000),
+        destination: 'mock.test3.bob',
+        data: Buffer.alloc(0)
+      })
+      const fulfillPacket = IlpPacket.serializeIlpFulfill({
+        fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
+        data: Buffer.alloc(0)
+      })
+
+      sinon.stub(this.mockPlugin3Wrapped, 'sendData')
+        .resolves(fulfillPacket)
+
+      await this.middlewareManager.setup()
+      const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+
+      assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+    })
+  })
+
+  describe('with max-packet-amount middleware', function () {
+    beforeEach(async function () {
+      this.accounts.add('mock.test3', {
+        relation: 'child',
+        assetCode: 'USD',
+        assetScale: 4,
+        plugin: 'ilp-plugin-mock',
+        maxPacketAmount: '100'
+      })
+      this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
+      await this.accounts.connect()
+      this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+      this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
+    })
+
+    it('rejects when the packet amount is too high', async function () {
+      const preparePacket = IlpPacket.serializeIlpPrepare({
+        amount: '101',
+        executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
+        expiresAt: new Date(START_DATE + 2000),
+        destination: 'mock.test1.bob',
+        data: Buffer.alloc(0)
+      })
+
+      await this.middlewareManager.setup()
+      const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
+
+      assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+      assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+        code: 'F03',
+        message: 'packet size too large. maxAmount=100 actualAmount=101',
+        triggeredBy: 'test.connie',
+        data: Buffer.alloc(0)
+      })
+    })
+  })
+
+  describe('with rate-limit middleware', function () {
+    beforeEach(async function () {
+      this.accounts.add('mock.test3', {
+        relation: 'child',
+        assetCode: 'USD',
+        assetScale: 4,
+        plugin: 'ilp-plugin-mock',
+        rateLimit: {refillCount: 3, capacity: 3}
+      })
+      this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
+      await this.accounts.connect()
+      this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+      this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
+    })
+
+    it('rejects when payments arrive too quickly', async function () {
+      const preparePacket = IlpPacket.serializeIlpPrepare({
+        amount: '49',
+        executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
+        expiresAt: new Date(START_DATE + 2000),
+        destination: 'mock.test1.bob',
+        data: Buffer.alloc(0)
+      })
+      const fulfillPacket = IlpPacket.serializeIlpFulfill({
+        fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
+        data: Buffer.alloc(0)
+      })
+
+      sinon.stub(this.mockPlugin1Wrapped, 'sendData')
+        .resolves(fulfillPacket)
+
+      await this.middlewareManager.setup()
+      for (let i = 0; i < 3; i++) {
+        // Empty the token buffer
+        await this.mockPlugin3Wrapped._dataHandler(preparePacket)
+      }
+      const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
+
+      assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+      assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+        code: 'F02',
+        message: 'too many requests, throttling.',
+        triggeredBy: 'test.connie',
+        data: Buffer.alloc(0)
       })
     })
   })
