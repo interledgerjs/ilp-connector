@@ -97,9 +97,9 @@ export default class BalanceMiddleware implements Middleware {
               return next(data)
             }
 
-            // Reduce balance on prepare
+            // Increase balance on prepare
             balance.add(parsedPacket.amount)
-            log.debug('balance reduced due to incoming ilp prepare. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+            log.debug('balance increased due to incoming ilp prepare. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
 
             let result
             try {
@@ -128,7 +128,7 @@ export default class BalanceMiddleware implements Middleware {
         name: 'balance',
         method: async (amount: string, next: MiddlewareCallback<string, void>) => {
           balance.subtract(amount)
-          log.debug('balance increased due to incoming settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+          log.debug('balance reduced due to incoming settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
 
           return next(amount)
         }
@@ -149,20 +149,18 @@ export default class BalanceMiddleware implements Middleware {
             try {
               result = await next(data)
             } catch (err) {
-              // Refund on error
-              balance.add(parsedPacket.amount)
-              log.debug('outgoing packet refunded due to error. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+              // Do not apply any changes on an error
+              log.debug('outgoing packet not applied due to error. accountId=%s amount=%s balance=%s', accountId, parsedPacket.amount, balance.getValue())
               throw err
             }
 
             if (result[0] === IlpPacket.Type.TYPE_ILP_REJECT) {
-              // Refund on reject
-              balance.add(parsedPacket.amount)
-              log.debug('outgoing packet refunded due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+              // Do not apply any changes on reject
+              log.debug('outgoing packet not applied due to ilp reject. accountId=%s amount=%s balance=%s', accountId, parsedPacket.amount, balance.getValue())
             } else if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
-              // Increase balance on prepare
+              // Decrease balance on prepare
               balance.subtract(parsedPacket.amount)
-              log.debug('balance increased due to outgoing ilp packet being fulfilled. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+              log.debug('balance decreased due to outgoing ilp packet being fulfilled. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
 
               const settle =
                 bnSettleThreshold &&
@@ -196,7 +194,7 @@ export default class BalanceMiddleware implements Middleware {
         name: 'balance',
         method: async (amount: string, next: MiddlewareCallback<string, void>) => {
           balance.add(amount)
-          log.debug('balance decreased due to outgoing settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+          log.debug('balance increased due to outgoing settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
 
           return next(amount)
         }
