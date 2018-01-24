@@ -121,7 +121,6 @@ describe('Config', function () {
           }
         }
 
-        process.env.UNIT_TEST_OVERRIDE = 'true'
         process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
         const config = new Config()
         config.loadFromEnv()
@@ -183,7 +182,6 @@ describe('Config', function () {
           }
         }
 
-        process.env.UNIT_TEST_OVERRIDE = 'true'
         process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
         const config = new Config()
         config.loadFromEnv()
