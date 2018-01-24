@@ -30,7 +30,7 @@ export default class RateLimitMiddleware implements Middleware {
 
     // TODO: When we add the ability to update middleware, our state will get
     //   reset every update, which may not be desired.
-    const bucket = new TokenBucket({ refillPeriod, refillCount })
+    const bucket = new TokenBucket({ refillPeriod, refillCount, capacity })
 
     pipelines.incomingData.insertLast({
       name: 'rateLimit',
