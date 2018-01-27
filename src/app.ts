@@ -10,6 +10,7 @@ import Accounts from './services/accounts'
 import RateBackend from './services/rate-backend'
 import Store from './services/store'
 import MiddlewareManager from './services/middleware-manager'
+import AdminApi from './services/admin-api'
 
 import { PluginInstance } from './types/plugin'
 
@@ -20,7 +21,8 @@ function listen (
   store: Store,
   routeBuilder: RouteBuilder,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager
+  middlewareManager: MiddlewareManager,
+  adminApi: AdminApi
 ) {
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
@@ -55,6 +57,8 @@ function listen (
     if (config.routeBroadcastEnabled) {
       await routeBroadcaster.start()
     }
+
+    adminApi.listen()
 
     log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
   })().catch((err) => log.error(err))
@@ -140,6 +144,7 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   const backend = deps(RateBackend)
   const store = deps(Store)
   const middlewareManager = deps(MiddlewareManager)
+  const adminApi = deps(AdminApi)
 
   const credentials = config.accounts
   // We have two separate for loops to make the logs look nicer :)
@@ -152,7 +157,7 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
 
   return {
     config,
-    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager),
+    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager, adminApi),
     addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
     removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
     getPlugin: partial(getPlugin, accounts),
