@@ -25,8 +25,6 @@ export default class Accounts extends EventEmitter {
   protected address: string
   protected accounts: Map<string, AccountEntry>
 
-  protected parentAccount?: string
-
   constructor (deps: reduct.Injector) {
     super()
 
@@ -35,21 +33,31 @@ export default class Accounts extends EventEmitter {
 
     this.address = this.config.ilpAddress || 'unknown'
     this.accounts = new Map()
-    this.parentAccount = undefined
   }
 
-  async connectToParent () {
-    if (this.parentAccount) {
-      const parent = this.getPlugin(this.parentAccount)
+  async loadIlpAddress () {
+    const inheritFrom = this.config.ilpAddressInheritFrom ||
+      // Get account id of first parent
+      [...this.accounts]
+        .filter(([key, value]) => value.info.relation === 'parent')
+        .map(([key]) => key)[0]
 
-      log.debug('connecting to parent. accountId=%s', this.parentAccount)
+    if (this.config.ilpAddress === 'unknown' && !inheritFrom) {
+      throw new Error('When there is no parent, ILP address must be specified in configuration.')
+    } else if (this.config.ilpAddress === 'unknown' && inheritFrom) {
+      const parent = this.getPlugin(inheritFrom)
+
+      log.debug('connecting to parent. accountId=%s', inheritFrom)
       await parent.connect({})
 
       const ildcpInfo = await ILDCP.fetch(parent.sendData.bind(parent))
 
       this.setOwnAddress(ildcpInfo.clientAddress)
-    } else {
-      throw new Error('no parent account specified.')
+
+      if (this.address === 'unknown') {
+        log.error('could not get ilp address from parent.')
+        throw new Error('no ilp address configured.')
+      }
     }
   }
 
@@ -93,10 +101,6 @@ export default class Accounts extends EventEmitter {
     return Array.from(this.accounts.keys())
   }
 
-  getParentId () {
-    return this.parentAccount
-  }
-
   getAssetCode (accountId: string) {
     const account = this.accounts.get(accountId)
 
@@ -129,14 +133,6 @@ export default class Accounts extends EventEmitter {
       }
 
       throw err
-    }
-
-    if (creds.relation === 'parent') {
-      if (this.parentAccount) {
-        throw new Error('only one account may be marked as relation=parent. id=' + accountId)
-      }
-
-      this.parentAccount = accountId
     }
 
     const Plugin = require(creds.plugin)
@@ -187,10 +183,6 @@ export default class Accounts extends EventEmitter {
     log.info('remove account. accountId=' + accountId)
 
     this.emit('remove', accountId, plugin)
-
-    if (this.parentAccount === accountId) {
-      this.parentAccount = undefined
-    }
 
     this.accounts.delete(accountId)
     return plugin

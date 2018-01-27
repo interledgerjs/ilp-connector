@@ -35,19 +35,7 @@ function listen (
     await middlewareManager.setup()
 
     // If we have no configured ILP address, try to get one via ILDCP
-    if (config.ilpAddress === 'unknown') {
-      if (!accounts.getParentId()) {
-        log.error('no ilp address configured and no parent account found, cannot determine ilp address.')
-        throw new Error('no ilp address configured.')
-      }
-
-      await accounts.connectToParent()
-
-      if (accounts.getOwnAddress() === 'unknown') {
-        log.error('could not get ilp address from parent.')
-        throw new Error('no ilp address configured.')
-      }
-    }
+    await accounts.loadIlpAddress()
 
     // Connect other plugins, give up after initialConnectTimeout
     await new Promise((resolve, reject) => {
