@@ -11,6 +11,11 @@
       "pattern": "^[a-zA-Z0-9._~-]+$",
       "default": "unknown"
     },
+    "ilpAddressInheritFrom": {
+      "description": "If there are multiple parents, and `ilpAddress` is not set explicit, specify the account ID of the parent that we should load our address from. Defaults to the first parent in the `accounts` map.",
+      "type": "string",
+      "default": ""
+    },
     "accounts": {
       "description": "Description of connector account plugins.",
       "type": "object",
