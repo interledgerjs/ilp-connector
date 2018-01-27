@@ -74,7 +74,7 @@ export default class OneToOneBackend implements BackendInstance {
   /**
    * This method is called to allow statistics to be collected by the backend.
    *
-   * The fixerio backend does not support this functionality.
+   * The one-to-one backend does not support this functionality.
    */
   submitPayment () {
     return Promise.resolve()
