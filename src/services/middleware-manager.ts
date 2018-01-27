@@ -20,6 +20,10 @@ import { PluginInstance, DataHandler, MoneyHandler } from '../types/plugin'
 import MiddlewarePipeline from '../lib/middleware-pipeline'
 import { codes } from '../lib/ilp-errors'
 
+interface VoidHandler {
+  (dummy: void): Promise<void>
+}
+
 const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   errorHandler: {
     type: 'error-handler'
@@ -49,8 +53,9 @@ export default class MiddlewareManager {
   protected accounts: Accounts
   protected core: Core
   protected middlewares: { [key: string]: Middleware }
-  protected outgoingDataHandlers: Map<string, DataHandler> = new Map()
-  protected outgoingMoneyHandlers: Map<string, MoneyHandler> = new Map()
+  private startupHandlers: Map<string, VoidHandler> = new Map()
+  private outgoingDataHandlers: Map<string, DataHandler> = new Map()
+  private outgoingMoneyHandlers: Map<string, MoneyHandler> = new Map()
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
@@ -100,8 +105,20 @@ export default class MiddlewareManager {
     }
   }
 
+  /**
+   * Executes middleware hooks for connector startup.
+   *
+   * This should be called after the plugins are connected
+   */
+  async startup () {
+    for (const handler of this.startupHandlers.values()) {
+      await handler(undefined)
+    }
+  }
+
   async addPlugin (accountId: string, plugin: PluginInstance) {
     const pipelines: Pipelines = {
+      startup: new MiddlewarePipeline<void, void>(),
       incomingData: new MiddlewarePipeline<Buffer, Buffer>(),
       incomingMoney: new MiddlewarePipeline<string, void>(),
       outgoingData: new MiddlewarePipeline<Buffer, Buffer>(),
@@ -139,11 +156,13 @@ export default class MiddlewareManager {
       }
     }
     const submitMoney = plugin.sendMoney.bind(plugin)
+    const startupHandler = this.createHandler(pipelines.startup, accountId, async () => { return })
     const outgoingDataHandler: DataHandler =
       this.createHandler(pipelines.outgoingData, accountId, submitData)
     const outgoingMoneyHandler: MoneyHandler =
       this.createHandler(pipelines.outgoingMoney, accountId, submitMoney)
 
+    this.startupHandlers.set(accountId, startupHandler)
     this.outgoingDataHandlers.set(accountId, outgoingDataHandler)
     this.outgoingMoneyHandlers.set(accountId, outgoingMoneyHandler)
 

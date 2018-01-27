@@ -62,6 +62,8 @@ function listen (
         }, reject)
     })
 
+    await middlewareManager.startup()
+
     if (config.routeBroadcastEnabled) {
       await routeBroadcaster.start()
     }
