@@ -284,6 +284,23 @@
       "description": "How long the connector should wait for account plugins to connect before launching other subsystems. (in milliseconds)",
       "type": "integer",
       "default": 10000
+    },
+    "adminApi": {
+      "description": "Whether the admin API is enabled or not. Default: false (disabled)",
+      "type": "boolean",
+      "default": false
+    },
+    "adminApiPort": {
+      "description": "Which port the admin API should listen on. Default: 7780",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535,
+      "default": 7780
+    },
+    "adminApiHost": {
+      "description": "Host to bind to. Warning: The admin API interface should never be made public! Default: '127.0.0.1'",
+      "type": "string",
+      "default": "127.0.0.1"
     }
   },
   "required": ["accounts"],
