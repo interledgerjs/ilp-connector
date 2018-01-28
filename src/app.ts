@@ -39,6 +39,10 @@ function listen (
     // If we have no configured ILP address, try to get one via ILDCP
     await accounts.loadIlpAddress()
 
+    if (config.routeBroadcastEnabled) {
+      await routeBroadcaster.start()
+    }
+
     // Connect other plugins, give up after initialConnectTimeout
     await new Promise((resolve, reject) => {
       const connectTimeout = setTimeout(() => {
@@ -53,10 +57,6 @@ function listen (
     })
 
     await middlewareManager.startup()
-
-    if (config.routeBroadcastEnabled) {
-      await routeBroadcaster.start()
-    }
 
     adminApi.listen()
 
@@ -76,10 +76,10 @@ async function addPlugin (
 ) {
   accounts.add(id, options)
   const plugin = accounts.getPlugin(id)
-  routeBroadcaster.add(id)
   await middlewareManager.addPlugin(id, plugin)
 
   await plugin.connect({ timeout: Infinity })
+  routeBroadcaster.add(id)
   routeBroadcaster.reloadLocalRoutes()
 }
 
@@ -150,9 +150,6 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   // We have two separate for loops to make the logs look nicer :)
   for (let id of Object.keys(credentials)) {
     accounts.add(id, credentials[id])
-  }
-  for (let id of Object.keys(credentials)) {
-    routeBroadcaster.add(id)
   }
 
   return {

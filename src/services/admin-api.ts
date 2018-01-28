@@ -1,6 +1,6 @@
 import reduct = require('reduct')
 import Config from './config'
-import RouteBroadcaster from './route-broadcaster'
+import RoutingTable from './routing-table'
 import { Server, ServerRequest, ServerResponse } from 'http'
 
 import { create as createLogger } from '../common/log'
@@ -8,12 +8,12 @@ const log = createLogger('admin-api')
 
 export default class AdminApi {
   private config: Config
-  private routeBroadcaster: RouteBroadcaster
+  private routingTable: RoutingTable
   private server: Server
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
-    this.routeBroadcaster = deps(RouteBroadcaster)
+    this.routingTable = deps(RoutingTable)
   }
 
   listen () {
@@ -55,7 +55,7 @@ export default class AdminApi {
 
   private getStatus () {
     return {
-      routingTable: this.routeBroadcaster.routingTable
+      routingTable: this.routingTable
     }
   }
 }
