@@ -46,7 +46,7 @@ export default class Peer {
     this.expiry = Math.max(Date.now() + holdDownTime, this.expiry)
   }
 
-  getAddress () {
+  getAccountId () {
     return this.accountId
   }
 
@@ -93,13 +93,6 @@ export default class Peer {
     }
 
     for (const route of newRoutes) {
-      // The destination_ledger can be any ledger except one that starts with `peer.`
-      // TODO Should ignore anything other than `g.`` in prod and `test.`` etc. in testing
-      // TODO Route filters should be much more configurable
-      if (route.prefix.startsWith(PEER_PROTOCOL_PREFIX)) {
-        log.debug('ignoring route starting with "%s". prefix=%s', PEER_PROTOCOL_PREFIX, route.prefix)
-        continue
-      }
 
       if (this.addRoute(route)) {
         changedPrefixes.push(route.prefix)
@@ -155,6 +148,7 @@ export default class Peer {
     await accounts.getPlugin(this.accountId).sendData(Buffer.from(JSON.stringify({
       method: 'broadcast_routes',
       data: {
+        speaker: accounts.getOwnAddress(),
         new_routes: newRoutes,
         hold_down_time: holdDownTime,
         unreachable_through_me: unreachableThroughMe,

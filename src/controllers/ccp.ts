@@ -21,6 +21,7 @@ export default class CcpController {
     log.debug('received routes. sender=%s', sourceAccount)
 
     const routeUpdate = {
+      speaker: payload.speaker,
       newRoutes: payload.new_routes.map(route => ({
         peer: sourceAccount,
         prefix: route.prefix,
