@@ -1,5 +1,3 @@
-'use strict'
-
 import riverpig = require('riverpig')
 import { Logger } from 'riverpig'
 

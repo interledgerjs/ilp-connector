@@ -73,7 +73,7 @@ export default class RouteBroadcaster {
     let sendRoutes
     if (typeof accountInfo.sendRoutes === 'boolean') {
       sendRoutes = accountInfo.sendRoutes
-    } else if (accountInfo.relation === 'peer') {
+    } else if (accountInfo.relation !== 'child') {
       sendRoutes = true
     } else {
       sendRoutes = false
@@ -82,7 +82,7 @@ export default class RouteBroadcaster {
     let receiveRoutes
     if (typeof accountInfo.receiveRoutes === 'boolean') {
       receiveRoutes = accountInfo.receiveRoutes
-    } else if (accountInfo.relation === 'peer') {
+    } else if (accountInfo.relation !== 'child') {
       receiveRoutes = true
     } else {
       receiveRoutes = false
@@ -127,6 +127,16 @@ export default class RouteBroadcaster {
       return
     }
 
+    // Apply import filters
+    // TODO Route filters should be much more configurable
+    newRoutes = newRoutes
+      // Filter incoming routes that aren't part of the current global prefix or
+      // cover the entire global prefix (i.e. the default route.)
+      .filter(route =>
+        route.prefix.startsWith(this.getGlobalPrefix()) &&
+        route.prefix.length > this.getGlobalPrefix().length
+      )
+
     const changedPrefixes = peer.applyRouteUpdate({
       newRoutes,
       unreachableThroughMe,
@@ -146,24 +156,36 @@ export default class RouteBroadcaster {
     }
   }
 
+  getAccountRelation (accountId) {
+    return accountId ? this.accounts.getInfo(accountId).relation : 'local'
+  }
+
   reloadLocalRoutes () {
     log.debug('reload local and configured routes.')
 
     this.localRoutes = new Map()
     const localAccounts = this.accounts.getAccountIds()
 
+    // Add a route for our own address
+    this.localRoutes.set(this.accounts.getOwnAddress(), {
+      nextHop: '',
+      path: []
+    })
+
+    let defaultRoute = this.config.defaultRoute
+    if (defaultRoute === 'auto') {
+      defaultRoute = localAccounts.filter(id => this.accounts.getInfo(id).relation === 'parent')[0]
+    }
+    if (defaultRoute) {
+      this.localRoutes.set(this.getGlobalPrefix(), {
+        nextHop: defaultRoute,
+        path: []
+      })
+    }
+
     for (let accountId of localAccounts) {
       const info = this.accounts.getInfo(accountId)
       switch (info.relation) {
-        case 'parent':
-          this.localRoutes.set('', {
-            nextHop: accountId,
-            path: []
-          })
-          break
-        case 'peer':
-          // For peers, we rely on their route updates
-          break
         case 'child':
           this.localRoutes.set(this.accounts.getChildAddress(accountId), {
             nextHop: accountId,
@@ -240,20 +262,60 @@ export default class RouteBroadcaster {
       return localRoute
     }
 
-    let bestRoute: IncomingRoute | undefined = undefined
-    let bestDistance = Infinity
-    for (let peer of this.peers.values()) {
-      const peerRoute = peer.getPrefix(prefix)
-
-      if (peerRoute && peerRoute.path.length < bestDistance) {
-        bestRoute = peerRoute
-        bestDistance = peerRoute.path.length
-      }
+    const weight = (route: IncomingRoute) => {
+      const relation = this.getAccountRelation(route.peer)
+      return {
+        parent: 0,
+        peer: 1,
+        child: 2,
+        local: 3
+      }[relation]
     }
+
+    const bestRoute = Array.from(this.peers.values())
+      .map(peer => peer.getPrefix(prefix))
+      .filter(Boolean)
+      .sort((a, b) => {
+        // First sort by peer weight
+        const weightA = weight(a)
+        const weightB = weight(b)
+
+        if (weightA !== weightB) {
+          return weightB - weightA
+        }
+
+        // Then sort by path length
+        const pathA = a.path.length
+        const pathB = b.path.length
+
+        if (pathA !== pathB) {
+          return pathA - pathB
+        }
+
+        // Finally, tie-break by accountId
+        if (a.peer > b.peer) {
+          return 1
+        } else if (b.peer > a.peer) {
+          return -1
+        } else {
+          return 0
+        }
+      })[0]
 
     return bestRoute && {
       nextHop: bestRoute.peer,
       path: bestRoute.path
+    }
+  }
+
+  getGlobalPrefix () {
+    switch (this.config.env) {
+      case 'production':
+        return 'g.'
+      case 'test':
+        return 'test.'
+      default:
+        throw new Error('invalid value for `env` config. env=' + this.config.env)
     }
   }
 
@@ -265,25 +327,30 @@ export default class RouteBroadcaster {
 
     log.info('broadcasting to %d peers. epoch=%s', peers.length, this.currentEpoch)
 
-    const selfRoute: BroadcastRoute = {
-      prefix: this.accounts.getOwnAddress(),
-      // no next hop, since we are the final destination for this route
-      nextHop: '',
-      epoch: 0,
-      path: []
-    }
+    const routes = this.routingTable.keys()
+      .map((prefix: string): BroadcastRoute => {
+        const entry = this.routingTable.get(prefix)
+        return {
+          prefix,
+          nextHop: entry.nextHop,
+          epoch: this.routeEpochs[prefix],
+          path: [this.accounts.getOwnAddress(), ...entry.path]
+        }
+      })
+      // Routes must start with the global prefix and not be just
+      // the global prefix.
+      .filter(route =>
+        route.prefix.startsWith(this.getGlobalPrefix()) &&
+        route.prefix.length > this.getGlobalPrefix().length
+      )
+      // Don't advertise local customer routes that we originated. Packets for
+      // these destinations should still reach us because we are advertising our
+      // own address as a prefix.
+      .filter(route =>
+        (!route.prefix.startsWith(this.accounts.getOwnAddress() + '.')) ||
+        route.path.length > 1
+      )
 
-    const routingTableRoutes = this.routingTable.keys().map((prefix: string): BroadcastRoute => {
-      const entry = this.routingTable.get(prefix)
-      return {
-        prefix,
-        nextHop: entry.nextHop,
-        epoch: this.routeEpochs[prefix],
-        path: entry.path
-      }
-    })
-
-    const routes = [selfRoute, ...routingTableRoutes]
     const unreachableAccounts = Array.from(this.formerRoutes).map(prefix => ({
       prefix,
       epoch: this.routeEpochs[prefix]
@@ -294,9 +361,16 @@ export default class RouteBroadcaster {
 
     // Using Promise.all to ensure all route broadcasts are sent in parallel.
     const broadcastPromise = Promise.all(peers.map(peer => {
+      const relation = this.getAccountRelation(peer.getAccountId())
+      const peerRoutes = routes
+        // Don't advertise peer and provider routes to providers
+        .filter(route =>
+          relation !== 'parent' ||
+          ['peer', 'parent'].indexOf(this.getAccountRelation(route.nextHop)) === -1
+        )
       return peer.broadcastRoutes({
         accounts: this.accounts,
-        routes,
+        routes: peerRoutes,
         unreachableAccounts,
         holdDownTime: this.config.routeExpiry,
         broadcastCurves: this.config.broadcastCurves,
@@ -306,7 +380,7 @@ export default class RouteBroadcaster {
       })
         .catch((err: any) => {
           const errInfo = (err instanceof Object && err.stack) ? err.stack : err
-          log.debug('failed to broadcast route information to peer. peer=%s error=%s', peer.getAddress(), errInfo)
+          log.debug('failed to broadcast route information to peer. peer=%s error=%s', peer.getAccountId(), errInfo)
         })
     }))
 
