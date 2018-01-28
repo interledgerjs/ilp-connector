@@ -7,6 +7,7 @@
   "properties": {
     "env": {
       "description": "Determines what type of network the connector is a part of. Can be: 'production', 'test'. Default: 'test'",
+      "type": "string",
       "enum": ["production", "test"],
       "default": "test"
     },
