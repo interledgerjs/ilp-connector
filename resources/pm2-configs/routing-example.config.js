@@ -1,6 +1,5 @@
 const { resolve } = require('path')
 
-console.log('__dirname', __dirname)
 const basicConnector = {
   script: resolve(__dirname, '../../src/index.js'),
   env: {
