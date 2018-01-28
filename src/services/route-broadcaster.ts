@@ -463,8 +463,6 @@ export default class RouteBroadcaster {
   }
 
   private updateMasterRoute (prefix: string, route?: Route) {
-    console.log('route', route)
-    console.log('!prefix.startsWith(this.getGlobalPrefix())', !prefix.startsWith(this.getGlobalPrefix()))
     if (route) {
       route = { ...route }
       route.path = [this.accounts.getOwnAddress(), ...route.path]
@@ -493,8 +491,6 @@ export default class RouteBroadcaster {
     const currentNextHop = currentBest && currentBest.nextHop
     const newNextHop = route && route.nextHop
 
-    console.log('currentNextHop', currentNextHop)
-    console.log('newNextHop', newNextHop)
     if (currentNextHop !== newNextHop) {
       if (route) {
         this.masterRoutingTable.insert(prefix, route)
@@ -503,7 +499,6 @@ export default class RouteBroadcaster {
       }
 
       const epoch = this.currentEpoch++
-      console.log('epoch', epoch)
       const routeUpdate: RouteUpdate = {
         prefix,
         route,
