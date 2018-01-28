@@ -274,8 +274,8 @@ export default class RouteBroadcaster {
 
     const bestRoute = Array.from(this.peers.values())
       .map(peer => peer.getPrefix(prefix))
-      .filter(Boolean)
-      .sort((a, b) => {
+      .filter((a): a is IncomingRoute => !!a)
+      .sort((a: IncomingRoute, b: IncomingRoute) => {
         // First sort by peer weight
         const weightA = weight(a)
         const weightB = weight(b)
