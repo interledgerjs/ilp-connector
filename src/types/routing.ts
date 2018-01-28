@@ -1,5 +1,3 @@
-import LiquidityCurve from '../routing/liquidity-curve'
-
 export interface Route {
   nextHop: string,
   path: string[]
@@ -13,14 +11,15 @@ export interface BroadcastRoute extends Route {
 export interface IncomingRoute {
   peer: string,
   prefix: string,
-  path: string[],
-  curve?: LiquidityCurve,
-  minMessageWindow: number
+  path: string[]
 }
 
 export interface RouteUpdateParams {
+  speaker: string,
+  routingTableId: string,
+  holdDownTime: number,
+  fromEpoch: number,
+  toEpoch: number,
   newRoutes: IncomingRoute[],
-  unreachableThroughMe: string[],
-  requestFullTable: boolean,
-  holdDownTime: number
+  withdrawnRoutes: string[]
 }
