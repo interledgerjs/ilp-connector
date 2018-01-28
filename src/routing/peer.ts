@@ -1,21 +1,19 @@
-'use strict'
-
 import PrefixMap from './prefix-map'
 import Accounts from '../services/accounts'
 import { BroadcastRoute, RouteUpdateParams, IncomingRoute } from '../types/routing'
+import { RoutingUpdate } from '../schemas/RoutingUpdate'
+import { RoutingUpdateResponse } from '../schemas/RoutingUpdateResponse'
 import { create as createLogger } from '../common/log'
 const log = createLogger('routing-peer')
 
-const PEER_PROTOCOL_PREFIX = 'peer.'
-
 export interface BroadcastRoutesParams {
   accounts: Accounts,
-  routes: BroadcastRoute[],
-  broadcastCurves: boolean,
+  newRoutes: BroadcastRoute[],
+  routingTableId: string,
   holdDownTime: number,
-  unreachableAccounts: { prefix: string, epoch: number }[],
-  requestFullTable: boolean,
-  currentEpoch: number,
+  withdrawnRoutes: { prefix: string, epoch: number }[],
+  fromEpoch: number,
+  toEpoch: number,
   timeout: number
 }
 
@@ -26,20 +24,22 @@ export interface PeerOpts {
 }
 
 export default class Peer {
-  protected accountId: string
-  protected sendRoutes: boolean
-  protected receiveRoutes: boolean
-  protected routes: PrefixMap<IncomingRoute>
-  protected epoch: number
-  protected expiry: number
+  private accountId: string
+  private sendRoutes: boolean
+  private receiveRoutes: boolean
+  private routes: PrefixMap<IncomingRoute>
+  private expiry: number
+  private nextRequestedEpoch: number
+  private routingTableId: string
 
   constructor ({ accountId, sendRoutes, receiveRoutes }: PeerOpts) {
     this.accountId = accountId
     this.sendRoutes = sendRoutes
     this.receiveRoutes = receiveRoutes
     this.routes = new PrefixMap()
-    this.epoch = -1
+    this.nextRequestedEpoch = 0
     this.expiry = 0
+    this.routingTableId = ''
   }
 
   bump (holdDownTime: number) {
@@ -59,33 +59,56 @@ export default class Peer {
   }
 
   applyRouteUpdate ({
+    routingTableId,
+    fromEpoch,
+    toEpoch,
     newRoutes,
-    unreachableThroughMe,
-    requestFullTable,
+    withdrawnRoutes,
     holdDownTime
   }: RouteUpdateParams) {
     if (!this.receiveRoutes) {
-      log.info('ignoring incoming route update from peer. accountId=%s', this.accountId)
-      return []
+      log.info('ignoring incoming route update from peer due to `receiveRoutes == false`. accountId=%s', this.accountId)
+      return {
+        changedPrefixes: [],
+        nextRequestedEpoch: toEpoch
+      }
     }
 
     this.bump(holdDownTime)
 
-    if (requestFullTable) {
-      log.info('peer requested full table.')
-      this.epoch = -1
+    if (this.routingTableId !== routingTableId) {
+      log.info('saw new routing table. oldId=%s newId=%s', this.routingTableId, routingTableId)
+      this.routingTableId = routingTableId
+      this.nextRequestedEpoch = 0
+    }
+    if (fromEpoch > this.nextRequestedEpoch) {
+      // There is a gap, we need to go back to the last epoch we have
+      return {
+        changedPrefixes: [],
+        nextRequestedEpoch: this.nextRequestedEpoch
+      }
+    }
+    if (this.nextRequestedEpoch >= toEpoch) {
+      // This routing update is older than what we already have
+      return {
+        changedPrefixes: [],
+        nextRequestedEpoch: this.nextRequestedEpoch
+      }
     }
 
     // just a heartbeat
-    if (newRoutes.length === 0 && unreachableThroughMe.length === 0) {
+    if (newRoutes.length === 0 && withdrawnRoutes.length === 0) {
       log.debug('pure heartbeat.')
-      return []
+      return {
+        changedPrefixes: [],
+        nextRequestedEpoch: toEpoch
+      }
     }
 
     const changedPrefixes: string[] = []
-    if (unreachableThroughMe.length > 0) {
-      log.info('informed of no longer reachable routes. count=%s routes=%s', unreachableThroughMe.length, unreachableThroughMe)
-      for (const prefix of unreachableThroughMe) {
+    if (withdrawnRoutes.length > 0) {
+      log.info('informed of no longer reachable routes. count=%s routes=%s', withdrawnRoutes.length, withdrawnRoutes)
+      for (const prefix of withdrawnRoutes) {
         if (this.deleteRoute(prefix)) {
           changedPrefixes.push(prefix)
         }
@@ -93,7 +116,6 @@ export default class Peer {
     }
 
     for (const route of newRoutes) {
-
       if (this.addRoute(route)) {
         changedPrefixes.push(route.prefix)
       }
@@ -101,7 +123,10 @@ export default class Peer {
 
     log.debug('applied route update. changedPrefixesCount=%s', changedPrefixes.length)
 
-    return changedPrefixes
+    return {
+      changedPrefixes,
+      nextRequestedEpoch: toEpoch
+    }
   }
 
   addRoute (route: IncomingRoute) {
@@ -122,40 +147,45 @@ export default class Peer {
     return this.routes.get(prefix)
   }
 
-  async broadcastRoutes ({
+  async sendRouteUpdate ({
     accounts,
-    routes,
-    broadcastCurves,
+    routingTableId,
     holdDownTime,
-    unreachableAccounts,
-    requestFullTable = false,
-    currentEpoch,
+    fromEpoch,
+    toEpoch,
+    newRoutes,
+    withdrawnRoutes,
     timeout
   }: BroadcastRoutesParams) {
     if (!this.sendRoutes) {
       return
     }
 
-    const newRoutes = routes.filter(route => route.epoch > this.epoch && route.nextHop !== this.accountId).map(route => ({
-      prefix: route.prefix,
-      path: route.path
-    }))
+    log.debug('broadcasting routes to peer. peer=%s routeCount=%s unreachableCount=%s', this.accountId, newRoutes.length, withdrawnRoutes.length)
 
-    const unreachableThroughMe = unreachableAccounts.filter(route => route.epoch > this.epoch).map(route => route.prefix)
+    const routeUpdate: RoutingUpdate = {
+      speaker: accounts.getOwnAddress(),
+      routing_table_id: routingTableId,
+      hold_down_time: holdDownTime,
+      from_epoch: fromEpoch,
+      to_epoch: toEpoch,
+      new_routes: newRoutes,
+      withdrawn_routes: withdrawnRoutes.map(r => r.prefix)
+    }
 
-    log.debug('broadcasting routes to peer. peer=%s routeCount=%s unreachableCount=%s', this.accountId, newRoutes.length, unreachableThroughMe.length)
-
-    await accounts.getPlugin(this.accountId).sendData(Buffer.from(JSON.stringify({
+    const result = await accounts.getPlugin(this.accountId).sendData(Buffer.from(JSON.stringify({
       method: 'broadcast_routes',
-      data: {
-        speaker: accounts.getOwnAddress(),
-        new_routes: newRoutes,
-        hold_down_time: holdDownTime,
-        unreachable_through_me: unreachableThroughMe,
-        request_full_table: requestFullTable
-      }
+      data: routeUpdate
     }), 'utf8'))
 
-    this.epoch = currentEpoch
+    const response: RoutingUpdateResponse = JSON.parse(result.toString('utf8'))
+
+    this.nextRequestedEpoch = response.next_requested_epoch
+  }
+
+  getRequestedRouteUpdate () {
+    return {
+      nextRequestedEpoch: this.nextRequestedEpoch
+    }
   }
 }

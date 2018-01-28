@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema",
+  "id": "RoutingUpdateResponse.json",
+  "title": "RoutingUpdateResponse",
+  "description": "A routing update response object",
+  "type": "object",
+  "properties": {
+    "next_requested_epoch": {
+      "description": "Next update should start at this epoch index.",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "next_requested_epoch"
+  ],
+  "additionalProperties": false
+}

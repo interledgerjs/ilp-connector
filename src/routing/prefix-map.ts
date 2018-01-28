@@ -1,5 +1,3 @@
-'use strict'
-
 import { findIndex } from 'lodash'
 
 /**
@@ -38,7 +36,7 @@ export default class PrefixMap<T> {
     return this.items[prefix]
   }
 
-  get (prefix: string) { return this.items[prefix] || null }
+  get (prefix: string): T | undefined { return this.items[prefix] }
 
   /**
    * @param {function(item, key)} fn
