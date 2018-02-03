@@ -26,10 +26,12 @@ const basicPlugin = {
  *  |  /  \   |
  *  | /    \  |
  *  |/      \ |
- * U5        U6
+ * U5        U6¹
  *
  * ...  = peer
  *  |   = parent/child
+ *
+ * ¹ U6 advertises itself as test.u4.u6
  */
 
 const services = []
@@ -221,7 +223,7 @@ services.push({
   name: 'u6',
   env: {
     ...basicConnector.env,
-    CONNECTOR_ILP_ADDRESS: 'test.u6',
+    CONNECTOR_ILP_ADDRESS_INHERIT_FROM: 'u4',
     CONNECTOR_ADMIN_API: true,
     CONNECTOR_ADMIN_API_PORT: 7706,
     CONNECTOR_ACCOUNTS: JSON.stringify({
