@@ -1,5 +1,3 @@
-'use strict'
-
 import * as IlpPacket from 'ilp-packet'
 import IldcpHostController from './ildcp-host'
 import InvalidPacketError from '../errors/invalid-packet-error'

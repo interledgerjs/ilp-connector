@@ -1,5 +1,3 @@
-'use strict'
-
 import Long = require('long')
 import BigNumber from 'bignumber.js'
 

@@ -26,7 +26,8 @@ export default class CcpController {
       newRoutes: payload.new_routes.map(route => ({
         peer: sourceAccount,
         prefix: route.prefix,
-        path: route.path
+        path: route.path,
+        auth: Buffer.from(route.auth, 'base64')
       })).filter(Boolean),
       withdrawnRoutes: payload.withdrawn_routes
     }

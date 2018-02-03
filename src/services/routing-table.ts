@@ -1,5 +1,3 @@
-'use strict'
-
 import PrefixMap from '../routing/prefix-map'
 import { Route } from '../types/routing'
 

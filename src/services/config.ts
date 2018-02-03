@@ -1,5 +1,3 @@
-'use strict'
-
 import InvalidJsonBodyError from '../errors/invalid-json-body-error'
 import { constantCase } from 'change-case'
 import { create as createLogger } from '../common/log'
