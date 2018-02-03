@@ -4,9 +4,7 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('route-broadcaster')
 const { find } = require('lodash')
 import RoutingTable from './routing-table'
-import RateBackend from './rate-backend'
 import Accounts from './accounts'
-import Quoter from './quoter'
 import Config from './config'
 import Peer from '../routing/peer'
 import {
@@ -26,25 +24,24 @@ interface RouteUpdate {
 }
 
 export default class RouteBroadcaster {
-  protected routingTable: RoutingTable
-  protected backend: RateBackend
-  protected accounts: Accounts
-  protected quoter: Quoter
-  protected config: Config
-
-  protected peers: Map<string, Peer>
-  protected localRoutes: Map<string, Route>
-  protected routingTableId: string
+  // Local routing table, used for actually routing packets
+  private localRoutingTable: RoutingTable
+  // Master routing table, used for routes that we broadcast
   private masterRoutingTable: PrefixMap<Route>
+
+  private accounts: Accounts
+  private config: Config
+
+  private peers: Map<string, Peer>
+  private localRoutes: Map<string, Route>
+  private routingTableId: string
   private currentEpoch: number
   private broadcastTimer?: NodeJS.Timer
-  private fullLog: RouteUpdate[]
+  private log: RouteUpdate[]
 
   constructor (deps: reduct.Injector) {
-    this.routingTable = deps(RoutingTable)
-    this.backend = deps(RateBackend)
+    this.localRoutingTable = deps(RoutingTable)
     this.accounts = deps(Accounts)
-    this.quoter = deps(Quoter)
     this.config = deps(Config)
 
     this.peers = new Map() // peerId:string -> peer:Peer
@@ -52,7 +49,7 @@ export default class RouteBroadcaster {
     this.routingTableId = uuid()
     this.masterRoutingTable = new PrefixMap()
     this.currentEpoch = 0
-    this.fullLog = []
+    this.log = []
   }
 
   async start () {
@@ -343,15 +340,17 @@ export default class RouteBroadcaster {
       }
 
       const { nextRequestedEpoch } = peer.getRequestedRouteUpdate()
-      const relation = this.getAccountRelation(accountId)
-
-      const allUpdates = this.fullLog.slice(nextRequestedEpoch)
+      // TODO: Slicing copies that portion of the array. If we are sending a
+      // large routing table in small chunks it would be much faster to loop
+      // over the log and write the
+      const allUpdates = this.log.slice(nextRequestedEpoch)
       const highestEpochUpdate = allUpdates.slice(allUpdates.length - 1)[0]
 
       const toEpoch = highestEpochUpdate
-      ? highestEpochUpdate.epoch + 1
-      : nextRequestedEpoch
+        ? highestEpochUpdate.epoch + 1
+        : nextRequestedEpoch
 
+      const relation = this.getAccountRelation(accountId)
       const updates = allUpdates
         // Don't send peer their own routes
         .filter(update => !(update.route && update.route.nextHop === accountId))
@@ -441,17 +440,17 @@ export default class RouteBroadcaster {
   }
 
   private updateLocalRoute (prefix: string, route?: Route) {
-    const currentBest = this.routingTable.get(prefix)
+    const currentBest = this.localRoutingTable.get(prefix)
     const currentNextHop = currentBest && currentBest.nextHop
     const newNextHop = route && route.nextHop
 
     if (newNextHop !== currentNextHop) {
       if (route) {
         log.debug('new best route for prefix. prefix=%s oldBest=%s newBest=%s', prefix, currentNextHop, newNextHop)
-        this.routingTable.insert(prefix, route)
+        this.localRoutingTable.insert(prefix, route)
       } else {
         log.debug('no more route available for prefix. prefix=%s', prefix)
-        this.routingTable.delete(prefix)
+        this.localRoutingTable.delete(prefix)
       }
 
       this.updateMasterRoute(prefix, route)
@@ -506,7 +505,7 @@ export default class RouteBroadcaster {
       }
       log.debug('logging route update. update=%j', routeUpdate)
 
-      this.fullLog[epoch] = routeUpdate
+      this.log[epoch] = routeUpdate
     }
   }
 }
