@@ -1,4 +1,3 @@
-'use strict'
 import fetch from 'node-fetch'
 import FixerIoBackend from './fixerio'
 

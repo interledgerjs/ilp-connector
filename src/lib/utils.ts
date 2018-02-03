@@ -1,9 +1,9 @@
-import { createHash, randomBytes } from 'crypto'
+import { createHash, randomBytes, createHmac } from 'crypto'
 import { resolve } from 'path'
 import { MiddlewareMethod } from '../types/middleware'
 
-export const fulfillmentToCondition = (fulfillment: Buffer) => {
-  return createHash('sha256').update(fulfillment).digest()
+export const sha256 = (preimage: Buffer) => {
+  return createHash('sha256').update(preimage).digest()
 }
 
 export function moduleExists (path: string) {
@@ -88,4 +88,10 @@ export function uuid () {
   random[8] = (random[8] & 0x3f) | 0x80
   return random.toString('hex')
     .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5')
+}
+
+export function hmac (secret: Buffer, message: string | Buffer) {
+  const hmac = createHmac('sha256', secret)
+  hmac.update(message, 'utf8')
+  return hmac.digest()
 }

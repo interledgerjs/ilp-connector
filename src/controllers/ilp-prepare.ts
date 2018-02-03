@@ -1,5 +1,3 @@
-'use strict'
-
 import * as IlpPacket from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('ilp-prepare')
@@ -13,7 +11,7 @@ import PeerProtocolController from '../controllers/peer-protocol'
 
 import UnreachableError from '../errors/unreachable-error'
 
-const { fulfillmentToCondition } = require('../lib/utils')
+const { sha256 } = require('../lib/utils')
 
 const PEER_PROTOCOL_PREFIX = 'peer.'
 
@@ -54,7 +52,7 @@ export default class IlpPrepareController {
     if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
       const { fulfillment } = IlpPacket.deserializeIlpFulfill(result)
 
-      if (!fulfillmentToCondition(fulfillment).equals(executionCondition)) {
+      if (!sha256(fulfillment).equals(executionCondition)) {
         log.warn('got invalid fulfillment from peer, not paying. peerId=%s', nextHop)
 
         // We think the fulfillment is invalid, so we'll return a rejection

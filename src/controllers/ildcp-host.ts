@@ -1,5 +1,3 @@
-'use strict'
-
 import Accounts from '../services/accounts'
 import { create as createLogger } from '../common/log'
 import ILDCP = require('ilp-protocol-ildcp')

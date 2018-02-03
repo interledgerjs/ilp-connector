@@ -1,5 +1,3 @@
-'use strict'
-
 import { create as createLogger } from '../common/log'
 const log = createLogger('json-controller')
 

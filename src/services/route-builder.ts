@@ -1,5 +1,3 @@
-'use strict'
-
 import BigNumber from 'bignumber.js'
 import NoRouteFoundError from '../errors/no-route-found-error'
 import UnacceptableExpiryError from '../errors/unacceptable-expiry-error'

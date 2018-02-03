@@ -2,6 +2,7 @@ import reduct = require('reduct')
 import Config from './config'
 import RoutingTable from './routing-table'
 import { Server, ServerRequest, ServerResponse } from 'http'
+import { mapValues } from 'lodash'
 
 import { create as createLogger } from '../common/log'
 const log = createLogger('admin-api')
@@ -54,8 +55,9 @@ export default class AdminApi {
   }
 
   private getStatus () {
+    const routingTable = this.routingTable.toJSON()
     return {
-      routingTable: this.routingTable
+      routingTable: mapValues(routingTable, r => ({ ...r, auth: undefined, path: r.path.join(' ') }))
     }
   }
 }

@@ -161,7 +161,7 @@ export default class Peer {
       return
     }
 
-    log.debug('broadcasting routes to peer. peer=%s routeCount=%s unreachableCount=%s', this.accountId, newRoutes.length, withdrawnRoutes.length)
+    log.debug('broadcasting routes to peer. peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.accountId, fromEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
 
     const routeUpdate: RoutingUpdate = {
       speaker: accounts.getOwnAddress(),
@@ -169,7 +169,11 @@ export default class Peer {
       hold_down_time: holdDownTime,
       from_epoch: fromEpoch,
       to_epoch: toEpoch,
-      new_routes: newRoutes,
+      new_routes: newRoutes.map(r => ({
+        ...r,
+        nextHop: undefined,
+        auth: r.auth.toString('base64')
+      })),
       withdrawn_routes: withdrawnRoutes.map(r => r.prefix)
     }
 

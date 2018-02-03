@@ -1,8 +1,7 @@
-'use strict'
-
+import { randomBytes } from 'crypto'
 import { create as createLogger } from '../common/log'
 const log = createLogger('route-broadcaster')
-const { find } = require('lodash')
+import { find } from 'lodash'
 import RoutingTable from './routing-table'
 import Accounts from './accounts'
 import Config from './config'
@@ -14,7 +13,7 @@ import {
   IncomingRoute
 } from '../types/routing'
 import reduct = require('reduct')
-import { uuid } from '../lib/utils'
+import { uuid, sha256, hmac } from '../lib/utils'
 import PrefixMap from '../routing/prefix-map'
 
 interface RouteUpdate {
@@ -39,10 +38,20 @@ export default class RouteBroadcaster {
   private broadcastTimer?: NodeJS.Timer
   private log: RouteUpdate[]
 
+  private routingSecret: Buffer
+
   constructor (deps: reduct.Injector) {
     this.localRoutingTable = deps(RoutingTable)
     this.accounts = deps(Accounts)
     this.config = deps(Config)
+
+    if (this.config.routingSecret) {
+      log.info('loaded routing secret from config.')
+      this.routingSecret = Buffer.from(this.config.routingSecret, 'base64')
+    } else {
+      log.info('generated random routing secret.')
+      this.routingSecret = randomBytes(32)
+    }
 
     this.peers = new Map() // peerId:string -> peer:Peer
     this.localRoutes = new Map()
@@ -196,9 +205,11 @@ export default class RouteBroadcaster {
     const localAccounts = this.accounts.getAccountIds()
 
     // Add a route for our own address
-    this.localRoutes.set(this.accounts.getOwnAddress(), {
+    const ownAddress = this.accounts.getOwnAddress()
+    this.localRoutes.set(ownAddress, {
       nextHop: '',
-      path: []
+      path: [],
+      auth: hmac(this.routingSecret, ownAddress)
     })
 
     let defaultRoute = this.config.defaultRoute
@@ -206,9 +217,11 @@ export default class RouteBroadcaster {
       defaultRoute = localAccounts.filter(id => this.accounts.getInfo(id).relation === 'parent')[0]
     }
     if (defaultRoute) {
-      this.localRoutes.set(this.getGlobalPrefix(), {
+      const globalPrefix = this.getGlobalPrefix()
+      this.localRoutes.set(globalPrefix, {
         nextHop: defaultRoute,
-        path: []
+        path: [],
+        auth: hmac(this.routingSecret, globalPrefix)
       })
     }
 
@@ -216,9 +229,11 @@ export default class RouteBroadcaster {
       const info = this.accounts.getInfo(accountId)
       switch (info.relation) {
         case 'child':
-          this.localRoutes.set(this.accounts.getChildAddress(accountId), {
+          const childAddress = this.accounts.getChildAddress(accountId)
+          this.localRoutes.set(childAddress, {
             nextHop: accountId,
-            path: []
+            path: [],
+            auth: hmac(this.routingSecret, childAddress)
           })
           break
       }
@@ -240,14 +255,15 @@ export default class RouteBroadcaster {
     return this.updateLocalRoute(prefix, newBest)
   }
 
-  getBestPeerForPrefix (prefix: string) {
+  getBestPeerForPrefix (prefix: string): Route | undefined {
     // configured routes have highest priority
     const configuredRoute = find(this.config.routes, { targetPrefix: prefix })
     if (configuredRoute) {
       if (this.accounts.exists(configuredRoute.peerId)) {
         return {
           nextHop: configuredRoute.peerId,
-          path: []
+          path: [],
+          auth: hmac(this.routingSecret, prefix)
         }
       } else {
         log.warn('ignoring configured route, account does not exist. prefix=%s accountId=%s', configuredRoute.targetPrefix, configuredRoute.peerId)
@@ -301,7 +317,8 @@ export default class RouteBroadcaster {
 
     return bestRoute && {
       nextHop: bestRoute.peer,
-      path: bestRoute.path
+      path: bestRoute.path,
+      auth: bestRoute.auth
     }
   }
 
@@ -386,8 +403,8 @@ export default class RouteBroadcaster {
           newRoutes.push({
             prefix: update.prefix,
             nextHop: update.route.nextHop,
-            epoch: update.epoch,
-            path: update.route.path
+            path: update.route.path,
+            auth: update.route.auth
           })
         } else {
           withdrawnRoutes.push({
@@ -463,8 +480,11 @@ export default class RouteBroadcaster {
 
   private updateMasterRoute (prefix: string, route?: Route) {
     if (route) {
-      route = { ...route }
-      route.path = [this.accounts.getOwnAddress(), ...route.path]
+      route = {
+        ...route,
+        path: [this.accounts.getOwnAddress(), ...route.path],
+        auth: sha256(route.auth)
+      }
 
       if (
         // Routes must start with the global prefix

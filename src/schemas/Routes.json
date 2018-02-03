@@ -16,21 +16,23 @@
         "$ref": "IlpAddress.json",
         "description": "ILP address prefix that this route advertisement covers."
       },
-      "points": {
-        "$ref": "Base64.json",
-        "description": "A list of points describing the exchange rate curve (deprecated)"
-      },
       "path": {
         "type": "array",
         "items": {
           "type": "string"
         },
         "description": "A list of ILP addresses of the connectors between the destination prefix and the advertising peer, exclusively. The list is ordered from closest to the destination first to furthest from the destination last."
+      },
+      "auth": {
+        "type": "string",
+        "description": "Authentication tag for this route. This is a random value decided by the route originator and hashed at each hop. Depending on how many times this value has been hashed, nodes can determine if the length of the `path` property has been artificially reduced."
       }
     },
     "required": [
       "prefix",
-      "path"
-    ]
+      "path",
+      "auth"
+    ],
+    "additionalProperties": false
   }
 }
