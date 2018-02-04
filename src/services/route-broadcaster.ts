@@ -6,6 +6,9 @@ import RoutingTable from './routing-table'
 import Accounts from './accounts'
 import Config from './config'
 import Peer from '../routing/peer'
+import { canDragonFilter } from '../routing/dragon'
+import { Relation, getRelationPriority } from '../routing/relation'
+import { formatRoutingTableAsJson } from '../routing/utils'
 import {
   Route,
   BroadcastRoute,
@@ -194,10 +197,6 @@ export default class RouteBroadcaster {
     }
   }
 
-  getAccountRelation (accountId) {
-    return accountId ? this.accounts.getInfo(accountId).relation : 'local'
-  }
-
   reloadLocalRoutes () {
     log.debug('reload local and configured routes.')
 
@@ -277,12 +276,7 @@ export default class RouteBroadcaster {
 
     const weight = (route: IncomingRoute) => {
       const relation = this.getAccountRelation(route.peer)
-      return {
-        parent: 0,
-        peer: 1,
-        child: 2,
-        local: 3
-      }[relation]
+      return getRelationPriority(relation)
     }
 
     const bestRoute = Array.from(this.peers.values())
@@ -456,6 +450,13 @@ export default class RouteBroadcaster {
     send()
   }
 
+  getStatus () {
+    return {
+      localRoutingTable: formatRoutingTableAsJson(this.localRoutingTable),
+      masterRoutingTable: formatRoutingTableAsJson(this.masterRoutingTable)
+    }
+  }
+
   private updateLocalRoute (prefix: string, route?: Route) {
     const currentBest = this.localRoutingTable.get(prefix)
     const currentNextHop = currentBest && currentBest.nextHop
@@ -499,6 +500,13 @@ export default class RouteBroadcaster {
         (
           prefix.startsWith(this.accounts.getOwnAddress() + '.') &&
           route.path.length === 1
+        ) ||
+
+        canDragonFilter(
+          this.masterRoutingTable,
+          this.getAccountRelation,
+          prefix,
+          route
         )
       ) {
         route = undefined
@@ -527,5 +535,9 @@ export default class RouteBroadcaster {
 
       this.log[epoch] = routeUpdate
     }
+  }
+
+  private getAccountRelation = (accountId: string): Relation => {
+    return accountId ? this.accounts.getInfo(accountId).relation : 'local'
   }
 }
