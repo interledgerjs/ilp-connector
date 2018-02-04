@@ -3,48 +3,43 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('route-broadcaster')
 import { find } from 'lodash'
 import RoutingTable from './routing-table'
+import ForwardingRoutingTable, { RouteUpdate } from './forwarding-routing-table'
 import Accounts from './accounts'
 import Config from './config'
 import Peer from '../routing/peer'
 import { canDragonFilter } from '../routing/dragon'
 import { Relation, getRelationPriority } from '../routing/relation'
-import { formatRoutingTableAsJson } from '../routing/utils'
+import {
+  formatRoutingTableAsJson,
+  formatRouteAsJson
+} from '../routing/utils'
 import {
   Route,
-  BroadcastRoute,
   RouteUpdateParams,
   IncomingRoute
 } from '../types/routing'
 import reduct = require('reduct')
 import { uuid, sha256, hmac } from '../lib/utils'
-import PrefixMap from '../routing/prefix-map'
-
-interface RouteUpdate {
-  epoch: number,
-  prefix: string
-  route?: Route
-}
 
 export default class RouteBroadcaster {
+  private deps: reduct.Injector
   // Local routing table, used for actually routing packets
   private localRoutingTable: RoutingTable
   // Master routing table, used for routes that we broadcast
-  private masterRoutingTable: PrefixMap<Route>
+  private forwardingRoutingTable: ForwardingRoutingTable
 
   private accounts: Accounts
   private config: Config
 
   private peers: Map<string, Peer>
   private localRoutes: Map<string, Route>
-  private routingTableId: string
-  private currentEpoch: number
-  private broadcastTimer?: NodeJS.Timer
-  private log: RouteUpdate[]
-
   private routingSecret: Buffer
+  private untrackCallbacks: Map<string, () => void> = new Map()
 
   constructor (deps: reduct.Injector) {
+    this.deps = deps
     this.localRoutingTable = deps(RoutingTable)
+    this.forwardingRoutingTable = deps(ForwardingRoutingTable)
     this.accounts = deps(Accounts)
     this.config = deps(Config)
 
@@ -58,32 +53,61 @@ export default class RouteBroadcaster {
 
     this.peers = new Map() // peerId:string -> peer:Peer
     this.localRoutes = new Map()
-    this.routingTableId = uuid()
-    this.masterRoutingTable = new PrefixMap()
-    this.currentEpoch = 0
-    this.log = []
   }
 
-  async start () {
-    try {
-      for (const accountId of this.accounts.getAccountIds()) {
-        this.add(accountId)
-      }
-      this.reloadLocalRoutes()
-    } catch (e) {
-      if (e.name === 'SystemError' ||
-          e.name === 'ServerError') {
-        // System error, in that context that is a network error
-        // This will be retried later, so do nothing
-      } else {
-        throw e
-      }
+  start () {
+    this.reloadLocalRoutes()
+
+    for (const accountId of this.accounts.getAccountIds()) {
+      this.track(accountId)
     }
   }
 
   stop () {
-    if (this.broadcastTimer) {
-      clearTimeout(this.broadcastTimer)
+    for (const accountId of this.peers.keys()) {
+      this.remove(accountId)
+    }
+  }
+
+  track (accountId: string) {
+    if (this.untrackCallbacks.has(accountId)) {
+      // Already tracked
+      return
+    }
+
+    const plugin = this.accounts.getPlugin(accountId)
+
+    const connectHandler = () => {
+      if (!plugin.isConnected()) {
+        // some plugins don't set `isConnected() = true` before emitting the
+        // connect event, setImmediate has a good chance of working.
+        setImmediate(() => this.add(accountId))
+      } else {
+        this.add(accountId)
+      }
+    }
+    const disconnectHandler = () => {
+      this.remove(accountId)
+    }
+
+    plugin.on('connect', connectHandler)
+    plugin.on('disconnect', disconnectHandler)
+
+    this.untrackCallbacks.set(accountId, () => {
+      plugin.removeListener('connect', connectHandler)
+      plugin.removeListener('disconnect', disconnectHandler)
+    })
+
+    this.add(accountId)
+  }
+
+  untrack (accountId: string) {
+    this.remove(accountId)
+
+    const callback = this.untrackCallbacks.get(accountId)
+
+    if (callback) {
+      callback()
     }
   }
 
@@ -114,10 +138,15 @@ export default class RouteBroadcaster {
     }
 
     if (sendRoutes || receiveRoutes) {
-      log.debug('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
-      this.peers.set(accountId, new Peer({ accountId, sendRoutes, receiveRoutes }))
+      const plugin = this.accounts.getPlugin(accountId)
 
-      this.sendRouteUpdate(accountId)
+      if (plugin.isConnected()) {
+        log.debug('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
+        const peer = new Peer({ deps: this.deps, accountId, sendRoutes, receiveRoutes })
+        this.peers.set(accountId, peer)
+        peer.scheduleRouteUpdate()
+        this.reloadLocalRoutes()
+      }
     } else {
       log.debug('not sending/receiving routes for peer, set sendRoutes/receiveRoutes to override. accountId=%s', accountId)
     }
@@ -131,12 +160,15 @@ export default class RouteBroadcaster {
     }
 
     log.info('remove peer. peerId=' + accountId)
+    peer.stop()
     this.peers.delete(accountId)
 
     for (let prefix of peer.getPrefixes()) {
       this.updatePrefix(prefix)
     }
-    this.updatePrefix(accountId)
+    if (this.getAccountRelation(accountId) === 'child') {
+      this.updatePrefix(this.accounts.getChildAddress(accountId))
+    }
   }
 
   handleRouteUpdate (sourceAccount: string, {
@@ -185,11 +217,11 @@ export default class RouteBroadcaster {
       haveRoutesChanged = this.updatePrefix(prefix) || haveRoutesChanged
     }
     if (haveRoutesChanged && this.config.routeBroadcastEnabled) {
-      // TODO: Should we trigger an immediate broadcast when routes change?
+      // TODO: Should we even trigger an immediate broadcast when routes change?
       //       Note that BGP does not do this AFAIK
-      // this.broadcast().catch((err) => {
-      //   log.warn('failed to relay route update error=%s', err.message)
-      // })
+      for (const peer of this.peers.values()) {
+        peer.scheduleRouteUpdate()
+      }
     }
 
     return {
@@ -225,16 +257,13 @@ export default class RouteBroadcaster {
     }
 
     for (let accountId of localAccounts) {
-      const info = this.accounts.getInfo(accountId)
-      switch (info.relation) {
-        case 'child':
-          const childAddress = this.accounts.getChildAddress(accountId)
-          this.localRoutes.set(childAddress, {
-            nextHop: accountId,
-            path: [],
-            auth: hmac(this.routingSecret, childAddress)
-          })
-          break
+      if (this.getAccountRelation(accountId) === 'child') {
+        const childAddress = this.accounts.getChildAddress(accountId)
+        this.localRoutes.set(childAddress, {
+          nextHop: accountId,
+          path: [],
+          auth: hmac(this.routingSecret, childAddress)
+        })
       }
     }
 
@@ -282,7 +311,15 @@ export default class RouteBroadcaster {
     const bestRoute = Array.from(this.peers.values())
       .map(peer => peer.getPrefix(prefix))
       .filter((a): a is IncomingRoute => !!a)
-      .sort((a: IncomingRoute, b: IncomingRoute) => {
+      .sort((a?: IncomingRoute, b?: IncomingRoute) => {
+        if (!a && !b) {
+          return 0
+        } else if (!a) {
+          return 1
+        } else if (!b) {
+          return -1
+        }
+
         // First sort by peer weight
         const weightA = weight(a)
         const weightB = weight(b)
@@ -327,133 +364,14 @@ export default class RouteBroadcaster {
     }
   }
 
-  sendRouteUpdate (accountId: string) {
-    log.info('broadcasting to peer. accountId=%s epoch=%s', accountId, this.currentEpoch)
-
-    const peer = this.peers.get(accountId)
-
-    if (!peer) {
-      throw new Error('peer not set. accountId=' + accountId)
-    }
-
-    const plugin = this.accounts.getPlugin(accountId)
-
-    let lastUpdate = 0
-    let sendTimer
-    const send = () => {
-      if (sendTimer) {
-        clearTimeout(sendTimer)
-        sendTimer = undefined
-      }
-
-      if (!plugin.isConnected()) {
-        return
-      }
-
-      const { nextRequestedEpoch } = peer.getRequestedRouteUpdate()
-      // TODO: Slicing copies that portion of the array. If we are sending a
-      // large routing table in small chunks it would be much faster to loop
-      // over the log and write the
-      const allUpdates = this.log.slice(nextRequestedEpoch)
-      const highestEpochUpdate = allUpdates.slice(allUpdates.length - 1)[0]
-
-      const toEpoch = highestEpochUpdate
-        ? highestEpochUpdate.epoch + 1
-        : nextRequestedEpoch
-
-      const relation = this.getAccountRelation(accountId)
-      const updates = allUpdates
-        // Don't send peer their own routes
-        .filter(update => !(update.route && update.route.nextHop === accountId))
-
-        // Don't advertise peer and provider routes to providers
-        .map(update => {
-          if (
-            update.route &&
-            relation === 'parent' &&
-            ['peer', 'parent'].indexOf(this.getAccountRelation(update.route.nextHop)) !== -1
-          ) {
-            return {
-              ...update,
-              route: undefined
-            }
-          } else {
-            return update
-          }
-        })
-
-      // Don't send heartbeats more than once per routeBroadcastInterval
-      const timeSinceLastUpdate = Date.now() - lastUpdate
-      if (!updates.length && timeSinceLastUpdate < this.config.routeBroadcastInterval) {
-        sendTimer = setTimeout(send, this.config.routeBroadcastInterval - timeSinceLastUpdate)
-        return
-      }
-
-      const newRoutes: BroadcastRoute[] = []
-      const withdrawnRoutes: { prefix: string, epoch: number }[] = []
-
-      for (const update of updates) {
-        if (update.route) {
-          newRoutes.push({
-            prefix: update.prefix,
-            nextHop: update.route.nextHop,
-            path: update.route.path,
-            auth: update.route.auth
-          })
-        } else {
-          withdrawnRoutes.push({
-            prefix: update.prefix,
-            epoch: update.epoch
-          })
-        }
-      }
-
-      // Some plugins may not support timeouts, so we make sure we don't get stuck
-      const timeout = this.config.routeBroadcastInterval
-
-      const timerPromise = new Promise(resolve => {
-        const timer = setTimeout(resolve, timeout)
-        // Don't let this timer keep Node running
-        timer.unref()
-      })
-
-      lastUpdate = Date.now()
-
-      Promise.race([
-        peer.sendRouteUpdate({
-          accounts: this.accounts,
-          newRoutes,
-          withdrawnRoutes,
-          holdDownTime: this.config.routeExpiry,
-          routingTableId: this.routingTableId,
-          fromEpoch: nextRequestedEpoch,
-          toEpoch,
-          timeout
-        }),
-        timerPromise
-      ])
-        .then(send)
-        .catch((err: any) => {
-          const errInfo = (err instanceof Object && err.stack) ? err.stack : err
-          log.debug('failed to broadcast route information to peer. peer=%s error=%s', peer.getAccountId(), errInfo)
-          // Don't immediately retry to avoid an infinite loop
-          sendTimer = setTimeout(send, this.config.routeBroadcastInterval)
-          sendTimer.unref()
-        })
-    }
-
-    plugin.on('connect', () => {
-      // some plugins don't set `isConnected() = true` before emitting the
-      // connect event, setImmediate has a good chance of working.
-      setImmediate(send)
-    })
-    send()
-  }
-
   getStatus () {
     return {
       localRoutingTable: formatRoutingTableAsJson(this.localRoutingTable),
-      masterRoutingTable: formatRoutingTableAsJson(this.masterRoutingTable)
+      forwardingRoutingTable: formatRoutingTableAsJson(this.forwardingRoutingTable),
+      routingLog: this.forwardingRoutingTable.log.map(entry => ({
+        ...entry,
+        route: entry.route && formatRouteAsJson(entry.route)
+      }))
     }
   }
 
@@ -471,7 +389,7 @@ export default class RouteBroadcaster {
         this.localRoutingTable.delete(prefix)
       }
 
-      this.updateMasterRoute(prefix, route)
+      this.updateForwardingRoute(prefix, route)
 
       return true
     }
@@ -479,7 +397,7 @@ export default class RouteBroadcaster {
     return false
   }
 
-  private updateMasterRoute (prefix: string, route?: Route) {
+  private updateForwardingRoute (prefix: string, route?: Route) {
     if (route) {
       route = {
         ...route,
@@ -503,7 +421,7 @@ export default class RouteBroadcaster {
         ) ||
 
         canDragonFilter(
-          this.masterRoutingTable,
+          this.forwardingRoutingTable,
           this.getAccountRelation,
           prefix,
           route
@@ -513,19 +431,19 @@ export default class RouteBroadcaster {
       }
     }
 
-    const currentBest = this.masterRoutingTable.get(prefix)
+    const currentBest = this.forwardingRoutingTable.get(prefix)
 
     const currentNextHop = currentBest && currentBest.nextHop
     const newNextHop = route && route.nextHop
 
     if (currentNextHop !== newNextHop) {
       if (route) {
-        this.masterRoutingTable.insert(prefix, route)
+        this.forwardingRoutingTable.insert(prefix, route)
       } else {
-        this.masterRoutingTable.delete(prefix)
+        this.forwardingRoutingTable.delete(prefix)
       }
 
-      const epoch = this.currentEpoch++
+      const epoch = this.forwardingRoutingTable.currentEpoch++
       const routeUpdate: RouteUpdate = {
         prefix,
         route,
@@ -533,7 +451,7 @@ export default class RouteBroadcaster {
       }
       log.debug('logging route update. update=%j', routeUpdate)
 
-      this.log[epoch] = routeUpdate
+      this.forwardingRoutingTable.log[epoch] = routeUpdate
     }
   }
 
