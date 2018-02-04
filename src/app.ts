@@ -40,7 +40,7 @@ function listen (
     await accounts.loadIlpAddress()
 
     if (config.routeBroadcastEnabled) {
-      await routeBroadcaster.start()
+      routeBroadcaster.start()
     }
 
     // Connect other plugins, give up after initialConnectTimeout
@@ -79,8 +79,7 @@ async function addPlugin (
   await middlewareManager.addPlugin(id, plugin)
 
   await plugin.connect({ timeout: Infinity })
-  routeBroadcaster.add(id)
-  routeBroadcaster.reloadLocalRoutes()
+  routeBroadcaster.track(id)
 }
 
 async function removePlugin (
@@ -96,8 +95,7 @@ async function removePlugin (
   middlewareManager.removePlugin(id, plugin)
   await plugin.disconnect()
   accounts.remove(id)
-  routeBroadcaster.remove(id)
-  routeBroadcaster.reloadLocalRoutes()
+  routeBroadcaster.untrack(id)
 }
 
 function getPlugin (

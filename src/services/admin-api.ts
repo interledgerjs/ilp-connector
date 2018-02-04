@@ -69,6 +69,9 @@ export default class AdminApi {
         }
 
         log.warn('error in admin api request handler. error=%s', err.stack ? err.stack : err)
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'text/plain')
+        res.end(String(err))
       }
     })
   }
