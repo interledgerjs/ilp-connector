@@ -8,7 +8,7 @@
     "removeComments": true,
     "moduleResolution": "node",
     "inlineSources": true,
-    "strictNullChecks": true,
+    "strict": true,
     "suppressImplicitAnyIndexErrors": true
   },
   "include": [
