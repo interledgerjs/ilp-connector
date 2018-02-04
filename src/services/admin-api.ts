@@ -1,6 +1,8 @@
 import reduct = require('reduct')
 import Config from './config'
 import RoutingTable from './routing-table'
+import RouteBroadcaster from './route-broadcaster'
+import { formatRoutingTableAsJson } from '../routing/utils'
 import { Server, ServerRequest, ServerResponse } from 'http'
 import { mapValues } from 'lodash'
 
@@ -10,11 +12,14 @@ const log = createLogger('admin-api')
 export default class AdminApi {
   private config: Config
   private routingTable: RoutingTable
+  private routeBroadcaster: RouteBroadcaster
+
   private server: Server
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
     this.routingTable = deps(RoutingTable)
+    this.routeBroadcaster = deps(RouteBroadcaster)
   }
 
   listen () {
@@ -40,24 +45,41 @@ export default class AdminApi {
     let body = ''
     req.on('data', data => body += data)
     req.on('end', () => {
-      switch (req.url) {
-        case '/status':
-          res.statusCode = 200
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify(this.getStatus()))
-          break
-        default:
-          res.statusCode = 404
-          res.setHeader('Content-Type', 'text/plain')
-          res.end('Not Found')
+      try {
+        switch (req.url) {
+          case '/status':
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify(this.getStatus()))
+            break
+          case '/routing':
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify(this.getRoutingStatus()))
+            break
+          default:
+            res.statusCode = 404
+            res.setHeader('Content-Type', 'text/plain')
+            res.end('Not Found')
+        }
+      } catch (e) {
+        let err = e
+        if (!e || typeof e !== 'object') {
+          err = new Error('non-object thrown. error=' + e)
+        }
+
+        log.warn('error in admin api request handler. error=%s', err.stack ? err.stack : err)
       }
     })
   }
 
   private getStatus () {
-    const routingTable = this.routingTable.toJSON()
     return {
-      routingTable: mapValues(routingTable, r => ({ ...r, auth: undefined, path: r.path.join(' ') }))
+      localRoutingTable: formatRoutingTableAsJson(this.routingTable)
     }
+  }
+
+  private getRoutingStatus () {
+    return this.routeBroadcaster.getStatus()
   }
 }

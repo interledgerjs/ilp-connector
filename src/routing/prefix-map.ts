@@ -26,14 +26,26 @@ export default class PrefixMap<T> {
 
   size () { return this.prefixes.length }
 
+  /**
+   * Find the value of the longest matching prefix key.
+   */
   resolve (key: string) {
+    const prefix = this.resolvePrefix(key)
+
+    return typeof prefix !== 'undefined' ? this.items[prefix] : undefined
+  }
+
+  /**
+   * Find the longest matching prefix key.
+   */
+  resolvePrefix (key: string) {
     // Exact match
-    if (this.items[key]) return this.items[key] // redundant; optimization?
+    if (this.items[key]) return key // redundant; optimization?
     // prefix match (the list is in descending length order, and secondarily, reverse-alphabetically)
     const index = findIndex(this.prefixes, (e: string) => key.startsWith(e))
-    if (index === -1) return null
+    if (index === -1) return undefined
     const prefix = this.prefixes[index]
-    return this.items[prefix]
+    return prefix
   }
 
   get (prefix: string): T | undefined { return this.items[prefix] }
