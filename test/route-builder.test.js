@@ -1,6 +1,7 @@
 'use strict'
 
-const { assert } = require('chai')
+const chai = require('chai')
+const { assert } = chai
 const sinon = require('sinon')
 const { cloneDeep } = require('lodash')
 const appHelper = require('./helpers/app')
@@ -8,16 +9,17 @@ const logHelper = require('./helpers/log')
 const logger = require('../src/common/log')
 const InvalidPacketError = require('../src/errors/invalid-packet-error').default
 const LiquidityCurve = require('../src/routing/liquidity-curve').default
+chai.use(require('chai-as-promised'))
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
-const ledgerA = 'usd-ledger'
-const ledgerB = 'eur-ledger'
-const ledgerC = 'cny-ledger'
+const ledgerA = 'test.usd-ledger'
+const ledgerB = 'test.eur-ledger'
+const ledgerC = 'test.cny-ledger'
 
 // sending/receiving users
-const bobB = 'eur-ledger.bob'
-const carlC = 'cny-ledger.carl'
+const bobB = 'test.eur-ledger.bob'
+const carlC = 'test.cny-ledger.carl'
 
 const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
@@ -51,16 +53,20 @@ describe('RouteBuilder', function () {
 
     const testAccounts = [ledgerA, ledgerB]
     for (let accountId of testAccounts) {
+      this.routeBroadcaster.add(accountId)
       this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
         method: 'broadcast_routes',
         data: {
+          speaker: accountId,
+          routing_table_id: '31812543-9935-4160-bdde-6e459bb37cfe',
+          from_epoch: 0,
+          to_epoch: 1,
           hold_down_time: 45000,
-          unreachable_through_me: [],
-          request_full_table: false,
+          withdrawn_routes: [],
           new_routes: [{
             prefix: accountId,
-            min_message_window: 1,
-            path: []
+            path: [accountId],
+            auth: 'fuR3ckUuhB9nRHKW2mAMh/0BHc8p6UuD+iSeV3e734E='
           }]
         }
       })))
@@ -144,7 +150,7 @@ describe('RouteBuilder', function () {
         executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
         expiresAt: new Date('2015-06-16T00:00:01.000Z'),
         data: Buffer.alloc(0)
-      }), 'no route found. source=usd-ledger destination=cny-ledger.carl')
+      }), 'no route found. source=test.usd-ledger destination=test.cny-ledger.carl')
     })
 
     it('throws when the source transfer has no destination', async function () {
