@@ -33,17 +33,22 @@ describe('Quotes', function () {
     this.clock = sinon.useFakeTimers(START_DATE)
 
     await this.middlewareManager.setup()
-    const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
+    const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
+      this.routeBroadcaster.add(accountId)
       this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
         method: 'broadcast_routes',
         data: {
+          speaker: accountId,
+          routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+          from_epoch: 0,
+          to_epoch: 1,
           hold_down_time: 45000,
-          unreachable_through_me: [],
-          request_full_table: false,
+          withdrawn_routes: [],
           new_routes: [{
             prefix: accountId,
-            path: []
+            path: [accountId],
+            auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
           }]
         }
       })))
@@ -60,7 +65,7 @@ describe('Quotes', function () {
   })
 
   it('should return a InvalidAmountSpecifiedError if sourceAmount is zero', async function () {
-    const quotePromise = this.routeBuilder.quoteBySource('eur-ledger', {
+    const quotePromise = this.routeBuilder.quoteBySource('test.eur-ledger', {
       sourceAmount: '0',
       destinationAccount: 'usd-ledger.bob'
     })
@@ -69,7 +74,7 @@ describe('Quotes', function () {
   })
 
   it('should return a InvalidAmountSpecifiedError if destinationAmount is zero', async function () {
-    const quotePromise = this.routeBuilder.quoteByDestination('eur-ledger', {
+    const quotePromise = this.routeBuilder.quoteByDestination('test.eur-ledger', {
       destinationAmount: '0',
       destinationAccount: 'usd-ledger.bob'
     })
@@ -78,7 +83,7 @@ describe('Quotes', function () {
   })
 
   it.skip('should return NoRouteFoundError when the destination amount is unachievable', async function () {
-    const quotePromise = this.routeBuilder.quoteByDestination('eur-ledger', {
+    const quotePromise = this.routeBuilder.quoteByDestination('test.eur-ledger', {
       destinationAmount: '100000000000000000000000000000',
       destinationAccount: 'usd-ledger.bob',
       destinationHoldDuration: 1.001
@@ -88,20 +93,20 @@ describe('Quotes', function () {
   })
 
   it('should return NoRouteFoundError when the source ledger is not supported', async function () {
-    const quotePromise = this.routeBuilder.quoteBySource('fake-ledger', {
+    const quotePromise = this.routeBuilder.quoteBySource('test.fake-ledger', {
       sourceAmount: '100',
-      destinationAccount: 'usd-ledger.bob',
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 1.001
     })
 
-    await assert.isRejected(quotePromise, NoRouteFoundError, 'no route from source. sourceAccount=fake-ledger')
+    await assert.isRejected(quotePromise, NoRouteFoundError, 'no route from source. sourceAccount=test.fake-ledger')
   })
 
   // Skipping because it needs to use an alternate curve to get a 0.
   it('should return a UnacceptableAmountError if the quoted destinationAmount is 0', async function () {
-    const quotePromise = this.routeBuilder.quoteBySource('usd-ledger', {
+    const quotePromise = this.routeBuilder.quoteBySource('test.usd-ledger', {
       sourceAmount: '1',
-      destinationAccount: 'eur-ledger.bob',
+      destinationAccount: 'test.eur-ledger.bob',
       destinationHoldDuration: 1.001
     })
 
@@ -109,19 +114,19 @@ describe('Quotes', function () {
   })
 
   it('should return NoRouteFoundError when the destination ledger is not supported', async function () {
-    const quotePromise = this.routeBuilder.quoteBySource('eur-ledger', {
+    const quotePromise = this.routeBuilder.quoteBySource('test.eur-ledger', {
       sourceAmount: '100',
-      destinationAccount: 'example.fake.blah',
+      destinationAccount: 'test.fake.blah',
       destinationHoldDuration: 1.001
     })
 
-    await assert.isRejected(quotePromise, NoRouteFoundError, 'no route found. to=example.fake.blah')
+    await assert.isRejected(quotePromise, NoRouteFoundError, 'no route found. to=test.fake.blah')
   })
 
   it('should return a UnacceptableExpiryError if the destinationHoldDuration is too long', async function () {
-    const quotePromise = this.routeBuilder.quoteBySource('eur-ledger', {
+    const quotePromise = this.routeBuilder.quoteBySource('test.eur-ledger', {
       sourceAmount: '100',
-      destinationAccount: 'usd-ledger.bob',
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 30001
     })
 
@@ -129,9 +134,9 @@ describe('Quotes', function () {
   })
 
   it('should not return an Error for insufficient liquidity', async function () {
-    const quotePromise = this.routeBuilder.quoteByDestination('eur-ledger', {
+    const quotePromise = this.routeBuilder.quoteByDestination('test.eur-ledger', {
       destinationAmount: '150001',
-      destinationAccount: 'usd-ledger.bob',
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 10
     })
 
@@ -139,9 +144,9 @@ describe('Quotes', function () {
   })
 
   it('should return quotes for fixed source amounts', async function () {
-    const quote = await this.routeBuilder.quoteBySource('eur-ledger', {
+    const quote = await this.routeBuilder.quoteBySource('test.eur-ledger', {
       sourceAmount: '1000000',
-      destinationAccount: 'usd-ledger.bob',
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 5000
     })
 
@@ -153,9 +158,9 @@ describe('Quotes', function () {
 
   // TODO: make sure we're calculating the rates correctly and in our favor
   it('should return quotes for fixed destination amounts', async function () {
-    const quote = await this.routeBuilder.quoteByDestination('eur-ledger', {
+    const quote = await this.routeBuilder.quoteByDestination('test.eur-ledger', {
       destinationAmount: '1000000',
-      destinationAccount: 'usd-ledger.bob',
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
@@ -165,13 +170,13 @@ describe('Quotes', function () {
   })
 
   it('should return local liquidity curve quotes', async function () {
-    const quote = await this.routeBuilder.quoteLiquidity('eur-ledger', {
-      destinationAccount: 'usd-ledger.bob',
+    const quote = await this.routeBuilder.quoteLiquidity('test.eur-ledger', {
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
       liquidityCurve: new LiquidityCurve([ [ 1, 0 ], [ 94600076285502, 100000000000000 ] ]).toBuffer(),
-      appliesToPrefix: 'usd-ledger',
+      appliesToPrefix: 'test.usd-ledger',
       sourceHoldDuration: 6000,
       expiresAt: new Date(START_DATE + 45000)
     })
@@ -181,24 +186,34 @@ describe('Quotes', function () {
     const curve = new LiquidityCurve([ [0, 0], [10000, 20000] ]).toBuffer()
     this.routeBroadcaster.config.routeBroadcastEnabled = false
     await this.ccpController.handle({
-      new_routes: [{
-        prefix: 'random-ledger',
-        min_message_window: 1,
-        points: curve.toString('base64'),
-        path: []
-      }],
+      speaker: 'test.eur-ledger',
+      routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+      from_epoch: 1,
+      to_epoch: 2,
       hold_down_time: 45000,
-      unreachable_through_me: []
-    }, 'eur-ledger')
+      withdrawn_routes: [],
+      new_routes: [{
+        prefix: 'test.random-ledger',
+        path: ['test.eur-ledger', 'test.random-ledger'],
+        auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
+      }]
+    }, 'test.eur-ledger')
     this.routeBroadcaster.config.routeBroadcastEnabled = true
 
-    const quote = await this.routeBuilder.quoteLiquidity('usd-ledger', {
-      destinationAccount: 'random-ledger.carl',
+    this.accounts.getPlugin('test.eur-ledger').sendData = () => IlpPacket.serializeIlqpLiquidityResponse({
+      liquidityCurve: curve,
+      appliesToPrefix: 'test.random-ledger',
+      sourceHoldDuration: 6000,
+      expiresAt: new Date(START_DATE + 45000)
+    })
+
+    const quote = await this.routeBuilder.quoteLiquidity('test.usd-ledger', {
+      destinationAccount: 'test.random-ledger.carl',
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
       liquidityCurve: new LiquidityCurve([ [1, 0], [10614, 20000] ]).toBuffer(),
-      appliesToPrefix: 'random-ledger',
+      appliesToPrefix: 'test.random-ledger',
       sourceHoldDuration: 7000,
       expiresAt: new Date(START_DATE + 45000)
     })
@@ -208,7 +223,7 @@ describe('Quotes', function () {
     const curve = new LiquidityCurve([ [1, 0], [1001, 1000] ])
     for (let targetPrefix of ['', 'a', 'a.b']) {
       this.routingTable.insert(targetPrefix, {
-        nextHop: 'eur-ledger',
+        nextHop: 'test.eur-ledger',
         path: []
       })
       this.quoter.cacheCurve({
@@ -218,24 +233,24 @@ describe('Quotes', function () {
         minMessageWindow: 1000
       })
     }
-    expect((await this.routeBuilder.quoteLiquidity('cad-ledger', {
+    expect((await this.routeBuilder.quoteLiquidity('test.cad-ledger', {
       destinationAccount: 'random-ledger.carl',
       destinationHoldDuration: 5000
     })).appliesToPrefix).to.equal('random-ledger') // Can't be "", since that would match "eur-ledger.".
-    expect((await this.routeBuilder.quoteLiquidity('cad-ledger', {
+    expect((await this.routeBuilder.quoteLiquidity('test.cad-ledger', {
       destinationAccount: 'a.b.carl',
       destinationHoldDuration: 5000
     })).appliesToPrefix).to.equal('a.b')
-    expect((await this.routeBuilder.quoteLiquidity('cad-ledger', {
+    expect((await this.routeBuilder.quoteLiquidity('test.cad-ledger', {
       destinationAccount: 'a.c.b.carl',
       destinationHoldDuration: 5000
     })).appliesToPrefix).to.equal('a.c')
   })
 
   it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', async function () {
-    const quote = await this.routeBuilder.quoteBySource('usd-ledger', {
+    const quote = await this.routeBuilder.quoteBySource('test.usd-ledger', {
       sourceAmount: '1000000',
-      destinationAccount: 'eur-ledger.alice',
+      destinationAccount: 'test.eur-ledger.alice',
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
@@ -245,9 +260,9 @@ describe('Quotes', function () {
   })
 
   it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates', async function () {
-    const quote = await this.routeBuilder.quoteBySource('usd-ledger', {
+    const quote = await this.routeBuilder.quoteBySource('test.usd-ledger', {
       sourceAmount: '1000000',
-      destinationAccount: 'cad-ledger.carl',
+      destinationAccount: 'test.cad-ledger.carl',
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
@@ -257,9 +272,9 @@ describe('Quotes', function () {
   })
 
   it('should determine the correct rate and spread when neither the source nor destination asset is the base currency in the rates and the rate must be flipped', async function () {
-    const quote = await this.routeBuilder.quoteBySource('cad-ledger', {
+    const quote = await this.routeBuilder.quoteBySource('test.cad-ledger', {
       sourceAmount: '1000000',
-      destinationAccount: 'usd-ledger.bob',
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 5000
     })
     expect(quote).to.deep.equal({
@@ -272,21 +287,25 @@ describe('Quotes', function () {
     beforeEach(async function () {
       this.routeBroadcaster.config.routeBroadcastEnabled = false
       await this.ccpController.handle({
+        speaker: 'test.eur-ledger',
+        routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+        from_epoch: 1,
+        to_epoch: 2,
+        hold_down_time: 45000,
+        withdrawn_routes: [],
         new_routes: [{
-          prefix: 'random-ledger',
-          min_message_window: 1,
-          path: []
-        }],
-        hold_down_time: 1234,
-        unreachable_through_me: []
-      }, 'eur-ledger')
+          prefix: 'test.random-ledger',
+          path: ['test.eur-ledger', 'test.random-ledger'],
+          auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
+        }]
+      }, 'test.eur-ledger')
       this.routeBroadcaster.config.routeBroadcastEnabled = true
     })
 
     it('returns a quote when appliesToPrefix is more general than targetPrefix', async function () {
-      this.accounts.getPlugin('eur-ledger').sendData = (request) => {
+      this.accounts.getPlugin('test.eur-ledger').sendData = (request) => {
         assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(request), {
-          destinationAccount: 'random-ledger.bob',
+          destinationAccount: 'test.random-ledger.bob',
           destinationHoldDuration: 5000
         })
         return Promise.resolve(IlpPacket.serializeIlqpLiquidityResponse({
@@ -297,9 +316,9 @@ describe('Quotes', function () {
         }))
       }
 
-      const quote = await this.routeBuilder.quoteBySource('usd-ledger', {
+      const quote = await this.routeBuilder.quoteBySource('test.usd-ledger', {
         sourceAmount: '100',
-        destinationAccount: 'random-ledger.bob',
+        destinationAccount: 'test.random-ledger.bob',
         destinationHoldDuration: 5000
       })
       expect(quote).to.deep.equal({
@@ -309,22 +328,22 @@ describe('Quotes', function () {
     })
 
     it('returns a quote when appliesToPrefix is more specific than targetPrefix', async function () {
-      this.accounts.getPlugin('eur-ledger').sendData = (request) => {
+      this.accounts.getPlugin('test.eur-ledger').sendData = (request) => {
         assert.deepEqual(IlpPacket.deserializeIlqpLiquidityRequest(request), {
-          destinationAccount: 'random-ledger.bob',
+          destinationAccount: 'test.random-ledger.bob',
           destinationHoldDuration: 5000
         })
         return Promise.resolve(IlpPacket.serializeIlqpLiquidityResponse({
           liquidityCurve: new LiquidityCurve([ [0, 0], [1000, 2000] ]).toBuffer(),
-          appliesToPrefix: 'random-ledger.b',
+          appliesToPrefix: 'test.random-ledger.b',
           sourceHoldDuration: 6000,
           expiresAt: new Date(START_DATE + 10000)
         }))
       }
 
-      const quote = await this.routeBuilder.quoteBySource('usd-ledger', {
+      const quote = await this.routeBuilder.quoteBySource('test.usd-ledger', {
         sourceAmount: '100',
-        destinationAccount: 'random-ledger.bob',
+        destinationAccount: 'test.random-ledger.bob',
         destinationHoldDuration: 5000
       })
       expect(quote).to.deep.equal({
@@ -343,14 +362,14 @@ describe('Quotes', function () {
         triggeredAt: new Date(),
         data: JSON.stringify({ foo: 'bar' })
       })
-      this.accounts.getPlugin('eur-ledger').sendData = (request) => {
+      this.accounts.getPlugin('test.eur-ledger').sendData = (request) => {
         return Promise.resolve(errorPacket)
       }
 
       try {
-        await this.routeBuilder.quoteBySource('usd-ledger', {
+        await this.routeBuilder.quoteBySource('test.usd-ledger', {
           sourceAmount: '100',
-          destinationAccount: 'random-ledger.bob',
+          destinationAccount: 'test.random-ledger.bob',
           destinationHoldDuration: 5000
         })
       } catch (err) {
@@ -363,9 +382,9 @@ describe('Quotes', function () {
   })
 
   it('support same-ledger quotes', async function () {
-    const quote = await this.routeBuilder.quoteBySource('usd-ledger', {
+    const quote = await this.routeBuilder.quoteBySource('test.usd-ledger', {
       sourceAmount: '100',
-      destinationAccount: 'usd-ledger.bob',
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 5
     })
     expect(quote).to.deep.equal({
@@ -376,34 +395,34 @@ describe('Quotes', function () {
 
   it('reject same-ledger quotes if CONNECTOR_REFLECT_PAYMENTS is false', async function () {
     this.config.reflectPayments = false
-    const quotePromise = this.routeBuilder.quoteBySource('usd-ledger', {
+    const quotePromise = this.routeBuilder.quoteBySource('test.usd-ledger', {
       sourceAmount: '100',
-      destinationAccount: 'usd-ledger.bob',
+      destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 5
     })
 
-    await assert.isRejected(quotePromise, NoRouteFoundError, 'refusing to route payments back to sender. sourceAccount=usd-ledger destinationAccount=usd-ledger.bob')
+    await assert.isRejected(quotePromise, NoRouteFoundError, 'refusing to route payments back to sender. sourceAccount=test.usd-ledger destinationAccount=test.usd-ledger.bob')
   })
 
   it('fails when the source ledger connection is closed', async function () {
-    this.accounts.getPlugin('eur-ledger').oldPlugin.connected = false
-    const quotePromise = this.routeBuilder.quoteByDestination('eur-ledger', {
-      destinationAccount: 'usd-ledger.bob',
+    this.accounts.getPlugin('test.eur-ledger').connected = false
+    const quotePromise = this.routeBuilder.quoteByDestination('test.eur-ledger', {
+      destinationAccount: 'test.usd-ledger.bob',
       destinationAmount: '100',
       destinationHoldDuration: 5
     })
 
-    await assert.isRejected(quotePromise, LedgerNotConnectedError, 'no connection to account. account=eur-ledger')
+    await assert.isRejected(quotePromise, LedgerNotConnectedError, 'no connection to account. account=test.eur-ledger')
   })
 
   it('fails when the destination ledger connection is closed', async function () {
-    this.accounts.getPlugin('usd-ledger').oldPlugin.connected = false
-    const quotePromise = this.routeBuilder.quoteByDestination('eur-ledger', {
-      destinationAccount: 'usd-ledger.bob',
+    this.accounts.getPlugin('test.usd-ledger').connected = false
+    const quotePromise = this.routeBuilder.quoteByDestination('test.eur-ledger', {
+      destinationAccount: 'test.usd-ledger.bob',
       destinationAmount: '100',
       destinationHoldDuration: 5
     })
 
-    await assert.isRejected(quotePromise, LedgerNotConnectedError, 'no connection to account. account=usd-ledger')
+    await assert.isRejected(quotePromise, LedgerNotConnectedError, 'no connection to account. account=test.usd-ledger')
   })
 })

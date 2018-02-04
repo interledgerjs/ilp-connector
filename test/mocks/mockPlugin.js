@@ -1,71 +1,55 @@
 'use strict'
 
-const EventEmitter = require('events').EventEmitter
+const { EventEmitter } = require('events')
 
 class MockPlugin extends EventEmitter {
   constructor (options) {
     super()
-    this._prefix = options.prefix || 'example'
-    this._account = this._prefix
-    this._balance = '123.456'
-    this._minBalance = undefined
+
+    this._dataHandler = null
+    this._moneyHandler = null
   }
 
   connect () {
     this.connected = true
     this.emit('connect')
-    return Promise.resolve(null)
+    return Promise.resolve(undefined)
   }
 
   disconnect () {
     this.connected = false
-    return Promise.resolve(null)
+    return Promise.resolve(undefined)
   }
 
   isConnected () {
     return this.connected
   }
 
-  sendTransfer (transfer) {
-    return Promise.resolve(null)
+  sendData (data) {
+    return Promise.reject(new Error('MockPlugin.sendData is not implemented: ' + this._account))
   }
 
-  sendRequest (message) {
-    return Promise.reject(new Error('MockPlugin.sendRequest is not implemented: ' + this._account))
+  sendMoney (amount) {
+    return Promise.reject(new Error('MockPlugin.sendMoney is not implemented: ' + this._account))
   }
 
-  fulfillCondition (transferId, conditionFulfillment) {
-    if (conditionFulfillment === 'invalid') {
-      return Promise.reject(new Error('invalid fulfillment'))
-    }
-    return Promise.resolve(null)
+  registerDataHandler (dataHandler) {
+    this._dataHandler = dataHandler
   }
 
-  rejectIncomingTransfer (transferId, rejectionMessage) {
-    return Promise.resolve(null)
+  registerMoneyHandler (moneyHandler) {
+    this._moneyHandler = moneyHandler
   }
 
-  getAccount () {
-    return this._account
+  deregisterDataHandler (dataHandler) {
+    this._dataHandler = null
   }
 
-  * _handleNotification () { }
-
-  getBalance () {
-    return Promise.resolve(this._balance)
+  deregisterMoneyHandler (moneyHandler) {
+    this._moneyHandler = null
   }
-
-  getInfo () {
-    return {
-      prefix: this._prefix,
-      connectors: ['mark'],
-      currencyCode: 'doesn\'t matter, the connector will ignore this',
-      assetScale: 4,
-      minBalance: this._minBalance
-    }
-  }
-
-  registerRequestHandler (requestHandler) { }
 }
+
+MockPlugin.version = 2
 
 module.exports = MockPlugin

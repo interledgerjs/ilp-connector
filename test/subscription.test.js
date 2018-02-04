@@ -30,18 +30,22 @@ describe('Subscriptions', function () {
     await this.routeBroadcaster.reloadLocalRoutes()
     await this.middlewareManager.setup()
 
-    const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
+    const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
+      this.routeBroadcaster.add(accountId)
       await this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
         method: 'broadcast_routes',
         data: {
+          speaker: accountId,
+          routing_table_id: 'c951b674-c6f5-42ca-83a3-39a8d4e293b3',
+          from_epoch: 0,
+          to_epoch: 1,
           hold_down_time: 45000,
-          unreachable_through_me: [],
-          request_full_table: false,
+          withdrawn_routes: [],
           new_routes: [{
             prefix: accountId,
-            min_message_window: 1,
-            path: []
+            path: [accountId],
+            auth: 'dvlOlr8MjK5denVE+B47Mb6ecvJTwGNaC/lPsEwYlP8='
           }]
         }
       })))
@@ -111,9 +115,9 @@ describe('Subscriptions', function () {
   })
 
   it('should initiate and complete a universal mode payment', async function () {
-    const sourceAccount = 'usd-ledger'
-    const destinationAccount = 'eur-ledger'
-    const destination = 'eur-ledger.bob'
+    const sourceAccount = 'test.usd-ledger'
+    const destinationAccount = 'test.eur-ledger'
+    const destination = 'test.eur-ledger.bob'
     const executionCondition = Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64')
     const expiresAt = new Date('2015-06-16T00:00:11.000Z')
     const data = Buffer.from('BABA', 'base64')
@@ -147,9 +151,9 @@ describe('Subscriptions', function () {
   })
 
   it('should notify the backend of a successful payment', async function () {
-    const sourceAccount = 'usd-ledger'
-    const destinationAccount = 'eur-ledger'
-    const destination = 'eur-ledger.bob'
+    const sourceAccount = 'test.usd-ledger'
+    const destinationAccount = 'test.eur-ledger'
+    const destination = 'test.eur-ledger.bob'
     const executionCondition = Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64')
     const expiresAt = new Date('2015-06-16T00:00:11.000Z')
     const data = Buffer.from('BABA', 'base64')

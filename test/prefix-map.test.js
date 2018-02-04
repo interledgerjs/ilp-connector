@@ -41,10 +41,10 @@ describe('PrefixMap', function () {
       assert.deepEqual(this.map.resolve('foo1'), {foo: 1})
     })
 
-    it('returns null for no match', function () {
+    it('returns undefined for no match', function () {
       this.map.insert('foo', {foo: 1})
-      assert.strictEqual(this.map.resolve('a'), null)
-      assert.strictEqual(this.map.resolve('z'), null)
+      assert.strictEqual(this.map.resolve('a'), undefined)
+      assert.strictEqual(this.map.resolve('z'), undefined)
     })
 
     it('supports a catch-all key', function () {
