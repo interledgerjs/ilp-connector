@@ -19,7 +19,7 @@ import {
   IncomingRoute
 } from '../types/routing'
 import reduct = require('reduct')
-import { uuid, sha256, hmac } from '../lib/utils'
+import { sha256, hmac } from '../lib/utils'
 
 export default class RouteBroadcaster {
   private deps: reduct.Injector

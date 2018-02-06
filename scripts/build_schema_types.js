@@ -15,7 +15,13 @@ const schemas = ['Config.json', 'RoutingUpdate.json', 'RoutingUpdateResponse.jso
     let ts = await compileFromFile(resolve(__dirname, '../src/schemas/', schema), {})
 
     if (schema === 'Config.json') {
-      ts = ts.replace('export interface Config', 'export class Config')
+      ts = ts
+        // This is the only way to let Config inherit from the interface without
+        // redefining all the fields.
+        .replace('export interface Config', 'export class Config')
+        // Ignore the error stating that `accounts` isn't assigned in the
+        // constructor.
+        .replace('accounts: {', 'accounts!: {')
     }
 
     fs.writeFileSync(resolve(__dirname, '../src/schemas/', schema.split('.')[0] + '.ts'), ts)

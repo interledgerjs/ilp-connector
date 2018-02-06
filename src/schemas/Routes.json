@@ -1,6 +1,6 @@
 {
-  "$schema": "http://json-schema.org/draft-06/schema",
-  "id": "Routes.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "Routes.json",
   "title": "Routes",
   "description": "A list of routes from a connector",
   "type": "array",

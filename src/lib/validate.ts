@@ -5,8 +5,6 @@ import Ajv = require('ajv')
 // create validator
 const ajv = new Ajv()
 
-ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'))
-
 // add all schemas
 const schemas = {
   RoutingUpdate: require('../schemas/RoutingUpdate.json'),

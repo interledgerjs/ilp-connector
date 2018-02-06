@@ -26,8 +26,8 @@ export class InvalidLiquidityCurveError extends Error {
 
 // TODO use integer math
 export default class LiquidityCurve {
-  protected data: Buffer
-  protected points: Point[]
+  protected data!: Buffer
+  protected points!: Point[]
 
   constructor (data: string | LooselyTypedPoint[] | Buffer) {
     if (typeof data === 'string') {
