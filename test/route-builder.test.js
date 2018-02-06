@@ -47,9 +47,19 @@ describe('RouteBuilder', function () {
     }
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentials)
     process.env.CONNECTOR_SPREAD = '0.1'
+    process.env.CONNECTOR_BACKEND_CONFIG = JSON.stringify({
+      mockData: {
+        base: 'EUR',
+        date: '2015-03-18',
+        rates: {
+          USD: 1.8
+        }
+      }
+    })
     appHelper.create(this)
     this.routeBroadcaster.reloadLocalRoutes()
     await this.middlewareManager.setup()
+    await this.accounts.connect()
 
     const testAccounts = [ledgerA, ledgerB]
     for (let accountId of testAccounts) {
@@ -72,17 +82,9 @@ describe('RouteBuilder', function () {
       })))
     }
 
-    await this.backend.connect({
-      base: 'EUR',
-      date: '2015-03-18',
-      rates: {
-        USD: 1.8
-      }
-    })
+    await this.backend.connect()
 
     this.clock = sinon.useFakeTimers(START_DATE)
-
-    await this.accounts.connect()
   })
 
   afterEach(async function () {

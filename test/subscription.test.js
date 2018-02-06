@@ -3,7 +3,6 @@
 const _ = require('lodash')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
-const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
@@ -25,7 +24,7 @@ describe('Subscriptions', function () {
 
   beforeEach(async function () {
     appHelper.create(this)
-    await this.backend.connect(ratesResponse)
+    await this.backend.connect()
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
     await this.middlewareManager.setup()

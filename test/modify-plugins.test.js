@@ -8,7 +8,6 @@ const appHelper = require('./helpers/app')
 const mockRequire = require('mock-require')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
-const ratesResponse = require('./data/fxRates.json')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const NoRouteFoundError = require('../src/errors/no-route-found-error')
@@ -23,7 +22,7 @@ describe('Modify Plugins', function () {
   beforeEach(async function () {
     appHelper.create(this)
 
-    await this.backend.connect(ratesResponse)
+    await this.backend.connect()
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
     await this.middlewareManager.setup()

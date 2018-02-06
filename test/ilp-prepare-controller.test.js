@@ -2,7 +2,6 @@
 
 const assert = require('assert')
 const _ = require('lodash')
-const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
@@ -61,7 +60,7 @@ describe('IlpPrepareController', function () {
     }])
 
     appHelper.create(this)
-    await this.backend.connect(ratesResponse)
+    await this.backend.connect()
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
 

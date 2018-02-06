@@ -9,7 +9,6 @@ const sinon = require('sinon')
 const nock = require('nock')
 const IlpPacket = require('ilp-packet')
 nock.enableNetConnect(['localhost'])
-const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
@@ -33,6 +32,7 @@ describe('Quotes', function () {
     this.clock = sinon.useFakeTimers(START_DATE)
 
     await this.middlewareManager.setup()
+    await this.accounts.connect()
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
       this.routeBroadcaster.add(accountId)
@@ -54,8 +54,7 @@ describe('Quotes', function () {
       })))
     }
 
-    await this.backend.connect(ratesResponse)
-    await this.accounts.connect()
+    await this.backend.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
   })
 
