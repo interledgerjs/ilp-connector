@@ -94,8 +94,8 @@ async function removePlugin (
   const plugin = accounts.getPlugin(id)
   middlewareManager.removePlugin(id, plugin)
   await plugin.disconnect()
-  accounts.remove(id)
   routeBroadcaster.untrack(id)
+  accounts.remove(id)
 }
 
 function getPlugin (
