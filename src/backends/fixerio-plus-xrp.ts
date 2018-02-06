@@ -5,9 +5,12 @@ const CHARTS_API = 'https://api.ripplecharts.com/api/exchange_rates'
 const EUR_ISSUER = 'rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B' // bitstamp
 
 export default class FixerIoXRPBackend extends FixerIoBackend {
-  async connect (mockData?: any) {
-    await super.connect(mockData)
-    this.rates.XRP = await this._getXRPRate()
+  async connect () {
+    await super.connect()
+    // XRP rate may have been loaded as part of the mock data
+    if (!this.rates.XRP) {
+      this.rates.XRP = await this._getXRPRate()
+    }
     this.currencies.push('XRP')
     this.currencies.sort()
   }

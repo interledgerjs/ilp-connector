@@ -11,6 +11,7 @@ const RATES_API = 'https://api.fixer.io/latest'
 export interface FixerIoOptions {
   spread: number,
   ratesApiUrl: string,
+  mockData: object
 }
 
 /**
@@ -25,6 +26,7 @@ export default class FixerIoBackend implements BackendInstance {
     [key: string]: number
   }
   protected currencies: string[]
+  private mockData: object
 
   /**
    * Constructor.
@@ -37,6 +39,7 @@ export default class FixerIoBackend implements BackendInstance {
   constructor (opts: FixerIoOptions, api: BackendServices) {
     this.spread = opts.spread || 0
     this.ratesApiUrl = opts.ratesApiUrl || RATES_API
+    this.mockData = opts.mockData
     this.getInfo = api.getInfo
     // this.ratesCacheTtl = opts.ratesCacheTtl || 24 * 3600000
 
@@ -49,11 +52,11 @@ export default class FixerIoBackend implements BackendInstance {
    *
    * Mock data can be provided for testing purposes
    */
-  async connect (mockData?: Object) {
+  async connect () {
     let apiData
-    if (mockData) {
+    if (this.mockData) {
       log.debug('connect using mock data.')
-      apiData = mockData
+      apiData = this.mockData
     } else {
       log.debug('connect. uri=' + this.ratesApiUrl)
       let result = await fetchUri(this.ratesApiUrl)
