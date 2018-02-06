@@ -1,6 +1,6 @@
 {
-  "$schema": "http://json-schema.org/draft-06/schema",
-  "id": "Config.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "Config.json",
   "title": "Config",
   "description": "Connector configuration schema.",
   "type": "object",
@@ -256,8 +256,8 @@
     },
     "middlewares": {
       "description": "Additional middleware that should be added to the middleware stack.",
-      "type": "array",
-      "items": {
+      "type": "object",
+      "additionalProperties": {
         "description": "Object describing middleware instance.",
         "type": "object",
         "properties": {
@@ -275,7 +275,7 @@
           "type"
         ]
       },
-      "default": []
+      "default": {}
     },
     "disableMiddleware": {
       "description": "List of built-in middlewares that should be disabled. Can be used to replace built-in middleware with your own custom version.",

@@ -38,7 +38,7 @@ export default class Peer {
   private sendRoutes: boolean
   private receiveRoutes: boolean
   private routes: PrefixMap<IncomingRoute>
-  private expiry: number
+  private expiry: number = 0
   /**
    * Next epoch that the peer requested from us.
    */

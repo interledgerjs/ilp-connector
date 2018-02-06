@@ -18,7 +18,6 @@ export interface OneToOneOptions {
 export default class OneToOneBackend implements BackendInstance {
   protected spread: number
   protected getInfo: (accountId: string) => AccountInfo | undefined
-  protected getAssetCode: (accountId: string) => string
 
   /**
    * Constructor.

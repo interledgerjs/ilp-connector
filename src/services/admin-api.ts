@@ -4,7 +4,6 @@ import RoutingTable from './routing-table'
 import RouteBroadcaster from './route-broadcaster'
 import { formatRoutingTableAsJson } from '../routing/utils'
 import { Server, ServerRequest, ServerResponse } from 'http'
-import { mapValues } from 'lodash'
 
 import { create as createLogger } from '../common/log'
 const log = createLogger('admin-api')
@@ -14,7 +13,7 @@ export default class AdminApi {
   private routingTable: RoutingTable
   private routeBroadcaster: RouteBroadcaster
 
-  private server: Server
+  private server?: Server
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)

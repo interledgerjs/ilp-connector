@@ -1,6 +1,6 @@
 {
-  "$schema": "http://json-schema.org/draft-06/schema",
-  "id": "RoutingUpdateResponse.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "RoutingUpdateResponse.json",
   "title": "RoutingUpdateResponse",
   "description": "A routing update response object",
   "type": "object",
