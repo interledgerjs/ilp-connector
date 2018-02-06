@@ -65,6 +65,7 @@ describe('RouteBroadcaster', function () {
     appHelper.create(this)
     this.routeBroadcaster.reloadLocalRoutes()
     await this.middlewareManager.setup()
+    await this.accounts.connect()
 
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger']
     for (let accountId of testAccounts) {
@@ -105,6 +106,7 @@ describe('RouteBroadcaster', function () {
       accounts['test.cad-ledger'].receiveRoutes = false
       process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accounts)
       appHelper.create(this)
+      await this.accounts.connect()
       Object.keys(accounts).forEach(key => this.routeBroadcaster.add(key))
 
       // By default, everything should be enabled
@@ -198,7 +200,10 @@ describe('RouteBroadcaster', function () {
           from_epoch: 0,
           to_epoch: 5,
           hold_down_time: 45000,
-          withdrawn_routes: [],
+          withdrawn_routes: [
+            'test.prefix',
+            'test.cad-ledger'
+          ],
           new_routes: routesWithSourceLedgerA
         }
       }) || true))
@@ -212,7 +217,9 @@ describe('RouteBroadcaster', function () {
           from_epoch: 0,
           to_epoch: 5,
           hold_down_time: 45000,
-          withdrawn_routes: [],
+          withdrawn_routes: [
+            'test.usd-ledger'
+          ],
           new_routes: routesWithSourceLedgerB
         }
       }) || true))

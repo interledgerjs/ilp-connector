@@ -11,6 +11,7 @@ const RoutingTable = require('../../src/services/routing-table').default
 const MiddlewareManager = require('../../src/services/middleware-manager').default
 const CcpController = require('../../src/controllers/ccp').default
 const Store = require('../../src/services/store').default
+const ratesResponse = require('../data/fxRates.json')
 
 const createApp = require('../../src').createApp
 
@@ -21,6 +22,16 @@ exports.create = function (context, opts) {
   // Set up test environment
   if (!process.env.CONNECTOR_ACCOUNTS) {
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify(require('../data/accountCredentials.json'))
+  }
+
+  if (!process.env.CONNECTOR_BACKEND) {
+    process.env.CONNECTOR_BACKEND = 'fixerio'
+  }
+
+  if (!process.env.CONNECTOR_BACKEND_CONFIG) {
+    process.env.CONNECTOR_BACKEND_CONFIG = JSON.stringify({
+      mockData: ratesResponse
+    })
   }
 
   const deps = reduct()
