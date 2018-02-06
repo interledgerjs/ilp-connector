@@ -184,7 +184,7 @@ export default class RouteBuilder {
 
     const { nextHop, rate } = await this.quoteLocal(sourceAccount, packet.destinationAccount)
 
-    const nextAmount = new BigNumber(packet.sourceAmount).times(rate).floor().toString()
+    const nextAmount = new BigNumber(packet.sourceAmount).times(rate).integerValue(BigNumber.ROUND_FLOOR).toString()
     let destinationAmount
     let sourceHoldDuration
     if (packet.destinationAccount.startsWith(nextHop)) {
@@ -199,7 +199,7 @@ export default class RouteBuilder {
       }
       log.debug('remote destination. quote=%j', quote)
 
-      destinationAmount = quote.curve.amountAt(packet.sourceAmount).times(rate).floor().toString()
+      destinationAmount = quote.curve.amountAt(packet.sourceAmount).times(rate).integerValue(BigNumber.ROUND_FLOOR).toString()
       sourceHoldDuration = packet.destinationHoldDuration + quote.minMessageWindow + this.config.minMessageWindow
     }
 
@@ -253,7 +253,7 @@ export default class RouteBuilder {
       nextHopHoldDuration = packet.destinationHoldDuration + quote.minMessageWindow
     }
 
-    const sourceAmount = new BigNumber(nextHopAmount).div(rate).ceil().toString()
+    const sourceAmount = new BigNumber(nextHopAmount).div(rate).integerValue(BigNumber.ROUND_CEIL).toString()
     const sourceHoldDuration = nextHopHoldDuration + this.config.minMessageWindow
     if (sourceAmount === '0') {
       throw new UnacceptableAmountError('Quoted source is lower than minimum amount allowed')
@@ -318,7 +318,7 @@ export default class RouteBuilder {
 
     this._verifyPluginIsConnected(nextHop)
 
-    const nextAmount = new BigNumber(amount).times(rate).floor()
+    const nextAmount = new BigNumber(amount).times(rate).integerValue(BigNumber.ROUND_FLOOR)
 
     return {
       nextHop,

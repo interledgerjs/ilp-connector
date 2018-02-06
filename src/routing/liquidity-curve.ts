@@ -48,10 +48,10 @@ export default class LiquidityCurve {
     let prev
     for (let i = 0; i < this.points.length; i++) {
       let point = this.points[i]
-      if (prev && point[0].lessThanOrEqualTo(prev[0])) {
+      if (prev && point[0].isLessThanOrEqualTo(prev[0])) {
         throw new InvalidLiquidityCurveError('Curve x-coordinates must strictly increase in series', this.getPoints())
       }
-      if (prev && point[1].lessThan(prev[1])) {
+      if (prev && point[1].isLessThan(prev[1])) {
         throw new InvalidLiquidityCurveError('Curve y-coordinates must increase in series', this.getPoints())
       }
       prev = point
@@ -70,11 +70,11 @@ export default class LiquidityCurve {
 
     const pointA = this.points[i - 1]
     const pointB = this.points[i]
-    const dy = pointB[1].sub(pointA[1])
-    const dx = pointB[0].sub(pointA[0])
-    return dy.mul(x.sub(pointA[0])).div(dx)
-      .add(pointA[1])
-      .floor()
+    const dy = pointB[1].minus(pointA[1])
+    const dx = pointB[0].minus(pointA[0])
+    return dy.multipliedBy(x.minus(pointA[0])).div(dx)
+      .plus(pointA[1])
+      .integerValue(BigNumber.ROUND_FLOOR)
   }
 
   amountReverse (yVal: LooselyTypedNumber) {
@@ -90,11 +90,11 @@ export default class LiquidityCurve {
 
     const pointA = this.points[i - 1]
     const pointB = this.points[i]
-    const dx = pointB[0].sub(pointA[0])
-    const dy = pointB[1].sub(pointA[1])
-    return dx.mul(y.sub(pointA[1])).div(dy)
-      .add(pointA[0])
-      .floor()
+    const dx = pointB[0].minus(pointA[0])
+    const dy = pointB[1].minus(pointA[1])
+    return dx.multipliedBy(y.minus(pointA[1])).div(dy)
+      .plus(pointA[0])
+      .integerValue(BigNumber.ROUND_FLOOR)
   }
 
   /**
@@ -226,7 +226,7 @@ export default class LiquidityCurve {
 
   shiftX (_dx: number) {
     const dx = new BigNumber(_dx)
-    let shiftedPoints = this.points.map((p): Point => [ p[0].add(dx), p[1] ])
+    let shiftedPoints = this.points.map((p): Point => [ p[0].plus(dx), p[1] ])
     if (dx.gte(0)) return new LiquidityCurve(shiftedPoints)
 
     for (let i = shiftedPoints.length - 1; i >= 0; i--) {
@@ -241,7 +241,7 @@ export default class LiquidityCurve {
 
   shiftY (_dy: number) {
     const dy = new BigNumber(_dy)
-    let shiftedPoints = this.points.map((p): Point => [ p[0], p[1].add(dy) ])
+    let shiftedPoints = this.points.map((p): Point => [ p[0], p[1].plus(dy) ])
     if (dy.gte(0)) return new LiquidityCurve(shiftedPoints)
 
     for (let i = shiftedPoints.length - 1; i >= 0; i--) {
@@ -271,7 +271,12 @@ export default class LiquidityCurve {
 function omitInfinity (point: Point) { return point[0].toString() !== 'Infinity' }
 function comparePoints (a: Point, b: Point) { return a[0].comparedTo(b[0]) }
 // Round to ensure the connector doesn't lose money.
-function roundCoords (point: Point): Point { return [ point[0].ceil(), point[1].floor() ] }
+function roundCoords (point: Point): Point {
+  return [
+    point[0].integerValue(BigNumber.ROUND_CEIL),
+    point[1].integerValue(BigNumber.ROUND_FLOOR)
+  ]
+}
 
 function omitDuplicates (point: Point, i: number, points: Point[]) {
   return i === 0 || !point[0].eq(points[i - 1][0])
@@ -285,8 +290,8 @@ function omitDuplicates (point: Point, i: number, points: Point[]) {
  */
 function intersectLineSegments (p1: Point, p2: Point, p3: Point, p4: Point): Point | undefined {
   const denominator = determinant(
-    p1[0].sub(p2[0]), p1[1].sub(p2[1]),
-    p3[0].sub(p4[0]), p3[1].sub(p4[1]))
+    p1[0].minus(p2[0]), p1[1].minus(p2[1]),
+    p3[0].minus(p4[0]), p3[1].minus(p4[1]))
   const topLeft = determinant(
     p1[0], p1[1],
     p2[0], p2[1])
@@ -297,15 +302,15 @@ function intersectLineSegments (p1: Point, p2: Point, p3: Point, p4: Point): Poi
   // Parallel lines.
   if (denominator.isZero()) return undefined
   const x = determinant(
-    topLeft, p1[0].sub(p2[0]),
-    bottomLeft, p3[0].sub(p4[0])
+    topLeft, p1[0].minus(p2[0]),
+    bottomLeft, p3[0].minus(p4[0])
   ).div(denominator)
   // Ensure that the intersection is within the line segments, not just the lines.
   if (x.lt(p1[0]) || p2[0].lt(x)) return undefined
   if (x.lt(p3[0]) || p4[0].lt(x)) return undefined
   const y = determinant(
-    topLeft, p1[1].sub(p2[1]),
-    bottomLeft, p3[1].sub(p4[1])
+    topLeft, p1[1].minus(p2[1]),
+    bottomLeft, p3[1].minus(p4[1])
   ).div(denominator)
   if (y.lt(p1[1]) || p2[1].lt(y)) return undefined
   if (y.lt(p3[1]) || p4[1].lt(y)) return undefined
@@ -317,7 +322,7 @@ function intersectLineSegments (p1: Point, p2: Point, p3: Point, p4: Point): Poi
  * │c  d│ = ad - bc
  */
 function determinant (a: BigNumber, b: BigNumber, c: BigNumber, d: BigNumber) {
-  return a.mul(d).sub(b.mul(c))
+  return a.multipliedBy(d).minus(b.multipliedBy(c))
 }
 
 function max (long1: BigNumber, long2: BigNumber) {

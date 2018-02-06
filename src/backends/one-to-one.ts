@@ -66,7 +66,7 @@ export default class OneToOneBackend implements BackendInstance {
     //
     //   SourceAmount * (1 - Spread) = DestinationAmount
     //
-    const rate = new BigNumber(1).minus(this.spread).shift(scaleDiff).toPrecision(15)
+    const rate = new BigNumber(1).minus(this.spread).shiftedBy(scaleDiff).toPrecision(15)
 
     return Number(rate)
   }

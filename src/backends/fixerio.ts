@@ -74,7 +74,7 @@ export default class FixerIoBackend implements BackendInstance {
   }
 
   _formatAmountCeil (amount: string) {
-    return new BigNumber(amount).times(100).ceil().div(100).toFixed(2)
+    return new BigNumber(amount).decimalPlaces(2, BigNumber.ROUND_CEIL).toFixed(2)
   }
 
   /**
@@ -120,8 +120,8 @@ export default class FixerIoBackend implements BackendInstance {
     //
     //   SourceAmount * Rate * (1 - Spread) = DestinationAmount
     //
-    const rate = new BigNumber(destinationRate).shift(destinationInfo.assetScale)
-      .div(new BigNumber(sourceRate).shift(sourceInfo.assetScale))
+    const rate = new BigNumber(destinationRate).shiftedBy(destinationInfo.assetScale)
+      .div(new BigNumber(sourceRate).shiftedBy(sourceInfo.assetScale))
       .times(new BigNumber(1).minus(this.spread))
       .toPrecision(15)
 
