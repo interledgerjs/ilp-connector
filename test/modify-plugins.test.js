@@ -52,13 +52,13 @@ describe('Modify Plugins', function () {
     it('should support new ledger', async function () {
       const quotePromise = this.routeBuilder.quoteBySource('usd-ledger', {
         sourceAmount: '100',
-        destinationAccount: 'jpy-ledger.bob',
+        destinationAccount: 'test.jpy-ledger.bob',
         destinationHoldDuration: 5000
       })
 
-      await assert.isRejected(quotePromise, NoRouteFoundError, /no route found. to=jpy.ledger\.bob/)
+      await assert.isRejected(quotePromise, NoRouteFoundError, /no route found. to=test.jpy.ledger\.bob/)
 
-      await this.app.addPlugin('jpy-ledger', {
+      await this.app.addPlugin('test.jpy-ledger', {
         relation: 'peer',
         assetCode: 'JPY',
         assetScale: 4,
@@ -66,22 +66,25 @@ describe('Modify Plugins', function () {
         options: {}
       })
 
-      this.accounts.getPlugin('jpy-ledger')._dataHandler(Buffer.from(JSON.stringify({
+      this.accounts.getPlugin('test.jpy-ledger')._dataHandler(Buffer.from(JSON.stringify({
         method: 'broadcast_routes',
         data: {
+          speaker: 'test.jpy-ledger',
+          routing_table_id: 'bc1ddf0e-1156-4277-bdf0-a75974e37dbe',
           hold_down_time: 45000,
-          unreachable_through_me: [],
-          request_full_table: false,
+          from_epoch: 0,
+          to_epoch: 1,
           new_routes: [{
-            prefix: 'jpy-ledger',
+            prefix: 'test.jpy-ledger',
             path: []
-          }]
+          }],
+          withdrawn_routes: []
         }
       })))
 
       const quotePromise2 = this.routeBuilder.quoteBySource('usd-ledger', {
         sourceAmount: '100',
-        destinationAccount: 'jpy-ledger.bob',
+        destinationAccount: 'test.jpy-ledger.bob',
         destinationHoldDuration: 5000
       })
 
@@ -107,61 +110,64 @@ describe('Modify Plugins', function () {
 
   describe('removePlugin', function () {
     beforeEach(async function () {
-      await this.app.addPlugin('jpy-ledger', {
+      await this.app.addPlugin('test.jpy-ledger', {
         relation: 'peer',
         assetCode: 'EUR',
         assetScale: 4,
         plugin: 'ilp-plugin-mock',
         options: {
-          prefix: 'jpy-ledger'
+          prefix: 'test.jpy-ledger'
         }
       })
 
-      this.accounts.getPlugin('jpy-ledger')._dataHandler(Buffer.from(JSON.stringify({
+      this.accounts.getPlugin('test.jpy-ledger')._dataHandler(Buffer.from(JSON.stringify({
         method: 'broadcast_routes',
         data: {
+          speaker: 'test.jpy-ledger',
+          routing_table_id: 'bc1ddf0e-1156-4277-bdf0-a75974e37dbe',
           hold_down_time: 45000,
-          unreachable_through_me: [],
-          request_full_table: false,
+          from_epoch: 0,
+          to_epoch: 1,
           new_routes: [{
-            prefix: 'jpy-ledger',
+            prefix: 'test.jpy-ledger',
             path: []
-          }]
+          }],
+          withdrawn_routes: []
         }
       })))
     })
 
     it('should remove a plugin from accounts', async function () {
-      assert.isOk(this.accounts.getPlugin('jpy-ledger'))
-      await this.app.removePlugin('jpy-ledger')
-      assert.throws(() => this.accounts.getPlugin('jpy-ledger'), 'unknown account id. accountId=jpy-ledger')
+      assert.isOk(this.accounts.getPlugin('test.jpy-ledger'))
+      await this.app.removePlugin('test.jpy-ledger')
+      assert.throws(() => this.accounts.getPlugin('test.jpy-ledger'), 'unknown account id. accountId=test.jpy-ledger')
     })
 
     it('should no longer quote to that plugin', async function () {
       await this.routeBuilder.quoteBySource('usd-ledger', {
         sourceAmount: '100',
-        destinationAccount: 'jpy-ledger.bob',
+        destinationAccount: 'test.jpy-ledger.bob',
         destinationHoldDuration: 1.001
       })
 
-      await this.app.removePlugin('jpy-ledger')
+      await this.app.removePlugin('test.jpy-ledger')
 
       await this.routeBuilder.quoteBySource('usd-ledger', {
         sourceAmount: '100',
-        destinationAccount: 'jpy-ledger.bob',
+        destinationAccount: 'test.jpy-ledger.bob',
         destinationHoldDuration: 1.001
       }).then((quote) => {
         throw new Error()
       }).catch((err) => {
         expect(err.name).to.equal('NoRouteFoundError')
-        expect(err.message).to.match(/no route found. to=jpy-ledger.bob/)
+        expect(err.message).to.match(/no route found. to=test.jpy-ledger.bob/)
       })
     })
 
     it('should depeer the removed ledger', async function () {
-      await this.app.removePlugin('jpy-ledger')
+      await this.app.removePlugin('test.jpy-ledger')
 
-      assert.isNotOk(this.routeBroadcaster.peers['jpy-ledger'])
+      assert.isNotOk(this.routeBroadcaster.peers['test.jpy-ledger'])
     })
   })
 })

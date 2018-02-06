@@ -21,7 +21,7 @@ import PrefixMap from '../routing/prefix-map'
 
 interface RouteUpdate {
   epoch: number,
-  prefix: string
+  prefix: string,
   route?: Route
 }
 
@@ -37,7 +37,6 @@ export default class RouteBroadcaster {
   protected routingTableId: string
   private masterRoutingTable: PrefixMap<Route>
   private currentEpoch: number
-  private broadcastTimer?: NodeJS.Timer
   private fullLog: RouteUpdate[]
 
   constructor (deps: reduct.Injector) {
@@ -53,6 +52,10 @@ export default class RouteBroadcaster {
     this.masterRoutingTable = new PrefixMap()
     this.currentEpoch = 0
     this.fullLog = []
+
+    ;(this.config.routes || []).forEach((r) => {
+      this.saveRouteUpdate(r.targetPrefix, { nextHop: r.peerId, path: [] })
+    })
   }
 
   async start () {
@@ -69,12 +72,6 @@ export default class RouteBroadcaster {
       } else {
         throw e
       }
-    }
-  }
-
-  stop () {
-    if (this.broadcastTimer) {
-      clearTimeout(this.broadcastTimer)
     }
   }
 
@@ -175,12 +172,10 @@ export default class RouteBroadcaster {
     for (let prefix of changedPrefixes) {
       haveRoutesChanged = this.updatePrefix(prefix) || haveRoutesChanged
     }
-    if (haveRoutesChanged && this.config.routeBroadcastEnabled) {
-      // TODO: Should we trigger an immediate broadcast when routes change?
-      //       Note that BGP does not do this AFAIK
-      // this.broadcast().catch((err) => {
-      //   log.warn('failed to relay route update error=%s', err.message)
-      // })
+    // When tests are running, trigger an immediate broadcast.
+    // This is necessary so that the integration tests can finish in a reasonable amount of time.
+    if (this.config.env === 'test' && haveRoutesChanged) {
+      Array.from(this.peers.keys()).forEach(this.sendRouteUpdate, this)
     }
 
     return {
@@ -498,15 +493,19 @@ export default class RouteBroadcaster {
         this.masterRoutingTable.delete(prefix)
       }
 
-      const epoch = this.currentEpoch++
-      const routeUpdate: RouteUpdate = {
-        prefix,
-        route,
-        epoch
-      }
-      log.debug('logging route update. update=%j', routeUpdate)
-
-      this.fullLog[epoch] = routeUpdate
+      this.saveRouteUpdate(prefix, route)
     }
+  }
+
+  private saveRouteUpdate (prefix: string, route?: Route) {
+    const epoch = this.currentEpoch++
+    const routeUpdate: RouteUpdate = {
+      prefix,
+      route,
+      epoch
+    }
+    log.debug('logging route update. update=%j', routeUpdate)
+
+    this.fullLog[epoch] = routeUpdate
   }
 }

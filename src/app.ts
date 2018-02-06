@@ -109,10 +109,8 @@ function getPlugin (
 }
 
 function shutdown (
-  accounts: Accounts,
-  routeBroadcaster: RouteBroadcaster
+  accounts: Accounts
 ) {
-  routeBroadcaster.stop()
   return accounts.disconnect()
 }
 
@@ -151,6 +149,10 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   for (let id of Object.keys(credentials)) {
     accounts.add(id, credentials[id])
   }
+  // This is needed for tests that use createApp() without calling listen().
+  for (let id of Object.keys(credentials)) {
+    routeBroadcaster.add(id)
+  }
 
   return {
     config,
@@ -158,6 +160,6 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
     addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
     removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
     getPlugin: partial(getPlugin, accounts),
-    shutdown: partial(shutdown, accounts, routeBroadcaster)
+    shutdown: partial(shutdown, accounts)
   }
 }

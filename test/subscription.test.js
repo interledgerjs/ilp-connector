@@ -18,12 +18,11 @@ mock('ilp-plugin-mock', mockPlugin)
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
-const env = _.cloneDeep(process.env)
-
 describe('Subscriptions', function () {
   logHelper(logger)
 
   beforeEach(async function () {
+    this.clock = sinon.useFakeTimers(START_DATE)
     appHelper.create(this)
     await this.backend.connect(ratesResponse)
     await this.accounts.connect()
@@ -35,29 +34,16 @@ describe('Subscriptions', function () {
       await this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
         method: 'broadcast_routes',
         data: {
+          speaker: accountId,
+          routing_table_id: 'bc1ddf0e-1156-4277-bdf0-a75974e37dbe',
           hold_down_time: 45000,
-          unreachable_through_me: [],
-          request_full_table: false,
-          new_routes: [{
-            prefix: accountId,
-            min_message_window: 1,
-            path: []
-          }]
+          from_epoch: 0,
+          to_epoch: 1,
+          new_routes: [{prefix: accountId, path: []}],
+          withdrawn_routes: []
         }
       })))
     }
-
-    nock('http://usd-ledger.example').get('/')
-      .reply(200, {
-        currency_code: 'doesn\'t matter, the connector will ignore this',
-        currency_scale: 4
-      })
-
-    nock('http://eur-ledger.example').get('/')
-      .reply(200, {
-        currency_code: 'doesn\'t matter, the connector will ignore this',
-        currency_scale: 4
-      })
 
     nock('http://usd-ledger.example').get('/accounts/mark')
       .reply(200, {
@@ -88,13 +74,6 @@ describe('Subscriptions', function () {
       })
 
     this.setTimeout = setTimeout
-    this.clock = sinon.useFakeTimers(START_DATE)
-
-    this.wsCadLedger = new wsHelper.Server('ws://cad-ledger.example:1000/accounts/mark/transfers')
-    this.wsUsdLedger = new wsHelper.Server('ws://usd-ledger.example/accounts/mark/transfers')
-    this.wsEurLedger = new wsHelper.Server('ws://eur-ledger.example/accounts/mark/transfers')
-    this.wsEurLedger.on('connection', () => null)
-    this.wsCnyLedger = new wsHelper.Server('ws://cny-ledger.example/accounts/mark/transfers')
 
     this.transferUsdPrepared = _.cloneDeep(require('./data/transferUsdPrepared.json'))
     this.transferEurProposed = _.cloneDeep(require('./data/transferEurProposed.json'))
@@ -103,11 +82,6 @@ describe('Subscriptions', function () {
   afterEach(async function () {
     nock.cleanAll()
     this.clock.restore()
-    process.env = _.cloneDeep(env)
-    this.wsCadLedger.close()
-    this.wsUsdLedger.close()
-    this.wsEurLedger.close()
-    this.wsCnyLedger.close()
   })
 
   it('should initiate and complete a universal mode payment', async function () {

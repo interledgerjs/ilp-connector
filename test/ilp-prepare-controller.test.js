@@ -14,8 +14,6 @@ const IlpPacket = require('ilp-packet')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
-const env = _.cloneDeep(process.env)
-
 describe('IlpPrepareController', function () {
   logHelper(logger)
 
@@ -24,43 +22,38 @@ describe('IlpPrepareController', function () {
   })
 
   beforeEach(async function () {
-    process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
-      'mock.test1': {
-        relation: 'peer',
-        assetCode: 'USD',
-        assetScale: 4,
-        plugin: 'ilp-plugin-mock',
-        options: {
-          type: 'mock',
-          host: 'http://test1.mock',
-          account: 'xyz',
-          username: 'bob',
-          password: 'bob'
+    appHelper.create(this, {
+      accounts: {
+        'mock.test1': {
+          relation: 'peer',
+          assetCode: 'USD',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          sendRoutes: false,
+          receiveRoutes: false,
+          options: {}
+        },
+        'mock.test2': {
+          relation: 'peer',
+          assetCode: 'EUR',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          sendRoutes: false,
+          receiveRoutes: false,
+          options: {}
         }
       },
-      'mock.test2': {
-        relation: 'peer',
-        assetCode: 'EUR',
-        assetScale: 4,
-        plugin: 'ilp-plugin-mock',
-        options: {
-          type: 'mock',
-          host: 'http://test2.mock',
-          account: 'xyz',
-          username: 'bob',
-          password: 'bob'
+      routes: [
+        {
+          targetPrefix: 'mock.test1',
+          peerId: 'mock.test1'
+        },
+        {
+          targetPrefix: 'mock.test2',
+          peerId: 'mock.test2'
         }
-      }
+      ]
     })
-    process.env.CONNECTOR_ROUTES = JSON.stringify([{
-      targetPrefix: 'mock.test1',
-      peerId: 'mock.test1'
-    }, {
-      targetPrefix: 'mock.test2',
-      peerId: 'mock.test2'
-    }])
-
-    appHelper.create(this)
     await this.backend.connect(ratesResponse)
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
@@ -77,7 +70,6 @@ describe('IlpPrepareController', function () {
 
   afterEach(async function () {
     this.clock.restore()
-    process.env = _.cloneDeep(env)
   })
 
   it('should pass on an execution condition fulfillment', async function () {

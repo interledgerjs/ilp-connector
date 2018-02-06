@@ -15,16 +15,20 @@ const Store = require('../../src/services/store').default
 const createApp = require('../../src').createApp
 
 exports.create = function (context, opts) {
-  process.env.CONNECTOR_STORE = 'memdown'
-  process.env.CONNECTOR_ILP_ADDRESS = 'test.connie'
-
-  // Set up test environment
-  if (!process.env.CONNECTOR_ACCOUNTS) {
-    process.env.CONNECTOR_ACCOUNTS = JSON.stringify(require('../data/accountCredentials.json'))
-  }
+  opts = Object.assign({
+    store: 'memdown',
+    ilpAddress: 'test.connie',
+    accounts: require('../data/accountCredentials.json'),
+    routes: [
+      {targetPrefix: 'cad-ledger', peerId: 'cad-ledger'},
+      {targetPrefix: 'usd-ledger', peerId: 'usd-ledger'},
+      {targetPrefix: 'eur-ledger', peerId: 'eur-ledger'},
+      {targetPrefix: 'cny-ledger', peerId: 'cny-ledger'}
+    ]
+  }, opts)
 
   const deps = reduct()
-  const app = createApp(opts || null, deps)
+  const app = createApp(opts, deps)
 
   context.app = app
   context.backend = deps(RateBackend)
