@@ -51,6 +51,14 @@ export default class PrefixMap<T> {
   get (prefix: string): T | undefined { return this.items[prefix] }
 
   /**
+   * Look up all keys that start with a certain prefix.
+   */
+  getKeysStartingWith (prefix: string): string[] {
+    // TODO: This could be done *much* more efficiently
+    return this.prefixes.filter(key => key.startsWith(prefix))
+  }
+
+  /**
    * @param {function(item, key)} fn
    */
   each (fn: (item: T, key: string) => void) {

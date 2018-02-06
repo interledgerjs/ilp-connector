@@ -452,6 +452,20 @@ export default class RouteBroadcaster {
       log.debug('logging route update. update=%j', routeUpdate)
 
       this.forwardingRoutingTable.log[epoch] = routeUpdate
+
+      if (route) {
+        // We need to re-check any prefixes that start with this prefix to see
+        // if we can apply DRAGON filtering.
+        //
+        // Note that we do this check *after* we have added the new route above.
+        const subPrefixes = this.forwardingRoutingTable.getKeysStartingWith(prefix)
+
+        for (const subPrefix of subPrefixes) {
+          if (subPrefix === prefix) continue
+
+          this.updateForwardingRoute(subPrefix, this.forwardingRoutingTable.get(subPrefix))
+        }
+      }
     }
   }
 
