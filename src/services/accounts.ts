@@ -1,5 +1,4 @@
 import reduct = require('reduct')
-import { cloneDeep } from 'lodash'
 import compat from 'ilp-compat-plugin'
 import Store from '../services/store'
 import Config from './config'

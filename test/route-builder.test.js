@@ -23,8 +23,6 @@ const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
 mock('ilp-plugin-mock', mockPlugin)
 
-const env = cloneDeep(process.env)
-
 describe('RouteBuilder', function () {
   logHelper(logger)
   beforeEach(async function () {
@@ -43,28 +41,12 @@ describe('RouteBuilder', function () {
       plugin: 'ilp-plugin-mock',
       options: {}
     }
-    process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentials)
-    process.env.CONNECTOR_SPREAD = '0.1'
-    appHelper.create(this)
+    appHelper.create(this, {
+      accounts: accountCredentials,
+      spread: 0.1
+    })
     this.routeBroadcaster.reloadLocalRoutes()
     await this.middlewareManager.setup()
-
-    const testAccounts = [ledgerA, ledgerB]
-    for (let accountId of testAccounts) {
-      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
-        method: 'broadcast_routes',
-        data: {
-          hold_down_time: 45000,
-          unreachable_through_me: [],
-          request_full_table: false,
-          new_routes: [{
-            prefix: accountId,
-            min_message_window: 1,
-            path: []
-          }]
-        }
-      })))
-    }
 
     await this.backend.connect({
       base: 'EUR',
@@ -81,7 +63,6 @@ describe('RouteBuilder', function () {
 
   afterEach(async function () {
     this.clock.restore()
-    process.env = cloneDeep(env)
   })
 
   describe('getNextHopPacket', function () {

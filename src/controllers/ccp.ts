@@ -27,7 +27,7 @@ export default class CcpController {
         peer: sourceAccount,
         prefix: route.prefix,
         path: route.path
-      })).filter(Boolean),
+      })),
       withdrawnRoutes: payload.withdrawn_routes
     }
 

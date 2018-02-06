@@ -99,6 +99,7 @@ export default class Peer {
     // just a heartbeat
     if (newRoutes.length === 0 && withdrawnRoutes.length === 0) {
       log.debug('pure heartbeat.')
+      this.nextRequestedEpoch = toEpoch
       return {
         changedPrefixes: [],
         nextRequestedEpoch: toEpoch
@@ -123,6 +124,7 @@ export default class Peer {
 
     log.debug('applied route update. changedPrefixesCount=%s', changedPrefixes.length)
 
+    this.nextRequestedEpoch = toEpoch
     return {
       changedPrefixes,
       nextRequestedEpoch: toEpoch
