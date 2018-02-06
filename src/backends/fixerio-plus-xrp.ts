@@ -1,8 +1,10 @@
 import fetch from 'node-fetch'
 import FixerIoBackend from './fixerio'
+import { create as createLogger } from '../common/log'
+const log = createLogger('fixerio-plus-xrp')
 
-const CHARTS_API = 'https://api.ripplecharts.com/api/exchange_rates'
-const EUR_ISSUER = 'rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B' // bitstamp
+// Bitstamp/EUR
+const CHARTS_API = 'https://data.ripple.com/v2/exchange_rates/EUR+rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq/XRP'
 
 export default class FixerIoXRPBackend extends FixerIoBackend {
   async connect () {
@@ -16,20 +18,13 @@ export default class FixerIoXRPBackend extends FixerIoBackend {
   }
 
   async _getXRPRate () {
-    const rateRes = await fetch(CHARTS_API, {
-      method: 'POST',
-      body: JSON.stringify({
-        base: {
-          currency: 'EUR',
-          issuer: EUR_ISSUER
-        },
-        counter: { currency: 'XRP' }
-      })
-    })
+    const rateRes = await fetch(CHARTS_API)
     if (rateRes.status !== 200) {
-      throw new Error('Unexpected status from ripplecharts: ' + rateRes.status)
+      throw new Error('unexpected HTTP status code from Ripple Data API. status=' + rateRes.status)
     }
     const body = await rateRes.json()
-    return +(body[0].rate.toFixed(5))
+    const rate = Number(body.rate).toFixed(5)
+    log.debug('loaded EUR/XRP rate. rate=%s', rate)
+    return Number(rate)
   }
 }
