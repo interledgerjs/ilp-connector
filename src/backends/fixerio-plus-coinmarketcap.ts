@@ -7,8 +7,8 @@ const COINMARKETCAP_API = 'https://api.coinmarketcap.com/v1/ticker/'
 const ROUNDING_FACTOR = 100000000
 
 export default class FixerIoCoinMarketCapBackend extends FixerIoBackend {
-  async connect (mockData?: any) {
-    await super.connect(mockData)
+  async connect () {
+    await super.connect()
     const ccRates = await this._getCCRates(this.rates.USD)
     Object.assign(this.rates, ccRates)
     this.currencies = this.currencies.concat(Object.keys(ccRates))
