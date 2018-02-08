@@ -15,11 +15,15 @@ import {
 } from '../routing/utils'
 import {
   Route,
-  RouteUpdateParams,
   IncomingRoute
 } from '../types/routing'
 import reduct = require('reduct')
 import { sha256, hmac } from '../lib/utils'
+import {
+  CcpRouteControlRequest,
+  CcpRouteUpdateRequest
+} from 'ilp-protocol-ccp'
+import NotAPeerError from '../errors/not-a-peer-error'
 
 export default class RouteBroadcaster {
   private deps: reduct.Injector
@@ -81,6 +85,7 @@ export default class RouteBroadcaster {
       if (!plugin.isConnected()) {
         // some plugins don't set `isConnected() = true` before emitting the
         // connect event, setImmediate has a good chance of working.
+        log.error('(!!!) plugin emitted connect, but then returned false for isConnected, broken plugin. account=%s', accountId)
         setImmediate(() => this.add(accountId))
       } else {
         this.add(accountId)
@@ -144,7 +149,9 @@ export default class RouteBroadcaster {
         log.debug('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
         const peer = new Peer({ deps: this.deps, accountId, sendRoutes, receiveRoutes })
         this.peers.set(accountId, peer)
-        peer.scheduleRouteUpdate()
+        if (receiveRoutes) {
+          peer.sendRouteControl()
+        }
         this.reloadLocalRoutes()
       }
     } else {
@@ -171,29 +178,29 @@ export default class RouteBroadcaster {
     }
   }
 
-  handleRouteUpdate (sourceAccount: string, {
-    speaker,
-    routingTableId,
-    holdDownTime,
-    fromEpoch,
-    toEpoch,
-    newRoutes,
-    withdrawnRoutes
-  }: RouteUpdateParams) {
-    log.debug('received routes. sender=%s fromEpoch=%s toEpoch=%s newRoutes=%s withdrawnRoutes=%s holdDownTime=%s', sourceAccount, fromEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length, holdDownTime)
+  handleRouteControl (sourceAccount: string, routeControl: CcpRouteControlRequest) {
+    const peer = this.peers.get(sourceAccount)
 
+    if (!peer) {
+      log.info('received route control message from non-peer. sourceAccount=%s', sourceAccount)
+      throw new NotAPeerError('cannot process route control messages from non-peers.')
+    }
+
+    peer.handleRouteControl(routeControl)
+  }
+
+  handleRouteUpdate (sourceAccount: string, routeUpdate: CcpRouteUpdateRequest) {
     const peer = this.peers.get(sourceAccount)
 
     if (!peer) {
       log.info('received route update from non-peer. sourceAccount=%s', sourceAccount)
-      return {
-        nextRequestedEpoch: toEpoch
-      }
+      throw new NotAPeerError('cannot process route update messages from non-peers.')
     }
 
     // Apply import filters
     // TODO Route filters should be much more configurable
-    newRoutes = newRoutes
+    // TODO We shouldn't modify this object in place
+    routeUpdate.newRoutes = routeUpdate.newRoutes
       // Filter incoming routes that aren't part of the current global prefix or
       // cover the entire global prefix (i.e. the default route.)
       .filter(route =>
@@ -201,19 +208,11 @@ export default class RouteBroadcaster {
         route.prefix.length > this.getGlobalPrefix().length
       )
 
-    const { changedPrefixes, nextRequestedEpoch } =
-      peer.applyRouteUpdate({
-        speaker,
-        routingTableId,
-        holdDownTime,
-        fromEpoch,
-        toEpoch,
-        newRoutes,
-        withdrawnRoutes
-      })
+    const changedPrefixes =
+      peer.handleRouteUpdate(routeUpdate)
 
     let haveRoutesChanged
-    for (let prefix of changedPrefixes) {
+    for (const prefix of changedPrefixes) {
       haveRoutesChanged = this.updatePrefix(prefix) || haveRoutesChanged
     }
     if (haveRoutesChanged && this.config.routeBroadcastEnabled) {
@@ -222,10 +221,6 @@ export default class RouteBroadcaster {
       for (const peer of this.peers.values()) {
         peer.scheduleRouteUpdate()
       }
-    }
-
-    return {
-      nextRequestedEpoch
     }
   }
 

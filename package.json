@@ -45,6 +45,7 @@
     "extensible-error": "^1.0.2",
     "ilp-compat-plugin": "^2.0.3",
     "ilp-packet": "^2.1.2",
+    "ilp-protocol-ccp": "^1.1.0",
     "ilp-protocol-ildcp": "^1.0.0",
     "leveldown": "^3.0.0",
     "levelup": "^2.0.1",
