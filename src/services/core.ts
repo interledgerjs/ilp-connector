@@ -6,7 +6,6 @@ import RouteBroadcaster from '../services/route-broadcaster'
 import RouteBuilder from '../services/route-builder'
 import IlpPrepareController from '../controllers/ilp-prepare'
 import IlqpController from '../controllers/ilqp'
-import JsonController from '../controllers/json'
 import { create as createLogger } from '../common/log'
 const log = createLogger('core-middleware')
 import reduct = require('reduct')
@@ -18,7 +17,6 @@ export default class Core {
   protected routeBuilder: RouteBuilder
   protected ilpPrepareController: IlpPrepareController
   protected ilqpController: IlqpController
-  protected jsonController: JsonController
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
@@ -28,7 +26,6 @@ export default class Core {
 
     this.ilpPrepareController = deps(IlpPrepareController)
     this.ilqpController = deps(IlqpController)
-    this.jsonController = deps(JsonController)
   }
 
   async processData (data: Buffer, accountId: string, outbound: (data: Buffer, accountId: string) => Promise<Buffer>): Promise<Buffer> {
@@ -49,8 +46,6 @@ export default class Core {
       case IlpPacket.Type.TYPE_ILQP_BY_SOURCE_REQUEST:
       case IlpPacket.Type.TYPE_ILQP_BY_DESTINATION_REQUEST:
         return this.ilqpController.sendData(data, accountId)
-      case '{'.charCodeAt(0):
-        return this.jsonController.sendData(data, accountId)
       default:
         log.warn('received invalid packet type. source=%s type=%s', accountId, data[0])
         throw new InvalidPacketError('invalid packet type received. type=' + data[0])

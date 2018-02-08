@@ -4,7 +4,7 @@ const fs = require('fs')
 const { resolve } = require('path')
 const { compileFromFile } = require('json-schema-to-typescript')
 
-const schemas = ['Config.json', 'RoutingUpdate.json', 'RoutingUpdateResponse.json']
+const schemas = ['Config.json']
 
 // compile from file
 ;(async function () {

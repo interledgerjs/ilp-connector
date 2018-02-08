@@ -2,12 +2,18 @@ import PrefixMap from './prefix-map'
 import Accounts from '../services/accounts'
 import Config from '../services/config'
 import ForwardingRoutingTable from '../services/forwarding-routing-table'
-import { BroadcastRoute, RouteUpdateParams, IncomingRoute } from '../types/routing'
-import { RoutingUpdate } from '../schemas/RoutingUpdate'
-import { RoutingUpdateResponse } from '../schemas/RoutingUpdateResponse'
+import { BroadcastRoute, IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
 import reduct = require('reduct')
 import { Relation } from './relation'
+import {
+  CcpRouteControlRequest,
+  CcpRouteUpdateRequest,
+  Mode,
+  ModeReverseMap,
+  serializeCcpRouteControlRequest,
+  serializeCcpRouteUpdateRequest
+} from 'ilp-protocol-ccp'
 
 export interface BroadcastRoutesParams {
   accounts: Accounts,
@@ -39,11 +45,13 @@ export default class Peer {
   private receiveRoutes: boolean
   private routes: PrefixMap<IncomingRoute>
   private expiry: number = 0
+  private mode: Mode = Mode.MODE_IDLE
+
   /**
    * Next epoch that the peer requested from us.
    */
-  private nextRequestedEpoch: number = 0
-  private peerRoutingTableId: string = ''
+  private lastKnownEpoch: number = 0
+  private lastKnownRoutingTableId: string = '00000000-0000-0000-0000-000000000000'
   /**
    * Epoch index up to which our peer has sent updates
    */
@@ -90,59 +98,81 @@ export default class Peer {
   }
 
   getNextRequestedEpoch () {
-    return this.nextRequestedEpoch
+    return this.lastKnownEpoch
   }
 
-  applyRouteUpdate ({
+  handleRouteControl ({
+    mode,
+    lastKnownRoutingTableId,
+    lastKnownEpoch,
+    features
+  }: CcpRouteControlRequest) {
+    if (this.mode !== mode) {
+      this.log.debug('peer requested changing routing mode. oldMode=%s newMode=%s', ModeReverseMap[this.mode], ModeReverseMap[mode])
+    }
+    this.mode = mode
+
+    if (this.lastKnownRoutingTableId !== this.forwardingRoutingTable.routingTableId) {
+      this.log.debug('peer has old routing table id, resetting lastKnownEpoch to zero. theirTableId=%s correctTableId=%s', lastKnownRoutingTableId, this.forwardingRoutingTable.routingTableId)
+      this.lastKnownEpoch = 0
+    } else {
+      this.log.debug('peer epoch set. epoch=%s currentEpoch=%s', this.accountId, lastKnownEpoch, this.forwardingRoutingTable.currentEpoch)
+      this.lastKnownEpoch = lastKnownEpoch
+    }
+
+    // We don't support any optional features, so we ignore the `features`
+
+    if (this.mode === Mode.MODE_SYNC) {
+      // Start broadcasting routes to this peer
+      this.scheduleRouteUpdate()
+    } else {
+      // Stop broadcasting routes to this peer
+      if (this.sendRouteUpdateTimer) {
+        clearTimeout(this.sendRouteUpdateTimer)
+        this.sendRouteUpdateTimer = undefined
+      }
+    }
+  }
+
+  handleRouteUpdate ({
+    speaker,
     routingTableId,
-    fromEpoch,
-    toEpoch,
+    fromEpochIndex,
+    toEpochIndex,
+    holdDownTime,
     newRoutes,
-    withdrawnRoutes,
-    holdDownTime
-  }: RouteUpdateParams) {
+    withdrawnRoutes
+  }: CcpRouteUpdateRequest): string[] {
     if (!this.receiveRoutes) {
       this.log.info('ignoring incoming route update from peer due to `receiveRoutes == false`. accountId=%s', this.accountId)
       // TODO: We should reject to let the peer know that we didn't process the update
-      return {
-        changedPrefixes: [],
-        nextRequestedEpoch: toEpoch
-      }
+      return []
     }
 
     this.bump(holdDownTime)
 
-    if (this.peerRoutingTableId !== routingTableId) {
-      this.log.info('saw new routing table. oldId=%s newId=%s', this.peerRoutingTableId, routingTableId)
-      this.peerRoutingTableId = routingTableId
+    if (this.lastKnownRoutingTableId !== routingTableId) {
+      this.log.info('saw new routing table. oldId=%s newId=%s', this.lastKnownRoutingTableId, routingTableId)
+      this.lastKnownRoutingTableId = routingTableId
       this.epoch = 0
     }
 
-    if (fromEpoch > this.epoch) {
+    if (fromEpochIndex > this.epoch) {
       // There is a gap, we need to go back to the last epoch we have
-      this.log.debug('gap in routing updates. expectedEpoch=%s actualFromEpoch=%s', this.epoch, fromEpoch)
-      return {
-        changedPrefixes: [],
-        nextRequestedEpoch: this.epoch
-      }
+      this.log.debug('gap in routing updates. expectedEpoch=%s actualFromEpoch=%s', this.epoch, fromEpochIndex)
+      return []
     }
-    if (this.epoch > toEpoch) {
+    if (this.epoch > toEpochIndex) {
       // This routing update is older than what we already have
-      this.log.debug('old routing update, ignoring. expectedEpoch=%s actualToEpoch=%s', this.epoch, toEpoch)
-      return {
-        changedPrefixes: [],
-        nextRequestedEpoch: this.epoch
-      }
+      this.log.debug('old routing update, ignoring. expectedEpoch=%s actualToEpoch=%s', this.epoch, toEpochIndex)
+      return []
     }
 
     // just a heartbeat
     if (newRoutes.length === 0 && withdrawnRoutes.length === 0) {
-      this.log.debug('pure heartbeat. fromEpoch=%s toEpoch=%s', fromEpoch, toEpoch)
-      this.epoch = toEpoch
-      return {
-        changedPrefixes: [],
-        nextRequestedEpoch: toEpoch
-      }
+      this.log.debug('pure heartbeat. fromEpoch=%s toEpoch=%s', fromEpochIndex, toEpochIndex)
+      this.epoch = toEpochIndex
+      return []
     }
 
     const changedPrefixes: string[] = []
@@ -156,19 +186,21 @@ export default class Peer {
     }
 
     for (const route of newRoutes) {
-      if (this.addRoute(route)) {
+      if (this.addRoute({
+        peer: this.accountId,
+        prefix: route.prefix,
+        path: route.path,
+        auth: route.auth
+      })) {
         changedPrefixes.push(route.prefix)
       }
     }
 
-    this.epoch = toEpoch
+    this.epoch = toEpochIndex
 
-    this.log.debug('applied route update. changedPrefixesCount=%s fromEpoch=%s toEpoch=%s', changedPrefixes.length, fromEpoch, toEpoch)
+    this.log.debug('applied route update. changedPrefixesCount=%s fromEpoch=%s toEpoch=%s', changedPrefixes.length, fromEpochIndex, toEpochIndex)
 
-    return {
-      changedPrefixes,
-      nextRequestedEpoch: toEpoch
-    }
+    return changedPrefixes
   }
 
   addRoute (route: IncomingRoute) {
@@ -189,14 +221,43 @@ export default class Peer {
     return this.routes.get(prefix)
   }
 
+  sendRouteControl = () => {
+    const plugin = this.accounts.getPlugin(this.accountId)
+
+    if (!plugin || !plugin.isConnected()) {
+      this.log.debug('cannot send route control message, plugin not connected (yet).')
+      return
+    }
+
+    const routeControl: CcpRouteControlRequest = {
+      mode: Mode.MODE_SYNC,
+      lastKnownRoutingTableId: this.lastKnownRoutingTableId,
+      lastKnownEpoch: this.epoch,
+      features: []
+    }
+
+    plugin.sendData(serializeCcpRouteControlRequest(routeControl))
+      .then(() => {
+        this.log.debug('successfully sent route control message.')
+      })
+      .catch((err: any) => {
+        const errInfo = (err instanceof Object && err.stack) ? err.stack : err
+        this.log.debug('failed to broadcast route information to peer. error=%s', errInfo)
+      })
+  }
+
   scheduleRouteUpdate = () => {
     if (this.sendRouteUpdateTimer) {
       clearTimeout(this.sendRouteUpdateTimer)
       this.sendRouteUpdateTimer = undefined
     }
 
+    if (this.mode !== Mode.MODE_SYNC) {
+      return
+    }
+
     const lastUpdate = this.lastUpdate
-    const nextEpoch = this.nextRequestedEpoch
+    const nextEpoch = this.lastKnownEpoch
 
     let delay: number
     if (nextEpoch < this.forwardingRoutingTable.currentEpoch) {
@@ -207,8 +268,7 @@ export default class Peer {
 
     delay = Math.max(MINIMUM_UPDATE_INTERVAL, delay)
 
-    // Log statement intentionally commented out -- too verbose
-    this.log.debug('scheduling next route update. accountId=%s delay=%s currentEpoch=%s peerHasEpoch=%s', this.accountId, delay, this.forwardingRoutingTable.currentEpoch, this.nextRequestedEpoch)
+    this.log.debug('scheduling next route update. accountId=%s delay=%s currentEpoch=%s peerHasEpoch=%s', this.accountId, delay, this.forwardingRoutingTable.currentEpoch, this.lastKnownEpoch)
     this.sendRouteUpdateTimer = setTimeout(() => {
       this.sendSingleRouteUpdate()
         .then(() => this.scheduleRouteUpdate())
@@ -230,12 +290,11 @@ export default class Peer {
     const plugin = this.accounts.getPlugin(this.accountId)
 
     if (!plugin || !plugin.isConnected()) {
-      // Log statement intentionally commented out -- too verbose
-      this.log.debug('cannot send routes, plugin not connected (yet). accountId=%s', this.accountId)
+      this.log.debug('cannot send routes, plugin not connected (yet).')
       return
     }
 
-    const nextRequestedEpoch = this.nextRequestedEpoch
+    const nextRequestedEpoch = this.lastKnownEpoch
     // TODO: Slicing copies that portion of the array. If we are sending a
     // large routing table in small chunks it would be much faster to loop
     // over the log and write the
@@ -289,26 +348,28 @@ export default class Peer {
       }
     }
 
-    this.log.debug('broadcasting routes to peer. peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.accountId, this.nextRequestedEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
+    this.log.debug('broadcasting routes to peer. peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.accountId, this.lastKnownEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
 
-    const routeUpdate: RoutingUpdate = {
+    const routeUpdate: CcpRouteUpdateRequest = {
       speaker: this.accounts.getOwnAddress(),
-      routing_table_id: this.forwardingRoutingTable.routingTableId,
-      hold_down_time: this.config.routeExpiry,
-      from_epoch: this.nextRequestedEpoch,
-      to_epoch: toEpoch,
-      new_routes: newRoutes.map(r => ({
+      routingTableId: this.forwardingRoutingTable.routingTableId,
+      holdDownTime: this.config.routeExpiry,
+      currentEpochIndex: this.forwardingRoutingTable.currentEpoch,
+      fromEpochIndex: this.lastKnownEpoch,
+      toEpochIndex: toEpoch,
+      newRoutes: newRoutes.map(r => ({
         ...r,
         nextHop: undefined,
-        auth: r.auth.toString('base64')
+        auth: r.auth,
+        props: []
       })),
-      withdrawn_routes: withdrawnRoutes.map(r => r.prefix)
+      withdrawnRoutes: withdrawnRoutes.map(r => r.prefix)
     }
 
     // We anticipate that they're going to be happy with our route update and
     // request the next one.
-    const previousNextRequestedEpoch = this.nextRequestedEpoch
-    this.nextRequestedEpoch = toEpoch
+    const previousNextRequestedEpoch = this.lastKnownEpoch
+    this.lastKnownEpoch = toEpoch
 
     const timeout = this.config.routeBroadcastInterval
 
@@ -319,23 +380,12 @@ export default class Peer {
     })
 
     try {
-      const result = await Promise.race([
-        plugin.sendData(Buffer.from(JSON.stringify({
-          method: 'broadcast_routes',
-          data: routeUpdate
-        }), 'utf8')),
+      await Promise.race([
+        plugin.sendData(serializeCcpRouteUpdateRequest(routeUpdate)),
         timerPromise
       ])
-
-      const response: RoutingUpdateResponse = JSON.parse(result.toString('utf8'))
-
-      // If the epoch they request isn't what we predicted, we need to adjust and
-      // continue from there.
-      if (response.next_requested_epoch !== toEpoch) {
-        this.nextRequestedEpoch = response.next_requested_epoch
-      }
     } catch (err) {
-      this.nextRequestedEpoch = previousNextRequestedEpoch
+      this.lastKnownEpoch = previousNextRequestedEpoch
       throw err
     }
   }

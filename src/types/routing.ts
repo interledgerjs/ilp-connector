@@ -14,13 +14,3 @@ export interface IncomingRoute {
   path: string[],
   auth: Buffer
 }
-
-export interface RouteUpdateParams {
-  speaker: string,
-  routingTableId: string,
-  holdDownTime: number,
-  fromEpoch: number,
-  toEpoch: number,
-  newRoutes: IncomingRoute[],
-  withdrawnRoutes: string[]
-}

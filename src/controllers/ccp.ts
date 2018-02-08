@@ -1,10 +1,16 @@
 import { create as createLogger } from '../common/log'
 const log = createLogger('ccp')
-import { validate } from '../lib/validate'
 import RouteBroadcaster from '../services/route-broadcaster'
 import reduct = require('reduct')
-import { RoutingUpdate } from '../schemas/RoutingUpdate'
-import { RoutingUpdateResponse } from '../schemas/RoutingUpdateResponse'
+import { IlpPrepare } from 'ilp-packet'
+import {
+  deserializeCcpRouteUpdateRequest,
+  deserializeCcpRouteControlRequest,
+  serializeCcpResponse
+} from 'ilp-protocol-ccp'
+
+const CCP_CONTROL_DESTINATION = 'peer.route.control'
+const CCP_UPDATE_DESTINATION = 'peer.route.update'
 
 export default class CcpController {
   protected routeBroadcaster: RouteBroadcaster
@@ -13,32 +19,36 @@ export default class CcpController {
     this.routeBroadcaster = deps(RouteBroadcaster)
   }
 
-  async handle (payload: RoutingUpdate, sourceAccount: string) {
-    validate('RoutingUpdate', payload)
-    log.debug('received routes. sender=%s', sourceAccount)
-
-    const routeUpdate = {
-      speaker: payload.speaker,
-      routingTableId: payload.routing_table_id,
-      holdDownTime: payload.hold_down_time,
-      fromEpoch: payload.from_epoch,
-      toEpoch: payload.to_epoch,
-      newRoutes: payload.new_routes.map(route => ({
-        peer: sourceAccount,
-        prefix: route.prefix,
-        path: route.path,
-        auth: Buffer.from(route.auth, 'base64')
-      })).filter(Boolean),
-      withdrawnRoutes: payload.withdrawn_routes
+  async handle (
+    data: Buffer,
+    sourceAccount: string,
+    { parsedPacket }: { parsedPacket: IlpPrepare }
+  ) {
+    switch (parsedPacket.destination) {
+      case CCP_CONTROL_DESTINATION:
+        return this.handleRouteControl(data, sourceAccount)
+      case CCP_UPDATE_DESTINATION:
+        return this.handleRouteUpdate(data, sourceAccount)
+      default:
+        throw new Error('unrecognized ccp message. destination=' + parsedPacket.destination)
     }
+  }
 
-    const { nextRequestedEpoch } =
-      this.routeBroadcaster.handleRouteUpdate(sourceAccount, routeUpdate)
+  async handleRouteControl (data: Buffer, sourceAccount: string) {
+    const routeControl = deserializeCcpRouteControlRequest(data)
+    log.debug('received route control message. sender=%s, tableId=%s epoch=%s features=%s', sourceAccount, routeControl.lastKnownRoutingTableId, routeControl.lastKnownEpoch, routeControl.features.join(','))
 
-    const response: RoutingUpdateResponse = {
-      next_requested_epoch: nextRequestedEpoch
-    }
+    this.routeBroadcaster.handleRouteControl(sourceAccount, routeControl)
 
-    return response
+    return serializeCcpResponse()
+  }
+
+  async handleRouteUpdate (data: Buffer, sourceAccount: string) {
+    const routeUpdate = deserializeCcpRouteUpdateRequest(data)
+    log.debug('received routes. sender=%s speaker=%s currentEpoch=%s fromEpoch=%s toEpoch=%s newRoutes=%s withdrawnRoutes=%s', sourceAccount, routeUpdate.speaker, routeUpdate.currentEpochIndex, routeUpdate.fromEpochIndex, routeUpdate.toEpochIndex, routeUpdate.newRoutes.length, routeUpdate.withdrawnRoutes.length)
+
+    this.routeBroadcaster.handleRouteUpdate(sourceAccount, routeUpdate)
+
+    return serializeCcpResponse()
   }
 }
