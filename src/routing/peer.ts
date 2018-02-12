@@ -5,6 +5,7 @@ import ForwardingRoutingTable from '../services/forwarding-routing-table'
 import { BroadcastRoute, IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
 import reduct = require('reduct')
+import { Type, deserializeIlpReject } from 'ilp-packet'
 import { Relation } from './relation'
 import {
   CcpRouteControlRequest,
@@ -34,6 +35,7 @@ export interface PeerOpts {
 }
 
 const MINIMUM_UPDATE_INTERVAL = 150
+const ROUTE_CONTROL_RETRY_INTERVAL = 30000
 
 export default class Peer {
   private config: Config
@@ -51,7 +53,13 @@ export default class Peer {
    * Next epoch that the peer requested from us.
    */
   private lastKnownEpoch: number = 0
-  private lastKnownRoutingTableId: string = '00000000-0000-0000-0000-000000000000'
+
+  /**
+   * Current routing table id used by our peer.
+   *
+   * We'll reset our epoch if this changes.
+   */
+  private routingTableId: string = '00000000-0000-0000-0000-000000000000'
   /**
    * Epoch index up to which our peer has sent updates
    */
@@ -97,8 +105,20 @@ export default class Peer {
     return this.lastUpdate
   }
 
-  getNextRequestedEpoch () {
+  getLastKnownEpoch () {
     return this.lastKnownEpoch
+  }
+
+  getRoutingTableId () {
+    return this.routingTableId
+  }
+
+  getEpoch () {
+    return this.epoch
+  }
+
+  getMode () {
+    return this.mode
   }
 
   handleRouteControl ({
@@ -112,7 +132,7 @@ export default class Peer {
     }
     this.mode = mode
 
-    if (this.lastKnownRoutingTableId !== this.forwardingRoutingTable.routingTableId) {
+    if (this.routingTableId !== this.forwardingRoutingTable.routingTableId) {
       this.log.debug('peer has old routing table id, resetting lastKnownEpoch to zero. theirTableId=%s correctTableId=%s', lastKnownRoutingTableId, this.forwardingRoutingTable.routingTableId)
       this.lastKnownEpoch = 0
     } else {
@@ -151,9 +171,9 @@ export default class Peer {
 
     this.bump(holdDownTime)
 
-    if (this.lastKnownRoutingTableId !== routingTableId) {
-      this.log.info('saw new routing table. oldId=%s newId=%s', this.lastKnownRoutingTableId, routingTableId)
-      this.lastKnownRoutingTableId = routingTableId
+    if (this.routingTableId !== routingTableId) {
+      this.log.info('saw new routing table. oldId=%s newId=%s', this.routingTableId, routingTableId)
+      this.routingTableId = routingTableId
       this.epoch = 0
     }
 
@@ -231,18 +251,28 @@ export default class Peer {
 
     const routeControl: CcpRouteControlRequest = {
       mode: Mode.MODE_SYNC,
-      lastKnownRoutingTableId: this.lastKnownRoutingTableId,
+      lastKnownRoutingTableId: this.routingTableId,
       lastKnownEpoch: this.epoch,
       features: []
     }
 
     plugin.sendData(serializeCcpRouteControlRequest(routeControl))
-      .then(() => {
-        this.log.debug('successfully sent route control message.')
+      .then(data => {
+        if (data[0] === Type.TYPE_ILP_FULFILL) {
+          this.log.debug('successfully sent route control message.')
+        } else if (data[0] === Type.TYPE_ILP_REJECT) {
+          this.log.debug('route control message was rejected. rejection=%j', deserializeIlpReject(data))
+          throw new Error('route control message rejected.')
+        } else {
+          this.log.debug('unknown response packet type. type=' + data[0])
+          throw new Error('route control message returned unknown response.')
+        }
       })
       .catch((err: any) => {
         const errInfo = (err instanceof Object && err.stack) ? err.stack : err
-        this.log.debug('failed to broadcast route information to peer. error=%s', errInfo)
+        this.log.debug('failed to set route control information on peer. error=%s', errInfo)
+        // TODO: Should have more elegant, thought-through retry logic here
+        setTimeout(this.sendRouteControl, ROUTE_CONTROL_RETRY_INTERVAL)
       })
   }
 
@@ -348,7 +378,7 @@ export default class Peer {
       }
     }
 
-    this.log.debug('broadcasting routes to peer. peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.accountId, this.lastKnownEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
+    this.log.debug('broadcasting routes to peer. speaker=%s peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.accounts.getOwnAddress(), this.accountId, this.lastKnownEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
 
     const routeUpdate: CcpRouteUpdateRequest = {
       speaker: this.accounts.getOwnAddress(),

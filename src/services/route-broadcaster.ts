@@ -21,7 +21,8 @@ import reduct = require('reduct')
 import { sha256, hmac } from '../lib/utils'
 import {
   CcpRouteControlRequest,
-  CcpRouteUpdateRequest
+  CcpRouteUpdateRequest,
+  ModeReverseMap
 } from 'ilp-protocol-ccp'
 import NotAPeerError from '../errors/not-a-peer-error'
 
@@ -361,12 +362,27 @@ export default class RouteBroadcaster {
 
   getStatus () {
     return {
+      routingTableId: this.forwardingRoutingTable.routingTableId,
+      currentEpoch: this.forwardingRoutingTable.currentEpoch,
       localRoutingTable: formatRoutingTableAsJson(this.localRoutingTable),
       forwardingRoutingTable: formatRoutingTableAsJson(this.forwardingRoutingTable),
       routingLog: this.forwardingRoutingTable.log.map(entry => ({
         ...entry,
         route: entry.route && formatRouteAsJson(entry.route)
-      }))
+      })),
+      peers: Array.from(this.peers.values()).reduce((acc, peer) => {
+        acc[peer.getAccountId()] = {
+          send: {
+            epoch: peer.getLastKnownEpoch(),
+            mode: ModeReverseMap[peer.getMode()]
+          },
+          receive: {
+            routingTableId: peer.getRoutingTableId(),
+            epoch: peer.getEpoch()
+          }
+        }
+        return acc
+      }, {})
     }
   }
 
