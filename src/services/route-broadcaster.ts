@@ -21,8 +21,7 @@ import reduct = require('reduct')
 import { sha256, hmac } from '../lib/utils'
 import {
   CcpRouteControlRequest,
-  CcpRouteUpdateRequest,
-  ModeReverseMap
+  CcpRouteUpdateRequest
 } from 'ilp-protocol-ccp'
 import NotAPeerError from '../errors/not-a-peer-error'
 
@@ -150,8 +149,9 @@ export default class RouteBroadcaster {
         log.debug('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
         const peer = new Peer({ deps: this.deps, accountId, sendRoutes, receiveRoutes })
         this.peers.set(accountId, peer)
-        if (receiveRoutes) {
-          peer.sendRouteControl()
+        const receiver = peer.getReceiver()
+        if (receiver) {
+          receiver.sendRouteControl()
         }
         this.reloadLocalRoutes()
       }
@@ -167,12 +167,21 @@ export default class RouteBroadcaster {
       return
     }
 
-    log.info('remove peer. peerId=' + accountId)
-    peer.stop()
-    this.peers.delete(accountId)
+    const sender = peer.getSender()
+    const receiver = peer.getReceiver()
 
-    for (let prefix of peer.getPrefixes()) {
-      this.updatePrefix(prefix)
+    log.info('remove peer. peerId=' + accountId)
+    if (sender) {
+      sender.stop()
+    }
+
+    // We have to remove the peer before calling updatePrefix on each of its
+    // advertised prefixes in order to find the next best route.
+    this.peers.delete(accountId)
+    if (receiver) {
+      for (let prefix of receiver.getPrefixes()) {
+        this.updatePrefix(prefix)
+      }
     }
     if (this.getAccountRelation(accountId) === 'child') {
       this.updatePrefix(this.accounts.getChildAddress(accountId))
@@ -187,7 +196,14 @@ export default class RouteBroadcaster {
       throw new NotAPeerError('cannot process route control messages from non-peers.')
     }
 
-    peer.handleRouteControl(routeControl)
+    const sender = peer.getSender()
+
+    if (!sender) {
+      log.info('received route control message from peer not authorized to receive routes from us (sendRoutes=false). sourceAccount=%s', sourceAccount)
+      throw new NotAPeerError('rejecting route control message, we are configured not to send routes to you.')
+    }
+
+    sender.handleRouteControl(routeControl)
   }
 
   handleRouteUpdate (sourceAccount: string, routeUpdate: CcpRouteUpdateRequest) {
@@ -196,6 +212,13 @@ export default class RouteBroadcaster {
     if (!peer) {
       log.info('received route update from non-peer. sourceAccount=%s', sourceAccount)
       throw new NotAPeerError('cannot process route update messages from non-peers.')
+    }
+
+    const receiver = peer.getReceiver()
+
+    if (!receiver) {
+      log.info('received route update from peer not authorized to advertise routes to us (receiveRoutes=false). sourceAccount=%s', sourceAccount)
+      throw new NotAPeerError('rejecting route update, we are configured not to receive routes from you.')
     }
 
     // Apply import filters
@@ -209,8 +232,7 @@ export default class RouteBroadcaster {
         route.prefix.length > this.getGlobalPrefix().length
       )
 
-    const changedPrefixes =
-      peer.handleRouteUpdate(routeUpdate)
+    const changedPrefixes = receiver.handleRouteUpdate(routeUpdate)
 
     let haveRoutesChanged
     for (const prefix of changedPrefixes) {
@@ -220,7 +242,10 @@ export default class RouteBroadcaster {
       // TODO: Should we even trigger an immediate broadcast when routes change?
       //       Note that BGP does not do this AFAIK
       for (const peer of this.peers.values()) {
-        peer.scheduleRouteUpdate()
+        const sender = peer.getSender()
+        if (sender) {
+          sender.scheduleRouteUpdate()
+        }
       }
     }
   }
@@ -305,7 +330,8 @@ export default class RouteBroadcaster {
     }
 
     const bestRoute = Array.from(this.peers.values())
-      .map(peer => peer.getPrefix(prefix))
+      .map(peer => peer.getReceiver())
+      .map(receiver => receiver && receiver.getPrefix(prefix))
       .filter((a): a is IncomingRoute => !!a)
       .sort((a?: IncomingRoute, b?: IncomingRoute) => {
         if (!a && !b) {
@@ -371,15 +397,11 @@ export default class RouteBroadcaster {
         route: entry.route && formatRouteAsJson(entry.route)
       })),
       peers: Array.from(this.peers.values()).reduce((acc, peer) => {
+        const sender = peer.getSender()
+        const receiver = peer.getReceiver()
         acc[peer.getAccountId()] = {
-          send: {
-            epoch: peer.getLastKnownEpoch(),
-            mode: ModeReverseMap[peer.getMode()]
-          },
-          receive: {
-            routingTableId: peer.getRoutingTableId(),
-            epoch: peer.getEpoch()
-          }
+          send: sender && sender.getStatus(),
+          receive: receiver && receiver.getStatus()
         }
         return acc
       }, {})
