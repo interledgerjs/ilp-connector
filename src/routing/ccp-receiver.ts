@@ -122,7 +122,7 @@ export default class CcpReceiver {
 
     const changedPrefixes: string[] = []
     if (withdrawnRoutes.length > 0) {
-      this.log.info('informed of no longer reachable routes. count=%s routes=%s', withdrawnRoutes.length, withdrawnRoutes)
+      this.log.debug('informed of no longer reachable routes. count=%s routes=%s', withdrawnRoutes.length, withdrawnRoutes)
       for (const prefix of withdrawnRoutes) {
         if (this.deleteRoute(prefix)) {
           changedPrefixes.push(prefix)
@@ -143,7 +143,7 @@ export default class CcpReceiver {
 
     this.epoch = toEpochIndex
 
-    this.log.debug('applied route update. changedPrefixesCount=%s fromEpoch=%s toEpoch=%s', changedPrefixes.length, fromEpochIndex, toEpochIndex)
+    this.log.info('applied route update. changedPrefixesCount=%s fromEpoch=%s toEpoch=%s', changedPrefixes.length, fromEpochIndex, toEpochIndex)
 
     return changedPrefixes
   }
