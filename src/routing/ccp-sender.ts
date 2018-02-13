@@ -35,6 +35,8 @@ export interface CcpSenderOpts {
 
 const MINIMUM_UPDATE_INTERVAL = 150
 
+const MAX_EPOCHS_PER_UPDATE = 50
+
 export default class CcpSender {
   private plugin: PluginInstance
   private forwardingRoutingTable: ForwardingRoutingTable
@@ -178,10 +180,8 @@ export default class CcpSender {
     }
 
     const nextRequestedEpoch = this.lastKnownEpoch
-    // TODO: Slicing copies that portion of the array. If we are sending a
-    // large routing table in small chunks it would be much faster to loop
-    // over the log and write the
-    const allUpdates = this.forwardingRoutingTable.log.slice(nextRequestedEpoch)
+    const allUpdates = this.forwardingRoutingTable.log
+      .slice(nextRequestedEpoch, nextRequestedEpoch + MAX_EPOCHS_PER_UPDATE)
     const highestEpochUpdate = allUpdates.slice(allUpdates.length - 1)[0]
 
     const toEpoch = highestEpochUpdate
