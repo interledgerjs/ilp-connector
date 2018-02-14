@@ -12,6 +12,7 @@ const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const NoRouteFoundError = require('../src/errors/no-route-found-error')
 const Peer = require('../src/routing/peer').default
+const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 
 const PluginMock = require('./mocks/mockPlugin')
 mockRequire('ilp-plugin-mock', PluginMock)
@@ -60,22 +61,21 @@ describe('Modify Plugins', function () {
 
       this.accounts.getPlugin('test.jpy-ledger').sendData = () => Buffer.alloc(0)
 
-      await this.accounts.getPlugin('test.jpy-ledger')._dataHandler(Buffer.from(JSON.stringify({
-        method: 'broadcast_routes',
-        data: {
-          speaker: 'test.jpy-ledger',
-          routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
-          from_epoch: 0,
-          to_epoch: 1,
-          hold_down_time: 45000,
-          withdrawn_routes: [],
-          new_routes: [{
-            prefix: 'test.jpy-ledger',
-            path: ['test.jpy-ledger'],
-            auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
-          }]
-        }
-      })))
+      await this.accounts.getPlugin('test.jpy-ledger')._dataHandler(serializeCcpRouteUpdateRequest({
+        speaker: 'test.jpy-ledger',
+        routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+        currentEpochIndex: 0,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
+          prefix: 'test.jpy-ledger',
+          path: ['test.jpy-ledger'],
+          auth: Buffer.from('RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk=', 'base64'),
+          props: []
+        }]
+      }))
 
       const quotePromise2 = this.routeBuilder.quoteBySource('test.usd-ledger', {
         sourceAmount: '100',
@@ -115,22 +115,21 @@ describe('Modify Plugins', function () {
         }
       })
 
-      this.accounts.getPlugin('test.jpy-ledger')._dataHandler(Buffer.from(JSON.stringify({
-        method: 'broadcast_routes',
-        data: {
-          speaker: 'test.jpy-ledger',
-          routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
-          from_epoch: 0,
-          to_epoch: 1,
-          hold_down_time: 45000,
-          withdrawn_routes: [],
-          new_routes: [{
-            prefix: 'test.jpy-ledger',
-            path: ['test.jpy-ledger'],
-            auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
-          }]
-        }
-      })))
+      await this.accounts.getPlugin('test.jpy-ledger')._dataHandler(serializeCcpRouteUpdateRequest({
+        speaker: 'test.jpy-ledger',
+        routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+        currentEpochIndex: 0,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
+          prefix: 'test.jpy-ledger',
+          path: ['test.jpy-ledger'],
+          auth: Buffer.from('RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk=', 'base64'),
+          props: []
+        }]
+      }))
     })
 
     it('should remove a plugin from accounts', async function () {

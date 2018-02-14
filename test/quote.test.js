@@ -22,6 +22,7 @@ const NoRouteFoundError = require('../src/errors/no-route-found-error').default
 const UnacceptableAmountError = require('../src/errors/unacceptable-amount-error').default
 const UnacceptableExpiryError = require('../src/errors/unacceptable-expiry-error').default
 const LedgerNotConnectedError = require('../src/errors/ledger-not-connected-error').default
+const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
 describe('Quotes', function () {
@@ -36,22 +37,21 @@ describe('Quotes', function () {
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
       this.routeBroadcaster.add(accountId)
-      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
-        method: 'broadcast_routes',
-        data: {
-          speaker: accountId,
-          routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
-          from_epoch: 0,
-          to_epoch: 1,
-          hold_down_time: 45000,
-          withdrawn_routes: [],
-          new_routes: [{
-            prefix: accountId,
-            path: [accountId],
-            auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
-          }]
-        }
-      })))
+      this.accounts.getPlugin(accountId)._dataHandler(serializeCcpRouteUpdateRequest({
+        speaker: accountId,
+        routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+        currentEpochIndex: 1,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
+          prefix: accountId,
+          path: [accountId],
+          auth: Buffer.from('RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk=', 'base64'),
+          props: []
+        }]
+      }))
     }
 
     await this.backend.connect()
@@ -184,19 +184,21 @@ describe('Quotes', function () {
   it('should return remote liquidity curve quotes', async function () {
     const curve = new LiquidityCurve([ [0, 0], [10000, 20000] ]).toBuffer()
     this.routeBroadcaster.config.routeBroadcastEnabled = false
-    await this.ccpController.handle({
+    await this.accounts.getPlugin('test.eur-ledger')._dataHandler(serializeCcpRouteUpdateRequest({
       speaker: 'test.eur-ledger',
-      routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
-      from_epoch: 1,
-      to_epoch: 2,
-      hold_down_time: 45000,
-      withdrawn_routes: [],
-      new_routes: [{
+      routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+      currentEpochIndex: 2,
+      fromEpochIndex: 1,
+      toEpochIndex: 2,
+      holdDownTime: 45000,
+      withdrawnRoutes: [],
+      newRoutes: [{
         prefix: 'test.random-ledger',
         path: ['test.eur-ledger', 'test.random-ledger'],
-        auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
+        auth: Buffer.from('RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk=', 'base64'),
+        props: []
       }]
-    }, 'test.eur-ledger')
+    }))
     this.routeBroadcaster.config.routeBroadcastEnabled = true
 
     this.accounts.getPlugin('test.eur-ledger').sendData = () => IlpPacket.serializeIlqpLiquidityResponse({
@@ -285,19 +287,21 @@ describe('Quotes', function () {
   describe('if route has no curve, quotes a multi-hop route', function () {
     beforeEach(async function () {
       this.routeBroadcaster.config.routeBroadcastEnabled = false
-      await this.ccpController.handle({
+      await this.accounts.getPlugin('test.eur-ledger')._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: 'test.eur-ledger',
-        routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
-        from_epoch: 1,
-        to_epoch: 2,
-        hold_down_time: 45000,
-        withdrawn_routes: [],
-        new_routes: [{
+        routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+        currentEpochIndex: 2,
+        fromEpochIndex: 1,
+        toEpochIndex: 2,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
           prefix: 'test.random-ledger',
           path: ['test.eur-ledger', 'test.random-ledger'],
-          auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
+          auth: Buffer.from('RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk=', 'base64'),
+          props: []
         }]
-      }, 'test.eur-ledger')
+      }))
       this.routeBroadcaster.config.routeBroadcastEnabled = true
     })
 
