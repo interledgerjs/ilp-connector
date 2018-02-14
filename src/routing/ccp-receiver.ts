@@ -181,7 +181,9 @@ export default class CcpReceiver {
         const errInfo = (err instanceof Object && err.stack) ? err.stack : err
         this.log.debug('failed to set route control information on peer. error=%s', errInfo)
         // TODO: Should have more elegant, thought-through retry logic here
-        setTimeout(this.sendRouteControl, ROUTE_CONTROL_RETRY_INTERVAL)
+        const retryTimeout = setTimeout(this.sendRouteControl, ROUTE_CONTROL_RETRY_INTERVAL)
+
+        retryTimeout.unref()
       })
   }
 
