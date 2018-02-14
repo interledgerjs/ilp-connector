@@ -10,6 +10,10 @@ const { assert } = require('chai')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
+const {
+  serializeCcpRouteUpdateRequest,
+  deserializeCcpRouteUpdateRequest
+} = require('ilp-protocol-ccp')
 
 const ledgerA = 'test.cad-ledger'
 const ledgerB = 'test.usd-ledger'
@@ -71,22 +75,21 @@ describe('RouteBroadcaster', function () {
     for (let accountId of testAccounts) {
       await this.accounts.getPlugin(accountId).connect()
       this.routeBroadcaster.add(accountId)
-      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
-        method: 'broadcast_routes',
-        data: {
-          speaker: accountId,
-          routing_table_id: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
-          from_epoch: 0,
-          to_epoch: 1,
-          hold_down_time: 45000,
-          withdrawn_routes: [],
-          new_routes: [{
-            prefix: accountId,
-            path: [accountId],
-            auth: 'RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk='
-          }]
-        }
-      })))
+      this.accounts.getPlugin(accountId)._dataHandler(serializeCcpRouteUpdateRequest({
+        speaker: accountId,
+        routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+        currentEpochIndex: 1,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
+          prefix: accountId,
+          path: [accountId],
+          auth: Buffer.from('RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk=', 'base64'),
+          props: []
+        }]
+      }))
     }
   })
 
@@ -110,12 +113,12 @@ describe('RouteBroadcaster', function () {
       Object.keys(accounts).forEach(key => this.routeBroadcaster.add(key))
 
       // By default, everything should be enabled
-      assert.ok(this.routeBroadcaster.peers.get('test.eur-ledger').sendRoutes)
-      assert.ok(this.routeBroadcaster.peers.get('test.eur-ledger').receiveRoutes)
+      assert.ok(this.routeBroadcaster.peers.get('test.eur-ledger').ccpSender)
+      assert.ok(this.routeBroadcaster.peers.get('test.eur-ledger').ccpReceiver)
 
       // On this ledger only receiving should be disabled
-      assert.notOk(this.routeBroadcaster.peers.get('test.usd-ledger').sendRoutes)
-      assert.ok(this.routeBroadcaster.peers.get('test.usd-ledger').receiveRoutes)
+      assert.notOk(this.routeBroadcaster.peers.get('test.usd-ledger').ccpSender)
+      assert.ok(this.routeBroadcaster.peers.get('test.usd-ledger').ccpReceiver)
 
       // When sending and receiving is disabled, the peer should not even be
       // instantiated by the routing system.
@@ -149,35 +152,42 @@ describe('RouteBroadcaster', function () {
       {
         prefix: 'test.connie',
         path: ['test.connie'],
-        auth: 'muk4Yc9MJfF9JOiCVhwdG/+Iffhw+g7fUPjRJTef24o='
+        auth: Buffer.from('muk4Yc9MJfF9JOiCVhwdG/+Iffhw+g7fUPjRJTef24o=', 'base64'),
+        props: []
       }, {
         prefix: ledgerC,
         path: ['test.connie'],
-        auth: 'pzvpeQd5hc2o53xnDqXfNKH3ghg9lb3b1bZb8N3Wzqk='
+        auth: Buffer.from('pzvpeQd5hc2o53xnDqXfNKH3ghg9lb3b1bZb8N3Wzqk=', 'base64'),
+        props: []
       }, {
         prefix: ledgerB,
         path: ['test.connie', 'test.usd-ledger'],
-        auth: 'VpLK9Fmhx11TynRzmQTvnynGYc+tOwoShsJ5QW61/O8='
+        auth: Buffer.from('VpLK9Fmhx11TynRzmQTvnynGYc+tOwoShsJ5QW61/O8=', 'base64'),
+        props: []
       }
     ]
     const routesWithSourceLedgerB = [
       {
         prefix: 'test.connie',
         path: ['test.connie'],
-        auth: 'muk4Yc9MJfF9JOiCVhwdG/+Iffhw+g7fUPjRJTef24o='
+        auth: Buffer.from('muk4Yc9MJfF9JOiCVhwdG/+Iffhw+g7fUPjRJTef24o=', 'base64'),
+        props: []
       },
       {
         prefix: 'test.prefix',
         path: ['test.connie'],
-        auth: '2mgQJ9MAIe91vuQ+PddM6j8DGfqOAu0PH8ni5n+8lTM='
+        auth: Buffer.from('2mgQJ9MAIe91vuQ+PddM6j8DGfqOAu0PH8ni5n+8lTM=', 'base64'),
+        props: []
       }, {
         prefix: ledgerC,
         path: ['test.connie'],
-        auth: 'pzvpeQd5hc2o53xnDqXfNKH3ghg9lb3b1bZb8N3Wzqk='
+        auth: Buffer.from('pzvpeQd5hc2o53xnDqXfNKH3ghg9lb3b1bZb8N3Wzqk=', 'base64'),
+        props: []
       }, {
         prefix: ledgerA,
         path: ['test.connie', 'test.cad-ledger'],
-        auth: 'VpLK9Fmhx11TynRzmQTvnynGYc+tOwoShsJ5QW61/O8='
+        auth: Buffer.from('VpLK9Fmhx11TynRzmQTvnynGYc+tOwoShsJ5QW61/O8=', 'base64'),
+        props: []
       }
     ]
 
@@ -188,40 +198,36 @@ describe('RouteBroadcaster', function () {
         .resolves(Buffer.from('{}', 'ascii'))
 
       this.routeBroadcaster.forwardingRoutingTable.routingTableId = '3b069822-a754-4e44-8a60-0f9f7084144d'
-      await this.routeBroadcaster.peers.get(ledgerA).sendSingleRouteUpdate()
-      await this.routeBroadcaster.peers.get(ledgerB).sendSingleRouteUpdate()
+      await this.routeBroadcaster.peers.get(ledgerA).ccpSender.sendSingleRouteUpdate()
+      await this.routeBroadcaster.peers.get(ledgerB).ccpSender.sendSingleRouteUpdate()
 
       sinon.assert.calledOnce(pluginABroadcastSpy)
-      sinon.assert.calledWithMatch(pluginABroadcastSpy, sinon.match(packet => assert.deepEqual(JSON.parse(packet.toString('utf8')), {
-        method: 'broadcast_routes',
-        data: {
-          speaker: 'test.connie',
-          routing_table_id: '3b069822-a754-4e44-8a60-0f9f7084144d',
-          from_epoch: 0,
-          to_epoch: 5,
-          hold_down_time: 45000,
-          withdrawn_routes: [
-            'test.prefix',
-            'test.cad-ledger'
-          ],
-          new_routes: routesWithSourceLedgerA
-        }
+      sinon.assert.calledWithMatch(pluginABroadcastSpy, sinon.match(packet => assert.deepEqual(deserializeCcpRouteUpdateRequest(packet), {
+        speaker: 'test.connie',
+        routingTableId: '3b069822-a754-4e44-8a60-0f9f7084144d',
+        currentEpochIndex: 5,
+        fromEpochIndex: 0,
+        toEpochIndex: 5,
+        holdDownTime: 45000,
+        withdrawnRoutes: [
+          'test.prefix',
+          'test.cad-ledger'
+        ],
+        newRoutes: routesWithSourceLedgerA
       }) || true))
 
       sinon.assert.calledOnce(pluginBBroadcastSpy)
-      sinon.assert.calledWithMatch(pluginBBroadcastSpy, sinon.match(packet => assert.deepEqual(JSON.parse(packet.toString('utf8')), {
-        method: 'broadcast_routes',
-        data: {
-          speaker: 'test.connie',
-          routing_table_id: '3b069822-a754-4e44-8a60-0f9f7084144d',
-          from_epoch: 0,
-          to_epoch: 5,
-          hold_down_time: 45000,
-          withdrawn_routes: [
-            'test.usd-ledger'
-          ],
-          new_routes: routesWithSourceLedgerB
-        }
+      sinon.assert.calledWithMatch(pluginBBroadcastSpy, sinon.match(packet => assert.deepEqual(deserializeCcpRouteUpdateRequest(packet), {
+        speaker: 'test.connie',
+        routingTableId: '3b069822-a754-4e44-8a60-0f9f7084144d',
+        currentEpochIndex: 5,
+        fromEpochIndex: 0,
+        toEpochIndex: 5,
+        holdDownTime: 45000,
+        withdrawnRoutes: [
+          'test.usd-ledger'
+        ],
+        newRoutes: routesWithSourceLedgerB
       }) || true))
     })
 
@@ -233,25 +239,27 @@ describe('RouteBroadcaster', function () {
         auth: 'K3nWc6mNsJh8n+mpON6CdS36U5K4FbsIzEAevsckcso='
       }]
       assert.equal(this.routingTable.keys().length, 5)
-      await this.ccpController.handle({
+      await this.routeBroadcaster.handleRouteUpdate(ledgerB, {
         speaker: ledgerD,
-        routing_table_id: '3b069822-a754-4e44-8a60-0f9f7084144d',
-        from_epoch: 0,
-        to_epoch: 1,
-        new_routes: newRoutes,
-        hold_down_time: 1234,
-        withdrawn_routes: []
-      }, ledgerB)
+        routingTableId: '3b069822-a754-4e44-8a60-0f9f7084144d',
+        currentEpochIndex: 1,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        newRoutes: newRoutes,
+        holdDownTime: 1234,
+        withdrawnRoutes: []
+      })
       assert.equal(this.routingTable.keys().length, 6)
-      await this.ccpController.handle({
+      await this.routeBroadcaster.handleRouteUpdate(ledgerB, {
         speaker: ledgerD,
-        routing_table_id: '3b069822-a754-4e44-8a60-0f9f7084144d',
-        from_epoch: 1,
-        to_epoch: 2,
-        new_routes: [],
-        hold_down_time: 1234,
-        withdrawn_routes: [ledgerD]
-      }, ledgerB)
+        routingTableId: '3b069822-a754-4e44-8a60-0f9f7084144d',
+        currentEpochIndex: 2,
+        fromEpochIndex: 1,
+        toEpochIndex: 2,
+        newRoutes: [],
+        holdDownTime: 1234,
+        withdrawnRoutes: [ledgerD]
+      })
       assert.equal(this.routingTable.keys().length, 5)
     })
 
@@ -263,15 +271,16 @@ describe('RouteBroadcaster', function () {
         auth: 'K3nWc6mNsJh8n+mpON6CdS36U5K4FbsIzEAevsckcso='
       }]
       assert.equal(this.routingTable.keys().length, 5)
-      await this.ccpController.handle({
+      await this.routeBroadcaster.handleRouteUpdate(ledgerB, {
         speaker: peerAddress,
-        routing_table_id: '3b069822-a754-4e44-8a60-0f9f7084144d',
-        from_epoch: 0,
-        to_epoch: 1,
-        new_routes: newRoutes,
-        hold_down_time: 1234,
-        withdrawn_routes: []
-      }, ledgerB)
+        routingTableId: '3b069822-a754-4e44-8a60-0f9f7084144d',
+        currentEpochIndex: 1,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        newRoutes: newRoutes,
+        holdDownTime: 1234,
+        withdrawnRoutes: []
+      })
       assert.equal(this.routingTable.keys().length, 5)
     })
   })

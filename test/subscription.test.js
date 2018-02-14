@@ -10,6 +10,7 @@ const wsHelper = require('./helpers/ws')
 const sinon = require('sinon')
 const IlpPacket = require('ilp-packet')
 const { assert } = require('chai')
+const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 
 const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
@@ -32,22 +33,21 @@ describe('Subscriptions', function () {
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
       this.routeBroadcaster.add(accountId)
-      await this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
-        method: 'broadcast_routes',
-        data: {
-          speaker: accountId,
-          routing_table_id: 'c951b674-c6f5-42ca-83a3-39a8d4e293b3',
-          from_epoch: 0,
-          to_epoch: 1,
-          hold_down_time: 45000,
-          withdrawn_routes: [],
-          new_routes: [{
-            prefix: accountId,
-            path: [accountId],
-            auth: 'dvlOlr8MjK5denVE+B47Mb6ecvJTwGNaC/lPsEwYlP8='
-          }]
-        }
-      })))
+      await this.accounts.getPlugin(accountId)._dataHandler(serializeCcpRouteUpdateRequest({
+        speaker: accountId,
+        routingTableId: 'c951b674-c6f5-42ca-83a3-39a8d4e293b3',
+        currentEpochIndex: 1,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
+          prefix: accountId,
+          path: [accountId],
+          auth: Buffer.from('dvlOlr8MjK5denVE+B47Mb6ecvJTwGNaC/lPsEwYlP8=', 'base64'),
+          props: []
+        }]
+      }))
     }
 
     nock('http://usd-ledger.example').get('/')

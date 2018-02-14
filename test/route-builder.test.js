@@ -10,6 +10,7 @@ const logger = require('../src/common/log')
 const InvalidPacketError = require('../src/errors/invalid-packet-error').default
 const LiquidityCurve = require('../src/routing/liquidity-curve').default
 chai.use(require('chai-as-promised'))
+const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -64,22 +65,21 @@ describe('RouteBuilder', function () {
     const testAccounts = [ledgerA, ledgerB]
     for (let accountId of testAccounts) {
       this.routeBroadcaster.add(accountId)
-      this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
-        method: 'broadcast_routes',
-        data: {
-          speaker: accountId,
-          routing_table_id: '31812543-9935-4160-bdde-6e459bb37cfe',
-          from_epoch: 0,
-          to_epoch: 1,
-          hold_down_time: 45000,
-          withdrawn_routes: [],
-          new_routes: [{
-            prefix: accountId,
-            path: [accountId],
-            auth: 'fuR3ckUuhB9nRHKW2mAMh/0BHc8p6UuD+iSeV3e734E='
-          }]
-        }
-      })))
+      this.accounts.getPlugin(accountId)._dataHandler(serializeCcpRouteUpdateRequest({
+        speaker: accountId,
+        routingTableId: '31812543-9935-4160-bdde-6e459bb37cfe',
+        currentEpochIndex: 1,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
+          prefix: accountId,
+          path: [accountId],
+          auth: Buffer.from('fuR3ckUuhB9nRHKW2mAMh/0BHc8p6UuD+iSeV3e734E=', 'base64'),
+          props: []
+        }]
+      }))
     }
 
     await this.backend.connect()
