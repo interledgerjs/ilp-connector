@@ -8,7 +8,7 @@ const { Writer } = require('oer-utils')
 
 const conditionMap = new Map()
 
-const NODE_COUNT = 110
+const NODE_COUNT = 200
 
 ;(async () => {
   for (let i = 0; i < NODE_COUNT; i++) {
@@ -16,6 +16,7 @@ const NODE_COUNT = 110
       server: 'btp+ws://:mini@localhost:' + (20000 + i)
     })
 
+    console.log(`connecting to test.u${i}`)
     await sender.connect()
 
     const { clientAddress } = await ILDCP.fetch(sender.sendData.bind(sender))
@@ -34,7 +35,7 @@ const NODE_COUNT = 110
       }
     })
 
-    for (let j = 0; j < NODE_COUNT; j++) {
+    for (let j = i; j < NODE_COUNT; j++) {
       const destination = `test.u${j}x`
       console.log(`test.u${i}x => ${destination}`)
 
