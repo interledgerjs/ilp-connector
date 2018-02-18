@@ -42,7 +42,7 @@ export default class PrefixMap<T> {
     // Exact match
     if (this.items[key]) return key // redundant; optimization?
     // prefix match (the list is in descending length order, and secondarily, reverse-alphabetically)
-    const index = findIndex(this.prefixes, (e: string) => key.startsWith(e))
+    const index = findIndex(this.prefixes, (e: string) => key.startsWith(e + '.'))
     if (index === -1) return undefined
     const prefix = this.prefixes[index]
     return prefix
@@ -53,9 +53,23 @@ export default class PrefixMap<T> {
   /**
    * Look up all keys that start with a certain prefix.
    */
-  getKeysStartingWith (prefix: string): string[] {
+  * getKeysStartingWith (prefix: string): IterableIterator<string> {
     // TODO: This could be done *much* more efficiently
-    return this.prefixes.filter(key => key.startsWith(prefix))
+    const predicate = (key: string) => key.startsWith(prefix)
+    let index = -1
+    // tslint:disable-next-line:no-conditional-assignment
+    while ((index = findIndex(this.prefixes, predicate, index + 1)) !== -1) {
+      yield this.prefixes[index]
+    }
+  }
+
+  * getKeysPrefixesOf (search: string): IterableIterator<string> {
+    const predicate = (key: string) => search.startsWith(key + '.')
+    let index = -1
+    // tslint:disable-next-line:no-conditional-assignment
+    while ((index = findIndex(this.prefixes, predicate, index + 1)) !== -1) {
+      yield this.prefixes[index]
+    }
   }
 
   /**

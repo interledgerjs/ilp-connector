@@ -37,32 +37,29 @@ export function canDragonFilter (
   route: Route
 ): boolean {
   // Find any less specific route
-  const parentPrefix = routingTable.resolvePrefix(prefix.slice(0, prefix.length - 1))
+  for (const parentPrefix of routingTable.getKeysPrefixesOf(prefix)) {
+    const parentRoute = routingTable.get(parentPrefix)
 
-  if (!parentPrefix) {
-    // No less specific route, cannot DRAGON filter
-    return false
+    if (!parentRoute) {
+      log.warn('found a parent prefix, but no parent route; this should never happen. prefix=%s parentPrefix=%s', prefix, parentPrefix)
+      continue
+    }
+
+    if (parentRoute.nextHop === '') {
+      // We are the origin of the parent route, cannot DRAGON filter
+      continue
+    }
+
+    const parentRelation = getRelation(parentRoute.nextHop)
+    const childRelation = getRelation(route.nextHop)
+    if (getRelationPriority(parentRelation) < getRelationPriority(childRelation)) {
+      // The more specific route is better for us, so we keep it
+      continue
+    }
+
+    log.debug('applied DRAGON route filter. prefix=%s parentPrefix=%s', prefix, parentPrefix)
+    return true
   }
 
-  const parentRoute = routingTable.get(parentPrefix)
-
-  if (!parentRoute) {
-    log.warn('found a parent prefix, but no parent route; this should never happen. prefix=%s parentPrefix=%s', prefix, parentPrefix)
-    return false
-  }
-
-  if (parentRoute.nextHop === '') {
-    // We are the origin of the parent route, cannot DRAGON filter
-    return false
-  }
-
-  const parentRelation = getRelation(parentRoute.nextHop)
-  const childRelation = getRelation(route.nextHop)
-  if (getRelationPriority(parentRelation) < getRelationPriority(childRelation)) {
-    // The more specific route is better for us, so we keep it
-    return false
-  }
-
-  log.debug('applied DRAGON route filter. prefix=%s parentPrefix=%s', prefix, parentPrefix)
-  return true
+  return false
 }
