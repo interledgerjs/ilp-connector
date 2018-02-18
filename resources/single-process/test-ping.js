@@ -36,8 +36,8 @@ const NODE_COUNT = 200
     })
 
     for (let j = i; j < NODE_COUNT; j++) {
-      const destination = `test.u${j}x`
-      console.log(`test.u${i}x => ${destination}`)
+      const destination = `test.u${j}`
+      console.log(`test.u${i} => ${destination}`)
 
       const fulfillment = randomBytes(32)
       const condition = createHash('sha256').update(fulfillment).digest()

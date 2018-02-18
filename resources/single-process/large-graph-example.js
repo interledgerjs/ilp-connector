@@ -24,7 +24,7 @@ graph.nodes.forEach(({ label }, i) => {
         }
       }
     },
-    ilpAddress: 'test.u' + i + 'x',
+    ilpAddress: 'test.u' + i,
     adminApi: true,
     adminApiPort: 7700 + i
   })
