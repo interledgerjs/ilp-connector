@@ -168,7 +168,7 @@
         "type": "object",
         "properties": {
           "targetPrefix": {
-            "description": "ILP address prefix that this route applies to. Configured routes take precedence over the same or shorter prefixes that are local or published by peers. More specific prefixes will still take precedence.",
+            "description": "ILP address prefix that this route applies to. Configured routes take precedence over the same or shorter prefixes that are local or published by peers. More specific prefixes will still take precedence. Prefixes should NOT include a trailing period.",
             "type": "string",
             "pattern": "^[a-zA-Z0-9._~-]+$"
           },

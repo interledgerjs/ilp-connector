@@ -378,9 +378,9 @@ export default class RouteBroadcaster {
   getGlobalPrefix () {
     switch (this.config.env) {
       case 'production':
-        return 'g.'
+        return 'g'
       case 'test':
-        return 'test.'
+        return 'test'
       default:
         throw new Error('invalid value for `env` config. env=' + this.config.env)
     }
