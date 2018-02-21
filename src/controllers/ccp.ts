@@ -4,13 +4,12 @@ import RouteBroadcaster from '../services/route-broadcaster'
 import reduct = require('reduct')
 import { IlpPrepare } from 'ilp-packet'
 import {
+  CCP_CONTROL_DESTINATION,
+  CCP_UPDATE_DESTINATION,
   deserializeCcpRouteUpdateRequest,
   deserializeCcpRouteControlRequest,
   serializeCcpResponse
 } from 'ilp-protocol-ccp'
-
-const CCP_CONTROL_DESTINATION = 'peer.route.control'
-const CCP_UPDATE_DESTINATION = 'peer.route.update'
 
 export default class CcpController {
   protected routeBroadcaster: RouteBroadcaster
