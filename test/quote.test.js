@@ -222,7 +222,7 @@ describe('Quotes', function () {
 
   it('should return liquidity curve quotes with the correct appliesToPrefix', async function () {
     const curve = new LiquidityCurve([ [1, 0], [1001, 1000] ])
-    for (let targetPrefix of ['', 'a', 'a.b']) {
+    for (let targetPrefix of ['test', 'test.a', 'test.a.b']) {
       this.routingTable.insert(targetPrefix, {
         nextHop: 'test.eur-ledger',
         path: []
@@ -235,17 +235,17 @@ describe('Quotes', function () {
       })
     }
     expect((await this.routeBuilder.quoteLiquidity('test.cad-ledger', {
-      destinationAccount: 'random-ledger.carl',
+      destinationAccount: 'test.random-ledger.carl',
       destinationHoldDuration: 5000
-    })).appliesToPrefix).to.equal('random-ledger') // Can't be "", since that would match "eur-ledger.".
+    })).appliesToPrefix).to.equal('test.random-ledger') // Can't be "", since that would match "eur-ledger.".
     expect((await this.routeBuilder.quoteLiquidity('test.cad-ledger', {
-      destinationAccount: 'a.b.carl',
+      destinationAccount: 'test.a.b.carl',
       destinationHoldDuration: 5000
-    })).appliesToPrefix).to.equal('a.b')
+    })).appliesToPrefix).to.equal('test.a.b')
     expect((await this.routeBuilder.quoteLiquidity('test.cad-ledger', {
-      destinationAccount: 'a.c.b.carl',
+      destinationAccount: 'test.a.c.b.carl',
       destinationHoldDuration: 5000
-    })).appliesToPrefix).to.equal('a.c')
+    })).appliesToPrefix).to.equal('test.a.c')
   })
 
   it('should apply the spread correctly for payments where the source asset is the counter currency in the fx rates', async function () {

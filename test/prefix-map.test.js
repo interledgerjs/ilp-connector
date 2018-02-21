@@ -36,35 +36,36 @@ describe('PrefixMap', function () {
 
     it('returns a prefix match', function () {
       this.map.insert('foo', {foo: 1})
-      assert.deepEqual(this.map.resolve('foo123'), {foo: 1})
-      assert.deepEqual(this.map.resolve('foo12'), {foo: 1})
-      assert.deepEqual(this.map.resolve('foo1'), {foo: 1})
+      assert.deepEqual(this.map.resolve('foo.123'), {foo: 1})
+      assert.deepEqual(this.map.resolve('foo.12'), {foo: 1})
+      assert.deepEqual(this.map.resolve('foo.1'), {foo: 1})
     })
 
     it('returns undefined for no match', function () {
       this.map.insert('foo', {foo: 1})
       assert.strictEqual(this.map.resolve('a'), undefined)
       assert.strictEqual(this.map.resolve('z'), undefined)
+      assert.strictEqual(this.map.resolve('foost'), undefined)
     })
 
     it('supports a catch-all key', function () {
-      this.map.insert('', {any: 1})
-      this.map.insert('foo', {foo: 1})
-      this.map.insert('bar', {bar: 1})
-      assert.deepEqual(this.map.resolve('foo'), {foo: 1})
-      assert.deepEqual(this.map.resolve('fo'), {any: 1})
-      assert.deepEqual(this.map.resolve('f'), {any: 1})
-      assert.deepEqual(this.map.resolve('bar'), {bar: 1})
-      assert.deepEqual(this.map.resolve('baz'), {any: 1})
-      assert.deepEqual(this.map.resolve(''), {any: 1})
+      this.map.insert('test', {any: 1})
+      this.map.insert('test.foo', {foo: 1})
+      this.map.insert('test.bar', {bar: 1})
+      assert.deepEqual(this.map.resolve('test.foo'), {foo: 1})
+      assert.deepEqual(this.map.resolve('test.fo'), {any: 1})
+      assert.deepEqual(this.map.resolve('test.f'), {any: 1})
+      assert.deepEqual(this.map.resolve('test.bar'), {bar: 1})
+      assert.deepEqual(this.map.resolve('test.baz'), {any: 1})
+      assert.deepEqual(this.map.resolve('test'), {any: 1})
     })
 
     it('returns the longest prefix that matches', function () {
-      this.map.insert('', {foo: 1})
-      this.map.insert('a.b.c', {foo: 2})
+      this.map.insert('test', {foo: 1})
+      this.map.insert('test.a.b.c', {foo: 2})
 
-      assert.deepEqual(this.map.resolve('a.b.c.d'), {foo: 2})
-      assert.deepEqual(this.map.resolve('a.'), {foo: 1})
+      assert.deepEqual(this.map.resolve('test.a.b.c.d'), {foo: 2})
+      assert.deepEqual(this.map.resolve('test.a'), {foo: 1})
     })
   })
 
