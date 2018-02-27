@@ -27,6 +27,7 @@
     "build": "npm run schema-to-tsd && npm run compile-ts",
     "schema-to-tsd": "node scripts/build_schema_types",
     "compile-ts": "tsc --project .",
+    "prepack": "npm run build",
     "prepare": "npm run build",
     "lint": "tslint --project .",
     "test": "nyc mocha",
