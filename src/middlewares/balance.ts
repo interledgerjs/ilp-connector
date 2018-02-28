@@ -4,6 +4,7 @@ import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '.
 import { AccountInfo } from '../types/accounts'
 import BigNumber from 'bignumber.js'
 import * as IlpPacket from 'ilp-packet'
+import InsufficientLiquidityError from '../errors/insufficient-liquidity-error'
 
 interface BalanceOpts {
   initialBalance?: BigNumber
@@ -31,7 +32,7 @@ class Balance {
 
     if (newBalance.gt(this.maximum)) {
       log.info('rejected balance update. oldBalance=%s newBalance=%s amount=%s', this.balance, newBalance, amount)
-      throw new Error('exceeded maximum balance.')
+      throw new InsufficientLiquidityError('exceeded maximum balance.')
     }
 
     this.balance = newBalance

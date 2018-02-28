@@ -8,7 +8,6 @@ export default class MaxPacketAmountExceededError extends BaseError {
   constructor (message: string) {
     super(message)
 
-    // TODO: We may want to create a more specific error code
-    this.ilpErrorCode = codes.F03_INVALID_AMOUNT
+    this.ilpErrorCode = codes.F08_MAXIMUM_PAYMENT_SIZE_EXCEEDED
   }
 }

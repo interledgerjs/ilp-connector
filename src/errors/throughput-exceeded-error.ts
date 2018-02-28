@@ -8,6 +8,6 @@ export default class ThroughputExceededError extends BaseError {
   constructor (message: string) {
     super(message)
 
-    this.ilpErrorCode = codes.F02_UNREACHABLE
+    this.ilpErrorCode = codes.T04_INSUFFICIENT_LIQUIDITY
   }
 }
