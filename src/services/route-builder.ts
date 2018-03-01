@@ -1,12 +1,4 @@
 import BigNumber from 'bignumber.js'
-import NoRouteFoundError from '../errors/no-route-found-error'
-import UnacceptableExpiryError from '../errors/unacceptable-expiry-error'
-import UnacceptableAmountError from '../errors/unacceptable-amount-error'
-import LedgerNotConnectedError from '../errors/ledger-not-connected-error'
-import InvalidAmountSpecifiedError from '../errors/invalid-amount-specified-error'
-import InvalidPacketError from '../errors/invalid-packet-error'
-import UnreachableError from '../errors/unreachable-error'
-import InsufficientTimeoutError from '../errors/insufficient-timeout-error'
 import Accounts from './accounts'
 import RoutingTable from './routing-table'
 import RateBackend from './rate-backend'
@@ -17,6 +9,14 @@ import reduct = require('reduct')
 import * as IlpPacket from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('route-builder')
+const {
+  BadRequestError,
+  InsufficientTimeoutError,
+  InvalidAmountError,
+  InvalidPacketError,
+  PeerUnreachableError,
+  UnreachableError
+} = IlpPacket.Errors
 
 const PROBE_AMOUNT = new BigNumber(10).pow(14).toNumber() // stays within 15 max digits for BigNumber from Number
 
@@ -67,12 +67,12 @@ export default class RouteBuilder {
 
     if (!route) {
       log.info('no route found for quote. destinationAccount=' + destinationAccount)
-      throw new NoRouteFoundError('no route found. to=' + destinationAccount)
+      throw new UnreachableError('no route found. to=' + destinationAccount)
     }
 
     if (!this.config.reflectPayments && sourceAccount === route.nextHop) {
       log.info('refusing to route payments back to sender. sourceAccount=%s destinationAccount=%s', sourceAccount, destinationAccount)
-      throw new NoRouteFoundError('refusing to route payments back to sender. sourceAccount=' + sourceAccount + ' destinationAccount=' + destinationAccount)
+      throw new UnreachableError('refusing to route payments back to sender. sourceAccount=' + sourceAccount + ' destinationAccount=' + destinationAccount)
     }
 
     return route.nextHop
@@ -81,14 +81,14 @@ export default class RouteBuilder {
   async quoteLocal (sourceAccount: string, destinationAccount: string) {
     if (!this.accounts.getAssetCode(sourceAccount)) {
       log.info('source account is unavailable. sourceAccount=' + sourceAccount)
-      throw new NoRouteFoundError('no route from source. sourceAccount=' + sourceAccount)
+      throw new UnreachableError('no route from source. sourceAccount=' + sourceAccount)
     }
 
     const nextHop = this.getNextHop(sourceAccount, destinationAccount)
 
     if (!this.accounts.getAssetCode(nextHop)) {
       log.info('next hop is unavailable. nextHop=' + nextHop)
-      throw new NoRouteFoundError('no route to next hop. nextHop=' + nextHop)
+      throw new UnreachableError('no route to next hop. nextHop=' + nextHop)
     }
 
     log.debug('determined next hop. nextHop=' + nextHop)
@@ -130,7 +130,7 @@ export default class RouteBuilder {
       const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
         log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
-        throw new NoRouteFoundError('no quote found. to=' + packet.destinationAccount)
+        throw new UnreachableError('no quote found. to=' + packet.destinationAccount)
       }
       log.debug('remote destination. quote=%j', quote)
 
@@ -179,7 +179,7 @@ export default class RouteBuilder {
       sourceAccount, packet.destinationAccount, packet.sourceAmount)
 
     if (packet.sourceAmount === '0') {
-      throw new InvalidAmountSpecifiedError('sourceAmount must be positive')
+      throw new InvalidAmountError('sourceAmount must be positive')
     }
 
     const { nextHop, rate } = await this.quoteLocal(sourceAccount, packet.destinationAccount)
@@ -195,7 +195,7 @@ export default class RouteBuilder {
       const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
         log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
-        throw new NoRouteFoundError('no quote found. to=' + packet.destinationAccount)
+        throw new UnreachableError('no quote found. to=' + packet.destinationAccount)
       }
       log.debug('remote destination. quote=%j', quote)
 
@@ -204,7 +204,7 @@ export default class RouteBuilder {
     }
 
     if (destinationAmount === '0') {
-      throw new UnacceptableAmountError('quoted destination is lower than minimum amount allowed.')
+      throw new InvalidAmountError('quoted destination is lower than minimum amount allowed.')
     }
 
     this._verifyPluginIsConnected(sourceAccount)
@@ -230,7 +230,7 @@ export default class RouteBuilder {
       sourceAccount, packet.destinationAccount, packet.destinationAmount)
 
     if (packet.destinationAmount === '0') {
-      throw new InvalidAmountSpecifiedError('destinationAmount must be positive')
+      throw new InvalidAmountError('destinationAmount must be positive')
     }
 
     const { nextHop, rate } = await this.quoteLocal(sourceAccount, packet.destinationAccount)
@@ -245,7 +245,7 @@ export default class RouteBuilder {
       const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
         log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
-        throw new NoRouteFoundError('no quote found. to=' + packet.destinationAccount)
+        throw new UnreachableError('no quote found. to=' + packet.destinationAccount)
       }
       log.debug('remote destination. quote=%j', quote)
 
@@ -256,7 +256,7 @@ export default class RouteBuilder {
     const sourceAmount = new BigNumber(nextHopAmount).div(rate).integerValue(BigNumber.ROUND_CEIL).toString()
     const sourceHoldDuration = nextHopHoldDuration + this.config.minMessageWindow
     if (sourceAmount === '0') {
-      throw new UnacceptableAmountError('Quoted source is lower than minimum amount allowed')
+      throw new InvalidAmountError('Quoted source is lower than minimum amount allowed')
     }
     this._verifyPluginIsConnected(sourceAccount)
     this._verifyPluginIsConnected(nextHop)
@@ -336,14 +336,14 @@ export default class RouteBuilder {
   _validateHoldDurations (sourceHoldDuration: number, destinationHoldDuration: number) {
     // Check destination_expiry_duration
     if (destinationHoldDuration > this.config.maxHoldTime) {
-      throw new UnacceptableExpiryError('destination expiry duration ' +
+      throw new BadRequestError('destination expiry duration ' +
         'is too long. destinationHoldDuration=' + destinationHoldDuration +
         ' maxHoldTime=' + this.config.maxHoldTime)
     }
 
     // Check difference between destination_expiry_duration and source_expiry_duration
     if (sourceHoldDuration - destinationHoldDuration < this.config.minMessageWindow) {
-      throw new UnacceptableExpiryError('the difference between the ' +
+      throw new BadRequestError('the difference between the ' +
         'destination expiry duration and the source expiry duration ' +
         'is insufficient to ensure that we can execute the ' +
         'source transfers.')
@@ -373,7 +373,7 @@ export default class RouteBuilder {
 
   _verifyPluginIsConnected (account: string) {
     if (!this.accounts.getPlugin(account).isConnected()) {
-      throw new LedgerNotConnectedError('no connection to account. account=' + account)
+      throw new PeerUnreachableError('no connection to account. account=' + account)
     }
   }
 }

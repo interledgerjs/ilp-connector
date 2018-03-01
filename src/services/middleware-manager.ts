@@ -7,7 +7,6 @@ const log = createLogger('middleware-manager')
 import Config from './config'
 import Accounts from './accounts'
 import Core from './core'
-import UnreachableError from '../errors/unreachable-error'
 import {
   Middleware,
   MiddlewareDefinition,
@@ -18,7 +17,8 @@ import {
 } from '../types/middleware'
 import { PluginInstance, DataHandler, MoneyHandler } from '../types/plugin'
 import MiddlewarePipeline from '../lib/middleware-pipeline'
-import { codes } from '../lib/ilp-errors'
+import { Errors } from 'ilp-packet'
+const { codes, UnreachableError } = Errors
 
 interface VoidHandler {
   (dummy: void): Promise<void>

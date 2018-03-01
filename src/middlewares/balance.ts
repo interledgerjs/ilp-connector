@@ -4,7 +4,7 @@ import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '.
 import { AccountInfo } from '../types/accounts'
 import BigNumber from 'bignumber.js'
 import * as IlpPacket from 'ilp-packet'
-import InsufficientLiquidityError from '../errors/insufficient-liquidity-error'
+const { InsufficientLiquidityError } = IlpPacket.Errors
 
 interface BalanceOpts {
   initialBalance?: BigNumber

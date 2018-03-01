@@ -16,14 +16,15 @@ const chai = require('chai')
 const assert = chai.assert
 const expect = chai.expect
 chai.use(require('chai-as-promised'))
-const RemoteQuoteError = require('../src/errors/remote-quote-error').default
-const InvalidAmountSpecifiedError = require('../src/errors/invalid-amount-specified-error').default
-const NoRouteFoundError = require('../src/errors/no-route-found-error').default
-const UnacceptableAmountError = require('../src/errors/unacceptable-amount-error').default
-const UnacceptableExpiryError = require('../src/errors/unacceptable-expiry-error').default
-const LedgerNotConnectedError = require('../src/errors/ledger-not-connected-error').default
 const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
+const {
+  BadRequestError,
+  InternalError,
+  InvalidAmountError,
+  PeerUnreachableError,
+  UnreachableError
+} = IlpPacket.Errors
 
 describe('Quotes', function () {
   logHelper(logger)
@@ -63,73 +64,73 @@ describe('Quotes', function () {
     nock.cleanAll()
   })
 
-  it('should return a InvalidAmountSpecifiedError if sourceAmount is zero', async function () {
+  it('should return a InvalidAmountError if sourceAmount is zero', async function () {
     const quotePromise = this.routeBuilder.quoteBySource('test.eur-ledger', {
       sourceAmount: '0',
       destinationAccount: 'usd-ledger.bob'
     })
 
-    await assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'sourceAmount must be positive')
+    await assert.isRejected(quotePromise, InvalidAmountError, 'sourceAmount must be positive')
   })
 
-  it('should return a InvalidAmountSpecifiedError if destinationAmount is zero', async function () {
+  it('should return a InvalidAmountError if destinationAmount is zero', async function () {
     const quotePromise = this.routeBuilder.quoteByDestination('test.eur-ledger', {
       destinationAmount: '0',
       destinationAccount: 'usd-ledger.bob'
     })
 
-    await assert.isRejected(quotePromise, InvalidAmountSpecifiedError, 'destinationAmount must be positive')
+    await assert.isRejected(quotePromise, InvalidAmountError, 'destinationAmount must be positive')
   })
 
-  it.skip('should return NoRouteFoundError when the destination amount is unachievable', async function () {
+  it.skip('should return UnreachableError when the destination amount is unachievable', async function () {
     const quotePromise = this.routeBuilder.quoteByDestination('test.eur-ledger', {
       destinationAmount: '100000000000000000000000000000',
       destinationAccount: 'usd-ledger.bob',
       destinationHoldDuration: 1.001
     })
 
-    await assert.isRejected(quotePromise, NoRouteFoundError, 'no route found. to=usd-ledger.bob')
+    await assert.isRejected(quotePromise, UnreachableError, 'no route found. to=usd-ledger.bob')
   })
 
-  it('should return NoRouteFoundError when the source ledger is not supported', async function () {
+  it('should return UnreachableError when the source ledger is not supported', async function () {
     const quotePromise = this.routeBuilder.quoteBySource('test.fake-ledger', {
       sourceAmount: '100',
       destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 1.001
     })
 
-    await assert.isRejected(quotePromise, NoRouteFoundError, 'no route from source. sourceAccount=test.fake-ledger')
+    await assert.isRejected(quotePromise, UnreachableError, 'no route from source. sourceAccount=test.fake-ledger')
   })
 
   // Skipping because it needs to use an alternate curve to get a 0.
-  it('should return a UnacceptableAmountError if the quoted destinationAmount is 0', async function () {
+  it('should return a InvalidAmountError if the quoted destinationAmount is 0', async function () {
     const quotePromise = this.routeBuilder.quoteBySource('test.usd-ledger', {
       sourceAmount: '1',
       destinationAccount: 'test.eur-ledger.bob',
       destinationHoldDuration: 1.001
     })
 
-    await assert.isRejected(quotePromise, UnacceptableAmountError, 'quoted destination is lower than minimum amount allowed.')
+    await assert.isRejected(quotePromise, InvalidAmountError, 'quoted destination is lower than minimum amount allowed.')
   })
 
-  it('should return NoRouteFoundError when the destination ledger is not supported', async function () {
+  it('should return UnreachableError when the destination ledger is not supported', async function () {
     const quotePromise = this.routeBuilder.quoteBySource('test.eur-ledger', {
       sourceAmount: '100',
       destinationAccount: 'test.fake.blah',
       destinationHoldDuration: 1.001
     })
 
-    await assert.isRejected(quotePromise, NoRouteFoundError, 'no route found. to=test.fake.blah')
+    await assert.isRejected(quotePromise, UnreachableError, 'no route found. to=test.fake.blah')
   })
 
-  it('should return a UnacceptableExpiryError if the destinationHoldDuration is too long', async function () {
+  it('should return a BadRequestError if the destinationHoldDuration is too long', async function () {
     const quotePromise = this.routeBuilder.quoteBySource('test.eur-ledger', {
       sourceAmount: '100',
       destinationAccount: 'test.usd-ledger.bob',
       destinationHoldDuration: 30001
     })
 
-    await assert.isRejected(quotePromise, UnacceptableExpiryError, /destination expiry duration is too long/)
+    await assert.isRejected(quotePromise, BadRequestError, /destination expiry duration is too long/)
   })
 
   it('should not return an Error for insufficient liquidity', async function () {
@@ -376,7 +377,7 @@ describe('Quotes', function () {
           destinationHoldDuration: 5000
         })
       } catch (err) {
-        expect(err).to.be.instanceof(RemoteQuoteError)
+        expect(err).to.be.instanceof(InternalError)
         expect(err.message).to.deep.equal('remote quote error.')
         return
       }
@@ -404,7 +405,7 @@ describe('Quotes', function () {
       destinationHoldDuration: 5
     })
 
-    await assert.isRejected(quotePromise, NoRouteFoundError, 'refusing to route payments back to sender. sourceAccount=test.usd-ledger destinationAccount=test.usd-ledger.bob')
+    await assert.isRejected(quotePromise, UnreachableError, 'refusing to route payments back to sender. sourceAccount=test.usd-ledger destinationAccount=test.usd-ledger.bob')
   })
 
   it('fails when the source ledger connection is closed', async function () {
@@ -415,7 +416,7 @@ describe('Quotes', function () {
       destinationHoldDuration: 5
     })
 
-    await assert.isRejected(quotePromise, LedgerNotConnectedError, 'no connection to account. account=test.eur-ledger')
+    await assert.isRejected(quotePromise, PeerUnreachableError, 'no connection to account. account=test.eur-ledger')
   })
 
   it('fails when the destination ledger connection is closed', async function () {
@@ -426,6 +427,6 @@ describe('Quotes', function () {
       destinationHoldDuration: 5
     })
 
-    await assert.isRejected(quotePromise, LedgerNotConnectedError, 'no connection to account. account=test.usd-ledger')
+    await assert.isRejected(quotePromise, PeerUnreachableError, 'no connection to account. account=test.usd-ledger')
   })
 })

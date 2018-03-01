@@ -1,9 +1,10 @@
+import * as IlpPacket from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('rate-limit-middleware')
-import RateLimitExceededError from '../errors/rate-limit-exceeded-error'
 import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
 import { AccountInfo } from '../types/accounts'
 import TokenBucket from '../lib/token-bucket'
+const { RateLimitedError } = IlpPacket.Errors
 
 const DEFAULT_REFILL_PERIOD = 60 * 1000 // 1 minute
 const DEFAULT_REFILL_COUNT = 10000
@@ -36,7 +37,7 @@ export default class RateLimitMiddleware implements Middleware {
       name: 'rateLimit',
       method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
         if (!bucket.take()) {
-          throw new RateLimitExceededError('too many requests, throttling.')
+          throw new RateLimitedError('too many requests, throttling.')
         }
 
         return next(data)
@@ -47,7 +48,7 @@ export default class RateLimitMiddleware implements Middleware {
       name: 'rateLimit',
       method: async (amount: string, next: MiddlewareCallback<string, void>) => {
         if (!bucket.take()) {
-          throw new RateLimitExceededError('too many requests, throttling.')
+          throw new RateLimitedError('too many requests, throttling.')
         }
 
         return next(amount)

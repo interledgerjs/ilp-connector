@@ -1,7 +1,6 @@
 import { create as createLogger } from '../common/log'
 import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
 import * as IlpPacket from 'ilp-packet'
-import { codes } from '../lib/ilp-errors'
 
 export default class ErrorHandlerMiddleware implements Middleware {
   private getOwnAddress: () => string
@@ -30,16 +29,9 @@ export default class ErrorHandlerMiddleware implements Middleware {
             err = new Error('Non-object thrown: ' + e)
           }
 
-          const code = err.ilpErrorCode || codes.F00_BAD_REQUEST
+          log.debug('error in data handler, creating rejection. ilpErrorCode=%s error=%s', err.ilpErrorCode, err.stack ? err.stack : err)
 
-          log.debug('error in data handler, creating rejection. ilpErrorCode=%s error=%s', code, err.stack ? err.stack : err)
-
-          return IlpPacket.serializeIlpReject({
-            code,
-            message: err.message ? err.message : String(err),
-            triggeredBy: this.getOwnAddress(),
-            data: Buffer.isBuffer(err.ilpErrorData) ? err.ilpErrorData : Buffer.alloc(0)
-          })
+          return IlpPacket.errorToReject(this.getOwnAddress(), err)
         }
       }
     })

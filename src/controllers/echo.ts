@@ -1,11 +1,11 @@
 import { create as createLogger } from '../common/log'
 const log = createLogger('echo')
 import reduct = require('reduct')
-import { serializeIlpPrepare, IlpPrepare } from 'ilp-packet'
+import { serializeIlpPrepare, IlpPrepare, Errors } from 'ilp-packet'
 import { Reader, Writer } from 'oer-utils'
 import Config from '../services/config'
 import RouteBuilder from '../services/route-builder'
-import InvalidPacketError from '../errors/invalid-packet-error'
+const { InvalidPacketError } = Errors
 
 const MINIMUM_ECHO_PACKET_DATA_LENGTH = 16 + 1
 const ECHO_DATA_PREFIX = Buffer.from('ECHOECHOECHOECHO', 'ascii')

@@ -1,8 +1,8 @@
 import * as IlpPacket from 'ilp-packet'
 import IldcpHostController from './ildcp-host'
 import CcpController from './ccp'
-import InvalidPacketError from '../errors/invalid-packet-error'
 import reduct = require('reduct')
+const { InvalidPacketError } = IlpPacket.Errors
 
 const PEER_PROTOCOL_CONDITION = Buffer.from('Zmh6rfhivXdsj8GLjp+OIAiXFIVu4jOzkCpZHQ1fKSU=', 'base64')
 

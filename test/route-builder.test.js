@@ -7,10 +7,10 @@ const { cloneDeep } = require('lodash')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
 const logger = require('../src/common/log')
-const InvalidPacketError = require('../src/errors/invalid-packet-error').default
 const LiquidityCurve = require('../src/routing/liquidity-curve').default
 chai.use(require('chai-as-promised'))
 const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
+const { InvalidPacketError } = require('ilp-packet').Errors
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
