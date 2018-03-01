@@ -674,7 +674,10 @@ describe('IlpPrepareController', function () {
         code: 'F08',
         message: 'packet size too large. maxAmount=100 actualAmount=101',
         triggeredBy: 'test.connie',
-        data: Buffer.alloc(0)
+        data: Buffer.from([
+          0, 0, 0, 0, 0, 0, 0, 101,
+          0, 0, 0, 0, 0, 0, 0, 100
+        ])
       })
     })
   })
