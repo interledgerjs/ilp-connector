@@ -34,6 +34,9 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   maxPacketAmount: {
     type: 'max-packet-amount'
   },
+  throughput: {
+    type: 'throughput'
+  },
   balance: {
     type: 'balance'
   },
