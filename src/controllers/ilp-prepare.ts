@@ -9,10 +9,6 @@ import RateBackend from '../services/rate-backend'
 import PeerProtocolController from '../controllers/peer-protocol'
 import EchoController from '../controllers/echo'
 
-import UnreachableError from '../errors/unreachable-error'
-
-const { sha256 } = require('../lib/utils')
-
 const PEER_PROTOCOL_PREFIX = 'peer.'
 
 export default class IlpPrepareController {
@@ -52,15 +48,6 @@ export default class IlpPrepareController {
     const result = await outbound(IlpPacket.serializeIlpPrepare(nextHopPacket), nextHop)
 
     if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
-      const { fulfillment } = IlpPacket.deserializeIlpFulfill(result)
-
-      if (!sha256(fulfillment).equals(executionCondition)) {
-        log.warn('got invalid fulfillment from peer, not paying. peerId=%s', nextHop)
-
-        // We think the fulfillment is invalid, so we'll return a rejection
-        throw new UnreachableError('received an invalid fulfillment.')
-      }
-
       log.debug('got fulfillment. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
 
       this.backend.submitPayment({
