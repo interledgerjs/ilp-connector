@@ -28,7 +28,10 @@ export default class RandomizerBackend implements BackendInstance {
     this.variation = opts.variation || 0.1
     this.getInfo = api.getInfo
 
-    log.warn('(!!!) using the randomizer backend')
+    // Variation should be in the range 0 to 1
+    this.variation = Math.min(Math.abs(this.variation), 1)
+
+    log.warn('(!!!) using the randomizer backend. variation=%s', this.variation)
   }
 
   /**
@@ -61,13 +64,20 @@ export default class RandomizerBackend implements BackendInstance {
     }
 
     const scaleDiff = destinationInfo.assetScale - sourceInfo.assetScale
+
+    // Math.random returns a number in the range [0, 1), so
+    // note that Math.random() - 0.5 is NOT the same as
+    // 0.5 - Math.random()
+    //
+    // By using
+    const randomness = Math.max((0.5 - Math.random()) * this.variation * 2, -1)
+
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
     // the (equivalent) SourceAmount -- regardless of which of the 2 is fixed:
     //
     //   SourceAmount * (1 + Random - Spread) = DestinationAmount
     //
-    const randomness = Math.max((Math.random() - 0.5) * this.variation * 2, 0)
     const rate = new BigNumber(1).plus(randomness).minus(this.spread).shiftedBy(scaleDiff).toPrecision(15)
 
     return Number(rate)
