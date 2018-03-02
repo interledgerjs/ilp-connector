@@ -3,7 +3,6 @@
 const _ = require('lodash')
 const nock = require('nock')
 nock.enableNetConnect(['localhost'])
-const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
@@ -11,6 +10,7 @@ const wsHelper = require('./helpers/ws')
 const sinon = require('sinon')
 const IlpPacket = require('ilp-packet')
 const { assert } = require('chai')
+const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 
 const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
@@ -25,26 +25,29 @@ describe('Subscriptions', function () {
 
   beforeEach(async function () {
     appHelper.create(this)
-    await this.backend.connect(ratesResponse)
+    await this.backend.connect()
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
     await this.middlewareManager.setup()
 
-    const testAccounts = ['cad-ledger', 'usd-ledger', 'eur-ledger', 'cny-ledger']
+    const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
-      await this.accounts.getPlugin(accountId)._dataHandler(Buffer.from(JSON.stringify({
-        method: 'broadcast_routes',
-        data: {
-          hold_down_time: 45000,
-          unreachable_through_me: [],
-          request_full_table: false,
-          new_routes: [{
-            prefix: accountId,
-            min_message_window: 1,
-            path: []
-          }]
-        }
-      })))
+      this.routeBroadcaster.add(accountId)
+      await this.accounts.getPlugin(accountId)._dataHandler(serializeCcpRouteUpdateRequest({
+        speaker: accountId,
+        routingTableId: 'c951b674-c6f5-42ca-83a3-39a8d4e293b3',
+        currentEpochIndex: 1,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
+          prefix: accountId,
+          path: [accountId],
+          auth: Buffer.from('dvlOlr8MjK5denVE+B47Mb6ecvJTwGNaC/lPsEwYlP8=', 'base64'),
+          props: []
+        }]
+      }))
     }
 
     nock('http://usd-ledger.example').get('/')
@@ -111,9 +114,9 @@ describe('Subscriptions', function () {
   })
 
   it('should initiate and complete a universal mode payment', async function () {
-    const sourceAccount = 'usd-ledger'
-    const destinationAccount = 'eur-ledger'
-    const destination = 'eur-ledger.bob'
+    const sourceAccount = 'test.usd-ledger'
+    const destinationAccount = 'test.eur-ledger'
+    const destination = 'test.eur-ledger.bob'
     const executionCondition = Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64')
     const expiresAt = new Date('2015-06-16T00:00:11.000Z')
     const data = Buffer.from('BABA', 'base64')
@@ -147,9 +150,9 @@ describe('Subscriptions', function () {
   })
 
   it('should notify the backend of a successful payment', async function () {
-    const sourceAccount = 'usd-ledger'
-    const destinationAccount = 'eur-ledger'
-    const destination = 'eur-ledger.bob'
+    const sourceAccount = 'test.usd-ledger'
+    const destinationAccount = 'test.eur-ledger'
+    const destination = 'test.eur-ledger.bob'
     const executionCondition = Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64')
     const expiresAt = new Date('2015-06-16T00:00:11.000Z')
     const data = Buffer.from('BABA', 'base64')

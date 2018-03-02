@@ -2,12 +2,12 @@ import BaseError = require('extensible-error')
 
 const { codes } = require('../lib/ilp-errors')
 
-export default class LedgerNotConnectedError extends BaseError {
+export default class InsufficientLiquidityError extends BaseError {
   public ilpErrorCode: string
 
   constructor (message: string) {
     super(message)
 
-    this.ilpErrorCode = codes.T01_PEER_UNREACHABLE
+    this.ilpErrorCode = codes.T04_INSUFFICIENT_LIQUIDITY
   }
 }

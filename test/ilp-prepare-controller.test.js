@@ -2,7 +2,6 @@
 
 const assert = require('assert')
 const _ = require('lodash')
-const ratesResponse = require('./data/fxRates.json')
 const appHelper = require('./helpers/app')
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
@@ -61,7 +60,7 @@ describe('IlpPrepareController', function () {
     }])
 
     appHelper.create(this)
-    await this.backend.connect(ratesResponse)
+    await this.backend.connect()
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
 
@@ -563,7 +562,7 @@ describe('IlpPrepareController', function () {
 
       assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
       assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
-        code: 'F00',
+        code: 'T04',
         message: 'exceeded maximum balance.',
         triggeredBy: 'test.connie',
         data: Buffer.alloc(0)
@@ -672,10 +671,13 @@ describe('IlpPrepareController', function () {
 
       assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
       assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
-        code: 'F03',
+        code: 'F08',
         message: 'packet size too large. maxAmount=100 actualAmount=101',
         triggeredBy: 'test.connie',
-        data: Buffer.alloc(0)
+        data: Buffer.from([
+          0, 0, 0, 0, 0, 0, 0, 101,
+          0, 0, 0, 0, 0, 0, 0, 100
+        ])
       })
     })
   })
@@ -720,7 +722,7 @@ describe('IlpPrepareController', function () {
 
       assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
       assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
-        code: 'F02',
+        code: 'T05',
         message: 'too many requests, throttling.',
         triggeredBy: 'test.connie',
         data: Buffer.alloc(0)

@@ -1,5 +1,3 @@
-'use strict'
-
 import * as IlpPacket from 'ilp-packet'
 import RemoteQuoteError from '../errors/remote-quote-error'
 import Accounts from './accounts'

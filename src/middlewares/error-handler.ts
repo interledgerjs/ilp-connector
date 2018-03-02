@@ -1,5 +1,4 @@
 import { create as createLogger } from '../common/log'
-const log = createLogger('error-handler-middleware')
 import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
 import * as IlpPacket from 'ilp-packet'
 import { codes } from '../lib/ilp-errors'
@@ -12,6 +11,8 @@ export default class ErrorHandlerMiddleware implements Middleware {
   }
 
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
+    const log = createLogger(`error-handler-middleware[${accountId}]`)
+
     pipelines.incomingData.insertLast({
       name: 'errorHandler',
       method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {

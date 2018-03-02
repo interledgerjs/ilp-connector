@@ -1,7 +1,4 @@
-'use strict'
-
-import riverpig = require('riverpig')
-import { Logger } from 'riverpig'
+import * as riverpig from 'riverpig'
 
 import through2 = require('through2')
 const logStream = through2()
@@ -9,7 +6,7 @@ logStream.pipe(process.stdout)
 
 // TODO: Not clear why I needed this, but got a
 //   TypeScript error without it.
-export interface ConnectorLogger extends Logger { }
+export interface ConnectorLogger extends riverpig.Logger { }
 
 export const createRaw = (namespace: string): ConnectorLogger => {
   return riverpig(namespace, {

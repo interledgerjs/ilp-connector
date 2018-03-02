@@ -2,7 +2,7 @@ import * as IlpPacket from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('max-packet-amount-middleware')
 import BigNumber from 'bignumber.js'
-import MaxPacketAmountExceededError from '../errors/max-packet-amount-exceeded-error'
+const { AmountTooLargeError } = IlpPacket.Errors
 import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
 import { AccountInfo } from '../types/accounts'
 
@@ -31,7 +31,10 @@ export default class MaxPacketAmountMiddleware implements Middleware {
             const amount = new BigNumber(parsedPacket.amount)
             if (amount.gt(maxPacketAmount)) {
               log.info('rejecting packet for exceeding max amount. accountId=%s maxAmount=%s actualAmount=%s', accountId, maxPacketAmount, parsedPacket.amount)
-              throw new MaxPacketAmountExceededError(`packet size too large. maxAmount=${maxPacketAmount} actualAmount=${parsedPacket.amount}`)
+              throw new AmountTooLargeError(`packet size too large. maxAmount=${maxPacketAmount} actualAmount=${parsedPacket.amount}`, {
+                receivedAmount: parsedPacket.amount,
+                maximumAmount: maxPacketAmount
+              })
             }
           }
 

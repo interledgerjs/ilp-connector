@@ -1,5 +1,3 @@
-'use strict'
-
 import { findIndex } from 'lodash'
 
 /**
@@ -28,17 +26,51 @@ export default class PrefixMap<T> {
 
   size () { return this.prefixes.length }
 
+  /**
+   * Find the value of the longest matching prefix key.
+   */
   resolve (key: string) {
-    // Exact match
-    if (this.items[key]) return this.items[key] // redundant; optimization?
-    // prefix match (the list is in descending length order, and secondarily, reverse-alphabetically)
-    const index = findIndex(this.prefixes, (e: string) => key.startsWith(e))
-    if (index === -1) return null
-    const prefix = this.prefixes[index]
-    return this.items[prefix]
+    const prefix = this.resolvePrefix(key)
+
+    return typeof prefix !== 'undefined' ? this.items[prefix] : undefined
   }
 
-  get (prefix: string) { return this.items[prefix] || null }
+  /**
+   * Find the longest matching prefix key.
+   */
+  resolvePrefix (key: string) {
+    // Exact match
+    if (this.items[key]) return key // redundant; optimization?
+    // prefix match (the list is in descending length order, and secondarily, reverse-alphabetically)
+    const index = findIndex(this.prefixes, (e: string) => key.startsWith(e + '.'))
+    if (index === -1) return undefined
+    const prefix = this.prefixes[index]
+    return prefix
+  }
+
+  get (prefix: string): T | undefined { return this.items[prefix] }
+
+  /**
+   * Look up all keys that start with a certain prefix.
+   */
+  * getKeysStartingWith (prefix: string): IterableIterator<string> {
+    // TODO: This could be done *much* more efficiently
+    const predicate = (key: string) => key.startsWith(prefix)
+    let index = -1
+    // tslint:disable-next-line:no-conditional-assignment
+    while ((index = findIndex(this.prefixes, predicate, index + 1)) !== -1) {
+      yield this.prefixes[index]
+    }
+  }
+
+  * getKeysPrefixesOf (search: string): IterableIterator<string> {
+    const predicate = (key: string) => search.startsWith(key + '.')
+    let index = -1
+    // tslint:disable-next-line:no-conditional-assignment
+    while ((index = findIndex(this.prefixes, predicate, index + 1)) !== -1) {
+      yield this.prefixes[index]
+    }
+  }
 
   /**
    * @param {function(item, key)} fn

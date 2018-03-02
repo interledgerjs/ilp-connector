@@ -10,6 +10,7 @@ import Accounts from './services/accounts'
 import RateBackend from './services/rate-backend'
 import Store from './services/store'
 import MiddlewareManager from './services/middleware-manager'
+import AdminApi from './services/admin-api'
 
 import { PluginInstance } from './types/plugin'
 
@@ -20,7 +21,8 @@ function listen (
   store: Store,
   routeBuilder: RouteBuilder,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager
+  middlewareManager: MiddlewareManager,
+  adminApi: AdminApi
 ) {
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
@@ -35,18 +37,10 @@ function listen (
     await middlewareManager.setup()
 
     // If we have no configured ILP address, try to get one via ILDCP
-    if (config.ilpAddress === 'unknown') {
-      if (!accounts.getParentId()) {
-        log.error('no ilp address configured and no parent account found, cannot determine ilp address.')
-        throw new Error('no ilp address configured.')
-      }
+    await accounts.loadIlpAddress()
 
-      await accounts.connectToParent()
-
-      if (accounts.getOwnAddress() === 'unknown') {
-        log.error('could not get ilp address from parent.')
-        throw new Error('no ilp address configured.')
-      }
+    if (config.routeBroadcastEnabled) {
+      routeBroadcaster.start()
     }
 
     // Connect other plugins, give up after initialConnectTimeout
@@ -64,9 +58,7 @@ function listen (
 
     await middlewareManager.startup()
 
-    if (config.routeBroadcastEnabled) {
-      await routeBroadcaster.start()
-    }
+    adminApi.listen()
 
     log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
   })().catch((err) => log.error(err))
@@ -84,11 +76,10 @@ async function addPlugin (
 ) {
   accounts.add(id, options)
   const plugin = accounts.getPlugin(id)
-  routeBroadcaster.add(id)
   await middlewareManager.addPlugin(id, plugin)
 
   await plugin.connect({ timeout: Infinity })
-  routeBroadcaster.reloadLocalRoutes()
+  routeBroadcaster.track(id)
 }
 
 async function removePlugin (
@@ -103,9 +94,8 @@ async function removePlugin (
   const plugin = accounts.getPlugin(id)
   middlewareManager.removePlugin(id, plugin)
   await plugin.disconnect()
+  routeBroadcaster.untrack(id)
   accounts.remove(id)
-  routeBroadcaster.remove(id)
-  routeBroadcaster.reloadLocalRoutes()
 }
 
 function getPlugin (
@@ -152,19 +142,17 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   const backend = deps(RateBackend)
   const store = deps(Store)
   const middlewareManager = deps(MiddlewareManager)
+  const adminApi = deps(AdminApi)
 
   const credentials = config.accounts
   // We have two separate for loops to make the logs look nicer :)
   for (let id of Object.keys(credentials)) {
     accounts.add(id, credentials[id])
   }
-  for (let id of Object.keys(credentials)) {
-    routeBroadcaster.add(id)
-  }
 
   return {
     config,
-    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager),
+    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager, adminApi),
     addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
     removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
     getPlugin: partial(getPlugin, accounts),

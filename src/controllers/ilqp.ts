@@ -1,5 +1,3 @@
-'use strict'
-
 import * as IlpPacket from 'ilp-packet'
 import RouteBuilder from '../services/route-builder'
 import { create as createLogger } from '../common/log'

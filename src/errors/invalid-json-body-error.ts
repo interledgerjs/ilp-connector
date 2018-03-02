@@ -24,6 +24,8 @@ export default class InvalidJsonBodyError extends BaseError {
       return
     }
 
-    log('-- ' + validationError.dataPath + ': ' + validationError.message)
+    const additionalInfo = Object.keys(validationError.params).map(key => `${key}=${validationError.params[key]}`).join(' ')
+
+    log(`-- ${validationError.dataPath}: ${validationError.message}. ${additionalInfo}`)
   }
 }

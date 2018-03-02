@@ -26,8 +26,8 @@ export default class RateBackend implements BackendInstance {
     })
   }
 
-  connect (...args: any[]) {
-    return this.backend.connect(...args)
+  connect () {
+    return this.backend.connect()
   }
 
   getRate (sourceAccount: string, destinationAccount: string) {

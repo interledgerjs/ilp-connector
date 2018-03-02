@@ -4,6 +4,7 @@ import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '.
 import { AccountInfo } from '../types/accounts'
 import BigNumber from 'bignumber.js'
 import * as IlpPacket from 'ilp-packet'
+import InsufficientLiquidityError from '../errors/insufficient-liquidity-error'
 
 interface BalanceOpts {
   initialBalance?: BigNumber
@@ -27,18 +28,18 @@ class Balance {
   }
 
   add (amount: BigNumber | string | number) {
-    const newBalance = this.balance.add(amount)
+    const newBalance = this.balance.plus(amount)
 
     if (newBalance.gt(this.maximum)) {
       log.info('rejected balance update. oldBalance=%s newBalance=%s amount=%s', this.balance, newBalance, amount)
-      throw new Error('exceeded maximum balance.')
+      throw new InsufficientLiquidityError('exceeded maximum balance.')
     }
 
     this.balance = newBalance
   }
 
   subtract (amount: BigNumber | string | number) {
-    const newBalance = this.balance.sub(amount)
+    const newBalance = this.balance.minus(amount)
 
     if (newBalance.lt(this.minimum)) {
       log.info('rejected balance update. oldBalance=%s newBalance=%s amount=%s', this.balance, newBalance, amount)
@@ -92,7 +93,7 @@ export default class BalanceMiddleware implements Middleware {
           threshold.gt(balance.getValue())
 
         if (settle) {
-          const settleAmount = settleTo.sub(balance.getValue())
+          const settleAmount = settleTo.minus(balance.getValue())
 
           log.debug('settlement triggered. accountId=%s balance=%s settleAmount=%s', accountId, balance.getValue(), settleAmount)
 

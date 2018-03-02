@@ -1,35 +1,29 @@
-'use strict'
-
 import * as IlpPacket from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('ilp-prepare')
 import reduct = require('reduct')
 
-import Config from '../services/config'
 import Accounts from '../services/accounts'
 import RouteBuilder from '../services/route-builder'
 import RateBackend from '../services/rate-backend'
 import PeerProtocolController from '../controllers/peer-protocol'
-
-import UnreachableError from '../errors/unreachable-error'
-
-const { fulfillmentToCondition } = require('../lib/utils')
+import EchoController from '../controllers/echo'
 
 const PEER_PROTOCOL_PREFIX = 'peer.'
 
 export default class IlpPrepareController {
-  protected config: Config
-  protected accounts: Accounts
-  protected routeBuilder: RouteBuilder
-  protected backend: RateBackend
-  protected peerProtocolController: PeerProtocolController
+  private accounts: Accounts
+  private routeBuilder: RouteBuilder
+  private backend: RateBackend
+  private peerProtocolController: PeerProtocolController
+  private echoController: EchoController
 
   constructor (deps: reduct.Injector) {
-    this.config = deps(Config)
     this.accounts = deps(Accounts)
     this.routeBuilder = deps(RouteBuilder)
     this.backend = deps(RateBackend)
     this.peerProtocolController = deps(PeerProtocolController)
+    this.echoController = deps(EchoController)
   }
 
   async sendData (
@@ -44,6 +38,8 @@ export default class IlpPrepareController {
 
     if (destination.startsWith(PEER_PROTOCOL_PREFIX)) {
       return this.peerProtocolController.handle(packet, sourceAccount, { parsedPacket })
+    } else if (destination === this.accounts.getOwnAddress()) {
+      return this.echoController.handle(packet, sourceAccount, { parsedPacket, outbound })
     }
 
     const { nextHop, nextHopPacket } = await this.routeBuilder.getNextHopPacket(sourceAccount, parsedPacket)
@@ -52,15 +48,6 @@ export default class IlpPrepareController {
     const result = await outbound(IlpPacket.serializeIlpPrepare(nextHopPacket), nextHop)
 
     if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
-      const { fulfillment } = IlpPacket.deserializeIlpFulfill(result)
-
-      if (!fulfillmentToCondition(fulfillment).equals(executionCondition)) {
-        log.warn('got invalid fulfillment from peer, not paying. peerId=%s', nextHop)
-
-        // We think the fulfillment is invalid, so we'll return a rejection
-        throw new UnreachableError('received an invalid fulfillment.')
-      }
-
       log.debug('got fulfillment. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
 
       this.backend.submitPayment({
