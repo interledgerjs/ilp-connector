@@ -545,7 +545,7 @@ npm install
 #### Step 3: Run it!
 
 ```sh
-npm start
+CONNECTOR_STORE_PATH=~/.connector-data CONNECTOR_ACCOUNTS='{}' CONNECTOR_ILP_ADDRESS=test.quickstart npm start
 ```
 
 #### Step 4: Read the contributor guidelines
