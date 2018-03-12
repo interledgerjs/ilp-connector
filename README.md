@@ -179,6 +179,14 @@ Breaking down that command:
 
 <!-- WARNING: This section is auto-generated. Please do not edit in README.md -->
 
+#### `env`
+
+* Environment: `CONNECTOR_ENV`
+* Type: `string`
+* Default: `"test"`
+
+Determines what type of network the connector is a part of. Can be: 'production', 'test'. Default: 'test'
+
 #### `ilpAddress`
 
 * Environment: `CONNECTOR_ILP_ADDRESS`
@@ -186,6 +194,14 @@ Breaking down that command:
 * Default: `"unknown"`
 
 ILP address of the connector. This property can be omitted if an account with `relation=parent` is configured under `accounts`.
+
+#### `ilpAddressInheritFrom`
+
+* Environment: `CONNECTOR_ILP_ADDRESS_INHERIT_FROM`
+* Type: `string`
+* Default: `""`
+
+If there are multiple parents, and `ilpAddress` is not set explicit, specify the account ID of the parent that we should load our address from. Defaults to the first parent in the `accounts` map.
 
 #### `accounts`
 
@@ -212,12 +228,20 @@ ILP address of the connector. This property can be omitted if an account with `r
 | `*.rateLimit.capacity`        | integer | _Optional_ Maximum number of tokens in the bucket.                                                                                                                                                                                                                                                                                                                                      |
 | `*.rateLimit.refillCount`     | integer | _Optional_ How many tokens are refilled per period. The default refill period is one second, so this would be the average number of requests per second.                                                                                                                                                                                                                                |
 | `*.rateLimit.refillPeriod`    | integer | _Optional_ Length of time (in milliseconds) during which the token balance increases by `refillCount` tokens. Defaults to one second.                                                                                                                                                                                                                                                   |
-| `*.receiveRoutes`             | boolean | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `true` for `relation=peer` and `false` otherwise.                                                                                                                                                                                                                                         |
-| `*.sendRoutes`                | boolean | _Optional_ Whether we should broadcast routes to this peer. Defaults to `true` for `relation=peer` and `false` otherwise.                                                                                                                                                                                                                                                               |
+| `*.receiveRoutes`             | boolean | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                        |
+| `*.sendRoutes`                | boolean | _Optional_ Whether we should broadcast routes to this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                                              |
 | `*.throughput`                | object  | _Optional_ Configuration to limit the total amount sent via Interledger per unit of time. This setting is enforced by the built-in `throughput` middleware.                                                                                                                                                                                                                             |
 | `*.throughput.incomingAmount` | string  | _Optional_ Maximum incoming throughput amount (in atomic units; per second) for incoming packets. If this setting is not set, the incoming throughput limit is disabled.                                                                                                                                                                                                                |
 | `*.throughput.outgoingAmount` | string  | _Optional_ Maximum throughput amount (in atomic units; per second) for outgoing packets. If this setting is not set, the outgoing throughput limit is disabled.                                                                                                                                                                                                                         |
 | `*.throughput.refillPeriod`   | integer | _Optional_ Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.                                                                                                                                                                                                                               |
+
+#### `defaultRoute`
+
+* Environment: `CONNECTOR_DEFAULT_ROUTE`
+* Type: `string`
+* Default: `"auto"`
+
+Which account should be used as the default route for all other traffic. Can be set to empty string to disable the default route or 'auto' to automatically use the first parent in the `accounts` map. Default: 'auto'
 
 #### `routes`
 
@@ -225,11 +249,11 @@ ILP address of the connector. This property can be omitted if an account with `r
 * Type: `array`
 * Default: `[]`
 
-| Name              | Type   | Description                                                                                                                                                                                                 |
-| ----------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[]`              | object | Description of a route entry.                                                                                                                                                                               |
-| `[].targetPrefix` | string | ILP address prefix that this route applies to. Configured routes take precedence over the same or shorter prefixes that are local or published by peers. More specific prefixes will still take precedence. |
-| `[].peerId`       | string | ID of the account that destinations matching `targetPrefix` should be forwarded to. Must be one of the accounts in `accounts`.                                                                              |
+| Name              | Type   | Description                                                                                                                                                                                                                                                |
+| ----------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[]`              | object | Description of a route entry.                                                                                                                                                                                                                              |
+| `[].targetPrefix` | string | ILP address prefix that this route applies to. Configured routes take precedence over the same or shorter prefixes that are local or published by peers. More specific prefixes will still take precedence. Prefixes should NOT include a trailing period. |
+| `[].peerId`       | string | ID of the account that destinations matching `targetPrefix` should be forwarded to. Must be one of the accounts in `accounts`.                                                                                                                             |
 
 #### `spread`
 
@@ -251,7 +275,7 @@ Minimum time the connector wants to budget for getting a message to the accounts
 
 * Environment: `CONNECTOR_MAX_HOLD_TIME`
 * Type: `integer`
-* Default: `10000`
+* Default: `30000`
 
 Maximum duration (in milliseconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.
 
@@ -295,6 +319,14 @@ The maximum age of a route provided by this connector. (in milliseconds)
 
 The maximum age of a quote provided by this connector. (in milliseconds)
 
+#### `routingSecret`
+
+* Environment: `CONNECTOR_ROUTING_SECRET`
+* Type: `string`
+* Default: `""`
+
+Seed used for generating routing table auth values.
+
 #### `backend`
 
 * Environment: `CONNECTOR_BACKEND`
@@ -317,7 +349,7 @@ Additional configuration for the backend.
 * Type: `string`
 * Default: `"leveldown"`
 
-Name of the store (can be built-in or a require-able module name). Built-in modules are: leveldown
+Name of the store (can be built-in or a require-able module name). Built-in modules are: leveldown, memdown
 
 #### `storePath`
 
@@ -338,14 +370,14 @@ Additional options to be passed to the `store`'s constructor.
 #### `middlewares`
 
 * Environment: `CONNECTOR_MIDDLEWARES`
-* Type: `array`
-* Default: `[]`
+* Type: `object`
+* Default: `{}`
 
-| Name           | Type   | Description                                                              |
-| -------------- | ------ | ------------------------------------------------------------------------ |
-| `[]`           | object | Object describing middleware instance.                                   |
-| `[].type`      | string | NPM module that should be `require`d to load the middleware constructor. |
-| `[].options.*` | object | _Optional_                                                               |
+| Name          | Type   | Description                                                              |
+| ------------- | ------ | ------------------------------------------------------------------------ |
+| `*`           | object | Object describing middleware instance.                                   |
+| `*.type`      | string | NPM module that should be `require`d to load the middleware constructor. |
+| `*.options.*` | object | _Optional_                                                               |
 
 #### `disableMiddleware`
 
@@ -380,6 +412,30 @@ Whether to allow routing payments back to the account that sent them.
 * Default: `10000`
 
 How long the connector should wait for account plugins to connect before launching other subsystems. (in milliseconds)
+
+#### `adminApi`
+
+* Environment: `CONNECTOR_ADMIN_API`
+* Type: `boolean`
+* Default: `false`
+
+Whether the admin API is enabled or not. Default: false (disabled)
+
+#### `adminApiPort`
+
+* Environment: `CONNECTOR_ADMIN_API_PORT`
+* Type: `integer`
+* Default: `7780`
+
+Which port the admin API should listen on. Default: 7780
+
+#### `adminApiHost`
+
+* Environment: `CONNECTOR_ADMIN_API_HOST`
+* Type: `string`
+* Default: `"127.0.0.1"`
+
+Host to bind to. Warning: The admin API interface should never be made public! Default: '127.0.0.1'
 
 ### API Reference
 
