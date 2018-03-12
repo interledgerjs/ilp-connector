@@ -70,7 +70,7 @@ export default class RandomizerBackend implements BackendInstance {
     // 0.5 - Math.random()
     //
     // By using
-    const randomness = Math.max((0.5 - Math.random()) * this.variation * 2, -1)
+    const randomness = Math.max((0.5 - Math.random()) * this.variation * 2, -1).toFixed(5)
 
     // The spread is subtracted from the rate when going in either direction,
     // so that the DestinationAmount always ends up being slightly less than
