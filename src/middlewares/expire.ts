@@ -2,7 +2,7 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('expire-middleware')
 import * as IlpPacket from 'ilp-packet'
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-import PacketExpiredError from '../errors/packet-expired-error'
+const { InternalError } = IlpPacket.Errors
 
 export default class ExpireMiddleware implements Middleware {
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
@@ -20,7 +20,7 @@ export default class ExpireMiddleware implements Middleware {
           const timeoutPromise: Promise<Buffer> = new Promise((resolve, reject) => {
             timeout = setTimeout(() => {
               log.debug('packet expired. cond=%s expiresAt=%s', executionCondition.slice(0, 6).toString('base64'), expiresAt.toISOString())
-              reject(new PacketExpiredError('packet expired.'))
+              reject(new InternalError('packet expired.'))
             }, duration)
           })
 

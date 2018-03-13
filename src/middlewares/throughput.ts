@@ -1,10 +1,10 @@
 import { create as createLogger } from '../common/log'
 const log = createLogger('throughput-middleware')
-import ThroughputExceededError from '../errors/throughput-exceeded-error'
 import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
 import { AccountInfo } from '../types/accounts'
 import TokenBucket from '../lib/token-bucket'
 import * as IlpPacket from 'ilp-packet'
+const { InsufficientLiquidityError } = IlpPacket.Errors
 
 const DEFAULT_REFILL_PERIOD = 1000 // 1 second
 
@@ -42,7 +42,7 @@ export default class ThroughputMiddleware implements Middleware {
 
               // TODO: Do we need a BigNumber-based token bucket?
               if (!incomingBucket.take(Number(parsedPacket.amount))) {
-                throw new ThroughputExceededError('exceeded money bandwidth, throttling.')
+                throw new InsufficientLiquidityError('exceeded money bandwidth, throttling.')
               }
 
               return next(data)
@@ -67,7 +67,7 @@ export default class ThroughputMiddleware implements Middleware {
 
               // TODO: Do we need a BigNumber-based token bucket?
               if (!incomingBucket.take(Number(parsedPacket.amount))) {
-                throw new ThroughputExceededError('exceeded money bandwidth, throttling.')
+                throw new InsufficientLiquidityError('exceeded money bandwidth, throttling.')
               }
 
               return next(data)

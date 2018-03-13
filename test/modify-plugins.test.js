@@ -10,9 +10,9 @@ const nock = require('nock')
 nock.enableNetConnect(['localhost'])
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
-const NoRouteFoundError = require('../src/errors/no-route-found-error')
 const Peer = require('../src/routing/peer').default
 const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
+const { UnreachableError } = require('ilp-packet').Errors
 
 const PluginMock = require('./mocks/mockPlugin')
 mockRequire('ilp-plugin-mock', PluginMock)
@@ -49,7 +49,7 @@ describe('Modify Plugins', function () {
         destinationHoldDuration: 5000
       })
 
-      await assert.isRejected(quotePromise, NoRouteFoundError, /no route found. to=test.jpy.ledger\.bob/)
+      await assert.isRejected(quotePromise, UnreachableError, /no route found. to=test.jpy.ledger\.bob/)
 
       await this.app.addPlugin('test.jpy-ledger', {
         relation: 'peer',
@@ -154,7 +154,7 @@ describe('Modify Plugins', function () {
       }).then((quote) => {
         throw new Error()
       }).catch((err) => {
-        expect(err.name).to.equal('NoRouteFoundError')
+        expect(err.name).to.equal('UnreachableError')
         expect(err.message).to.match(/no route found. to=test.jpy-ledger.bob/)
       })
     })

@@ -1,5 +1,4 @@
 import * as IlpPacket from 'ilp-packet'
-import InvalidPacketError from '../errors/invalid-packet-error'
 import Config from '../services/config'
 import Accounts from '../services/accounts'
 import RouteBroadcaster from '../services/route-broadcaster'
@@ -9,6 +8,7 @@ import IlqpController from '../controllers/ilqp'
 import { create as createLogger } from '../common/log'
 const log = createLogger('core-middleware')
 import reduct = require('reduct')
+const { InvalidPacketError } = IlpPacket.Errors
 
 export default class Core {
   protected config: Config

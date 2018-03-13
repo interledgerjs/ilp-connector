@@ -1,5 +1,4 @@
 import * as IlpPacket from 'ilp-packet'
-import RemoteQuoteError from '../errors/remote-quote-error'
 import Accounts from './accounts'
 import Config from './config'
 import LiquidityCurve from '../routing/liquidity-curve'
@@ -7,6 +6,7 @@ import PrefixMap from '../routing/prefix-map'
 import { create as createLogger } from '../common/log'
 const log = createLogger('quoter')
 import reduct = require('reduct')
+const { InternalError } = IlpPacket.Errors
 
 const DESTINATION_HOLD_DURATION = 5000
 
@@ -71,7 +71,7 @@ export default class Quoter {
         minMessageWindow: data.sourceHoldDuration - DESTINATION_HOLD_DURATION
       }
     } else {
-      throw new RemoteQuoteError('remote quote error.')
+      throw new InternalError('remote quote error.')
     }
   }
 

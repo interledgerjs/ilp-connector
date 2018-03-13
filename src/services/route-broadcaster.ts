@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto'
+import { Errors } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('route-broadcaster')
 import { find } from 'lodash'
@@ -23,7 +24,7 @@ import {
   CcpRouteControlRequest,
   CcpRouteUpdateRequest
 } from 'ilp-protocol-ccp'
-import NotAPeerError from '../errors/not-a-peer-error'
+const { BadRequestError } = Errors
 
 export default class RouteBroadcaster {
   private deps: reduct.Injector
@@ -193,14 +194,14 @@ export default class RouteBroadcaster {
 
     if (!peer) {
       log.info('received route control message from non-peer. sourceAccount=%s', sourceAccount)
-      throw new NotAPeerError('cannot process route control messages from non-peers.')
+      throw new BadRequestError('cannot process route control messages from non-peers.')
     }
 
     const sender = peer.getSender()
 
     if (!sender) {
       log.info('received route control message from peer not authorized to receive routes from us (sendRoutes=false). sourceAccount=%s', sourceAccount)
-      throw new NotAPeerError('rejecting route control message, we are configured not to send routes to you.')
+      throw new BadRequestError('rejecting route control message, we are configured not to send routes to you.')
     }
 
     sender.handleRouteControl(routeControl)
@@ -211,14 +212,14 @@ export default class RouteBroadcaster {
 
     if (!peer) {
       log.info('received route update from non-peer. sourceAccount=%s', sourceAccount)
-      throw new NotAPeerError('cannot process route update messages from non-peers.')
+      throw new BadRequestError('cannot process route update messages from non-peers.')
     }
 
     const receiver = peer.getReceiver()
 
     if (!receiver) {
       log.info('received route update from peer not authorized to advertise routes to us (receiveRoutes=false). sourceAccount=%s', sourceAccount)
-      throw new NotAPeerError('rejecting route update, we are configured not to receive routes from you.')
+      throw new BadRequestError('rejecting route update, we are configured not to receive routes from you.')
     }
 
     // Apply import filters

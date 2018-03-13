@@ -2,8 +2,8 @@ import * as IlpPacket from 'ilp-packet'
 import RouteBuilder from '../services/route-builder'
 import { create as createLogger } from '../common/log'
 const log = createLogger('ilqp')
-import InvalidPacketError from '../errors/invalid-packet-error'
 import reduct = require('reduct')
+const { InvalidPacketError } = IlpPacket.Errors
 
 export default class IlqpController {
   protected routeBuilder: RouteBuilder

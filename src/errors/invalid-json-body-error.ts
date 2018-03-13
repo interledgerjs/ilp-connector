@@ -1,7 +1,7 @@
 import BaseError = require('extensible-error')
 import { ErrorObject } from 'ajv'
 
-import { codes } from '../lib/ilp-errors'
+import { Errors } from 'ilp-packet'
 
 export default class InvalidJsonBodyError extends BaseError {
   public ilpErrorCode: string
@@ -10,7 +10,7 @@ export default class InvalidJsonBodyError extends BaseError {
   constructor (message: string, validationErrors: ErrorObject[]) {
     super(message)
 
-    this.ilpErrorCode = codes.F01_INVALID_PACKET
+    this.ilpErrorCode = Errors.codes.F01_INVALID_PACKET
     this.validationErrors = validationErrors
   }
 
