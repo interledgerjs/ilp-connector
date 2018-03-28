@@ -5,10 +5,16 @@ export interface MiddlewareDefinition {
   options?: object
 }
 
+export interface MiddlewareStats {
+  meter (key: string)
+  counter (key: string, value: number)
+}
+
 /**
  * Services the connector exposes to middleware.
  */
 export interface MiddlewareServices {
+  stats: MiddlewareStats
   getInfo (accountId: string): AccountInfo
   getOwnAddress (): string
   sendData (data: Buffer, accountId: string): Promise<Buffer>
@@ -51,6 +57,7 @@ export interface Pipelines {
 
 export interface Middleware {
   applyToPipelines: (pipelines: Pipelines, accountId: string) => Promise<void>
+  getStatus?: () => { [s: string]: any }
 }
 
 export interface MiddlewareConstructor {

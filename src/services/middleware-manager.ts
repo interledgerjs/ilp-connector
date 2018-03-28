@@ -7,6 +7,7 @@ const log = createLogger('middleware-manager')
 import Config from './config'
 import Accounts from './accounts'
 import Core from './core'
+import Stats from './stats'
 import {
   Middleware,
   MiddlewareDefinition,
@@ -48,6 +49,9 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   },
   validateFulfillment: {
     type: 'validate-fulfillment'
+  },
+  stats: {
+    type: 'stats'
   }
 }
 
@@ -56,6 +60,7 @@ export default class MiddlewareManager {
   protected accounts: Accounts
   protected core: Core
   protected middlewares: { [key: string]: Middleware }
+  protected stats: Stats
   private startupHandlers: Map<string, VoidHandler> = new Map()
   private outgoingDataHandlers: Map<string, DataHandler> = new Map()
   private outgoingMoneyHandlers: Map<string, MoneyHandler> = new Map()
@@ -64,6 +69,7 @@ export default class MiddlewareManager {
     this.config = deps(Config)
     this.accounts = deps(Accounts)
     this.core = deps(Core)
+    this.stats = deps(Stats)
 
     const disabledMiddlewareConfig: string[] = this.config.disableMiddleware || []
     const customMiddlewareConfig: { [key: string]: MiddlewareDefinition } = this.config.middlewares || {}
@@ -96,7 +102,8 @@ export default class MiddlewareManager {
       getInfo: accountId => this.accounts.getInfo(accountId),
       getOwnAddress: () => this.accounts.getOwnAddress(),
       sendData: this.sendData.bind(this),
-      sendMoney: this.sendMoney.bind(this)
+      sendMoney: this.sendMoney.bind(this),
+      stats: this.stats
     })
   }
 
@@ -204,6 +211,11 @@ export default class MiddlewareManager {
     }
 
     return handler(amount)
+  }
+
+  getStatus (name: string): {[s: string]: any} {
+    const middleware = this.middlewares[name]
+    return (middleware && middleware.getStatus) ? middleware.getStatus() : {}
   }
 
   private createHandler<T,U> (pipeline: Pipeline<T,U>, accountId: string, next: (param: T) => Promise<U>): (param: T) => Promise<U> {

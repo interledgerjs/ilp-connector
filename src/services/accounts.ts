@@ -209,4 +209,19 @@ export default class Accounts extends EventEmitter {
 
     return this.address + '.' + ilpAddressSegment
   }
+
+  getStatus () {
+    const accounts = {}
+    this.accounts.forEach((account, accountId) => {
+      accounts[accountId] = {
+        // Set info.options to undefined so that credentials aren't exposed.
+        info: Object.assign({}, account.info, { options: undefined }),
+        connected: account.plugin.isConnected()
+      }
+    })
+    return {
+      address: this.address,
+      accounts
+    }
+  }
 }

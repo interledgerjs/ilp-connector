@@ -29,7 +29,7 @@
     "compile-ts": "tsc --project .",
     "prepack": "npm run build",
     "prepare": "npm run build",
-    "lint": "tslint --project .",
+    "lint": "tslint --project . && eslint test/",
     "test": "nyc mocha",
     "report-coverage": "nyc report --reporter=json && codecov -f coverage/*.json",
     "integration": "integration-loader && integration all",
