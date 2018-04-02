@@ -1,7 +1,13 @@
 import * as IlpPacket from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('rate-limit-middleware')
-import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
+import {
+  Middleware,
+  MiddlewareCallback,
+  MiddlewareServices,
+  MiddlewareStats,
+  Pipelines
+} from '../types/middleware'
 import { AccountInfo } from '../types/accounts'
 import TokenBucket from '../lib/token-bucket'
 const { RateLimitedError } = IlpPacket.Errors
@@ -11,9 +17,11 @@ const DEFAULT_REFILL_COUNT = 10000
 
 export default class RateLimitMiddleware implements Middleware {
   private getInfo: (accountId: string) => AccountInfo
+  private stats: MiddlewareStats
 
-  constructor (opts: {}, { getInfo }: MiddlewareServices) {
+  constructor (opts: {}, { getInfo, stats }: MiddlewareServices) {
     this.getInfo = getInfo
+    this.stats = stats
   }
 
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
@@ -37,6 +45,7 @@ export default class RateLimitMiddleware implements Middleware {
       name: 'rateLimit',
       method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
         if (!bucket.take()) {
+          this.stats.meter('rateLimit/incomingData/' + accountId)
           throw new RateLimitedError('too many requests, throttling.')
         }
 
@@ -48,6 +57,7 @@ export default class RateLimitMiddleware implements Middleware {
       name: 'rateLimit',
       method: async (amount: string, next: MiddlewareCallback<string, void>) => {
         if (!bucket.take()) {
+          this.stats.meter('rateLimit/incomingMoney/' + accountId)
           throw new RateLimitedError('too many requests, throttling.')
         }
 

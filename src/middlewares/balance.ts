@@ -52,11 +52,20 @@ class Balance {
   getValue () {
     return this.balance
   }
+
+  toJSON () {
+    return {
+      balance: this.balance.toString(),
+      minimum: this.minimum.toString(),
+      maximum: this.maximum.toString()
+    }
+  }
 }
 
 export default class BalanceMiddleware implements Middleware {
   private getInfo: (accountId: string) => AccountInfo
   private sendMoney: (amount: string, accountId: string) => Promise<void>
+  private balances: Map<string, Balance> = new Map()
 
   constructor (opts: {}, { getInfo, sendMoney }: MiddlewareServices) {
     this.getInfo = getInfo
@@ -81,6 +90,7 @@ export default class BalanceMiddleware implements Middleware {
         minimum: new BigNumber(minimum),
         maximum: new BigNumber(maximum)
       })
+      this.balances.set(accountId, balance)
 
       const bnSettleThreshold = settleThreshold ? new BigNumber(settleThreshold) : undefined
       const bnSettleTo = new BigNumber(settleTo)
@@ -217,5 +227,13 @@ export default class BalanceMiddleware implements Middleware {
     } else {
       log.warn('(!!!) balance middleware NOT enabled for account, this account can spend UNLIMITED funds. accountId=%s', accountId)
     }
+  }
+
+  getStatus () {
+    const accounts = {}
+    this.balances.forEach((balance, accountId) => {
+      accounts[accountId] = balance.toJSON()
+    })
+    return { accounts }
   }
 }

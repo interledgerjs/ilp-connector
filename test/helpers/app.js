@@ -9,6 +9,7 @@ const Quoter = require('../../src/services/quoter').default
 const RateBackend = require('../../src/services/rate-backend').default
 const RoutingTable = require('../../src/services/routing-table').default
 const MiddlewareManager = require('../../src/services/middleware-manager').default
+const AdminApi = require('../../src/services/admin-api').default
 const CcpController = require('../../src/controllers/ccp').default
 const Store = require('../../src/services/store').default
 const ratesResponse = require('../data/fxRates.json')
@@ -46,6 +47,7 @@ exports.create = function (context, opts) {
   context.accounts = deps(Accounts)
   context.config = deps(Config)
   context.middlewareManager = deps(MiddlewareManager)
+  context.adminApi = deps(AdminApi)
   context.ccpController = deps(CcpController)
   context.store = deps(Store)
 }

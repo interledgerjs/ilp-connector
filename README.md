@@ -517,7 +517,7 @@ See also: <https://github.com/interledger/rfcs/issues/330#issuecomment-348750488
 
 #### Built-in: rateLimit
 
-* Pipelines: incomingData, incomingMoney, outgoingData, outgoingMoney
+* Pipelines: `incomingData`, `incomingMoney`, `outgoingData`, `outgoingMoney`
 
 Reduces the maximum number of total requests incoming from or outgoing to any account.
 
@@ -525,33 +525,39 @@ Used for basic rate limiting and to help with DoS.
 
 #### Built-in: maxPacketAmount
 
-* Pipelines: incomingData, outgoingData
+* Pipelines: `incomingData`, `outgoingData`
 
 Rejects packets with an amount greater than the specified value.
 
 #### Built-in: throughput
 
-* Pipelines: incomingData, outgoingData
+* Pipelines: `incomingData`, `outgoingData`
 
 Limits the throughput for a given account. Throughput is the amount of money transferred per time.
 
 #### Built-in: balance
 
-* Pipelines: incomingData, incomingMoney, outgoingData, outgoingMoney
+* Pipelines: `startup`, `incomingData`, `incomingMoney`, `outgoingData`, `outgoingMoney`
 
 Tracks the balance of a given account from the perspective of the connector. This is also the subsystem that triggers settlements.
 
 #### Built-in: validateFulfillment
 
-* Pipelines: outgoingData
+* Pipelines: `outgoingData`
 
 Validates fulfillments in incoming ILP fulfill responses. If the fulfillment is invalid, it converts the fulfillment into a rejection.
 
 #### Built-in: expire
 
-* Pipelines: outgoingData
+* Pipelines: `outgoingData`
 
 Expires outgoing ILP packets at their designated `expiresAt` time. Returns a rejection when this occurs.
+
+#### Built-in: stats
+
+* Pipelines: `incomingData`, `incomingMoney`, `outgoingData`, `outgoingMoney`
+
+Tracks throughput by account. Results are accessible through the admin API.
 
 ### Extensibility: Backends
 
