@@ -118,8 +118,18 @@ export default class RouteBroadcaster {
   }
 
   add (accountId: string) {
-    if (this.peers.get(accountId)) {
-      // don't log duplicates
+    const existingPeer = this.peers.get(accountId)
+    if (existingPeer) {
+      // Every time we reconnect, we'll send a new route control message to make
+      // sure they are still sending us routes.
+      const receiver = existingPeer.getReceiver()
+
+      if (receiver) {
+        receiver.sendRouteControl()
+      } else {
+        log.warn('unable to send route control message, receiver object undefined. peer=%s')
+      }
+
       return
     }
 
