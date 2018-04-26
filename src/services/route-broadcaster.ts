@@ -127,7 +127,7 @@ export default class RouteBroadcaster {
       if (receiver) {
         receiver.sendRouteControl()
       } else {
-        log.warn('unable to send route control message, receiver object undefined. peer=%s')
+        log.warn('unable to send route control message, receiver object undefined. peer=%s', existingPeer)
       }
 
       return
