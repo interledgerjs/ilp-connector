@@ -283,5 +283,26 @@ describe('RouteBroadcaster', function () {
       })
       assert.equal(this.routingTable.keys().length, 5)
     })
+
+    it('does not add routes that include own address in path because it would create a routing loop', async function () {
+      const ledgerD = 'test.xrp-ledger'
+      const newRoutes = [{
+        prefix: ledgerD,
+        path: [ledgerD, 'test.connie'],
+        auth: 'K3nWc6mNsJh8n+mpON6CdS36U5K4FbsIzEAevsckcso='
+      }]
+      assert.equal(this.routingTable.keys().length, 5)
+      await this.routeBroadcaster.handleRouteUpdate(ledgerB, {
+        speaker: ledgerD,
+        routingTableId: '3b069822-a754-4e44-8a60-0f9f7084144d',
+        currentEpochIndex: 1,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        newRoutes: newRoutes,
+        holdDownTime: 1234,
+        withdrawnRoutes: []
+      })
+      assert.equal(this.routingTable.keys().length, 5)
+    })
   })
 })
