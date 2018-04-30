@@ -242,6 +242,10 @@ export default class RouteBroadcaster {
         route.prefix.startsWith(this.getGlobalPrefix()) &&
         route.prefix.length > this.getGlobalPrefix().length
       )
+      // Filter incoming routes that include us as a hop (i.e. routing loops)
+      .filter(route =>
+        !route.path.includes(this.accounts.getOwnAddress())
+      )
 
     const changedPrefixes = receiver.handleRouteUpdate(routeUpdate)
 
