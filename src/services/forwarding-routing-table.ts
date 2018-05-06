@@ -8,8 +8,8 @@ export interface RouteUpdate {
   route?: Route
 }
 
-export default class ForwardingRoutingTable extends PrefixMap<Route> {
+export default class ForwardingRoutingTable extends PrefixMap<RouteUpdate> {
   public routingTableId: string = uuid()
-  public log: RouteUpdate[] = []
+  public log: (RouteUpdate | null)[] = []
   public currentEpoch: number = 0
 }

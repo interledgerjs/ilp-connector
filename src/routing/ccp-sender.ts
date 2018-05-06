@@ -1,5 +1,5 @@
 import Accounts from '../services/accounts'
-import ForwardingRoutingTable from '../services/forwarding-routing-table'
+import ForwardingRoutingTable, { RouteUpdate } from '../services/forwarding-routing-table'
 import { BroadcastRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
 import { Relation } from './relation'
@@ -189,8 +189,13 @@ export default class CcpSender {
       : nextRequestedEpoch
 
     const relation = this.getAccountRelation(this.accountId)
+    function isRouteUpdate (update: RouteUpdate | null): update is RouteUpdate {
+      return !!update
+    }
+
     const updates = allUpdates
-      .map(update => {
+      .filter(isRouteUpdate)
+      .map((update: RouteUpdate) => {
         if (!update.route) return update
 
         if (

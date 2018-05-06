@@ -12,7 +12,8 @@ import { canDragonFilter } from '../routing/dragon'
 import { Relation, getRelationPriority } from '../routing/relation'
 import {
   formatRoutingTableAsJson,
-  formatRouteAsJson
+  formatRouteAsJson,
+  formatForwardingRoutingTableAsJson
 } from '../routing/utils'
 import {
   Route,
@@ -406,11 +407,13 @@ export default class RouteBroadcaster {
       routingTableId: this.forwardingRoutingTable.routingTableId,
       currentEpoch: this.forwardingRoutingTable.currentEpoch,
       localRoutingTable: formatRoutingTableAsJson(this.localRoutingTable),
-      forwardingRoutingTable: formatRoutingTableAsJson(this.forwardingRoutingTable),
-      routingLog: this.forwardingRoutingTable.log.map(entry => ({
-        ...entry,
-        route: entry.route && formatRouteAsJson(entry.route)
-      })),
+      forwardingRoutingTable: formatForwardingRoutingTableAsJson(this.forwardingRoutingTable),
+      routingLog: this.forwardingRoutingTable.log
+        .filter(Boolean)
+        .map(entry => ({
+          ...entry,
+          route: entry && entry.route && formatRouteAsJson(entry.route)
+        })),
       peers: Array.from(this.peers.values()).reduce((acc, peer) => {
         const sender = peer.getSender()
         const receiver = peer.getReceiver()
@@ -481,23 +484,28 @@ export default class RouteBroadcaster {
 
     const currentBest = this.forwardingRoutingTable.get(prefix)
 
-    const currentNextHop = currentBest && currentBest.nextHop
+    const currentNextHop = currentBest && currentBest.route && currentBest.route.nextHop
     const newNextHop = route && route.nextHop
 
     if (currentNextHop !== newNextHop) {
-      if (route) {
-        this.forwardingRoutingTable.insert(prefix, route)
-      } else {
-        this.forwardingRoutingTable.delete(prefix)
-      }
-
       const epoch = this.forwardingRoutingTable.currentEpoch++
       const routeUpdate: RouteUpdate = {
         prefix,
         route,
         epoch
       }
+
+      if (route) {
+        this.forwardingRoutingTable.insert(prefix, routeUpdate)
+      } else {
+        this.forwardingRoutingTable.insert(prefix, routeUpdate)
+      }
+
       log.debug('logging route update. update=%j', routeUpdate)
+
+      if (currentBest) {
+        this.forwardingRoutingTable.log[currentBest.epoch] = null
+      }
 
       this.forwardingRoutingTable.log[epoch] = routeUpdate
 
@@ -511,7 +519,11 @@ export default class RouteBroadcaster {
         for (const subPrefix of subPrefixes) {
           if (subPrefix === prefix) continue
 
-          this.updateForwardingRoute(subPrefix, this.forwardingRoutingTable.get(subPrefix))
+          const routeUpdate = this.forwardingRoutingTable.get(subPrefix)
+
+          if (!routeUpdate || !routeUpdate.route) continue
+
+          this.updateForwardingRoute(subPrefix, routeUpdate.route)
         }
       }
     }

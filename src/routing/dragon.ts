@@ -3,6 +3,7 @@ import PrefixMap from './prefix-map'
 import { create as createLogger } from '../common/log'
 const log = createLogger('dragon')
 import { Relation, getRelationPriority } from './relation'
+import ForwardingRoutingTable from '../services/forwarding-routing-table';
 
 /**
  * Check whether a route can be filtered out based on DRAGON rules.
@@ -31,19 +32,21 @@ import { Relation, getRelationPriority } from './relation'
  *    would be applicable.
  */
 export function canDragonFilter (
-  routingTable: PrefixMap<Route>,
+  routingTable: ForwardingRoutingTable,
   getRelation: (prefix: string) => Relation,
   prefix: string,
   route: Route
 ): boolean {
   // Find any less specific route
   for (const parentPrefix of routingTable.getKeysPrefixesOf(prefix)) {
-    const parentRoute = routingTable.get(parentPrefix)
+    const parentRouteUpdate = routingTable.get(parentPrefix)
 
-    if (!parentRoute) {
+    if (!parentRouteUpdate || !parentRouteUpdate.route) {
       log.warn('found a parent prefix, but no parent route; this should never happen. prefix=%s parentPrefix=%s', prefix, parentPrefix)
       continue
     }
+
+    const parentRoute = parentRouteUpdate.route
 
     if (parentRoute.nextHop === '') {
       // We are the origin of the parent route, cannot DRAGON filter
