@@ -231,6 +231,60 @@ describe('RouteBroadcaster', function () {
       }) || true))
     })
 
+    it('only sends the latest version of a route', async function () {
+      const pluginABroadcastSpy = sinon.stub(this.accounts.getPlugin(ledgerA), 'sendData')
+        .resolves(Buffer.from('{}', 'ascii'))
+      const pluginBBroadcastSpy = sinon.stub(this.accounts.getPlugin(ledgerB), 'sendData')
+        .resolves(Buffer.from('{}', 'ascii'))
+
+      this.routeBroadcaster.forwardingRoutingTable.routingTableId = '3b069822-a754-4e44-8a60-0f9f7084144d'
+      await this.routeBroadcaster.peers.get(ledgerA).ccpSender.sendSingleRouteUpdate()
+
+      sinon.assert.calledOnce(pluginABroadcastSpy)
+      sinon.assert.calledWithMatch(pluginABroadcastSpy, sinon.match(packet => assert.deepEqual(deserializeCcpRouteUpdateRequest(packet), {
+        speaker: 'test.connie',
+        routingTableId: '3b069822-a754-4e44-8a60-0f9f7084144d',
+        currentEpochIndex: 5,
+        fromEpochIndex: 0,
+        toEpochIndex: 5,
+        holdDownTime: 45000,
+        withdrawnRoutes: [
+          'test.prefix',
+          'test.cad-ledger'
+        ],
+        newRoutes: routesWithSourceLedgerA
+      }) || true))
+
+      await this.routeBroadcaster.handleRouteUpdate(ledgerA, {
+        speaker: ledgerA,
+        routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+        currentEpochIndex: 2,
+        fromEpochIndex: 1,
+        toEpochIndex: 2,
+        newRoutes: [],
+        holdDownTime: 1234,
+        withdrawnRoutes: ['test.cad-ledger']
+      })
+
+      await this.routeBroadcaster.peers.get(ledgerB).ccpSender.sendSingleRouteUpdate()
+
+      sinon.assert.calledOnce(pluginBBroadcastSpy)
+      sinon.assert.calledWithMatch(pluginBBroadcastSpy, sinon.match(packet => assert.deepEqual(deserializeCcpRouteUpdateRequest(packet), {
+        speaker: 'test.connie',
+        routingTableId: '3b069822-a754-4e44-8a60-0f9f7084144d',
+        currentEpochIndex: 6,
+        fromEpochIndex: 0,
+        toEpochIndex: 6,
+        holdDownTime: 45000,
+        withdrawnRoutes: [
+          'test.usd-ledger',
+          'test.cad-ledger'
+        ],
+        newRoutes: routesWithSourceLedgerB.filter(r => r.prefix !== 'test.cad-ledger')
+      }) || true))
+      throw new Error()
+    })
+
     it('invalidates routes', async function () {
       const ledgerD = 'test.xrp-ledger'
       const newRoutes = [{
