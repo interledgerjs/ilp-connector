@@ -1,9 +1,8 @@
 import { Route } from '../types/routing'
-import PrefixMap from './prefix-map'
 import { create as createLogger } from '../common/log'
 const log = createLogger('dragon')
 import { Relation, getRelationPriority } from './relation'
-import ForwardingRoutingTable from '../services/forwarding-routing-table';
+import ForwardingRoutingTable from '../services/forwarding-routing-table'
 
 /**
  * Check whether a route can be filtered out based on DRAGON rules.

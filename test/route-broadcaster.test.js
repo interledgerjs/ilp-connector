@@ -282,7 +282,6 @@ describe('RouteBroadcaster', function () {
         ],
         newRoutes: routesWithSourceLedgerB.filter(r => r.prefix !== 'test.cad-ledger')
       }) || true))
-      throw new Error()
     })
 
     it('invalidates routes', async function () {

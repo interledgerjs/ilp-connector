@@ -495,11 +495,7 @@ export default class RouteBroadcaster {
         epoch
       }
 
-      if (route) {
-        this.forwardingRoutingTable.insert(prefix, routeUpdate)
-      } else {
-        this.forwardingRoutingTable.insert(prefix, routeUpdate)
-      }
+      this.forwardingRoutingTable.insert(prefix, routeUpdate)
 
       log.debug('logging route update. update=%j', routeUpdate)
 
