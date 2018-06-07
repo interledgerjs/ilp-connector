@@ -119,21 +119,6 @@ export default class RouteBroadcaster {
   }
 
   add (accountId: string) {
-    const existingPeer = this.peers.get(accountId)
-    if (existingPeer) {
-      // Every time we reconnect, we'll send a new route control message to make
-      // sure they are still sending us routes.
-      const receiver = existingPeer.getReceiver()
-
-      if (receiver) {
-        receiver.sendRouteControl()
-      } else {
-        log.warn('unable to send route control message, receiver object undefined. peer=%s', existingPeer)
-      }
-
-      return
-    }
-
     const accountInfo = this.accounts.getInfo(accountId)
 
     let sendRoutes
@@ -154,21 +139,37 @@ export default class RouteBroadcaster {
       receiveRoutes = false
     }
 
-    if (sendRoutes || receiveRoutes) {
-      const plugin = this.accounts.getPlugin(accountId)
-
-      if (plugin.isConnected()) {
-        log.debug('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
-        const peer = new Peer({ deps: this.deps, accountId, sendRoutes, receiveRoutes })
-        this.peers.set(accountId, peer)
-        const receiver = peer.getReceiver()
-        if (receiver) {
-          receiver.sendRouteControl()
-        }
-        this.reloadLocalRoutes()
-      }
-    } else {
+    if (!sendRoutes && !receiveRoutes) {
       log.debug('not sending/receiving routes for peer, set sendRoutes/receiveRoutes to override. accountId=%s', accountId)
+      return
+    }
+
+    const existingPeer = this.peers.get(accountId)
+    if (existingPeer) {
+      // Every time we reconnect, we'll send a new route control message to make
+      // sure they are still sending us routes.
+      const receiver = existingPeer.getReceiver()
+
+      if (receiver) {
+        receiver.sendRouteControl()
+      } else {
+        log.warn('unable to send route control message, receiver object undefined. peer=%s', existingPeer)
+      }
+
+      return
+    }
+
+    const plugin = this.accounts.getPlugin(accountId)
+
+    if (plugin.isConnected()) {
+      log.debug('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
+      const peer = new Peer({ deps: this.deps, accountId, sendRoutes, receiveRoutes })
+      this.peers.set(accountId, peer)
+      const receiver = peer.getReceiver()
+      if (receiver) {
+        receiver.sendRouteControl()
+      }
+      this.reloadLocalRoutes()
     }
   }
 
