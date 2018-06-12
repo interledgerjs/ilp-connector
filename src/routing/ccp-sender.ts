@@ -182,11 +182,8 @@ export default class CcpSender {
     const nextRequestedEpoch = this.lastKnownEpoch
     const allUpdates = this.forwardingRoutingTable.log
       .slice(nextRequestedEpoch, nextRequestedEpoch + MAX_EPOCHS_PER_UPDATE)
-    const highestEpochUpdate = allUpdates.slice(allUpdates.length - 1)[0]
 
-    const toEpoch = highestEpochUpdate
-      ? highestEpochUpdate.epoch + 1
-      : nextRequestedEpoch
+    const toEpoch = nextRequestedEpoch + allUpdates.length
 
     const relation = this.getAccountRelation(this.accountId)
     function isRouteUpdate (update: RouteUpdate | null): update is RouteUpdate {
