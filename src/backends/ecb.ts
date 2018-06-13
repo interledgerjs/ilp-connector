@@ -1,23 +1,24 @@
 import fetchUri from 'node-fetch'
+import * as sax from 'sax'
 import BigNumber from 'bignumber.js'
 import { AccountInfo } from '../types/accounts'
 import { BackendInstance, BackendServices } from '../types/backend'
 
 import { create as createLogger } from '../common/log'
-const log = createLogger('fixerio')
+const log = createLogger('ecb')
 
-const RATES_API = 'https://api.fixer.io/latest'
+const RATES_API = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'
 
-export interface FixerIoOptions {
+export interface ECBBackendOptions {
   spread: number,
   ratesApiUrl: string,
   mockData: object
 }
 
 /**
- * Dummy backend that uses Fixer.io API for FX rates
+ * Dummy backend that uses the ECB API for FX rates
  */
-export default class FixerIoBackend implements BackendInstance {
+export default class ECBBackend implements BackendInstance {
   protected spread: number
   protected ratesApiUrl: string
   protected getInfo: (accountId: string) => AccountInfo | undefined
@@ -32,11 +33,11 @@ export default class FixerIoBackend implements BackendInstance {
    * Constructor.
    *
    * @param opts.spread The spread we will use to mark up the FX rates
-   * @param opts.ratesApiUrl The URL for querying Fixer.io
+   * @param opts.ratesApiUrl The URL for querying the ECB API
    * @param api.getInfo Method which maps account IDs to AccountInfo objects
    * @param api.getAssetCode Method which maps account IDs to asset code
    */
-  constructor (opts: FixerIoOptions, api: BackendServices) {
+  constructor (opts: ECBBackendOptions, api: BackendServices) {
     this.spread = opts.spread || 0
     this.ratesApiUrl = opts.ratesApiUrl || RATES_API
     this.mockData = opts.mockData
@@ -60,7 +61,7 @@ export default class FixerIoBackend implements BackendInstance {
     } else {
       log.debug('connect. uri=' + this.ratesApiUrl)
       let result = await fetchUri(this.ratesApiUrl)
-      apiData = await result.json()
+      apiData = await parseXMLResponse(await result.text())
     }
     this.rates = apiData.rates
     this.rates[apiData.base] = 1
@@ -133,9 +134,27 @@ export default class FixerIoBackend implements BackendInstance {
   /**
    * This method is called to allow statistics to be collected by the backend.
    *
-   * The fixerio backend does not support this functionality.
+   * The ECB backend does not support this functionality.
    */
   async submitPayment () {
     return Promise.resolve(undefined)
   }
+}
+
+function parseXMLResponse (data: string) {
+  const parser = sax.parser(true)
+  const apiData = { base: 'EUR', date: null, rates: {} }
+  parser.onopentag = (node) => {
+    if (node.name === 'Cube' && node.attributes.time) {
+      apiData.date = node.attributes.time
+    }
+    if (node.name === 'Cube' && node.attributes.currency) {
+      apiData.rates[node.attributes.currency] = node.attributes.rate
+    }
+  }
+  return new Promise((resolve, reject) => {
+    parser.onerror = reject
+    parser.onend = () => resolve(apiData)
+    parser.write(data).close()
+  })
 }

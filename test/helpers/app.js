@@ -26,7 +26,7 @@ exports.create = function (context, opts) {
   }
 
   if (!process.env.CONNECTOR_BACKEND) {
-    process.env.CONNECTOR_BACKEND = 'fixerio'
+    process.env.CONNECTOR_BACKEND = 'ecb'
   }
 
   if (!process.env.CONNECTOR_BACKEND_CONFIG) {

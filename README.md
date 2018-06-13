@@ -331,9 +331,9 @@ Seed used for generating routing table auth values.
 
 * Environment: `CONNECTOR_BACKEND`
 * Type: `string`
-* Default: `"fixerio"`
+* Default: `"ecb"`
 
-Name of the backend (can be built-in or a require-able module name). Built-in modules are: fixerio, fixerio-plus-xrp, fixerio-plus-coinmarketcap, one-to-one
+Name of the backend (can be built-in or a require-able module name). Built-in modules are: ecb, ecb-plus-xrp, ecb-plus-coinmarketcap, one-to-one
 
 #### `backendConfig`
 
@@ -569,23 +569,23 @@ Backends provide fee policies and exchange rates. For a professionally run conne
 
 The `one-to-one` backend applies the `CONNECTOR_SPREAD` setting, the `assetScale` settings, and otherwise uses a 1:1 exchange rate for all assets. This is the simplest backend, recommended for connectors that deal in only one currency.
 
-#### Built-in: fixerio
+#### Built-in: ecb
 
-* Supported currencies: see [fixer.io](http://fixer.io/)
+* Supported currencies: see [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html)
 
-The `fixerio` backend loads fiat exchange rates from [fixer.io](http://fixer.io/). **Suitable for development and experimental use only.**
+The `ecb` backend loads fiat exchange rates from [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html). **Suitable for development and experimental use only.**
 
-#### Built-in: fixerio-plus-xrp
+#### Built-in: ecb-plus-xrp
 
-* Supported currencies: see [fixer.io](http://fixer.io/), XRP
+* Supported currencies: see [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html), XRP
 
-The `fixerio-plus-xrp` backend loads fiat exchange rates from [fixer.io](http://fixer.io/) and XRP exchange rates from the [Ripple Data API](https://ripple.com/build/data-api-v2/). **Suitable for development and experimental use only.**
+The `ecb-plus-xrp` backend loads fiat exchange rates from [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) and XRP exchange rates from the [Ripple Data API](https://ripple.com/build/data-api-v2/). **Suitable for development and experimental use only.**
 
-#### Built-in: fixerio-plus-coinmarketcap
+#### Built-in: ecb-plus-coinmarketcap
 
-* Supported currencies: see [fixer.io](http://fixer.io/), see [CoinMarketCap](https://coinmarketcap.com/)
+* Supported currencies: see [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html), see [CoinMarketCap](https://coinmarketcap.com/)
 
-The `fixerio-plus-coinmarketcap` backend loads fiat exchange rates from [fixer.io](http://fixer.io/) and crypto-currency exchange rates from [CoinMarketCap](https://coinmarketcap.com/). **Suitable for development and experimental use only.**
+The `ecb-plus-coinmarketcap` backend loads fiat exchange rates from [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) and crypto-currency exchange rates from [CoinMarketCap](https://coinmarketcap.com/). **Suitable for development and experimental use only.**
 
 ## Development
 
