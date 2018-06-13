@@ -1,12 +1,12 @@
 import fetch from 'node-fetch'
-import FixerIoBackend from './fixerio'
+import ECBBackend from './ecb'
 import { create as createLogger } from '../common/log'
-const log = createLogger('fixerio-plus-xrp')
+const log = createLogger('ecb-plus-xrp')
 
 // Bitstamp/EUR
 const CHARTS_API = 'https://data.ripple.com/v2/exchange_rates/EUR+rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq/XRP'
 
-export default class FixerIoXRPBackend extends FixerIoBackend {
+export default class ECBAndXRPBackend extends ECBBackend {
   async connect () {
     await super.connect()
     // XRP rate may have been loaded as part of the mock data

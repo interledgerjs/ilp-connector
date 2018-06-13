@@ -228,9 +228,9 @@
       "default": ""
     },
     "backend": {
-      "description": "Name of the backend (can be built-in or a require-able module name). Built-in modules are: fixerio, fixerio-plus-xrp, fixerio-plus-coinmarketcap, one-to-one",
+      "description": "Name of the backend (can be built-in or a require-able module name). Built-in modules are: ecb, ecb-plus-xrp, ecb-plus-coinmarketcap, one-to-one",
       "type": "string",
-      "default": "fixerio"
+      "default": "ecb"
     },
     "backendConfig": {
       "description": "Additional configuration for the backend.",
