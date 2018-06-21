@@ -52,6 +52,9 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   },
   stats: {
     type: 'stats'
+  },
+  alert: {
+    type: 'alert'
   }
 }
 
@@ -213,9 +216,8 @@ export default class MiddlewareManager {
     return handler(amount)
   }
 
-  getStatus (name: string): {[s: string]: any} {
-    const middleware = this.middlewares[name]
-    return (middleware && middleware.getStatus) ? middleware.getStatus() : {}
+  getMiddleware (name: string): Middleware | undefined {
+    return this.middlewares[name]
   }
 
   private createHandler<T,U> (pipeline: Pipeline<T,U>, accountId: string, next: (param: T) => Promise<U>): (param: T) => Promise<U> {

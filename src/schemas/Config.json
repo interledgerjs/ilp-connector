@@ -282,7 +282,7 @@
       "type": "array",
       "items": {
         "description": "Name of the middleware to be removed.",
-        "enum": ["errorHandler", "rateLimit", "balance", "maxPacketAmount", "throughput", "deduplicate", "validateFulfillment", "expire"]
+        "enum": ["errorHandler", "rateLimit", "balance", "maxPacketAmount", "throughput", "deduplicate", "validateFulfillment", "expire", "stats", "alert"]
       },
       "default": []
     },
