@@ -8,12 +8,14 @@ const { T04_INSUFFICIENT_LIQUIDITY } = IlpPacket.Errors.codes
 export interface Alert {
   id: number
   accountId: string
-  createdAt: Date
   message: string
+  count: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 export default class AlertMiddleware implements Middleware {
-  private alerts: {[id: string]: Alert} = {}
+  private alerts: {[id: number]: Alert} = {}
   private nextAlertId: number = Date.now()
 
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
@@ -32,14 +34,7 @@ export default class AlertMiddleware implements Middleware {
         if (rejectPacket.message !== 'exceeded maximum balance.') return result
 
         log.warn('generating alert for account=%s message="%s"', accountId, rejectPacket.message)
-
-        const id = this.nextAlertId++
-        this.alerts[id] = {
-          id,
-          accountId,
-          message: rejectPacket.message,
-          createdAt: new Date()
-        }
+        this.addAlert(accountId, rejectPacket.message)
 
         return result
       }
@@ -54,5 +49,27 @@ export default class AlertMiddleware implements Middleware {
 
   dismissAlert (id: number) {
     delete this.alerts[id]
+  }
+
+  private addAlert (accountId: string, message: string) {
+    const alert = Object.keys(this.alerts)
+      .map((alertId) => this.alerts[alertId])
+      .find((alert) => alert.accountId === accountId && alert.message === message)
+    if (alert) {
+      alert.count++
+      alert.updatedAt = new Date()
+      return
+    }
+
+    const id = this.nextAlertId++
+    const now = new Date()
+    this.alerts[id] = {
+      id,
+      accountId,
+      message,
+      count: 1,
+      createdAt: now,
+      updatedAt: now
+    }
   }
 }

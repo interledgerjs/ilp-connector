@@ -215,6 +215,7 @@ export default class BalanceMiddleware implements Middleware {
   modifyBalance (accountId: string, _amountDiff: BigNumber.Value): BigNumber {
     const amountDiff = new BigNumber(_amountDiff)
     const balance = this.getBalance(accountId)
+    log.warn('modifying balance accountId=%s amount=%s', accountId, amountDiff.toString())
     if (amountDiff.isPositive()) {
       balance.add(amountDiff)
     } else {

@@ -333,7 +333,9 @@ describe('AdminApi', function () {
           id: res.alerts[0].id,
           accountId: 'test.eur-ledger',
           message: 'exceeded maximum balance.',
-          createdAt: new Date(START_DATE)
+          count: 1,
+          createdAt: new Date(START_DATE),
+          updatedAt: new Date(START_DATE)
         }]
       })
     })
@@ -347,7 +349,9 @@ describe('AdminApi', function () {
         id: this.alertId,
         accountId: 'test.eur-ledger',
         message: 'the error message',
-        createdAt: new Date()
+        count: 123,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     })
 
