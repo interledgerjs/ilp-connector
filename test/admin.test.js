@@ -317,23 +317,25 @@ describe('AdminApi', function () {
         message: 'exceeded maximum balance.',
         data: Buffer.alloc(0)
       }))
-
-      const preparePacket = IlpPacket.serializeIlpPrepare({
+      const preparePacket = {
         amount: '100',
         executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
         expiresAt: new Date(START_DATE + 2000),
-        destination: 'test.eur-ledger.bob',
-        data: Buffer.alloc(0)
-      })
+        destination: 'test.eur-ledger.bob'
+      }
 
-      await this.mockPlugin1._dataHandler(preparePacket)
+      for (let i = 0; i < 3; i++) {
+        preparePacket.data = Buffer.from(i.toString())
+        await this.mockPlugin1._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
+      }
       const res = await this.adminApi.getAlerts()
       assert.deepEqual(res, {
         alerts: [{
           id: res.alerts[0].id,
           accountId: 'test.eur-ledger',
+          triggeredBy: 'test.foo',
           message: 'exceeded maximum balance.',
-          count: 1,
+          count: 3,
           createdAt: new Date(START_DATE),
           updatedAt: new Date(START_DATE)
         }]
@@ -348,6 +350,7 @@ describe('AdminApi', function () {
       middleware.alerts[this.alertId] = {
         id: this.alertId,
         accountId: 'test.eur-ledger',
+        triggeredBy: 'test.foo',
         message: 'the error message',
         count: 123,
         createdAt: new Date(),
