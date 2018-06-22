@@ -46,10 +46,10 @@ export default class Quoter {
 
     if (cachedCurve) {
       if (cachedCurve.expiry < Date.now()) {
-        log.debug('cleaning up expired cached curve. prefix=%s expiry=%s', cachedCurve.prefix, new Date(cachedCurve.expiry).toISOString())
+        log.trace('cleaning up expired cached curve. prefix=%s expiry=%s', cachedCurve.prefix, new Date(cachedCurve.expiry).toISOString())
         this.cache.delete(cachedCurve.prefix)
       } else {
-        log.debug('returning cached curve. prefix=%s', cachedCurve.prefix)
+        log.trace('returning cached curve. prefix=%s', cachedCurve.prefix)
         return cachedCurve
       }
     }
@@ -59,7 +59,7 @@ export default class Quoter {
       destinationHoldDuration: DESTINATION_HOLD_DURATION
     })
     const plugin = this.accounts.getPlugin(nextHop)
-    log.debug('sending quote request packet. connector=%s', nextHop)
+    log.trace('sending quote request packet. connector=%s', nextHop)
     const quoteResponsePacket = await plugin.sendData(quoteRequestPacket)
 
     if (quoteResponsePacket[0] === IlpPacket.Type.TYPE_ILQP_LIQUIDITY_RESPONSE) {
@@ -76,7 +76,7 @@ export default class Quoter {
   }
 
   cacheCurve ({ prefix, curve, expiry, minMessageWindow }: CachedCurve) {
-    log.debug('caching curve. prefix=%s expiry=%s minMessageWindow=%s', prefix, expiry, minMessageWindow)
+    log.trace('caching curve. prefix=%s expiry=%s minMessageWindow=%s', prefix, expiry, minMessageWindow)
     this.cache.insert(prefix, {
       prefix,
       curve,

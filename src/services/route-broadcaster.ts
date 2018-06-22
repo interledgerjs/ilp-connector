@@ -140,7 +140,7 @@ export default class RouteBroadcaster {
     }
 
     if (!sendRoutes && !receiveRoutes) {
-      log.debug('not sending/receiving routes for peer, set sendRoutes/receiveRoutes to override. accountId=%s', accountId)
+      log.warn('not sending/receiving routes for peer, set sendRoutes/receiveRoutes to override. accountId=%s', accountId)
       return
     }
 
@@ -162,7 +162,7 @@ export default class RouteBroadcaster {
     const plugin = this.accounts.getPlugin(accountId)
 
     if (plugin.isConnected()) {
-      log.debug('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
+      log.trace('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
       const peer = new Peer({ deps: this.deps, accountId, sendRoutes, receiveRoutes })
       this.peers.set(accountId, peer)
       const receiver = peer.getReceiver()
@@ -183,7 +183,7 @@ export default class RouteBroadcaster {
     const sender = peer.getSender()
     const receiver = peer.getReceiver()
 
-    log.info('remove peer. peerId=' + accountId)
+    log.trace('remove peer. peerId=' + accountId)
     if (sender) {
       sender.stop()
     }
@@ -268,7 +268,7 @@ export default class RouteBroadcaster {
   }
 
   reloadLocalRoutes () {
-    log.debug('reload local and configured routes.')
+    log.trace('reload local and configured routes.')
 
     this.localRoutes = new Map()
     const localAccounts = this.accounts.getAccountIds()
@@ -434,10 +434,10 @@ export default class RouteBroadcaster {
 
     if (newNextHop !== currentNextHop) {
       if (route) {
-        log.debug('new best route for prefix. prefix=%s oldBest=%s newBest=%s', prefix, currentNextHop, newNextHop)
+        log.trace('new best route for prefix. prefix=%s oldBest=%s newBest=%s', prefix, currentNextHop, newNextHop)
         this.localRoutingTable.insert(prefix, route)
       } else {
-        log.debug('no more route available for prefix. prefix=%s', prefix)
+        log.trace('no more route available for prefix. prefix=%s', prefix)
         this.localRoutingTable.delete(prefix)
       }
 
@@ -498,7 +498,7 @@ export default class RouteBroadcaster {
 
       this.forwardingRoutingTable.insert(prefix, routeUpdate)
 
-      log.debug('logging route update. update=%j', routeUpdate)
+      log.trace('logging route update. update=%j', routeUpdate)
 
       if (currentBest) {
         this.forwardingRoutingTable.log[currentBest.epoch] = null

@@ -59,7 +59,7 @@ export function canDragonFilter (
       continue
     }
 
-    log.debug('applied DRAGON route filter. prefix=%s parentPrefix=%s', prefix, parentPrefix)
+    log.trace('applied DRAGON route filter. prefix=%s parentPrefix=%s', prefix, parentPrefix)
     return true
   }
 

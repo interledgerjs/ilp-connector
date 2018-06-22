@@ -47,7 +47,7 @@ export default class Accounts extends EventEmitter {
     } else if (this.config.ilpAddress === 'unknown' && inheritFrom) {
       const parent = this.getPlugin(inheritFrom)
 
-      log.debug('connecting to parent. accountId=%s', inheritFrom)
+      log.trace('connecting to parent. accountId=%s', inheritFrom)
       await parent.connect({})
 
       const ildcpInfo = await ILDCP.fetch(parent.sendData.bind(parent))
@@ -78,7 +78,7 @@ export default class Accounts extends EventEmitter {
   }
 
   setOwnAddress (newAddress) {
-    log.info('setting ilp address. oldAddress=%s newAddress=%s', this.address, newAddress)
+    log.trace('setting ilp address. oldAddress=%s newAddress=%s', this.address, newAddress)
     this.address = newAddress
   }
 
@@ -86,7 +86,7 @@ export default class Accounts extends EventEmitter {
     const account = this.accounts.get(accountId)
 
     if (!account) {
-      log.warn('could not find plugin for account id. accountId=%s', accountId)
+      log.error('could not find plugin for account id. accountId=%s', accountId)
       throw new Error('unknown account id. accountId=' + accountId)
     }
 
@@ -105,7 +105,7 @@ export default class Accounts extends EventEmitter {
     const account = this.accounts.get(accountId)
 
     if (!account) {
-      log.debug('no currency found. account=%s', accountId)
+      log.error('no currency found. account=%s', accountId)
       return undefined
     }
 
@@ -127,7 +127,7 @@ export default class Accounts extends EventEmitter {
       this.config.validateAccount(accountId, creds)
     } catch (err) {
       if (err.name === 'InvalidJsonBodyError') {
-        log.warn('validation error in account config. id=%s', accountId)
+        log.error('validation error in account config. id=%s', accountId)
         err.debugPrint(log.warn)
         throw new Error('error while adding account, see error log for details.')
       }

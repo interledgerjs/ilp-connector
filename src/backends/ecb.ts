@@ -56,10 +56,10 @@ export default class ECBBackend implements BackendInstance {
   async connect () {
     let apiData
     if (this.mockData) {
-      log.debug('connect using mock data.')
+      log.info('connect using mock data.')
       apiData = this.mockData
     } else {
-      log.debug('connect. uri=' + this.ratesApiUrl)
+      log.info('connect. uri=' + this.ratesApiUrl)
       let result = await fetchUri(this.ratesApiUrl)
       apiData = await parseXMLResponse(await result.text())
     }
@@ -67,7 +67,7 @@ export default class ECBBackend implements BackendInstance {
     this.rates[apiData.base] = 1
     this.currencies = Object.keys(this.rates)
     this.currencies.sort()
-    log.debug('data loaded. noCurrencies=' + this.currencies.length)
+    log.info('data loaded. numCurrencies=' + this.currencies.length)
   }
 
   _formatAmount (amount: string) {
@@ -90,11 +90,11 @@ export default class ECBBackend implements BackendInstance {
     const destinationInfo = this.getInfo(destinationAccount)
 
     if (!sourceInfo) {
-      log.warn('unable to fetch account info for source account. accountId=%s', sourceAccount)
+      log.error('unable to fetch account info for source account. accountId=%s', sourceAccount)
       throw new Error('unable to fetch account info for source account. accountId=' + sourceAccount)
     }
     if (!destinationInfo) {
-      log.warn('unable to fetch account info for destination account. accountId=%s', destinationAccount)
+      log.error('unable to fetch account info for destination account. accountId=%s', destinationAccount)
       throw new Error('unable to fetch account info for destination account. accountId=' + destinationAccount)
     }
 
@@ -106,12 +106,12 @@ export default class ECBBackend implements BackendInstance {
     const destinationRate = this.rates[destinationCurrency]
 
     if (!sourceRate) {
-      log.warn('no rate available for source currency. currency=%s', sourceCurrency)
+      log.error('no rate available for source currency. currency=%s', sourceCurrency)
       throw new Error('no rate available. currency=' + sourceCurrency)
     }
 
     if (!destinationRate) {
-      log.warn('no rate available for destination currency. currency=%s', destinationCurrency)
+      log.error('no rate available for destination currency. currency=%s', destinationCurrency)
       throw new Error('no rate available. currency=' + destinationCurrency)
     }
 
@@ -126,7 +126,7 @@ export default class ECBBackend implements BackendInstance {
       .times(new BigNumber(1).minus(this.spread))
       .toPrecision(15)
 
-    log.debug('quoted rate. from=%s to=%s fromCur=%s toCur=%s rate=%s spread=%s', sourceAccount, destinationAccount, sourceCurrency, destinationCurrency, rate, this.spread)
+    log.trace('quoted rate. from=%s to=%s fromCur=%s toCur=%s rate=%s spread=%s', sourceAccount, destinationAccount, sourceCurrency, destinationCurrency, rate, this.spread)
 
     return Number(rate)
   }

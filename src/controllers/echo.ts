@@ -44,7 +44,7 @@ export default class EchoController {
     if (type === 0) {
       const sourceAddress = reader.readVarOctetString().toString('ascii')
 
-      log.debug('responding to ping. sourceAccount=%s sourceAddress=%s cond=%s', sourceAccount, sourceAddress, parsedPacket.executionCondition.slice(0, 9).toString('base64'))
+      log.trace('responding to ping. sourceAccount=%s sourceAddress=%s cond=%s', sourceAccount, sourceAddress, parsedPacket.executionCondition.slice(0, 9).toString('base64'))
 
       const nextHop = this.routeBuilder.getNextHop(sourceAccount, sourceAddress)
 
@@ -62,7 +62,7 @@ export default class EchoController {
         data: writer.getBuffer()
       }), nextHop)
     } else {
-      log.debug('received unexpected ping response. sourceAccount=%s', sourceAccount)
+      log.error('received unexpected ping response. sourceAccount=%s', sourceAccount)
       throw new InvalidPacketError('unexpected ping response.')
     }
   }

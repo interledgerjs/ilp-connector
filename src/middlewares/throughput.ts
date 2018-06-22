@@ -32,7 +32,7 @@ export default class ThroughputMiddleware implements Middleware {
         // TODO: When we add the ability to update middleware, our state will get
         //   reset every update, which may not be desired.
         const incomingBucket = new TokenBucket({ refillPeriod, refillCount: Number(incomingAmount) })
-        log.debug('created incoming amount limit token bucket for account. accountId=%s refillPeriod=%s incomingAmount=%s', accountId, refillPeriod, incomingAmount)
+        log.trace('created incoming amount limit token bucket for account. accountId=%s refillPeriod=%s incomingAmount=%s', accountId, refillPeriod, incomingAmount)
 
         pipelines.incomingData.insertLast({
           name: 'throughput',
@@ -57,7 +57,7 @@ export default class ThroughputMiddleware implements Middleware {
         // TODO: When we add the ability to update middleware, our state will get
         //   reset every update, which may not be desired.
         const incomingBucket = new TokenBucket({ refillPeriod, refillCount: Number(outgoingAmount) })
-        log.debug('created outgoing amount limit token bucket for account. accountId=%s refillPeriod=%s outgoingAmount=%s', accountId, refillPeriod, outgoingAmount)
+        log.trace('created outgoing amount limit token bucket for account. accountId=%s refillPeriod=%s outgoingAmount=%s', accountId, refillPeriod, outgoingAmount)
 
         pipelines.outgoingData.insertLast({
           name: 'throughput',

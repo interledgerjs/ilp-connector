@@ -35,7 +35,7 @@ export default class CcpController {
 
   async handleRouteControl (data: Buffer, sourceAccount: string) {
     const routeControl = deserializeCcpRouteControlRequest(data)
-    log.debug('received route control message. sender=%s, tableId=%s epoch=%s features=%s', sourceAccount, routeControl.lastKnownRoutingTableId, routeControl.lastKnownEpoch, routeControl.features.join(','))
+    log.trace('received route control message. sender=%s, tableId=%s epoch=%s features=%s', sourceAccount, routeControl.lastKnownRoutingTableId, routeControl.lastKnownEpoch, routeControl.features.join(','))
 
     this.routeBroadcaster.handleRouteControl(sourceAccount, routeControl)
 
@@ -44,7 +44,7 @@ export default class CcpController {
 
   async handleRouteUpdate (data: Buffer, sourceAccount: string) {
     const routeUpdate = deserializeCcpRouteUpdateRequest(data)
-    log.debug('received routes. sender=%s speaker=%s currentEpoch=%s fromEpoch=%s toEpoch=%s newRoutes=%s withdrawnRoutes=%s', sourceAccount, routeUpdate.speaker, routeUpdate.currentEpochIndex, routeUpdate.fromEpochIndex, routeUpdate.toEpochIndex, routeUpdate.newRoutes.length, routeUpdate.withdrawnRoutes.length)
+    log.trace('received routes. sender=%s speaker=%s currentEpoch=%s fromEpoch=%s toEpoch=%s newRoutes=%s withdrawnRoutes=%s', sourceAccount, routeUpdate.speaker, routeUpdate.currentEpochIndex, routeUpdate.fromEpochIndex, routeUpdate.toEpochIndex, routeUpdate.newRoutes.length, routeUpdate.withdrawnRoutes.length)
 
     this.routeBroadcaster.handleRouteUpdate(sourceAccount, routeUpdate)
 

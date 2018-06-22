@@ -4,6 +4,7 @@ require('source-map-support').install()
 
 import createApp from './app'
 import { create as createLogger } from './common/log'
+
 const log = createLogger('app')
 
 module.exports = {
@@ -36,7 +37,7 @@ if (!module.parent) {
       process.exit(0)
     } catch (err) {
       const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : err
-      console.error('error while shutting down. error=%s', errInfo)
+      log.error('error while shutting down. error=%s', errInfo)
       process.exit(1)
     }
   })

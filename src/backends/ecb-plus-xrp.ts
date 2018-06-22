@@ -24,7 +24,7 @@ export default class ECBAndXRPBackend extends ECBBackend {
     }
     const body = await rateRes.json()
     const rate = Number(body.rate).toFixed(5)
-    log.debug('loaded EUR/XRP rate. rate=%s', rate)
+    log.trace('loaded EUR/XRP rate. rate=%s', rate)
     return Number(rate)
   }
 }

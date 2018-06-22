@@ -111,15 +111,15 @@ export default class CcpSender {
     features
   }: CcpRouteControlRequest) {
     if (this.mode !== mode) {
-      this.log.debug('peer requested changing routing mode. oldMode=%s newMode=%s', ModeReverseMap[this.mode], ModeReverseMap[mode])
+      this.log.trace('peer requested changing routing mode. oldMode=%s newMode=%s', ModeReverseMap[this.mode], ModeReverseMap[mode])
     }
     this.mode = mode
 
     if (lastKnownRoutingTableId !== this.forwardingRoutingTable.routingTableId) {
-      this.log.debug('peer has old routing table id, resetting lastKnownEpoch to zero. theirTableId=%s correctTableId=%s', lastKnownRoutingTableId, this.forwardingRoutingTable.routingTableId)
+      this.log.trace('peer has old routing table id, resetting lastKnownEpoch to zero. theirTableId=%s correctTableId=%s', lastKnownRoutingTableId, this.forwardingRoutingTable.routingTableId)
       this.lastKnownEpoch = 0
     } else {
-      this.log.debug('peer epoch set. epoch=%s currentEpoch=%s', this.accountId, lastKnownEpoch, this.forwardingRoutingTable.currentEpoch)
+      this.log.trace('peer epoch set. epoch=%s currentEpoch=%s', this.accountId, lastKnownEpoch, this.forwardingRoutingTable.currentEpoch)
       this.lastKnownEpoch = lastKnownEpoch
     }
 
@@ -159,7 +159,7 @@ export default class CcpSender {
 
     delay = Math.max(MINIMUM_UPDATE_INTERVAL, delay)
 
-    this.log.debug('scheduling next route update. accountId=%s delay=%s currentEpoch=%s peerHasEpoch=%s', this.accountId, delay, this.forwardingRoutingTable.currentEpoch, this.lastKnownEpoch)
+    this.log.trace('scheduling next route update. accountId=%s delay=%s currentEpoch=%s peerHasEpoch=%s', this.accountId, delay, this.forwardingRoutingTable.currentEpoch, this.lastKnownEpoch)
     this.sendRouteUpdateTimer = setTimeout(() => {
       this.sendSingleRouteUpdate()
         .then(() => this.scheduleRouteUpdate())
@@ -233,7 +233,7 @@ export default class CcpSender {
       }
     }
 
-    this.log.debug('broadcasting routes to peer. speaker=%s peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.getOwnAddress(), this.accountId, this.lastKnownEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
+    this.log.trace('broadcasting routes to peer. speaker=%s peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.getOwnAddress(), this.accountId, this.lastKnownEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
 
     const routeUpdate: CcpRouteUpdateRequest = {
       speaker: this.getOwnAddress(),

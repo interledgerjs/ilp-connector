@@ -34,7 +34,7 @@ export default class IlpPrepareController {
     const parsedPacket = IlpPacket.deserializeIlpPrepare(packet)
     const { amount, executionCondition, destination, expiresAt } = parsedPacket
 
-    log.debug('handling ilp prepare. sourceAccount=%s destination=%s amount=%s condition=%s expiry=%s packet=%s', sourceAccount, destination, amount, executionCondition.toString('base64'), expiresAt.toISOString(), packet.toString('base64'))
+    log.trace('handling ilp prepare. sourceAccount=%s destination=%s amount=%s condition=%s expiry=%s packet=%s', sourceAccount, destination, amount, executionCondition.toString('base64'), expiresAt.toISOString(), packet.toString('base64'))
 
     if (destination.startsWith(PEER_PROTOCOL_PREFIX)) {
       return this.peerProtocolController.handle(packet, sourceAccount, { parsedPacket })
@@ -44,11 +44,11 @@ export default class IlpPrepareController {
 
     const { nextHop, nextHopPacket } = await this.routeBuilder.getNextHopPacket(sourceAccount, parsedPacket)
 
-    log.debug('sending outbound ilp prepare. destination=%s amount=%s', destination, nextHopPacket.amount)
+    log.trace('sending outbound ilp prepare. destination=%s amount=%s', destination, nextHopPacket.amount)
     const result = await outbound(IlpPacket.serializeIlpPrepare(nextHopPacket), nextHop)
 
     if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
-      log.debug('got fulfillment. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
+      log.trace('got fulfillment. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
 
       this.backend.submitPayment({
         sourceAccount: sourceAccount,
@@ -58,7 +58,7 @@ export default class IlpPrepareController {
       })
         .catch(err => {
           const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : String(err)
-          log.warn('error while submitting payment to backend. error=%s', errInfo)
+          log.error('error while submitting payment to backend. error=%s', errInfo)
         })
     }
 
