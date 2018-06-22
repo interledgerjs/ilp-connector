@@ -81,9 +81,7 @@ export default class BalanceMiddleware implements Middleware {
     if (accountInfo.balance) {
       const {
         minimum = '-Infinity',
-        maximum,
-        settleThreshold,
-        settleTo = '0'
+        maximum
       } = accountInfo.balance
 
       let balance = new Balance({
@@ -92,38 +90,14 @@ export default class BalanceMiddleware implements Middleware {
       })
       this.balances.set(accountId, balance)
 
-      const bnSettleThreshold = settleThreshold ? new BigNumber(settleThreshold) : undefined
-      const bnSettleTo = new BigNumber(settleTo)
-
       log.debug('initializing balance for account. accountId=%s minimumBalance=%s maximumBalance=%s', accountId, minimum, maximum)
-
-      const maybeSettle = (threshold: BigNumber | undefined, settleTo: BigNumber, balance: Balance) => {
-        const settle =
-          threshold &&
-          threshold.gt(balance.getValue())
-
-        if (settle) {
-          const settleAmount = settleTo.minus(balance.getValue())
-
-          log.debug('settlement triggered. accountId=%s balance=%s settleAmount=%s', accountId, balance.getValue(), settleAmount)
-
-          this.sendMoney(settleAmount.toString(), accountId)
-            .catch(e => {
-              let err = e
-              if (!err || typeof err !== 'object') {
-                err = new Error('Non-object thrown: ' + e)
-              }
-
-              log.error('error occurred during settlement. accountId=%s settleAmount=%s errInfo=%s', accountId, settleAmount, err.stack ? err.stack : err)
-            })
-        }
-      }
 
       pipelines.startup.insertLast({
         name: 'balance',
         method: async (dummy: void, next: MiddlewareCallback<void, void>) => {
           // When starting up, check if we need to pre-fund / settle
-          maybeSettle(bnSettleThreshold, bnSettleTo, balance)
+          // tslint:disable-next-line:no-floating-promises
+          this.maybeSettle(accountId)
 
           return next(dummy)
         }
@@ -205,7 +179,8 @@ export default class BalanceMiddleware implements Middleware {
               balance.subtract(parsedPacket.amount)
               log.debug('balance decreased due to outgoing ilp packet being fulfilled. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
 
-              maybeSettle(bnSettleThreshold, bnSettleTo, balance)
+              // tslint:disable-next-line:no-floating-promises
+              this.maybeSettle(accountId)
             }
 
             return result
@@ -235,5 +210,50 @@ export default class BalanceMiddleware implements Middleware {
       accounts[accountId] = balance.toJSON()
     })
     return { accounts }
+  }
+
+  modifyBalance (accountId: string, _amountDiff: BigNumber.Value): BigNumber {
+    const amountDiff = new BigNumber(_amountDiff)
+    const balance = this.getBalance(accountId)
+    log.warn('modifying balance accountId=%s amount=%s', accountId, amountDiff.toString())
+    if (amountDiff.isPositive()) {
+      balance.add(amountDiff)
+    } else {
+      balance.subtract(amountDiff.negated())
+      // tslint:disable-next-line:no-floating-promises
+      this.maybeSettle(accountId)
+    }
+    return balance.getValue()
+  }
+
+  private getBalance (accountId: string): Balance {
+    const balance = this.balances.get(accountId)
+    if (!balance) {
+      throw new Error('account not found. accountId=' + accountId)
+    }
+    return balance
+  }
+
+  private async maybeSettle (accountId: string): Promise<void> {
+    const accountInfo = this.getInfo(accountId)
+    const { settleThreshold, settleTo = '0' } = accountInfo.balance!
+    const bnSettleThreshold = settleThreshold ? new BigNumber(settleThreshold) : undefined
+    const bnSettleTo = new BigNumber(settleTo)
+    const balance = this.getBalance(accountId)
+
+    const settle = bnSettleThreshold && bnSettleThreshold.gt(balance.getValue())
+    if (!settle) return
+
+    const settleAmount = bnSettleTo.minus(balance.getValue())
+    log.debug('settlement triggered. accountId=%s balance=%s settleAmount=%s', accountId, balance.getValue(), settleAmount)
+
+    await this.sendMoney(settleAmount.toString(), accountId)
+      .catch(e => {
+        let err = e
+        if (!err || typeof err !== 'object') {
+          err = new Error('Non-object thrown: ' + e)
+        }
+        log.error('error occurred during settlement. accountId=%s settleAmount=%s errInfo=%s', accountId, settleAmount, err.stack ? err.stack : err)
+      })
   }
 }

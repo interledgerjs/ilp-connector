@@ -57,7 +57,6 @@ export interface Pipelines {
 
 export interface Middleware {
   applyToPipelines: (pipelines: Pipelines, accountId: string) => Promise<void>
-  getStatus?: () => { [s: string]: any }
 }
 
 export interface MiddlewareConstructor {

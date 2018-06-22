@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "BalanceUpdate.json",
+  "title": "BalanceUpdate",
+  "description": "POST /balance body",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "description": "account id of the balance to modify",
+      "type": "string"
+    },
+    "amountDiff": {
+      "description": "The amount to modify the balance by (positive or negative)",
+      "type": "string",
+      "pattern": "^(0|-?[1-9][0-9]*)$"
+    }
+  },
+  "required": ["accountId", "amountDiff"],
+  "additionalProperties": false
+}

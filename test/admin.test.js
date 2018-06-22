@@ -1,14 +1,12 @@
 'use strict'
 
-const chai = require('chai')
-const { assert } = chai
+const assert = require('assert')
 const sinon = require('sinon')
 const { cloneDeep } = require('lodash')
 const IlpPacket = require('ilp-packet')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
 const logger = require('../src/common/log')
-chai.use(require('chai-as-promised'))
 const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
@@ -75,9 +73,10 @@ describe('AdminApi', function () {
       data: Buffer.alloc(0)
     })
 
-    sinon.stub(this.mockPlugin2, 'sendData').resolves(fulfillPacket)
+    const stub = sinon.stub(this.mockPlugin2, 'sendData').resolves(fulfillPacket)
     const result = await this.mockPlugin1._dataHandler(preparePacket)
     assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+    stub.restore()
   })
 
   afterEach(async function () {
@@ -86,8 +85,8 @@ describe('AdminApi', function () {
   })
 
   describe('getStatus', function () {
-    it('returns the status summary', function () {
-      assert.deepEqual(this.adminApi.getStatus(), {
+    it('returns the status summary', async function () {
+      assert.deepEqual(await this.adminApi.getStatus(), {
         balances: {
           'test.cad-ledger': '0',
           'test.usd-ledger': '100',
@@ -132,8 +131,8 @@ describe('AdminApi', function () {
   })
 
   describe('getRoutingStatus', function () {
-    it('returns the routing status', function () {
-      const status = this.adminApi.getRoutingStatus()
+    it('returns the routing status', async function () {
+      const status = await this.adminApi.getRoutingStatus()
       assert.equal(typeof status.routingTableId, 'string')
       assert.deepEqual(status, {
         routingTableId: status.routingTableId, // this changes every time
@@ -214,8 +213,8 @@ describe('AdminApi', function () {
   })
 
   describe('getAccountStatus', function () {
-    it('returns the account status', function () {
-      assert.deepEqual(this.adminApi.getAccountStatus(), {
+    it('returns the account status', async function () {
+      assert.deepEqual(await this.adminApi.getAccountStatus(), {
         address: 'test.connie',
         accounts: {
           'test.cad-ledger': {
@@ -240,8 +239,8 @@ describe('AdminApi', function () {
   })
 
   describe('getBalanceStatus', function () {
-    it('returns the balance status', function () {
-      assert.deepEqual(this.adminApi.getBalanceStatus(), {
+    it('returns the balance status', async function () {
+      assert.deepEqual(await this.adminApi.getBalanceStatus(), {
         accounts: {
           'test.cad-ledger': { balance: '0', minimum: '-Infinity', maximum: '1000' },
           'test.usd-ledger': { balance: '100', minimum: '-Infinity', maximum: '1000' },
@@ -272,8 +271,8 @@ describe('AdminApi', function () {
   })
 
   describe('getStats', function () {
-    it('returns the collected stats', function () {
-      assert.deepEqual(this.adminApi.getStats(), {
+    it('returns the collected stats', async function () {
+      assert.deepEqual(await this.adminApi.getStats(), {
         counters: {
           'stats/incomingData/test.usd-ledger/fulfilled': 100,
           'stats/outgoingData/test.eur-ledger/fulfilled': 94
@@ -283,6 +282,84 @@ describe('AdminApi', function () {
           'stats/outgoingData/test.eur-ledger/fulfilled': 1
         }
       })
+    })
+  })
+
+  describe('postBalance', function () {
+    it('adds/subtracts the balance by the given amount', async function () {
+      await this.adminApi.postBalance('', { accountId: 'test.cad-ledger', amountDiff: '12' })
+      await this.adminApi.postBalance('', { accountId: 'test.cad-ledger', amountDiff: '-34' })
+      const balanceMiddleware = this.middlewareManager.getMiddleware('balance')
+      assert.equal(
+        balanceMiddleware.getStatus().accounts['test.cad-ledger'].balance,
+        (12 - 34).toString())
+    })
+
+    it('rejects on invalid BalanceUpdate', async function () {
+      try {
+        await this.adminApi.postBalance('', {})
+      } catch (err) {
+        return
+      }
+      assert(false)
+    })
+  })
+
+  describe('getAlerts', function () {
+    it('returns no alerts by default', async function () {
+      assert.deepEqual(await this.adminApi.getAlerts(), {alerts: []})
+    })
+
+    it('returns an alert when a peer returns "maximum balance exceeded"', async function () {
+      sinon.stub(this.mockPlugin2, 'sendData').resolves(IlpPacket.serializeIlpReject({
+        code: 'T04',
+        triggeredBy: 'test.foo',
+        message: 'exceeded maximum balance.',
+        data: Buffer.alloc(0)
+      }))
+      const preparePacket = {
+        amount: '100',
+        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+        expiresAt: new Date(START_DATE + 2000),
+        destination: 'test.eur-ledger.bob'
+      }
+
+      for (let i = 0; i < 3; i++) {
+        preparePacket.data = Buffer.from(i.toString())
+        await this.mockPlugin1._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
+      }
+      const res = await this.adminApi.getAlerts()
+      assert.deepEqual(res, {
+        alerts: [{
+          id: res.alerts[0].id,
+          accountId: 'test.eur-ledger',
+          triggeredBy: 'test.foo',
+          message: 'exceeded maximum balance.',
+          count: 3,
+          createdAt: new Date(START_DATE),
+          updatedAt: new Date(START_DATE)
+        }]
+      })
+    })
+  })
+
+  describe('deleteAlert', function () {
+    beforeEach(function () {
+      this.alertId = 123
+      const middleware = this.middlewareManager.getMiddleware('alert')
+      middleware.alerts[this.alertId] = {
+        id: this.alertId,
+        accountId: 'test.eur-ledger',
+        triggeredBy: 'test.foo',
+        message: 'the error message',
+        count: 123,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    })
+
+    it('deletes an alert', async function () {
+      await this.adminApi.deleteAlert('/alerts/' + this.alertId, null)
     })
   })
 })

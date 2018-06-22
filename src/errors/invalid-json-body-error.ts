@@ -5,6 +5,7 @@ import { Errors } from 'ilp-packet'
 
 export default class InvalidJsonBodyError extends BaseError {
   public ilpErrorCode: string
+  public httpErrorCode: number = 400
   protected validationErrors: ErrorObject[]
 
   constructor (message: string, validationErrors: ErrorObject[]) {
