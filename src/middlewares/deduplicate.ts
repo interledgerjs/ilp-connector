@@ -6,6 +6,9 @@ import BigNumber from 'bignumber.js'
 // Where in the ILP packet does the static data begin (i.e. the data that is not modified hop-to-hop)
 const STATIC_DATA_OFFSET = 25 // 8 byte amount + 17 byte expiry date
 
+const CACHE_CLEANUP_INTERVAL = 30000
+const PACKET_CACHE_DURATION = 30000
+
 interface CachedPacket {
   amount: string,
   expiresAt: Date,
@@ -13,8 +16,15 @@ interface CachedPacket {
 }
 
 export default class DeduplicateMiddleware implements Middleware {
+  private packetCache: Map<string, CachedPacket> = new Map()
+
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
-    const packetCache: Map<string, CachedPacket> = new Map()
+    pipelines.startup.insertLast({
+      name: 'deduplicate',
+      method: async (dummy: void, next: MiddlewareCallback<void, void>) => {
+        setInterval(() => this.cleanupCache(), CACHE_CLEANUP_INTERVAL)
+      }
+    })
 
     pipelines.outgoingData.insertLast({
       name: 'deduplicate',
@@ -30,7 +40,7 @@ export default class DeduplicateMiddleware implements Middleware {
 
           const { amount, expiresAt } = IlpPacket.deserializeIlpPrepare(data)
 
-          const cachedPacket = packetCache.get(index)
+          const cachedPacket = this.packetCache.get(index)
           if (cachedPacket) {
             // We have seen this packet before, let's check if previous amount and expiresAt were larger
             if (new BigNumber(cachedPacket.amount).gte(amount) && cachedPacket.expiresAt >= expiresAt) {
@@ -40,7 +50,7 @@ export default class DeduplicateMiddleware implements Middleware {
 
           const promise = next(data)
 
-          packetCache.set(index, {
+          this.packetCache.set(index, {
             amount,
             expiresAt,
             promise
@@ -52,5 +62,17 @@ export default class DeduplicateMiddleware implements Middleware {
         return next(data)
       }
     })
+  }
+
+  private cleanupCache () {
+    const now = Date.now()
+    for (const index of this.packetCache.keys()) {
+      const cachedPacket = this.packetCache.get(index)
+      if (!cachedPacket) continue
+      const packetExpiry = cachedPacket.expiresAt.getTime() + PACKET_CACHE_DURATION
+      if (packetExpiry < now) {
+        this.packetCache.delete(index)
+      }
+    }
   }
 }
