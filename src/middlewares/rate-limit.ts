@@ -5,11 +5,11 @@ import {
   Middleware,
   MiddlewareCallback,
   MiddlewareServices,
-  MiddlewareStats,
   Pipelines
 } from '../types/middleware'
 import { AccountInfo } from '../types/accounts'
 import TokenBucket from '../lib/token-bucket'
+import Stats from '../services/stats'
 const { RateLimitedError } = IlpPacket.Errors
 
 const DEFAULT_REFILL_PERIOD = 60 * 1000 // 1 minute
@@ -17,7 +17,7 @@ const DEFAULT_REFILL_COUNT = 10000
 
 export default class RateLimitMiddleware implements Middleware {
   private getInfo: (accountId: string) => AccountInfo
-  private stats: MiddlewareStats
+  private stats: Stats
 
   constructor (opts: {}, { getInfo, stats }: MiddlewareServices) {
     this.getInfo = getInfo
@@ -45,7 +45,7 @@ export default class RateLimitMiddleware implements Middleware {
       name: 'rateLimit',
       method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
         if (!bucket.take()) {
-          this.stats.meter('rateLimit/incomingData/' + accountId)
+          this.stats.rateLimitedPackets.increment({ accountId, accountInfo }, {})
           throw new RateLimitedError('too many requests, throttling.')
         }
 
@@ -57,7 +57,7 @@ export default class RateLimitMiddleware implements Middleware {
       name: 'rateLimit',
       method: async (amount: string, next: MiddlewareCallback<string, void>) => {
         if (!bucket.take()) {
-          this.stats.meter('rateLimit/incomingMoney/' + accountId)
+          this.stats.rateLimitedMoney.increment({ accountId, accountInfo }, {})
           throw new RateLimitedError('too many requests, throttling.')
         }
 

@@ -272,16 +272,154 @@ describe('AdminApi', function () {
 
   describe('getStats', function () {
     it('returns the collected stats', async function () {
-      assert.deepEqual(await this.adminApi.getStats(), {
-        counters: {
-          'stats/incomingData/test.usd-ledger/fulfilled': 100,
-          'stats/outgoingData/test.eur-ledger/fulfilled': 94
+      const metrics = await this.adminApi.getStats()
+      const expected = [{
+        help: 'Total number of incoming ILP packets',
+        name: 'ilp_connector_incoming_ilp_packets',
+        type: 'counter',
+        values: [{
+          value: 1,
+          labels:
+          {
+            result: 'fulfilled',
+            account: 'test.cad-ledger',
+            asset: 'CAD',
+            scale: 4
+          },
+          timestamp: undefined
         },
-        meters: {
-          'stats/incomingData/test.usd-ledger/fulfilled': 1,
-          'stats/outgoingData/test.eur-ledger/fulfilled': 1
-        }
-      })
+        {
+          value: 2,
+          labels:
+          {
+            result: 'fulfilled',
+            account: 'test.usd-ledger',
+            asset: 'USD',
+            scale: 4
+          },
+          timestamp: undefined
+        },
+        {
+          value: 1,
+          labels:
+          {
+            result: 'fulfilled',
+            account: 'test.eur-ledger',
+            asset: 'EUR',
+            scale: 4
+          },
+          timestamp: undefined
+        },
+        {
+          value: 1,
+          labels:
+          {
+            result: 'fulfilled',
+            account: 'test.cny-ledger',
+            asset: 'CNY',
+            scale: 4
+          },
+          timestamp: undefined
+        }],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Total value of incoming ILP packets',
+        name: 'ilp_connector_incoming_ilp_packet_value',
+        type: 'counter',
+        values: [{
+          value: 100,
+          labels:
+          {
+            result: 'fulfilled',
+            account: 'test.usd-ledger',
+            asset: 'USD',
+            scale: 4
+          },
+          timestamp: undefined
+        }],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Total number of outgoing ILP packets',
+        name: 'ilp_connector_outgoing_ilp_packets',
+        type: 'counter',
+        values: [{
+          value: 1,
+          labels:
+          {
+            result: 'fulfilled',
+            account: 'test.eur-ledger',
+            asset: 'EUR',
+            scale: 4
+          },
+          timestamp: undefined
+        }],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Total value of outgoing ILP packets',
+        name: 'ilp_connector_outgoing_ilp_packet_value',
+        type: 'counter',
+        values: [{
+          value: 94,
+          labels:
+          {
+            result: 'fulfilled',
+            account: 'test.eur-ledger',
+            asset: 'EUR',
+            scale: 4
+          },
+          timestamp: undefined
+        }],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Total of incoming money',
+        name: 'ilp_connector_incoming_money',
+        type: 'gauge',
+        values: [],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Total of outgoing money',
+        name: 'ilp_connector_outgoing_money',
+        type: 'gauge',
+        values: [],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Total of rate limited ILP packets',
+        name: 'ilp_connector_rate_limited_ilp_packets',
+        type: 'counter',
+        values: [],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Total of rate limited money requests',
+        name: 'ilp_connector_rate_limited_money',
+        type: 'counter',
+        values: [],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Balances on peer account',
+        name: 'ilp_connector_balance',
+        type: 'gauge',
+        values: [{
+          value: 100,
+          labels: { account: 'test.usd-ledger', asset: 'USD', scale: 4 },
+          timestamp: undefined
+        },
+        {
+          value: -94,
+          labels: { account: 'test.eur-ledger', asset: 'EUR', scale: 4 },
+          timestamp: undefined
+        }],
+        aggregator: 'sum'
+      }]
+
+      assert.deepEqual(metrics, expected)
     })
   })
 

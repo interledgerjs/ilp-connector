@@ -25,3 +25,4 @@
 *.log
 /.tags*
 /web/
+.vscode/settings.json
