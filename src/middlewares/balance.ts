@@ -142,7 +142,7 @@ export default class BalanceMiddleware implements Middleware {
               this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
               this.stats.incomingDataPacketValue.increment(account, { result : 'rejected' }, +parsedPacket.amount)
             } else if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
-              this.maybeSettle(accountId)
+              this.maybeSettle(accountId).catch(log.error)
               this.stats.incomingDataPacketValue.increment(account, { result : 'fulfilled' }, +parsedPacket.amount)
             }
 
@@ -197,7 +197,7 @@ export default class BalanceMiddleware implements Middleware {
               this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'rejected' }, +parsedPacket.amount)
             } else if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
-              this.maybeSettle(accountId)
+              this.maybeSettle(accountId).catch(log.error)
               this.stats.outgoingDataPacketValue.increment(account, { result : 'fulfilled' }, +parsedPacket.amount)
             }
 
@@ -244,7 +244,7 @@ export default class BalanceMiddleware implements Middleware {
       balance.add(amountDiff)
     } else {
       balance.subtract(amountDiff.negated())
-      this.maybeSettle(accountId)
+      this.maybeSettle(accountId).catch(log.error)
     }
     this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
     return balance.getValue()

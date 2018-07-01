@@ -2,14 +2,11 @@ import * as IlpPacket from 'ilp-packet'
 import {
   Middleware,
   MiddlewareCallback,
-  MiddlewareMethod,
   MiddlewareServices,
   Pipelines
 } from '../types/middleware'
 import Stats from '../services/stats'
 import { AccountInfo } from '../types/accounts'
-import { create as createLogger } from '../common/log'
-const log = createLogger('stats-middleware')
 
 export default class StatsMiddleware implements Middleware {
   private stats: Stats
