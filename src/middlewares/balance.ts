@@ -174,30 +174,26 @@ export default class BalanceMiddleware implements Middleware {
               return next(data)
             }
 
-            balance.subtract(parsedPacket.amount)
-            log.debug('balance decreased due to outgoing ilp prepare. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
-            this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
-
+            // We do nothing here (i.e. unlike for incoming packets) and wait until the packet is fulfilled
+            // This means we always take the most conservative view of our balance with the upstream peer
             let result
             try {
               result = await next(data)
             } catch (err) {
-              // Reverse changes on an error
-              balance.add(parsedPacket.amount)
               log.debug('outgoing packet refunded due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
-              this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'failed' }, +parsedPacket.amount)
               throw err
             }
 
             if (result[0] === IlpPacket.Type.TYPE_ILP_REJECT) {
-              // Reverse changes on reject
-              balance.add(parsedPacket.amount)
               log.debug('outgoing packet refunded due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
-              this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'rejected' }, +parsedPacket.amount)
             } else if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
+              // Decrease balance on prepare
+              balance.subtract(parsedPacket.amount)
               this.maybeSettle(accountId).catch(log.error)
+              log.debug('balance decreased due to outgoing ilp fulfill. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+              this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'fulfilled' }, +parsedPacket.amount)
             }
 
