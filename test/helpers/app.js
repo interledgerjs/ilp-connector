@@ -1,6 +1,7 @@
 'use strict'
 
 const reduct = require('reduct')
+const Prometheus = require('prom-client')
 const Config = require('../../src/services/config').default
 const RouteBuilder = require('../../src/services/route-builder').default
 const RouteBroadcaster = require('../../src/services/route-broadcaster').default
@@ -34,6 +35,8 @@ exports.create = function (context, opts) {
       mockData: ratesResponse
     })
   }
+
+  Prometheus.register.clear() // Clear metrics
 
   const deps = reduct()
   const app = createApp(opts || null, deps)

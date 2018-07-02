@@ -14,8 +14,8 @@ import { formatRoutingTableAsJson } from '../routing/utils'
 import { Server, ServerRequest, ServerResponse } from 'http'
 import InvalidJsonBodyError from '../errors/invalid-json-body-error'
 import { BalanceUpdate } from '../schemas/BalanceUpdate'
-
 import { create as createLogger } from '../common/log'
+import * as Prometheus from 'prom-client'
 const log = createLogger('admin-api')
 const ajv = new Ajv()
 const validateBalanceUpdate = ajv.compile(require('../schemas/BalanceUpdate.json'))
@@ -23,7 +23,8 @@ const validateBalanceUpdate = ajv.compile(require('../schemas/BalanceUpdate.json
 interface Route {
   method: 'GET' | 'POST' | 'DELETE'
   match: string
-  fn: (url: string, body: object) => Promise<object | void>
+  fn: (url: string, body: object) => Promise<object | string | void>
+  responseType?: string
 }
 
 export default class AdminApi {
@@ -56,7 +57,8 @@ export default class AdminApi {
       { method: 'GET', match: '/rates$', fn: this.getBackendStatus },
       { method: 'GET', match: '/stats$', fn: this.getStats },
       { method: 'GET', match: '/alerts$', fn: this.getAlerts },
-      { method: 'DELETE', match: '/alerts/', fn: this.deleteAlert }
+      { method: 'DELETE', match: '/alerts/', fn: this.deleteAlert },
+      { method: 'GET', match: '/metrics$', fn: this.getMetrics, responseType: Prometheus.register.contentType }
     ]
   }
 
@@ -111,8 +113,13 @@ export default class AdminApi {
     const resBody = await route.fn.call(this, req.url, body && JSON.parse(body))
     if (resBody) {
       res.statusCode = 200
-      res.setHeader('Content-Type', 'application/json')
-      res.end(JSON.stringify(resBody))
+      if (route.responseType) {
+        res.setHeader('Content-Type', route.responseType)
+        res.end(resBody)
+      } else {
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify(resBody))
+      }
     } else {
       res.statusCode = 204
       res.end()
@@ -178,7 +185,7 @@ export default class AdminApi {
     }
   }
 
-  private async deleteAlert (url: string, _: object) {
+  private async deleteAlert (url: string) {
     const middleware = this.middlewareManager.getMiddleware('alert')
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
@@ -186,4 +193,9 @@ export default class AdminApi {
     if (!match) throw new Error('invalid alert id')
     alertMiddleware.dismissAlert(+match[1])
   }
+
+  private async getMetrics () {
+    return Prometheus.register.metrics()
+  }
+
 }

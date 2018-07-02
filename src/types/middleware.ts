@@ -1,20 +1,16 @@
 import { AccountInfo } from './accounts'
+import Stats from '../services/stats'
 
 export interface MiddlewareDefinition {
   type: string,
   options?: object
 }
 
-export interface MiddlewareStats {
-  meter (key: string)
-  counter (key: string, value: number)
-}
-
 /**
  * Services the connector exposes to middleware.
  */
 export interface MiddlewareServices {
-  stats: MiddlewareStats
+  stats: Stats
   getInfo (accountId: string): AccountInfo
   getOwnAddress (): string
   sendData (data: Buffer, accountId: string): Promise<Buffer>

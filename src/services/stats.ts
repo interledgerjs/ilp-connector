@@ -1,20 +1,79 @@
+import * as Prometheus from 'prom-client'
+import { AccountInfo } from '../types/accounts'
+
+function mergeAccountLabels (account: { accountId: string, accountInfo: AccountInfo }, labels: Prometheus.labelValues): Prometheus.labelValues {
+  labels['account'] = account.accountId
+  labels['asset'] = account.accountInfo.assetCode
+  labels['scale'] = account.accountInfo.assetScale
+  return labels
+}
+
+export class AccountCounter extends Prometheus.Counter {
+  constructor (configuration: Prometheus.CounterConfiguration) {
+    configuration.labelNames = (configuration.labelNames || [])
+    configuration.labelNames.push('account', 'asset', 'scale')
+    super(configuration)
+  }
+  increment (account: { accountId: string, accountInfo: AccountInfo }, labels: Prometheus.labelValues, value?: number) {
+    return this.inc(mergeAccountLabels(account, labels), value)
+  }
+}
+
+export class AccountGuage extends Prometheus.Gauge {
+  constructor (configuration: Prometheus.GaugeConfiguration) {
+    configuration.labelNames = (configuration.labelNames || [])
+    configuration.labelNames.push('account', 'asset', 'scale')
+    super(configuration)
+  }
+  setValue (account: { accountId: string, accountInfo: AccountInfo }, labels: Prometheus.labelValues, value: number) {
+    return this.set(mergeAccountLabels(account, labels), value)
+  }
+}
+
 export default class Stats {
-  private counters: { [k: string]: number } = {}
-  private meters: { [k: string]: number } = {}
+  public incomingDataPackets = new AccountCounter({
+    name: 'ilp_connector_incoming_ilp_packets',
+    help: 'Total number of incoming ILP packets',
+    labelNames: [ 'result', 'code' , 'triggeredBy'] })
 
-  meter (key: string) {
-    this.meters[key] = (this.meters[key] || 0) + 1
-  }
+  public incomingDataPacketValue = new AccountCounter({
+    name: 'ilp_connector_incoming_ilp_packet_value',
+    help: 'Total value of incoming ILP packets',
+    labelNames: [ 'result', 'code' , 'triggeredBy'] })
 
-  counter (key: string, value: number) {
-    this.counters[key] = (this.counters[key] || 0) + value
-    this.meter(key)
-  }
+  public outgoingDataPackets = new AccountCounter({
+    name: 'ilp_connector_outgoing_ilp_packets',
+    help: 'Total number of outgoing ILP packets',
+    labelNames: [ 'result', 'code', 'triggeredBy' ] })
+
+  public outgoingDataPacketValue = new AccountCounter({
+    name: 'ilp_connector_outgoing_ilp_packet_value',
+    help: 'Total value of outgoing ILP packets',
+    labelNames: [ 'result', 'code', 'triggeredBy' ] })
+
+  public incomingMoney = new AccountGuage({
+    name: 'ilp_connector_incoming_money',
+    help: 'Total of incoming money',
+    labelNames: [ 'result' ] })
+
+  public outgoingMoney = new AccountGuage({
+    name: 'ilp_connector_outgoing_money',
+    help: 'Total of outgoing money',
+    labelNames: [ 'result' ] })
+
+  public rateLimitedPackets = new AccountCounter({
+    name: 'ilp_connector_rate_limited_ilp_packets',
+    help: 'Total of rate limited ILP packets' })
+
+  public rateLimitedMoney = new AccountCounter({
+    name: 'ilp_connector_rate_limited_money',
+    help: 'Total of rate limited money requests' })
+
+  public balance = new AccountGuage({
+    name: 'ilp_connector_balance',
+    help: 'Balances on peer account' })
 
   getStatus () {
-    return {
-      counters: this.counters,
-      meters: this.meters
-    }
+    return Prometheus.register.getMetricsAsJSON()
   }
 }
