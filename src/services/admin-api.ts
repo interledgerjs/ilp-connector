@@ -151,7 +151,7 @@ export default class AdminApi {
     return balanceMiddleware.getStatus()
   }
 
-  private async postBalance (url: string, _data: Object) {
+  private async postBalance (url: string, _data: object) {
     try {
       validateBalanceUpdate(_data)
     } catch (err) {

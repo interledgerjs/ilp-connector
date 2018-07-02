@@ -11,7 +11,7 @@ import RateBackend from './services/rate-backend'
 import Store from './services/store'
 import MiddlewareManager from './services/middleware-manager'
 import AdminApi from './services/admin-api'
-
+import * as Prometheus from 'prom-client'
 import { PluginInstance } from './types/plugin'
 
 function listen (
@@ -57,6 +57,10 @@ function listen (
     })
 
     await middlewareManager.startup()
+
+    if (config.collectDefaultMetrics) {
+      Prometheus.collectDefaultMetrics()
+    }
 
     adminApi.listen()
 

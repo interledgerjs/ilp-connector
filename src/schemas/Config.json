@@ -317,6 +317,11 @@
       "description": "Host to bind to. Warning: The admin API interface should never be made public! Default: '127.0.0.1'",
       "type": "string",
       "default": "127.0.0.1"
+    },
+    "collectDefaultMetrics": {
+      "description": "Whether the Prometheus exporter should include system metrics or not. Default: false (no)",
+      "type": "boolean",
+      "default": false
     }
   },
   "required": ["accounts"],
