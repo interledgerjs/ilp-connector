@@ -180,13 +180,13 @@ export default class BalanceMiddleware implements Middleware {
             try {
               result = await next(data)
             } catch (err) {
-              log.debug('outgoing packet refunded due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+              log.debug('outgoing packet not applied due to error. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'failed' }, +parsedPacket.amount)
               throw err
             }
 
             if (result[0] === IlpPacket.Type.TYPE_ILP_REJECT) {
-              log.debug('outgoing packet refunded due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+              log.debug('outgoing packet not applied due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'rejected' }, +parsedPacket.amount)
             } else if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
               // Decrease balance on prepare
