@@ -23,7 +23,7 @@ const validateBalanceUpdate = ajv.compile(require('../schemas/BalanceUpdate.json
 interface Route {
   method: 'GET' | 'POST' | 'DELETE'
   match: string
-  fn: (url: string, body: Object) => Promise<Object | string | void>
+  fn: (url: string, body: object) => Promise<object | string | void>
   responseType?: string
 }
 

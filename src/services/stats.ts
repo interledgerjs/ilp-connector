@@ -76,9 +76,4 @@ export default class Stats {
   getStatus () {
     return Prometheus.register.getMetricsAsJSON()
   }
-
-  collectDefaultMetrics () {
-    Prometheus.collectDefaultMetrics()
-  }
-
 }
