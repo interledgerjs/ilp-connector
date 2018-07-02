@@ -205,14 +205,14 @@ export default class RouteBroadcaster {
     const peer = this.peers.get(sourceAccount)
 
     if (!peer) {
-      log.info('received route control message from non-peer. sourceAccount=%s', sourceAccount)
+      log.debug('received route control message from non-peer. sourceAccount=%s', sourceAccount)
       throw new BadRequestError('cannot process route control messages from non-peers.')
     }
 
     const sender = peer.getSender()
 
     if (!sender) {
-      log.info('received route control message from peer not authorized to receive routes from us (sendRoutes=false). sourceAccount=%s', sourceAccount)
+      log.debug('received route control message from peer not authorized to receive routes from us (sendRoutes=false). sourceAccount=%s', sourceAccount)
       throw new BadRequestError('rejecting route control message, we are configured not to send routes to you.')
     }
 
@@ -223,14 +223,14 @@ export default class RouteBroadcaster {
     const peer = this.peers.get(sourceAccount)
 
     if (!peer) {
-      log.info('received route update from non-peer. sourceAccount=%s', sourceAccount)
+      log.debug('received route update from non-peer. sourceAccount=%s', sourceAccount)
       throw new BadRequestError('cannot process route update messages from non-peers.')
     }
 
     const receiver = peer.getReceiver()
 
     if (!receiver) {
-      log.info('received route update from peer not authorized to advertise routes to us (receiveRoutes=false). sourceAccount=%s', sourceAccount)
+      log.debug('received route update from peer not authorized to advertise routes to us (receiveRoutes=false). sourceAccount=%s', sourceAccount)
       throw new BadRequestError('rejecting route update, we are configured not to receive routes from you.')
     }
 
