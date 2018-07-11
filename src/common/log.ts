@@ -1,6 +1,4 @@
 import * as riverpig from 'riverpig'
-import { LoggerConfig } from 'riverpig'
-import { Logger } from 'riverpig'
 import * as debug from 'debug'
 
 import through2 = require('through2')
@@ -11,10 +9,12 @@ export class ConnectorLogger {
   river: any
   tracer: any
 
-  constructor (namespace: string, config0?: LoggerConfig) {
-    this.river = riverpig(namespace, config0) 
+  constructor (namespace: string, config0?: riverpig.LoggerConfig) {
+    this.river = riverpig(namespace, config0)
     this.tracer = this.river.trace || debug(namespace + ':trace')
   }
+
+  // The logging functions being called have the signature function(format, ...args), so they require at least one argument.
 
   info (msg: any, ...elements: any[]): void {
     this.river.info(msg, ...elements)
