@@ -35,7 +35,7 @@ export default class RateLimitMiddleware implements Middleware {
       capacity = refillCount
     } = accountInfo.rateLimit || {}
 
-    log.debug('created token bucket for account. accountId=%s refillPeriod=%s refillCount=%s capacity=%s', accountId, refillPeriod, refillCount, capacity)
+    log.trace('created token bucket for account. accountId=%s refillPeriod=%s refillCount=%s capacity=%s', accountId, refillPeriod, refillCount, capacity)
 
     // TODO: When we add the ability to update middleware, our state will get
     //   reset every update, which may not be desired.

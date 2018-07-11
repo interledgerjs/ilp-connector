@@ -30,7 +30,7 @@ export default class MaxPacketAmountMiddleware implements Middleware {
 
             const amount = new BigNumber(parsedPacket.amount)
             if (amount.gt(maxPacketAmount)) {
-              log.info('rejecting packet for exceeding max amount. accountId=%s maxAmount=%s actualAmount=%s', accountId, maxPacketAmount, parsedPacket.amount)
+              log.debug('rejecting packet for exceeding max amount. accountId=%s maxAmount=%s actualAmount=%s', accountId, maxPacketAmount, parsedPacket.amount)
               throw new AmountTooLargeError(`packet size too large. maxAmount=${maxPacketAmount} actualAmount=${parsedPacket.amount}`, {
                 receivedAmount: parsedPacket.amount,
                 maximumAmount: maxPacketAmount

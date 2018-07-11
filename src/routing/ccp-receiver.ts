@@ -97,32 +97,32 @@ export default class CcpReceiver {
     this.bump(holdDownTime)
 
     if (this.routingTableId !== routingTableId) {
-      this.log.info('saw new routing table. oldId=%s newId=%s', this.routingTableId, routingTableId)
+      this.log.trace('saw new routing table. oldId=%s newId=%s', this.routingTableId, routingTableId)
       this.routingTableId = routingTableId
       this.epoch = 0
     }
 
     if (fromEpochIndex > this.epoch) {
       // There is a gap, we need to go back to the last epoch we have
-      this.log.debug('gap in routing updates. expectedEpoch=%s actualFromEpoch=%s', this.epoch, fromEpochIndex)
+      this.log.trace('gap in routing updates. expectedEpoch=%s actualFromEpoch=%s', this.epoch, fromEpochIndex)
       return []
     }
     if (this.epoch > toEpochIndex) {
       // This routing update is older than what we already have
-      this.log.debug('old routing update, ignoring. expectedEpoch=%s actualToEpoch=%s', this.epoch, toEpochIndex)
+      this.log.trace('old routing update, ignoring. expectedEpoch=%s actualToEpoch=%s', this.epoch, toEpochIndex)
       return []
     }
 
     // just a heartbeat
     if (newRoutes.length === 0 && withdrawnRoutes.length === 0) {
-      this.log.debug('pure heartbeat. fromEpoch=%s toEpoch=%s', fromEpochIndex, toEpochIndex)
+      this.log.trace('pure heartbeat. fromEpoch=%s toEpoch=%s', fromEpochIndex, toEpochIndex)
       this.epoch = toEpochIndex
       return []
     }
 
     const changedPrefixes: string[] = []
     if (withdrawnRoutes.length > 0) {
-      this.log.debug('informed of no longer reachable routes. count=%s routes=%s', withdrawnRoutes.length, withdrawnRoutes)
+      this.log.trace('informed of no longer reachable routes. count=%s routes=%s', withdrawnRoutes.length, withdrawnRoutes)
       for (const prefix of withdrawnRoutes) {
         if (this.deleteRoute(prefix)) {
           changedPrefixes.push(prefix)
@@ -143,7 +143,7 @@ export default class CcpReceiver {
 
     this.epoch = toEpochIndex
 
-    this.log.info('applied route update. changedPrefixesCount=%s fromEpoch=%s toEpoch=%s', changedPrefixes.length, fromEpochIndex, toEpochIndex)
+    this.log.trace('applied route update. changedPrefixesCount=%s fromEpoch=%s toEpoch=%s', changedPrefixes.length, fromEpochIndex, toEpochIndex)
 
     return changedPrefixes
   }
@@ -168,7 +168,7 @@ export default class CcpReceiver {
     this.plugin.sendData(serializeCcpRouteControlRequest(routeControl))
       .then(data => {
         if (data[0] === Type.TYPE_ILP_FULFILL) {
-          this.log.debug('successfully sent route control message.')
+          this.log.trace('successfully sent route control message.')
         } else if (data[0] === Type.TYPE_ILP_REJECT) {
           this.log.debug('route control message was rejected. rejection=%j', deserializeIlpReject(data))
           throw new Error('route control message rejected.')

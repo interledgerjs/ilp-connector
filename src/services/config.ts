@@ -79,7 +79,7 @@ export default class Config extends ConfigSchemaTyping {
             try {
               config[key] = JSON.parse(envValue)
             } catch (err) {
-              log.warn('unable to parse config. key=%s', envKey)
+              log.error('unable to parse config. key=%s', envKey)
             }
             break
           case 'boolean':

@@ -55,11 +55,11 @@ export default class RandomizerBackend implements BackendInstance {
     const destinationInfo = this.getInfo(destinationAccount)
 
     if (!sourceInfo) {
-      log.warn('unable to fetch account info for source account. accountId=%s', sourceAccount)
+      log.error('unable to fetch account info for source account. accountId=%s', sourceAccount)
       throw new Error('unable to fetch account info for source account. accountId=' + sourceAccount)
     }
     if (!destinationInfo) {
-      log.warn('unable to fetch account info for destination account. accountId=%s', destinationAccount)
+      log.error('unable to fetch account info for destination account. accountId=%s', destinationAccount)
       throw new Error('unable to fetch account info for destination account. accountId=' + destinationAccount)
     }
 

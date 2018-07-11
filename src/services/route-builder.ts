@@ -66,12 +66,12 @@ export default class RouteBuilder {
     const route = this.routingTable.resolve(destinationAccount)
 
     if (!route) {
-      log.info('no route found for quote. destinationAccount=' + destinationAccount)
+      log.debug('no route found for quote. destinationAccount=' + destinationAccount)
       throw new UnreachableError('no route found. to=' + destinationAccount)
     }
 
     if (!this.config.reflectPayments && sourceAccount === route.nextHop) {
-      log.info('refusing to route payments back to sender. sourceAccount=%s destinationAccount=%s', sourceAccount, destinationAccount)
+      log.debug('refusing to route payments back to sender. sourceAccount=%s destinationAccount=%s', sourceAccount, destinationAccount)
       throw new UnreachableError('refusing to route payments back to sender. sourceAccount=' + sourceAccount + ' destinationAccount=' + destinationAccount)
     }
 
@@ -80,22 +80,22 @@ export default class RouteBuilder {
 
   async quoteLocal (sourceAccount: string, destinationAccount: string) {
     if (!this.accounts.getAssetCode(sourceAccount)) {
-      log.info('source account is unavailable. sourceAccount=' + sourceAccount)
+      log.debug('source account is unavailable. sourceAccount=' + sourceAccount)
       throw new UnreachableError('no route from source. sourceAccount=' + sourceAccount)
     }
 
     const nextHop = this.getNextHop(sourceAccount, destinationAccount)
 
     if (!this.accounts.getAssetCode(nextHop)) {
-      log.info('next hop is unavailable. nextHop=' + nextHop)
+      log.debug('next hop is unavailable. nextHop=' + nextHop)
       throw new UnreachableError('no route to next hop. nextHop=' + nextHop)
     }
 
-    log.debug('determined next hop. nextHop=' + nextHop)
+    log.trace('determined next hop. nextHop=' + nextHop)
 
     const rate = await this.backend.getRate(sourceAccount, nextHop)
 
-    log.debug('determined local rate. rate=' + rate)
+    log.trace('determined local rate. rate=' + rate)
 
     return { nextHop, rate }
   }
@@ -108,7 +108,7 @@ export default class RouteBuilder {
    * @returns {QuoteLiquidityResponse}
    */
   async quoteLiquidity (sourceAccount: string, packet: IlpPacket.IlqpLiquidityRequest) {
-    log.info('creating liquidity quote. sourceAccount=%s destinationAccount=%s',
+    log.trace('creating liquidity quote. sourceAccount=%s destinationAccount=%s',
       sourceAccount, packet.destinationAccount)
 
     const { nextHop, rate } = await this.quoteLocal(sourceAccount, packet.destinationAccount)
@@ -121,7 +121,7 @@ export default class RouteBuilder {
     let sourceHoldDuration
     let expiresAt
     if (packet.destinationAccount.startsWith(nextHop)) {
-      log.debug('local destination.')
+      log.trace('local destination.')
       liquidityCurve = localCurve
       appliesToPrefix = nextHop
       sourceHoldDuration = packet.destinationHoldDuration + this.config.minMessageWindow
@@ -129,10 +129,10 @@ export default class RouteBuilder {
     } else {
       const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
-        log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
+        log.debug('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
         throw new UnreachableError('no quote found. to=' + packet.destinationAccount)
       }
-      log.debug('remote destination. quote=%j', quote)
+      log.trace('remote destination. quote=%j', quote)
 
       liquidityCurve = localCurve.join(quote.curve)
       appliesToPrefix = quote.prefix
@@ -175,7 +175,7 @@ export default class RouteBuilder {
    * @returns {QuoteBySourceResponse}
    */
   async quoteBySource (sourceAccount: string, packet: IlpPacket.IlqpBySourceRequest) {
-    log.info('creating quote by source amount. sourceAccount=%s destinationAccount=%s sourceAmount=%s',
+    log.trace('creating quote by source amount. sourceAccount=%s destinationAccount=%s sourceAmount=%s',
       sourceAccount, packet.destinationAccount, packet.sourceAmount)
 
     if (packet.sourceAmount === '0') {
@@ -188,16 +188,16 @@ export default class RouteBuilder {
     let destinationAmount
     let sourceHoldDuration
     if (packet.destinationAccount.startsWith(nextHop)) {
-      log.debug('local destination. destinationAmount=' + nextAmount)
+      log.trace('local destination. destinationAmount=' + nextAmount)
       destinationAmount = nextAmount
       sourceHoldDuration = packet.destinationHoldDuration + this.config.minMessageWindow
     } else {
       const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
-        log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
+        log.debug('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
         throw new UnreachableError('no quote found. to=' + packet.destinationAccount)
       }
-      log.debug('remote destination. quote=%j', quote)
+      log.trace('remote destination. quote=%j', quote)
 
       destinationAmount = quote.curve.amountAt(packet.sourceAmount).times(rate).integerValue(BigNumber.ROUND_FLOOR).toString()
       sourceHoldDuration = packet.destinationHoldDuration + quote.minMessageWindow + this.config.minMessageWindow
@@ -226,7 +226,7 @@ export default class RouteBuilder {
    * @returns {QuoteByDestinationResponse}
    */
   async quoteByDestination (sourceAccount: string, packet: IlpPacket.IlqpByDestinationRequest) {
-    log.info('creating quote by destination amount. sourceAccount=%s destinationAccount=%s destinationAmount=%s',
+    log.trace('creating quote by destination amount. sourceAccount=%s destinationAccount=%s destinationAmount=%s',
       sourceAccount, packet.destinationAccount, packet.destinationAmount)
 
     if (packet.destinationAmount === '0') {
@@ -238,16 +238,16 @@ export default class RouteBuilder {
     let nextHopAmount
     let nextHopHoldDuration
     if (packet.destinationAccount.startsWith(nextHop)) {
-      log.debug('local destination.')
+      log.trace('local destination.')
       nextHopAmount = packet.destinationAmount
       nextHopHoldDuration = packet.destinationHoldDuration
     } else {
       const quote = await this.quoter.quoteLiquidity(nextHop, packet.destinationAccount)
       if (!quote) {
-        log.info('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
+        log.debug('no quote found. sourceAccount=%s params=%j', sourceAccount, packet)
         throw new UnreachableError('no quote found. to=' + packet.destinationAccount)
       }
-      log.debug('remote destination. quote=%j', quote)
+      log.trace('remote destination. quote=%j', quote)
 
       nextHopAmount = quote.curve.amountReverse(packet.destinationAmount).toString()
       nextHopHoldDuration = packet.destinationHoldDuration + quote.minMessageWindow
@@ -292,7 +292,7 @@ export default class RouteBuilder {
       data
     } = sourcePacket
 
-    log.info(
+    log.trace(
       'constructing next hop packet. sourceAccount=%s sourceAmount=%s destination=%s',
       sourceAccount, amount, destination
     )
@@ -304,17 +304,17 @@ export default class RouteBuilder {
     const route = this.routingTable.resolve(destination)
 
     if (!route) {
-      log.info('could not find route for transfer. sourceAccount=%s sourceAmount=%s destinationAccount=%s', sourceAccount, amount, destination)
+      log.debug('could not find route for transfer. sourceAccount=%s sourceAmount=%s destinationAccount=%s', sourceAccount, amount, destination)
       throw new UnreachableError('no route found. source=' + sourceAccount + ' destination=' + destination)
     }
 
     const nextHop = route.nextHop
 
-    log.debug('determined next hop. nextHop=%s', nextHop)
+    log.trace('determined next hop. nextHop=%s', nextHop)
 
     const rate = await this.backend.getRate(sourceAccount, nextHop)
 
-    log.debug('determined local rate. rate=%s', rate)
+    log.trace('determined local rate. rate=%s', rate)
 
     this._verifyPluginIsConnected(nextHop)
 

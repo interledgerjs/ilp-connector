@@ -14,7 +14,7 @@ export default class IldcpHostController {
   async handle (data: Buffer, sourceAccount: string) {
     const clientAddress = this.accounts.getChildAddress(sourceAccount)
     const info = this.accounts.getInfo(sourceAccount)
-    log.debug('responding to ILDCP config request. clientAddress=%s', clientAddress)
+    log.trace('responding to ILDCP config request. clientAddress=%s', clientAddress)
 
     return ILDCP.serve({
       requestPacket: data,

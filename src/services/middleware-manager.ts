@@ -144,7 +144,7 @@ export default class MiddlewareManager {
       } catch (err) {
         const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : String(err)
 
-        log.warn('failed to apply middleware to account. middlewareName=%s accountId=%s error=%s', middlewareName, accountId, errInfo)
+        log.error('failed to apply middleware to account. middlewareName=%s accountId=%s error=%s', middlewareName, accountId, errInfo)
         throw new Error('failed to apply middleware. middlewareName=' + middlewareName)
       }
     }

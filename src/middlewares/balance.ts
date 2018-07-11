@@ -32,7 +32,7 @@ class Balance {
     const newBalance = this.balance.plus(amount)
 
     if (newBalance.gt(this.maximum)) {
-      log.info('rejected balance update. oldBalance=%s newBalance=%s amount=%s', this.balance, newBalance, amount)
+      log.error('rejected balance update. oldBalance=%s newBalance=%s amount=%s', this.balance, newBalance, amount)
       throw new InsufficientLiquidityError('exceeded maximum balance.')
     }
 
@@ -43,7 +43,7 @@ class Balance {
     const newBalance = this.balance.minus(amount)
 
     if (newBalance.lt(this.minimum)) {
-      log.info('rejected balance update. oldBalance=%s newBalance=%s amount=%s', this.balance, newBalance, amount)
+      log.error('rejected balance update. oldBalance=%s newBalance=%s amount=%s', this.balance, newBalance, amount)
       throw new Error(`insufficient funds. oldBalance=${this.balance} proposedBalance=${newBalance}`)
     }
 
@@ -93,7 +93,7 @@ export default class BalanceMiddleware implements Middleware {
       })
       this.balances.set(accountId, balance)
 
-      log.debug('initializing balance for account. accountId=%s minimumBalance=%s maximumBalance=%s', accountId, minimum, maximum)
+      log.info('initializing balance for account. accountId=%s minimumBalance=%s maximumBalance=%s', accountId, minimum, maximum)
 
       pipelines.startup.insertLast({
         name: 'balance',
@@ -120,7 +120,7 @@ export default class BalanceMiddleware implements Middleware {
 
             // Increase balance on prepare
             balance.add(parsedPacket.amount)
-            log.debug('balance increased due to incoming ilp prepare. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+            log.trace('balance increased due to incoming ilp prepare. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
             this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
 
             let result
@@ -157,7 +157,7 @@ export default class BalanceMiddleware implements Middleware {
         name: 'balance',
         method: async (amount: string, next: MiddlewareCallback<string, void>) => {
           balance.subtract(amount)
-          log.debug('balance reduced due to incoming settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+          log.trace('balance reduced due to incoming settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
           this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
           return next(amount)
         }
@@ -192,7 +192,7 @@ export default class BalanceMiddleware implements Middleware {
               // Decrease balance on prepare
               balance.subtract(parsedPacket.amount)
               this.maybeSettle(accountId).catch(log.error)
-              log.debug('balance decreased due to outgoing ilp fulfill. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
+              log.trace('balance decreased due to outgoing ilp fulfill. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
               this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'fulfilled' }, +parsedPacket.amount)
             }
@@ -208,7 +208,7 @@ export default class BalanceMiddleware implements Middleware {
         name: 'balance',
         method: async (amount: string, next: MiddlewareCallback<string, void>) => {
           balance.add(amount)
-          log.debug('balance increased due to outgoing settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+          log.trace('balance increased due to outgoing settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
           this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
 
           return next(amount)

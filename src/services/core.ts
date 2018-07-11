@@ -35,7 +35,7 @@ export default class Core {
     }
 
     if (!Buffer.isBuffer(data)) {
-      log.warn('data handler was passed a non-buffer. typeof=%s data=%s', typeof data, data)
+      log.error('data handler was passed a non-buffer. typeof=%s data=%s', typeof data, data)
       throw new Error('data handler was passed a non-buffer. typeof=' + typeof data)
     }
 
@@ -47,7 +47,7 @@ export default class Core {
       case IlpPacket.Type.TYPE_ILQP_BY_DESTINATION_REQUEST:
         return this.ilqpController.sendData(data, accountId)
       default:
-        log.warn('received invalid packet type. source=%s type=%s', accountId, data[0])
+        log.error('received invalid packet type. source=%s type=%s', accountId, data[0])
         throw new InvalidPacketError('invalid packet type received. type=' + data[0])
     }
   }

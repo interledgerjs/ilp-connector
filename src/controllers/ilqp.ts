@@ -13,7 +13,7 @@ export default class IlqpController {
   }
 
   async sendData (packet: Buffer, sourceAccount: string) {
-    log.debug('responding to ILQP quote request. clientName=' + sourceAccount)
+    log.trace('responding to ILQP quote request. clientName=' + sourceAccount)
 
     switch (packet[0]) {
       case IlpPacket.Type.TYPE_ILQP_LIQUIDITY_REQUEST:
