@@ -60,6 +60,10 @@ export default class IlpPrepareController {
           const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : String(err)
           log.error('error while submitting payment to backend. error=%s', errInfo)
         })
+    } else if (result[0] === IlpPacket.Type.TYPE_ILP_REJECT) {
+      const parsed = IlpPacket.deserializeIlpReject(result)
+
+      log.trace('got rejection. cond=%s nextHop=%s amount=%s code=%s triggeredBy=%s message=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount, parsed.code, parsed.triggeredBy, parsed.message)
     }
 
     return result
