@@ -1,6 +1,6 @@
 import reduct = require('reduct')
 
-import { loadModuleOfType, composeMiddleware } from '../lib/utils'
+import { loadModuleOfType } from '../lib/utils'
 import { create as createLogger } from '../common/log'
 const log = createLogger('middleware-manager')
 
@@ -121,6 +121,7 @@ export default class MiddlewareManager {
    * This should be called after the plugins are connected
    */
   async startup () {
+    log.debug('running startup middleware.')
     for (const handler of this.startupHandlers.values()) {
       await handler(undefined)
     }
@@ -219,7 +220,7 @@ export default class MiddlewareManager {
   }
 
   private createHandler<T,U> (pipeline: Pipeline<T,U>, accountId: string, next: (param: T) => Promise<U>): (param: T) => Promise<U> {
-    const middleware: MiddlewareMethod<T,U> = composeMiddleware(pipeline.getMethods())
+    const middleware: MiddlewareMethod<T,U> = pipeline.compose()
 
     return (param: T) => middleware(param, next)
   }

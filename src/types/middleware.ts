@@ -44,7 +44,7 @@ export interface Pipeline<T,U> {
   insertLast (entry: PipelineEntry<T,U>): void
   insertBefore (middlewareName: string, entry: PipelineEntry<T,U>): void
   insertAfter (middlewareName: string, entry: PipelineEntry<T,U>): void
-  getMethods (): MiddlewareMethod<T,U>[]
+  compose (): MiddlewareMethod<T,U>
 }
 
 export interface Pipelines {

@@ -1,4 +1,6 @@
 import { Pipeline, PipelineEntry, MiddlewareMethod } from '../types/middleware'
+import { create as createLogger } from '../common/log'
+const log = createLogger('middleware-pipeline')
 
 export default class MiddlewarePipeline<T,U> implements Pipeline<T,U> {
   private entries: PipelineEntry<T,U>[] = []
@@ -41,7 +43,28 @@ export default class MiddlewarePipeline<T,U> implements Pipeline<T,U> {
     ]
   }
 
-  getMethods (): MiddlewareMethod<T,U>[] {
-    return this.entries.map(e => e.method)
+  compose (): MiddlewareMethod<T, U> {
+    return (val: T, next: MiddlewareMethod<T, U>) => {
+      // last called middleware #
+      let index = -1
+
+      const dispatch = async (i: number, val: T): Promise<U> => {
+        if (i <= index) {
+          throw new Error('next() called multiple times.')
+        }
+        index = i
+        const fn = (i === this.entries.length) ? next : this.entries[i].method
+
+        if (i < this.entries.length) {
+          log.debug('running middleware step. name=%s', this.entries[i].name)
+        }
+
+        return fn(val, function next (val: T) {
+          return dispatch(i + 1, val)
+        })
+      }
+
+      return dispatch(0, val)
+    }
   }
 }
