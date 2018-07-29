@@ -6,7 +6,6 @@ const Config = require('../../src/services/config').default
 const RouteBuilder = require('../../src/services/route-builder').default
 const RouteBroadcaster = require('../../src/services/route-broadcaster').default
 const Accounts = require('../../src/services/accounts').default
-const Quoter = require('../../src/services/quoter').default
 const RateBackend = require('../../src/services/rate-backend').default
 const RoutingTable = require('../../src/services/routing-table').default
 const MiddlewareManager = require('../../src/services/middleware-manager').default
@@ -43,7 +42,6 @@ exports.create = function (context, opts) {
 
   context.app = app
   context.backend = deps(RateBackend)
-  context.quoter = deps(Quoter)
   context.routingTable = deps(RoutingTable)
   context.routeBroadcaster = deps(RouteBroadcaster)
   context.routeBuilder = deps(RouteBuilder)

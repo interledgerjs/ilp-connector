@@ -1,18 +1,20 @@
 'use strict'
 const chai = require('chai')
 const assert = chai.assert
-const expect = chai.expect
 chai.use(require('chai-as-promised'))
 
 const appHelper = require('./helpers/app')
 const mockRequire = require('mock-require')
 const nock = require('nock')
+const sinon = require('sinon')
 nock.enableNetConnect(['localhost'])
 const logger = require('../src/common/log')
 const logHelper = require('./helpers/log')
 const Peer = require('../src/routing/peer').default
 const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 const { UnreachableError } = require('ilp-packet').Errors
+
+const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
 const PluginMock = require('./mocks/mockPlugin')
 mockRequire('ilp-plugin-mock', PluginMock)
@@ -27,6 +29,12 @@ describe('Modify Plugins', function () {
     await this.accounts.connect()
     await this.routeBroadcaster.reloadLocalRoutes()
     await this.middlewareManager.setup()
+
+    this.clock = sinon.useFakeTimers(START_DATE)
+  })
+
+  afterEach(async function () {
+    this.clock.restore()
   })
 
   describe('addPlugin', function () {
@@ -43,13 +51,15 @@ describe('Modify Plugins', function () {
     })
 
     it('should support new ledger', async function () {
-      const quotePromise = this.routeBuilder.quoteBySource('test.usd-ledger', {
-        sourceAmount: '100',
-        destinationAccount: 'test.jpy-ledger.bob',
-        destinationHoldDuration: 5000
+      const packetPromise = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
+        amount: '100',
+        destination: 'test.jpy-ledger.bob',
+        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+        expiresAt: new Date('2015-06-16T00:00:02.000Z'),
+        data: Buffer.alloc(0)
       })
 
-      await assert.isRejected(quotePromise, UnreachableError, /no route found. to=test.jpy.ledger\.bob/)
+      await assert.isRejected(packetPromise, UnreachableError, /no route found. source=test.usd-ledger destination=test.jpy.ledger\.bob/)
 
       await this.app.addPlugin('test.jpy-ledger', {
         relation: 'peer',
@@ -77,15 +87,15 @@ describe('Modify Plugins', function () {
         }]
       }))
 
-      const quotePromise2 = this.routeBuilder.quoteBySource('test.usd-ledger', {
-        sourceAmount: '100',
-        destinationAccount: 'test.jpy-ledger.bob',
-        destinationHoldDuration: 5000
+      const packetPromise2 = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
+        amount: '100',
+        destination: 'test.jpy-ledger.bob',
+        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+        expiresAt: new Date('2015-06-16T00:00:02.000Z'),
+        data: Buffer.alloc(0)
       })
 
-      await quotePromise2
-
-      await assert.isFulfilled(quotePromise2)
+      await assert.isFulfilled(packetPromise2)
     })
 
     it('should add a peer for the added ledger', async function () {
@@ -138,25 +148,28 @@ describe('Modify Plugins', function () {
       assert.throws(() => this.accounts.getPlugin('test.jpy-ledger'), 'unknown account id. accountId=test.jpy-ledger')
     })
 
-    it('should no longer quote to that plugin', async function () {
-      await this.routeBuilder.quoteBySource('test.usd-ledger', {
-        sourceAmount: '100',
-        destinationAccount: 'test.jpy-ledger.bob',
-        destinationHoldDuration: 1.001
+    it('should no longer route to that plugin', async function () {
+      const packetPromise = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
+        amount: '100',
+        destination: 'test.jpy-ledger.bob',
+        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+        expiresAt: new Date('2015-06-16T00:00:02.000Z'),
+        data: Buffer.alloc(0)
       })
+
+      await assert.isFulfilled(packetPromise)
 
       await this.app.removePlugin('test.jpy-ledger')
 
-      await this.routeBuilder.quoteBySource('test.usd-ledger', {
-        sourceAmount: '100',
-        destinationAccount: 'test.jpy-ledger.bob',
-        destinationHoldDuration: 1.001
-      }).then((quote) => {
-        throw new Error()
-      }).catch((err) => {
-        expect(err.name).to.equal('UnreachableError')
-        expect(err.message).to.match(/no route found. to=test.jpy-ledger.bob/)
+      const packetPromise2 = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
+        amount: '100',
+        destination: 'test.jpy-ledger.bob',
+        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+        expiresAt: new Date('2015-06-16T00:00:02.000Z'),
+        data: Buffer.alloc(0)
       })
+
+      await assert.isRejected(packetPromise2, /no route found. source=test.usd-ledger destination=test.jpy-ledger.bob/)
     })
 
     it('should depeer the removed ledger', async function () {
