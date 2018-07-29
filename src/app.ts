@@ -149,7 +149,6 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   const adminApi = deps(AdminApi)
 
   const credentials = config.accounts
-  // We have two separate for loops to make the logs look nicer :)
   for (let id of Object.keys(credentials)) {
     accounts.add(id, credentials[id])
   }

@@ -311,14 +311,6 @@ The frequency at which the connector checks for expired routes. (in milliseconds
 
 The maximum age of a route provided by this connector. (in milliseconds)
 
-#### `quoteExpiry`
-
-* Environment: `CONNECTOR_QUOTE_EXPIRY`
-* Type: `integer`
-* Default: `45000`
-
-The maximum age of a quote provided by this connector. (in milliseconds)
-
 #### `routingSecret`
 
 * Environment: `CONNECTOR_ROUTING_SECRET`
@@ -389,14 +381,6 @@ Additional options to be passed to the `store`'s constructor.
 | ---- | ------ | ------------------------------------- |
 | `[]` | string | Name of the middleware to be removed. |
 
-#### `broadcastCurves`
-
-* Environment: `CONNECTOR_BROADCAST_CURVES`
-* Type: `boolean`
-* Default: `true`
-
-Whether to include liquidity curves when broadcasting routes.
-
 #### `reflectPayments`
 
 * Environment: `CONNECTOR_REFLECT_PAYMENTS`
@@ -436,6 +420,14 @@ Which port the admin API should listen on. Default: 7780
 * Default: `"127.0.0.1"`
 
 Host to bind to. Warning: The admin API interface should never be made public! Default: '127.0.0.1'
+
+#### `collectDefaultMetrics`
+
+* Environment: `CONNECTOR_COLLECT_DEFAULT_METRICS`
+* Type: `boolean`
+* Default: `false`
+
+Whether the Prometheus exporter should include system metrics or not. Default: false (no)
 
 ### API Reference
 
