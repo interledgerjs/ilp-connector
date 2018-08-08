@@ -219,19 +219,23 @@ describe('AdminApi', function () {
         accounts: {
           'test.cad-ledger': {
             info: Object.assign({}, this.accountData['test.cad-ledger'], { options: undefined }),
-            connected: true
+            connected: true,
+            adminInfo: true
           },
           'test.usd-ledger': {
             info: Object.assign({}, this.accountData['test.usd-ledger'], { options: undefined }),
-            connected: true
+            connected: true,
+            adminInfo: true
           },
           'test.eur-ledger': {
             info: Object.assign({}, this.accountData['test.eur-ledger'], { options: undefined }),
-            connected: true
+            connected: true,
+            adminInfo: true
           },
           'test.cny-ledger': {
             info: Object.assign({}, this.accountData['test.cny-ledger'], { options: undefined }),
-            connected: true
+            connected: true,
+            adminInfo: true
           }
         }
       })
@@ -498,6 +502,36 @@ describe('AdminApi', function () {
 
     it('deletes an alert', async function () {
       await this.adminApi.deleteAlert('/alerts/' + this.alertId, null)
+    })
+  })
+
+  describe('plugin admin api', function () {
+    describe('getAccountAdminInfo', function () {
+      it('returns result of getAdminInfo', async function () {
+        const res = await this.adminApi.getAccountAdminInfo('/accounts/test.usd-ledger')
+        assert.deepEqual(res, {
+          account: 'test.usd-ledger',
+          plugin: 'ilp-plugin-mock',
+          info: {
+            foo: 'bar'
+          }
+        })
+      })
+    })
+
+    describe('sendAccountAdminInfo', function () {
+      it('passes the object into sendAdminInfo', async function () {
+        const res = await this.adminApi.sendAccountAdminInfo('/accounts/test.usd-ledger', { foo: 'bar' })
+        assert.deepEqual(res, {
+          account: 'test.usd-ledger',
+          plugin: 'ilp-plugin-mock',
+          result: {
+            foo: {
+              foo: 'bar'
+            }
+          }
+        })
+      })
     })
   })
 })
