@@ -53,6 +53,18 @@ class MockPlugin extends EventEmitter {
   deregisterMoneyHandler (moneyHandler) {
     this._moneyHandler = null
   }
+
+  getAdminInfo () {
+    return {
+      foo: 'bar'
+    }
+  }
+
+  sendAdminInfo (obj) {
+    return {
+      foo: obj
+    }
+  }
 }
 
 MockPlugin.version = 2
