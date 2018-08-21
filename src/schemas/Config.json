@@ -217,11 +217,6 @@
       "type": "integer",
       "default": 45000
     },
-    "quoteExpiry": {
-      "description": "The maximum age of a quote provided by this connector. (in milliseconds)",
-      "type": "integer",
-      "default": 45000
-    },
     "routingSecret": {
       "description": "Seed used for generating routing table auth values.",
       "type": "string",
@@ -285,11 +280,6 @@
         "enum": ["errorHandler", "rateLimit", "balance", "maxPacketAmount", "throughput", "deduplicate", "validateFulfillment", "expire", "stats", "alert"]
       },
       "default": []
-    },
-    "broadcastCurves": {
-      "description": "Whether to include liquidity curves when broadcasting routes.",
-      "type": "boolean",
-      "default": true
     },
     "reflectPayments": {
       "description": "Whether to allow routing payments back to the account that sent them.",

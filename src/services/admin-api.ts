@@ -11,7 +11,7 @@ import RouteBroadcaster from './route-broadcaster'
 import Stats from './stats'
 import RateBackend from './rate-backend'
 import { formatRoutingTableAsJson } from '../routing/utils'
-import { Server, ServerRequest, ServerResponse } from 'http'
+import { Server, IncomingMessage, ServerResponse } from 'http'
 import InvalidJsonBodyError from '../errors/invalid-json-body-error'
 import { BalanceUpdate } from '../schemas/BalanceUpdate'
 import { create as createLogger } from '../common/log'
@@ -93,7 +93,7 @@ export default class AdminApi {
     }
   }
 
-  private async handleRequest (req: ServerRequest, res: ServerResponse) {
+  private async handleRequest (req: IncomingMessage, res: ServerResponse) {
     req.setEncoding('utf8')
     let body = ''
     await new Promise((resolve, reject) => {
