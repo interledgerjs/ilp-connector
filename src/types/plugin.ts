@@ -22,4 +22,6 @@ export interface PluginInstance extends EventEmitter {
   deregisterDataHandler (): void
   registerMoneyHandler (moneyHandler: MoneyHandler): void
   deregisterMoneyHandler (): void
+  getAdminInfo? (): Promise<object>
+  sendAdminInfo? (info: object): Promise<object>
 }

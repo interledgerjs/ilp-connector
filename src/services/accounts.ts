@@ -216,7 +216,8 @@ export default class Accounts extends EventEmitter {
       accounts[accountId] = {
         // Set info.options to undefined so that credentials aren't exposed.
         info: Object.assign({}, account.info, { options: undefined }),
-        connected: account.plugin.isConnected()
+        connected: account.plugin.isConnected(),
+        adminInfo: !!account.plugin.getAdminInfo
       }
     })
     return {

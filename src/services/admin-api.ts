@@ -11,7 +11,7 @@ import RouteBroadcaster from './route-broadcaster'
 import Stats from './stats'
 import RateBackend from './rate-backend'
 import { formatRoutingTableAsJson } from '../routing/utils'
-import { Server, ServerRequest, ServerResponse } from 'http'
+import { Server, IncomingMessage, ServerResponse } from 'http'
 import InvalidJsonBodyError from '../errors/invalid-json-body-error'
 import { BalanceUpdate } from '../schemas/BalanceUpdate'
 import { create as createLogger } from '../common/log'
@@ -52,6 +52,8 @@ export default class AdminApi {
       { method: 'GET', match: '/status$', fn: this.getStatus },
       { method: 'GET', match: '/routing$', fn: this.getRoutingStatus },
       { method: 'GET', match: '/accounts$', fn: this.getAccountStatus },
+      { method: 'GET', match: '/accounts/', fn: this.getAccountAdminInfo },
+      { method: 'POST', match: '/accounts/', fn: this.sendAccountAdminInfo },
       { method: 'GET', match: '/balance$', fn: this.getBalanceStatus },
       { method: 'POST', match: '/balance$', fn: this.postBalance },
       { method: 'GET', match: '/rates$', fn: this.getBackendStatus },
@@ -91,7 +93,7 @@ export default class AdminApi {
     }
   }
 
-  private async handleRequest (req: ServerRequest, res: ServerResponse) {
+  private async handleRequest (req: IncomingMessage, res: ServerResponse) {
     req.setEncoding('utf8')
     let body = ''
     await new Promise((resolve, reject) => {
@@ -198,4 +200,38 @@ export default class AdminApi {
     return Prometheus.register.metrics()
   }
 
+  private _getPlugin (url: string) {
+    const match = /^\/accounts\/([A-Za-z0-9_.\-~]+)$/.exec(url.split('?')[0])
+    if (!match) throw new Error('invalid account.')
+    const account = match[1]
+    const plugin = this.accounts.getPlugin(account)
+    if (!plugin) throw new Error('account does not exist. account=' + account)
+    const info = this.accounts.getInfo(account)
+    return {
+      account,
+      info,
+      plugin
+    }
+  }
+
+  private async getAccountAdminInfo (url: string) {
+    const { account, info, plugin } = this._getPlugin(url)
+    if (!plugin.getAdminInfo) throw new Error('plugin has no admin info. account=' + account)
+    return {
+      account,
+      plugin: info.plugin,
+      info: (await plugin.getAdminInfo())
+    }
+  }
+
+  private async sendAccountAdminInfo (url: string, body?: object) {
+    if (!body) throw new Error('no json body provided to set admin info.')
+    const { account, info, plugin } = this._getPlugin(url)
+    if (!plugin.sendAdminInfo) throw new Error('plugin does not support sending admin info. account=' + account)
+    return {
+      account,
+      plugin: info.plugin,
+      result: (await plugin.sendAdminInfo(body))
+    }
+  }
 }

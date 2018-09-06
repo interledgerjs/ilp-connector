@@ -27,6 +27,8 @@ function listen (
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
   return (async function () {
+    adminApi.listen()
+
     try {
       await backend.connect()
     } catch (error) {
@@ -61,8 +63,6 @@ function listen (
     if (config.collectDefaultMetrics) {
       Prometheus.collectDefaultMetrics()
     }
-
-    adminApi.listen()
 
     log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
   })().catch((err) => log.error(err))
@@ -149,7 +149,6 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   const adminApi = deps(AdminApi)
 
   const credentials = config.accounts
-  // We have two separate for loops to make the logs look nicer :)
   for (let id of Object.keys(credentials)) {
     accounts.add(id, credentials[id])
   }
