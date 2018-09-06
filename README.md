@@ -70,6 +70,13 @@ Some ILSPs are simply customers of a larger ILSP. Others are so-called tier-1 IL
 
 This implementation of the connector contains a routing protocol implementation for tier-1 connectors. Please note that in order to become a tier-1 connector you need to have a relationship with one or more existing tier-1 connectors and they need to trust you not to overwhelm them with traffic or harbor malicious customers on your network.
 
+## Timekeeping
+
+Timekeeping is an important part of processing transactions. Your node must have the right time set to make sure it can handle packets from peers correctly. If you drift too far from the current time, your node will have a different time to your peers and might start to experience strange issues and/or accept/reject packets incorrectly. 
+
+It is highly recommended you run some kind of time synchronisation service on your server. If you need help to install tools for keeping your clock in sync, this article describes how to do it:
+https://www.techrepublic.com/blog/data-center/syncing-time-in-linux-and-windows-with-ntp/
+
 ## Quickstart
 
 ```sh
