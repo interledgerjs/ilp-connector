@@ -14,7 +14,7 @@ import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
 import { PluginInstance } from './types/plugin'
 
-function listen (
+async function listen (
   config: Config,
   accounts: Accounts,
   backend: RateBackend,
@@ -26,46 +26,44 @@ function listen (
 ) {
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
-  return (async function () {
-    adminApi.listen()
+  adminApi.listen()
 
-    try {
-      await backend.connect()
-    } catch (error) {
-      log.error(error)
-      process.exit(1)
-    }
+  try {
+    await backend.connect()
+  } catch (error) {
+    log.error(error)
+    process.exit(1)
+  }
 
-    await middlewareManager.setup()
+  await middlewareManager.setup()
 
-    // If we have no configured ILP address, try to get one via ILDCP
-    await accounts.loadIlpAddress()
+  // If we have no configured ILP address, try to get one via ILDCP
+  await accounts.loadIlpAddress()
 
-    if (config.routeBroadcastEnabled) {
-      routeBroadcaster.start()
-    }
+  if (config.routeBroadcastEnabled) {
+    routeBroadcaster.start()
+  }
 
-    // Connect other plugins, give up after initialConnectTimeout
-    await new Promise((resolve, reject) => {
-      const connectTimeout = setTimeout(() => {
-        log.warn('one or more accounts failed to connect within the time limit, continuing anyway.')
+  // Connect other plugins, give up after initialConnectTimeout
+  await new Promise((resolve, reject) => {
+    const connectTimeout = setTimeout(() => {
+      log.warn('one or more accounts failed to connect within the time limit, continuing anyway.')
+      resolve()
+    }, config.initialConnectTimeout)
+    accounts.connect({ timeout: config.initialConnectTimeout })
+      .then(() => {
+        clearTimeout(connectTimeout)
         resolve()
-      }, config.initialConnectTimeout)
-      accounts.connect({ timeout: config.initialConnectTimeout })
-        .then(() => {
-          clearTimeout(connectTimeout)
-          resolve()
-        }, reject)
-    })
+      }, reject)
+  })
 
-    await middlewareManager.startup()
+  await middlewareManager.startup()
 
-    if (config.collectDefaultMetrics) {
-      Prometheus.collectDefaultMetrics()
-    }
+  if (config.collectDefaultMetrics) {
+    Prometheus.collectDefaultMetrics()
+  }
 
-    log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
-  })().catch((err) => log.error(err))
+  log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
 }
 
 async function addPlugin (
