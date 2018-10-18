@@ -128,7 +128,7 @@ export default class Accounts extends EventEmitter {
     } catch (err) {
       if (err.name === 'InvalidJsonBodyError') {
         log.error('validation error in account config. id=%s', accountId)
-        err.debugPrint(log.warn)
+        err.debugPrint(log.warn.bind(log))
         throw new Error('error while adding account, see error log for details.')
       }
 

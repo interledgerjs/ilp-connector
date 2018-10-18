@@ -132,7 +132,7 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   } catch (err) {
     if (err.name === 'InvalidJsonBodyError') {
       log.warn('config validation error.')
-      err.debugPrint(log.warn)
+      err.debugPrint(log.warn.bind(log))
       log.error('invalid configuration, shutting down.')
       throw new Error('failed to initialize due to invalid configuration.')
     }
