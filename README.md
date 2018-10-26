@@ -498,7 +498,7 @@ Pure in-memory store. Resets every time the connector is run. Useful for develop
 
 #### Built-in: errorHandler
 
-* Pipelines: incomingData, incomingMoney
+* Pipelines: `incomingData`, `incomingMoney`
 
 First middleware in the pipeline. Handles any errors that occur anywhere else and converts them into ILP rejections.
 
@@ -506,7 +506,7 @@ The `errorHandler` middleware will check the thrown error for a field called `il
 
 #### Built-in: deduplicate
 
-* Pipelines: outgoingData
+* Pipelines: `startup`, `teardown`, `outgoingData`
 
 Prevents sending duplicate packets which helps reduce the impact of routing loops.
 

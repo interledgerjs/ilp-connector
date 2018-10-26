@@ -1,6 +1,5 @@
 import PrefixMap from './prefix-map'
-import Accounts from '../services/accounts'
-import { BroadcastRoute, IncomingRoute } from '../types/routing'
+import { IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
 import { Type, deserializeIlpReject } from 'ilp-packet'
 import {
@@ -10,17 +9,6 @@ import {
   serializeCcpRouteControlRequest
 } from 'ilp-protocol-ccp'
 import { PluginInstance } from '../types/plugin'
-
-export interface BroadcastRoutesParams {
-  accounts: Accounts,
-  newRoutes: BroadcastRoute[],
-  routingTableId: string,
-  holdDownTime: number,
-  withdrawnRoutes: { prefix: string, epoch: number }[],
-  fromEpoch: number,
-  toEpoch: number,
-  timeout: number
-}
 
 export interface CcpReceiverOpts {
   plugin: PluginInstance

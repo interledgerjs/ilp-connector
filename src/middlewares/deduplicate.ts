@@ -19,10 +19,20 @@ export default class DeduplicateMiddleware implements Middleware {
   private packetCache: Map<string, CachedPacket> = new Map()
 
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
+    let interval
     pipelines.startup.insertLast({
       name: 'deduplicate',
       method: async (dummy: void, next: MiddlewareCallback<void, void>) => {
-        setInterval(() => this.cleanupCache(), CACHE_CLEANUP_INTERVAL)
+        interval = setInterval(() => this.cleanupCache(), CACHE_CLEANUP_INTERVAL)
+        return next(dummy)
+      }
+    })
+
+    pipelines.teardown.insertLast({
+      name: 'deduplicate',
+      method: async (dummy: void, next: MiddlewareCallback<void, void>) => {
+        clearInterval(interval)
+        return next(dummy)
       }
     })
 
