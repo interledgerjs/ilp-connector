@@ -35,8 +35,8 @@
             "enum": ["parent", "peer", "child"]
           },
           "plugin": {
-            "description": "Name of the ILP plugin that should be used for this account.",
-            "type": "string"
+            "description": "Name or instance of the ILP plugin that should be used for this account. A plugin instance can only be passed when instantiating the connector from JavaScript.",
+            "type": ["string", "object"]
           },
           "assetCode": {
             "description": "Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.",

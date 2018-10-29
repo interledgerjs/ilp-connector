@@ -31,6 +31,7 @@ describe('Modify Plugins', function () {
     await this.middlewareManager.setup()
 
     this.clock = sinon.useFakeTimers(START_DATE)
+    await this.middlewareManager.startup()
   })
 
   afterEach(async function () {
@@ -90,6 +91,26 @@ describe('Modify Plugins', function () {
       const packetPromise2 = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
         amount: '100',
         destination: 'test.jpy-ledger.bob',
+        executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
+        expiresAt: new Date('2015-06-16T00:00:02.000Z'),
+        data: Buffer.alloc(0)
+      })
+
+      await assert.isFulfilled(packetPromise2)
+    })
+
+    it('routes to the new child plugin', async function () {
+      await this.app.addPlugin('test.jpy-ledger', {
+        relation: 'child',
+        assetCode: 'JPY',
+        assetScale: 4,
+        plugin: 'ilp-plugin-mock',
+        options: {}
+      })
+
+      const packetPromise2 = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
+        amount: '100',
+        destination: 'test.connie.test.jpy-ledger.bob',
         executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
         expiresAt: new Date('2015-06-16T00:00:02.000Z'),
         data: Buffer.alloc(0)

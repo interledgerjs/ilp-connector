@@ -1,4 +1,3 @@
-import Accounts from '../services/accounts'
 import ForwardingRoutingTable, { RouteUpdate } from '../services/forwarding-routing-table'
 import { BroadcastRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
@@ -11,17 +10,6 @@ import {
   serializeCcpRouteUpdateRequest
 } from 'ilp-protocol-ccp'
 import { PluginInstance } from '../types/plugin'
-
-export interface BroadcastRoutesParams {
-  accounts: Accounts,
-  newRoutes: BroadcastRoute[],
-  routingTableId: string,
-  holdDownTime: number,
-  withdrawnRoutes: { prefix: string, epoch: number }[],
-  fromEpoch: number,
-  toEpoch: number,
-  timeout: number
-}
 
 export interface CcpSenderOpts {
   accountId: string

@@ -65,8 +65,10 @@ export default class MiddlewareManager {
   protected middlewares: { [key: string]: Middleware }
   protected stats: Stats
   private startupHandlers: Map<string, VoidHandler> = new Map()
+  private teardownHandlers: Map<string, VoidHandler> = new Map()
   private outgoingDataHandlers: Map<string, DataHandler> = new Map()
   private outgoingMoneyHandlers: Map<string, MoneyHandler> = new Map()
+  private started: boolean = false
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
@@ -124,6 +126,7 @@ export default class MiddlewareManager {
    * This should be called after the plugins are connected
    */
   async startup () {
+    this.started = true
     for (const handler of this.startupHandlers.values()) {
       await handler(undefined)
     }
@@ -132,6 +135,7 @@ export default class MiddlewareManager {
   async addPlugin (accountId: string, plugin: PluginInstance) {
     const pipelines: Pipelines = {
       startup: new MiddlewarePipeline<void, void>(),
+      teardown: new MiddlewarePipeline<void, void>(),
       incomingData: new MiddlewarePipeline<Buffer, Buffer>(),
       incomingMoney: new MiddlewarePipeline<string, void>(),
       outgoingData: new MiddlewarePipeline<Buffer, Buffer>(),
@@ -170,12 +174,14 @@ export default class MiddlewareManager {
     }
     const submitMoney = plugin.sendMoney.bind(plugin)
     const startupHandler = this.createHandler(pipelines.startup, accountId, async () => { return })
+    const teardownHandler = this.createHandler(pipelines.teardown, accountId, async () => { return })
     const outgoingDataHandler: DataHandler =
       this.createHandler(pipelines.outgoingData, accountId, submitData)
     const outgoingMoneyHandler: MoneyHandler =
       this.createHandler(pipelines.outgoingMoney, accountId, submitMoney)
 
     this.startupHandlers.set(accountId, startupHandler)
+    this.teardownHandlers.set(accountId, teardownHandler)
     this.outgoingDataHandlers.set(accountId, outgoingDataHandler)
     this.outgoingMoneyHandlers.set(accountId, outgoingMoneyHandler)
 
@@ -189,11 +195,24 @@ export default class MiddlewareManager {
 
     plugin.registerDataHandler(incomingDataHandler)
     plugin.registerMoneyHandler(incomingMoneyHandler)
+
+    if (this.started) {
+      // If the plugin is being added dynamically (after connector init),
+      // make sure it's startup pipeline is run.
+      await startupHandler(undefined)
+    }
   }
 
-  removePlugin (accountId: string, plugin: PluginInstance) {
+  async removePlugin (accountId: string, plugin: PluginInstance) {
     plugin.deregisterDataHandler()
     plugin.deregisterMoneyHandler()
+
+    this.startupHandlers.delete(accountId)
+    const teardownHandler = this.teardownHandlers.get(accountId)
+    if (teardownHandler) await teardownHandler(undefined)
+    this.teardownHandlers.delete(accountId)
+    this.outgoingDataHandlers.delete(accountId)
+    this.outgoingMoneyHandlers.delete(accountId)
   }
 
   async sendData (data: Buffer, accountId: string) {

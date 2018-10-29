@@ -17,6 +17,7 @@
     "url": "https://github.com/interledgerjs/ilp-connector/issues"
   },
   "main": "src/index.js",
+  "types": "src/index.d.ts",
   "bin": {
     "ilp-connector": "./src/index.js"
   },

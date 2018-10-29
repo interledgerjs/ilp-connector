@@ -84,6 +84,7 @@ async function addPlugin (
 
   await plugin.connect({ timeout: Infinity })
   routeBroadcaster.track(id)
+  routeBroadcaster.reloadLocalRoutes()
 }
 
 async function removePlugin (
@@ -96,10 +97,11 @@ async function removePlugin (
   id: string
 ) {
   const plugin = accounts.getPlugin(id)
-  middlewareManager.removePlugin(id, plugin)
+  await middlewareManager.removePlugin(id, plugin)
   await plugin.disconnect()
   routeBroadcaster.untrack(id)
   accounts.remove(id)
+  routeBroadcaster.reloadLocalRoutes()
 }
 
 function getPlugin (

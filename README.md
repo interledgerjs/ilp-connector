@@ -220,7 +220,7 @@ If there are multiple parents, and `ilpAddress` is not set explicit, specify the
 | ----------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `*`                           | object  | Description of individual account.                                                                                                                                                                                                                                                                                                                                                      |
 | `*.relation`                  | string  | Relationship between the connector and the counterparty that the account is with.                                                                                                                                                                                                                                                                                                       |
-| `*.plugin`                    | string  | Name of the ILP plugin that should be used for this account.                                                                                                                                                                                                                                                                                                                            |
+| `*.plugin`                    | string  | Name or instance of the ILP plugin that should be used for this account. A plugin instance can only be passed when instantiating the connector from JavaScript.
 | `*.assetCode`                 | string  | Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.                                                                                                                                                                                                                                                                 |
 | `*.assetScale`                | integer | Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.                                                                                     |
 | `*.balance`                   | object  | _Optional_ Defines whether the connector should maintain and enforce a balance for this account. The balance is always from the connector's perspective. Therefore, a negative balance implies the connector owes money to the counterparty and a positive balance implies the counterparty owes money to the connector. This setting is enforced by the built-in `balance` middleware. |
@@ -498,7 +498,7 @@ Pure in-memory store. Resets every time the connector is run. Useful for develop
 
 #### Built-in: errorHandler
 
-* Pipelines: incomingData, incomingMoney
+* Pipelines: `incomingData`, `incomingMoney`
 
 First middleware in the pipeline. Handles any errors that occur anywhere else and converts them into ILP rejections.
 
@@ -506,7 +506,7 @@ The `errorHandler` middleware will check the thrown error for a field called `il
 
 #### Built-in: deduplicate
 
-* Pipelines: outgoingData
+* Pipelines: `startup`, `teardown`, `outgoingData`
 
 Prevents sending duplicate packets which helps reduce the impact of routing loops.
 

@@ -1,22 +1,10 @@
 import Accounts from '../services/accounts'
 import Config from '../services/config'
 import ForwardingRoutingTable from '../services/forwarding-routing-table'
-import { BroadcastRoute } from '../types/routing'
 import reduct = require('reduct')
 import { Relation } from './relation'
 import CcpSender from './ccp-sender'
 import CcpReceiver from './ccp-receiver'
-
-export interface BroadcastRoutesParams {
-  accounts: Accounts,
-  newRoutes: BroadcastRoute[],
-  routingTableId: string,
-  holdDownTime: number,
-  withdrawnRoutes: { prefix: string, epoch: number }[],
-  fromEpoch: number,
-  toEpoch: number,
-  timeout: number
-}
 
 export interface PeerOpts {
   deps: reduct.Injector,

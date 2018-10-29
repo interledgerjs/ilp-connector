@@ -12,7 +12,7 @@ import ForwardingRoutingTable from '../services/forwarding-routing-table'
  * The basic idea is that if we have a more general route that is as good as a
  * more specific route, we don't need to advertise the more specific route.
  *
- * This removes a lot of routing update across a large network and has basically
+ * This removes a lot of routing updates across a large network and has basically
  * no downside.
  *
  * Note that we use DRAGON filtering, but *not* DRAGON aggregation. There are

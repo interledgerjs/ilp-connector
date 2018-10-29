@@ -7,9 +7,7 @@ import { create as createLogger } from './common/log'
 
 const log = createLogger('app')
 
-module.exports = {
-  createApp: createApp
-}
+export { createApp }
 
 if (!module.parent) {
   const connector = createApp()

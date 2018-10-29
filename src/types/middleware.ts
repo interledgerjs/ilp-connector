@@ -45,6 +45,7 @@ export interface Pipeline<T,U> {
 
 export interface Pipelines {
   readonly startup: Pipeline<void, void>,
+  readonly teardown: Pipeline<void, void>,
   readonly incomingData: Pipeline<Buffer, Buffer>,
   readonly incomingMoney: Pipeline<string, void>,
   readonly outgoingData: Pipeline<Buffer, Buffer>
