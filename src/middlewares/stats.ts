@@ -65,9 +65,9 @@ export default class StatsMiddleware implements Middleware {
             this.stats.outgoingDataPackets.increment(account, { result: 'fulfilled' })
           } else {
             const rejectPacket = IlpPacket.deserializeIlpReject(result)
-            const { code, triggeredBy } = rejectPacket
+            const { code } = rejectPacket
             this.stats.outgoingDataPackets.increment(account,
-              { result: 'rejected', code, triggeredBy })
+              { result: 'rejected', code })
           }
           return result
         } catch (err) {
