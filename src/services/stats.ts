@@ -19,7 +19,7 @@ export class AccountCounter extends Prometheus.Counter {
   }
 }
 
-export class AccountGuage extends Prometheus.Gauge {
+export class AccountGauge extends Prometheus.Gauge {
   constructor (configuration: Prometheus.GaugeConfiguration) {
     configuration.labelNames = (configuration.labelNames || [])
     configuration.labelNames.push('account', 'asset', 'scale')
@@ -34,29 +34,29 @@ export default class Stats {
   public incomingDataPackets = new AccountCounter({
     name: 'ilp_connector_incoming_ilp_packets',
     help: 'Total number of incoming ILP packets',
-    labelNames: [ 'result', 'code' , 'triggeredBy'] })
+    labelNames: [ 'result', 'code'] })
 
   public incomingDataPacketValue = new AccountCounter({
     name: 'ilp_connector_incoming_ilp_packet_value',
     help: 'Total value of incoming ILP packets',
-    labelNames: [ 'result', 'code' , 'triggeredBy'] })
+    labelNames: [ 'result', 'code'] })
 
   public outgoingDataPackets = new AccountCounter({
     name: 'ilp_connector_outgoing_ilp_packets',
     help: 'Total number of outgoing ILP packets',
-    labelNames: [ 'result', 'code', 'triggeredBy' ] })
+    labelNames: [ 'result', 'code' ] })
 
   public outgoingDataPacketValue = new AccountCounter({
     name: 'ilp_connector_outgoing_ilp_packet_value',
     help: 'Total value of outgoing ILP packets',
-    labelNames: [ 'result', 'code', 'triggeredBy' ] })
+    labelNames: [ 'result', 'code' ] })
 
-  public incomingMoney = new AccountGuage({
+  public incomingMoney = new AccountGauge({
     name: 'ilp_connector_incoming_money',
     help: 'Total of incoming money',
     labelNames: [ 'result' ] })
 
-  public outgoingMoney = new AccountGuage({
+  public outgoingMoney = new AccountGauge({
     name: 'ilp_connector_outgoing_money',
     help: 'Total of outgoing money',
     labelNames: [ 'result' ] })
@@ -69,7 +69,7 @@ export default class Stats {
     name: 'ilp_connector_rate_limited_money',
     help: 'Total of rate limited money requests' })
 
-  public balance = new AccountGuage({
+  public balance = new AccountGauge({
     name: 'ilp_connector_balance',
     help: 'Balances on peer account' })
 
