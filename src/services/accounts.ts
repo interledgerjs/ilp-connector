@@ -200,33 +200,16 @@ export default class Accounts extends EventEmitter {
     if (typeof creds.plugin === 'object') return creds.plugin
     const Plugin = require(creds.plugin)
 
-    const api: any = {}
-    // Lazily create plugin utilities
-    Object.defineProperty(api, 'store', {
-      get: () => {
-        return this.store.getPluginStore(accountId)
-      }
-    })
-    Object.defineProperty(api, 'log', {
-      get: () => {
-        return createLogger(`${creds.plugin}[${accountId}]`)
-      }
-    })
+    const api: any = {
+      store: this.store.getPluginStore(accountId),
+      log: createLogger(`${creds.plugin}[${accountId}]`)
+    }
 
-    const opts = Object.assign({}, creds.options)
-    // Provide old deprecated _store and _log properties
-    Object.defineProperty(opts, '_store', {
-      get: () => {
-        log.warn('DEPRECATED: plugin accessed deprecated _store property. accountId=%s', accountId)
-        return api.store
-      }
-    })
-    Object.defineProperty(opts, '_log', {
-      get: () => {
-        log.warn('DEPRECATED: plugin accessed deprecated _log property. accountId=%s', accountId)
-        return api.log
-      }
-    })
+    const opts = Object.assign({
+      // Provide old deprecated _store and _log properties
+      _store: api.store,
+      _log: api.log
+    }, creds.options)
     return compat(new Plugin(opts, api))
   }
 }
