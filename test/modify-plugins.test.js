@@ -134,7 +134,7 @@ describe('Modify Plugins', function () {
     })
   })
 
-  describe('removePlugin', function () {
+  describe('removePlugin peer', function () {
     beforeEach(async function () {
       await this.app.addPlugin('test.jpy-ledger', {
         relation: 'peer',
@@ -181,6 +181,9 @@ describe('Modify Plugins', function () {
       await assert.isFulfilled(packetPromise)
 
       await this.app.removePlugin('test.jpy-ledger')
+      const status = this.routeBroadcaster.getStatus()
+      assert.strictEqual(status.localRoutingTable['test.connie.test.jpy-ledger'], undefined)
+      assert.strictEqual(status.forwardingRoutingTable['test.jpy-ledger'], undefined)
 
       const packetPromise2 = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
         amount: '100',
@@ -198,6 +201,45 @@ describe('Modify Plugins', function () {
       await this.app.removePlugin('test.jpy-ledger')
 
       assert.isNotOk(this.routeBroadcaster.peers.get('test.jpy-ledger'))
+    })
+  })
+
+  describe('removePlugin child', function () {
+    beforeEach(async function () {
+      await this.app.addPlugin('test.jpy-ledger', {
+        relation: 'child',
+        assetCode: 'EUR',
+        assetScale: 4,
+        plugin: 'ilp-plugin-mock',
+        options: {
+          prefix: 'jpy-ledger'
+        },
+        sendRoutes: true,
+        receiveRoutes: true
+      })
+
+      await this.accounts.getPlugin('test.jpy-ledger')._dataHandler(serializeCcpRouteUpdateRequest({
+        speaker: 'test.jpy-ledger',
+        routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
+        currentEpochIndex: 0,
+        fromEpochIndex: 0,
+        toEpochIndex: 1,
+        holdDownTime: 45000,
+        withdrawnRoutes: [],
+        newRoutes: [{
+          prefix: 'test.jpy-ledger',
+          path: ['test.jpy-ledger'],
+          auth: Buffer.from('RLQ3sZWn8Y5TSNJM9qXszfxVlcuERxsxpy+7RhaUadk=', 'base64'),
+          props: []
+        }]
+      }))
+    })
+
+    it('cleans up the routes', async function () {
+      await this.app.removePlugin('test.jpy-ledger')
+      const status = this.routeBroadcaster.getStatus()
+      assert.strictEqual(status.localRoutingTable['test.connie.test.jpy-ledger'], undefined)
+      assert.strictEqual(status.forwardingRoutingTable['test.jpy-ledger'], undefined)
     })
   })
 })

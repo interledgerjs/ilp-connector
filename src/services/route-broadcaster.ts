@@ -197,7 +197,9 @@ export default class RouteBroadcaster {
       }
     }
     if (this.getAccountRelation(accountId) === 'child') {
-      this.updatePrefix(this.accounts.getChildAddress(accountId))
+      const childAddress = this.accounts.getChildAddress(accountId)
+      this.localRoutes.delete(childAddress)
+      this.updatePrefix(childAddress)
     }
   }
 
@@ -496,7 +498,11 @@ export default class RouteBroadcaster {
         epoch
       }
 
-      this.forwardingRoutingTable.insert(prefix, routeUpdate)
+      if (typeof newNextHop === 'string') {
+        this.forwardingRoutingTable.insert(prefix, routeUpdate);
+      } else {
+        this.forwardingRoutingTable.delete(prefix);
+      }
 
       log.trace('logging route update. update=%j', routeUpdate)
 
