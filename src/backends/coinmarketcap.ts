@@ -19,7 +19,7 @@ export default class CMCBackend implements BackendInstance {
   protected getInfo: (accountId: any) => AccountInfo | undefined
 
   constructor (opts: CMCBackendOpts, api: BackendServices) {
-    this.spread = opts.spread | 0
+    this.spread = opts.spread || 0
     this.ratesApiUrl = opts.ratesApiUrl || RATES_API
     this.getInfo = api.getInfo
     this.rates = {}
