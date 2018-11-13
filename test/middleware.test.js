@@ -92,7 +92,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('rejects when balance exceeds maximum', async function () {
@@ -139,35 +138,6 @@ describe('Middleware Manager', function () {
       })
     })
 
-    describe('with error-handler', function () {
-      beforeEach(async function () {
-        this.accounts.add('mock.test3', {
-          relation: 'child',
-          assetCode: 'USD',
-          assetScale: 4,
-          plugin: 'ilp-plugin-mock'
-        })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
-      })
-
-      it('reject if handler did not return a buffer', async function () {
-        const preparePacket = IlpPacket.serializeIlpPrepare({
-          amount: '49',
-          executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-          expiresAt: new Date(START_DATE + 2000),
-          destination: 'mock.test1',
-          data: Buffer.alloc(0)
-        })
-
-        await this.middlewareManager.setup()
-
-        const response = await this.mockPlugin3Wrapped._dataHandler({test: 1})
-        // TODO is this even necessary as its not called before the check in core.ts
-      })
-    })
 
     describe('with max-packet-amount middleware', function () {
       beforeEach(async function () {
@@ -181,7 +151,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('fulfills when the packet amount is within limit', async function () {
@@ -243,7 +212,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('rejects when payments arrive too quickly', async function () {
@@ -358,7 +326,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('rejects when the next hope has insufficient funds', async function () {
@@ -423,7 +390,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('Adds outgoing packets into duplicate cache', async function () {
@@ -487,7 +453,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('fulfills for responses received within expiration window', async function () {
@@ -502,7 +467,6 @@ describe('Middleware Manager', function () {
           fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
           data: Buffer.alloc(0)
         })
-
         sinon.stub(this.mockPlugin3Wrapped, 'sendData')
           .resolves(fulfillPacket)
 
@@ -512,8 +476,7 @@ describe('Middleware Manager', function () {
         assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
       })
 
-      // TODO need to fix for dealing with slow sending expiration
-      xit('reject for response not received within expiration window', async function () {
+      it('reject for response not received within expiration window', async function () {
         const preparePacket = IlpPacket.serializeIlpPrepare({
           amount: '49',
           executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
@@ -526,13 +489,27 @@ describe('Middleware Manager', function () {
           data: Buffer.alloc(0)
         })
 
-        // sinon.stub(this.mockPlugin3Wrapped, 'sendData').returns(Promise.resolve(fulfillPacket)
+        sinon.stub(this.mockPlugin3Wrapped, 'sendData').callsFake(async function () {
+          this.clock.tick(2000)
+          await new Promise(resolve => setTimeout(resolve, 10000))
+          return fulfillPacket
+        }.bind(this))
 
         await this.middlewareManager.setup()
-        const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+        const result = this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
-        console.log(IlpPacket.deserializeIlpPacket(result))
-        // TODO check error code is R00 old code was incorrectly setting this value to Internal Error
+        // waiting here is necessary
+        await new Promise(resolve => setTimeout(resolve, 10))
+        result.then(data => {
+          assert.equal(data[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+          assert.deepEqual(IlpPacket.deserializeIlpReject(data), {
+            code: 'R00',
+            message: 'packet expired.',
+            triggeredBy: 'test.connie',
+            data: Buffer.alloc(0)
+          })
+        })
+        this.clock.tick(2000)
       })
     })
 
@@ -547,7 +524,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('fulfills response increments stats with fulfilled result', async function () {
@@ -632,7 +608,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('fulfills response within the throughput limit', async function () {
@@ -653,7 +628,6 @@ describe('Middleware Manager', function () {
 
         await this.middlewareManager.setup()
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-        console.log(IlpPacket.deserializeIlpPacket(result))
         assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
       })
 
@@ -698,7 +672,6 @@ describe('Middleware Manager', function () {
         this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
         await this.accounts.connect()
         this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-        this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
       })
 
       it('fulfills response within the correct fulfillment condition', async function () {
@@ -748,9 +721,6 @@ describe('Middleware Manager', function () {
           data: Buffer.alloc(0)
         })
       })
-
-      // TODO add test that will ensure some succeed and then fails within overgoing bandwidth in alloted time
     })
   })
-
 })
