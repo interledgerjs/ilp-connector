@@ -138,7 +138,6 @@ describe('Middleware Manager', function () {
       })
     })
 
-
     describe('with max-packet-amount middleware', function () {
       beforeEach(async function () {
         this.accounts.add('mock.test3', {
@@ -410,7 +409,7 @@ describe('Middleware Manager', function () {
 
         await this.middlewareManager.setup()
 
-        const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
+        await this.mockPlugin3Wrapped._dataHandler(preparePacket)
 
         const cachedPacket = this.middlewareManager.getMiddleware('deduplicate').packetCache.values().next().value
         assert.equal(cachedPacket.amount, 48)
