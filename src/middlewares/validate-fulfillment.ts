@@ -3,7 +3,7 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('validate-fulfillment-middleware')
 import * as IlpPacket from 'ilp-packet'
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-const { UnreachableError } = IlpPacket.Errors
+const { WrongConditionError } = IlpPacket.Errors
 
 export default class ValidateFulfillmentMiddleware implements Middleware {
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
@@ -21,7 +21,7 @@ export default class ValidateFulfillmentMiddleware implements Middleware {
 
             if (!calculatedCondition.equals(executionCondition)) {
               log.error('received incorrect fulfillment from account. accountId=%s fulfillment=%s calculatedCondition=%s executionCondition=%s', accountId, fulfillment.toString('base64'), calculatedCondition.toString('base64'), executionCondition.toString('base64'))
-              throw new UnreachableError('fulfillment did not match expected value.')
+              throw new WrongConditionError('fulfillment did not match expected value.')
             }
           }
 

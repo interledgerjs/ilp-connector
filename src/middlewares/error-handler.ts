@@ -12,6 +12,10 @@ export default class ErrorHandlerMiddleware implements Middleware {
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
     const log = createLogger(`error-handler-middleware[${accountId}]`)
 
+    /**
+     * Important middleware. It ensures any errors thrown through the middleware pipe is converted to correct ILP
+     * reject that is sent back to sender.
+     */
     pipelines.incomingData.insertLast({
       name: 'errorHandler',
       method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
