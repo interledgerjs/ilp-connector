@@ -33,17 +33,17 @@ export default class RouteBuilder {
       this.config.spread === 0
   }
 
-  getNextHop (sourceAccount: string, destinationAccount: string) {
-    const route = this.routingTable.resolve(destinationAccount)
+  getNextHop (sourceAccount: string, destination: string) {
+    const route = this.routingTable.resolve(destination)
 
     if (!route) {
-      log.debug('no route found. destinationAccount=' + destinationAccount)
-      throw new UnreachableError('no route found. source=' + sourceAccount + ' destination=' + destinationAccount)
+      log.debug('no route found. destination=' + destination)
+      throw new UnreachableError('no route found. source=' + sourceAccount + ' destination=' + destination)
     }
 
     if (!this.config.reflectPayments && sourceAccount === route.nextHop) {
-      log.debug('refusing to route payments back to sender. sourceAccount=%s destinationAccount=%s', sourceAccount, destinationAccount)
-      throw new UnreachableError('refusing to route payments back to sender. sourceAccount=' + sourceAccount + ' destinationAccount=' + destinationAccount)
+      log.debug('refusing to route payments back to sender. sourceAccount=%s destination=%s', sourceAccount, destination)
+      throw new UnreachableError('refusing to route payments back to sender. sourceAccount=' + sourceAccount + ' destination=' + destination)
     }
 
     return route.nextHop

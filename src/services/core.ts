@@ -1,8 +1,6 @@
 import * as IlpPacket from 'ilp-packet'
 import Config from '../services/config'
 import Accounts from '../services/accounts'
-import RouteBroadcaster from '../services/route-broadcaster'
-import RouteBuilder from '../services/route-builder'
 import IlpPrepareController from '../controllers/ilp-prepare'
 import { create as createLogger } from '../common/log'
 const log = createLogger('core-middleware')
@@ -12,15 +10,11 @@ const { InvalidPacketError } = IlpPacket.Errors
 export default class Core {
   protected config: Config
   protected accounts: Accounts
-  protected routeBroadcaster: RouteBroadcaster
-  protected routeBuilder: RouteBuilder
   protected ilpPrepareController: IlpPrepareController
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
     this.accounts = deps(Accounts)
-    this.routeBroadcaster = deps(RouteBroadcaster)
-    this.routeBuilder = deps(RouteBuilder)
 
     this.ilpPrepareController = deps(IlpPrepareController)
   }
