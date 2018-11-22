@@ -8,7 +8,7 @@ const log = createLogger('leveldown-store')
 class LeveldownStore implements StoreInstance {
   db: LevelUp
 
-  constructor ({ db, path }: {db?: LevelUp, path?: string}) {
+  constructor ({ db, path }: { db?: LevelUp, path?: string }) {
     if (db) {
       this.db = db
       return

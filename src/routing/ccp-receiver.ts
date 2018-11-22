@@ -1,26 +1,24 @@
 import PrefixMap from './prefix-map'
+import Account from '../types/account'
 import { IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
-import { Type, deserializeIlpReject } from 'ilp-packet'
+import { deserializeIlpPrepare, IlpReply, isFulfill } from 'ilp-packet'
 import {
   CcpRouteControlRequest,
   CcpRouteUpdateRequest,
   Mode,
   serializeCcpRouteControlRequest
 } from 'ilp-protocol-ccp'
-import { PluginInstance } from '../types/plugin'
 
 export interface CcpReceiverOpts {
-  plugin: PluginInstance
-  accountId: string
+  account: Account
 }
 
 const ROUTE_CONTROL_RETRY_INTERVAL = 30000
 
 export default class CcpReceiver {
-  private plugin: PluginInstance
+  private account: Account
   private log: ConnectorLogger
-  private accountId: string
   private routes: PrefixMap<IncomingRoute>
   private expiry: number = 0
 
@@ -35,19 +33,14 @@ export default class CcpReceiver {
    */
   private epoch: number = 0
 
-  constructor ({ plugin, accountId }: CcpReceiverOpts) {
-    this.plugin = plugin
-    this.log = createLogger(`ccp-receiver[${accountId}]`)
-    this.accountId = accountId
+  constructor ({ account }: CcpReceiverOpts) {
+    this.account = account
+    this.log = createLogger(`ccp-receiver[${account.id}]`)
     this.routes = new PrefixMap()
   }
 
   bump (holdDownTime: number) {
     this.expiry = Math.max(Date.now() + holdDownTime, this.expiry)
-  }
-
-  getAccountId () {
-    return this.accountId
   }
 
   getExpiry () {
@@ -120,7 +113,7 @@ export default class CcpReceiver {
 
     for (const route of newRoutes) {
       if (this.addRoute({
-        peer: this.accountId,
+        peer: this.account.id,
         prefix: route.prefix,
         path: route.path,
         auth: route.auth
@@ -141,7 +134,7 @@ export default class CcpReceiver {
   }
 
   sendRouteControl = () => {
-    if (!this.plugin.isConnected()) {
+    if (!this.account.isConnected()) {
       this.log.debug('cannot send route control message, plugin not connected (yet).')
       return
     }
@@ -153,16 +146,13 @@ export default class CcpReceiver {
       features: []
     }
 
-    this.plugin.sendData(serializeCcpRouteControlRequest(routeControl))
-      .then(data => {
-        if (data[0] === Type.TYPE_ILP_FULFILL) {
+    this.account.sendIlpPacket(deserializeIlpPrepare(serializeCcpRouteControlRequest(routeControl)))
+      .then((packet: IlpReply) => {
+        if (isFulfill(packet)) {
           this.log.trace('successfully sent route control message.')
-        } else if (data[0] === Type.TYPE_ILP_REJECT) {
-          this.log.debug('route control message was rejected. rejection=%j', deserializeIlpReject(data))
-          throw new Error('route control message rejected.')
         } else {
-          this.log.debug('unknown response packet type. type=' + data[0])
-          throw new Error('route control message returned unknown response.')
+          this.log.debug('route control message was rejected. rejection=%j', packet)
+          throw new Error('route control message rejected.')
         }
       })
       .catch((err: any) => {

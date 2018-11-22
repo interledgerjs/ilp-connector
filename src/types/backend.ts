@@ -1,4 +1,4 @@
-import { AccountInfo } from '../types/accounts'
+import { AccountInfo } from './account'
 
 export interface SubmitPaymentParams {
   sourceAccount: string
@@ -13,7 +13,7 @@ export interface BackendServices {
 }
 
 export interface BackendConstructor {
-  new (options: object, api: BackendServices): BackendInstance
+  new(options: object, api: BackendServices): BackendInstance
 }
 
 export interface BackendInstance {

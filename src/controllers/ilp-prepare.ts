@@ -1,4 +1,4 @@
-import * as IlpPacket from 'ilp-packet'
+import { IlpReply, isFulfill, IlpPrepare } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('ilp-prepare')
 import reduct = require('reduct')
@@ -26,28 +26,28 @@ export default class IlpPrepareController {
     this.echoController = deps(EchoController)
   }
 
-  async sendData (
-    packet: Buffer,
+  async sendIlpPacket (
+    packet: IlpPrepare,
     sourceAccount: string,
-    outbound: (data: Buffer, accountId: string) => Promise<Buffer>
-  ) {
-    const parsedPacket = IlpPacket.deserializeIlpPrepare(packet)
-    const { amount, executionCondition, destination, expiresAt } = parsedPacket
+    outbound: (data: IlpPrepare, accountId: string) => Promise<IlpReply>
+  ): Promise<IlpReply> {
+    const { amount, executionCondition, destination, expiresAt, data } = packet
 
-    log.trace('handling ilp prepare. sourceAccount=%s destination=%s amount=%s condition=%s expiry=%s packet=%s', sourceAccount, destination, amount, executionCondition.toString('base64'), expiresAt.toISOString(), packet.toString('base64'))
+    log.trace('handling ilp prepare. sourceAccount=%s destination=%s amount=%s condition=%s expiry=%s data=%s',
+      sourceAccount, destination, amount, executionCondition.toString('base64'), expiresAt.toISOString(), data.toString('base64'))
 
     if (destination.startsWith(PEER_PROTOCOL_PREFIX)) {
-      return this.peerProtocolController.handle(packet, sourceAccount, { parsedPacket })
+      return this.peerProtocolController.handle(packet, sourceAccount)
     } else if (destination === this.accounts.getOwnAddress()) {
-      return this.echoController.handle(packet, sourceAccount, { parsedPacket, outbound })
+      return this.echoController.handle(packet, sourceAccount, outbound)
     }
 
-    const { nextHop, nextHopPacket } = await this.routeBuilder.getNextHopPacket(sourceAccount, parsedPacket)
+    const { nextHop, nextHopPacket } = await this.routeBuilder.getNextHopPacket(sourceAccount, packet)
 
     log.trace('sending outbound ilp prepare. destination=%s amount=%s', destination, nextHopPacket.amount)
-    const result = await outbound(IlpPacket.serializeIlpPrepare(nextHopPacket), nextHop)
+    const result = await outbound(nextHopPacket, nextHop)
 
-    if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
+    if (isFulfill(result)) {
       log.trace('got fulfillment. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
 
       this.backend.submitPayment({
@@ -60,10 +60,10 @@ export default class IlpPrepareController {
           const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : String(err)
           log.error('error while submitting payment to backend. error=%s', errInfo)
         })
-    } else if (result[0] === IlpPacket.Type.TYPE_ILP_REJECT) {
-      const parsed = IlpPacket.deserializeIlpReject(result)
-
-      log.trace('got rejection. cond=%s nextHop=%s amount=%s code=%s triggeredBy=%s message=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount, parsed.code, parsed.triggeredBy, parsed.message)
+    } else {
+      log.trace('got rejection. cond=%s nextHop=%s amount=%s code=%s triggeredBy=%s message=%s',
+        executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount,
+        result.code, result.triggeredBy, result.message)
     }
 
     return result

@@ -18,7 +18,7 @@ export function formatRoutingTableAsJson (routingTable: PrefixMap<Route>) {
 export function formatForwardingRoutingTableAsJson (routingTable: ForwardingRoutingTable) {
   return mapValues(routingTable.toJSON(), (routeUpdate: RouteUpdate) => (
     routeUpdate.route
-    ? formatRouteAsJson(routeUpdate.route)
-    : null
+      ? formatRouteAsJson(routeUpdate.route)
+      : null
   ))
 }

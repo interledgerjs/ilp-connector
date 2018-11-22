@@ -91,7 +91,7 @@ export default class RouteBuilder {
 
     log.trace('determined local rate. rate=%s', rate)
 
-    this._verifyPluginIsConnected(nextHop)
+    this._verifyAccountServiceIsConnected(nextHop)
 
     const nextAmount = new BigNumber(amount).times(rate).integerValue(BigNumber.ROUND_FLOOR)
 
@@ -128,8 +128,8 @@ export default class RouteBuilder {
     return new Date(destinationExpiryTime)
   }
 
-  _verifyPluginIsConnected (account: string) {
-    if (!this.accounts.getPlugin(account).isConnected()) {
+  _verifyAccountServiceIsConnected (account: string) {
+    if (!this.accounts.get(account).isConnected()) {
       throw new PeerUnreachableError('no connection to account. account=' + account)
     }
   }

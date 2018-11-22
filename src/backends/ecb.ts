@@ -1,7 +1,7 @@
 import fetchUri from 'node-fetch'
 import * as sax from 'sax'
 import BigNumber from 'bignumber.js'
-import { AccountInfo } from '../types/accounts'
+import { AccountInfo } from '../types/account'
 import { BackendInstance, BackendServices } from '../types/backend'
 
 import { create as createLogger } from '../common/log'
@@ -12,7 +12,7 @@ const RATES_API = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
 export interface ECBBackendOptions {
   spread: number,
   ratesApiUrl: string,
-  mockData: object
+  mockData: ApiData
 }
 
 /**
@@ -27,7 +27,7 @@ export default class ECBBackend implements BackendInstance {
     [key: string]: number
   }
   protected currencies: string[]
-  private mockData: object
+  private mockData: ApiData
 
   /**
    * Constructor.
@@ -141,18 +141,24 @@ export default class ECBBackend implements BackendInstance {
   }
 }
 
-function parseXMLResponse (data: string) {
-  const parser = sax.parser(true)
-  const apiData = { base: 'EUR', date: null, rates: {} }
+interface ApiData {
+  base: string
+  date?: string
+  rates: {}
+}
+
+async function parseXMLResponse (data: string): Promise<ApiData> {
+  const parser = new sax.SAXParser(true)
+  const apiData = { base: 'EUR', date: undefined, rates: {} } as ApiData
   parser.onopentag = (node) => {
     if (node.name === 'Cube' && node.attributes.time) {
-      apiData.date = node.attributes.time
+      apiData.date = node.attributes.time.toString()
     }
     if (node.name === 'Cube' && node.attributes.currency) {
-      apiData.rates[node.attributes.currency] = node.attributes.rate
+      apiData.rates[node.attributes.currency.toString()] = node.attributes.rate
     }
   }
-  return new Promise((resolve, reject) => {
+  return new Promise<ApiData>((resolve, reject) => {
     parser.onerror = reject
     parser.onend = () => resolve(apiData)
     parser.write(data).close()

@@ -16,18 +16,17 @@ export default class PeerProtocolController {
   }
 
   async handle (
-    data: Buffer,
-    sourceAccount: string,
-    { parsedPacket }: { parsedPacket: IlpPacket.IlpPrepare }
+    packet: IlpPacket.IlpPrepare,
+    sourceAccount: string
   ) {
-    if (!PEER_PROTOCOL_CONDITION.equals(parsedPacket.executionCondition)) {
+    if (!PEER_PROTOCOL_CONDITION.equals(packet.executionCondition)) {
       throw new InvalidPacketError('condition must be peer protocol condition.')
     }
 
-    if (parsedPacket.destination === 'peer.config') {
-      return this.ildcpHostController.handle(data, sourceAccount)
-    } else if (parsedPacket.destination.startsWith('peer.route')) {
-      return this.ccpController.handle(data, sourceAccount, { parsedPacket })
+    if (packet.destination === 'peer.config') {
+      return this.ildcpHostController.handle(packet, sourceAccount)
+    } else if (packet.destination.startsWith('peer.route')) {
+      return this.ccpController.handle(packet, sourceAccount)
     } else {
       throw new InvalidPacketError('unknown peer protocol.')
     }

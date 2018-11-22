@@ -1,9 +1,10 @@
+import Account from '../types/account'
+import Middleware, { MiddlewareCallback, Pipelines } from '../types/middleware'
+import { IlpPrepare, Errors as IlpPacketErrors, IlpReply, isFulfill } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('alert-middleware')
-import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-import * as IlpPacket from 'ilp-packet'
 
-const { T04_INSUFFICIENT_LIQUIDITY } = IlpPacket.Errors.codes
+const { T04_INSUFFICIENT_LIQUIDITY } = IlpPacketErrors.codes
 
 export interface Alert {
   id: number
@@ -16,27 +17,26 @@ export interface Alert {
 }
 
 export default class AlertMiddleware implements Middleware {
-  private alerts: {[id: number]: Alert} = {}
+  private alerts: { [id: number]: Alert } = {}
   private nextAlertId: number = Date.now()
 
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
     pipelines.outgoingData.insertLast({
       name: 'alert',
-      method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
-        const result = await next(data)
-        if (result[0] !== IlpPacket.Type.TYPE_ILP_REJECT) return result
+      method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {
+        const result = await next(packet)
+        if (isFulfill(result)) return result
 
-        const rejectPacket = IlpPacket.deserializeIlpReject(result)
-        if (rejectPacket.code !== T04_INSUFFICIENT_LIQUIDITY) return result
+        if (result.code !== T04_INSUFFICIENT_LIQUIDITY) return result
 
         // The peer rejected a packet which, according to the local balance, should
         // have succeeded. This can happen when our local connector owes the peer
         // money but restarted before it was settled.
-        if (rejectPacket.message !== 'exceeded maximum balance.') return result
+        if (result.message !== 'exceeded maximum balance.') return result
 
-        const { triggeredBy } = rejectPacket
-        log.warn('generating alert for account=%s triggeredBy=%s message="%s"', accountId, triggeredBy, rejectPacket.message)
-        this.addAlert(accountId, triggeredBy, rejectPacket.message)
+        const { triggeredBy } = result
+        log.warn('generating alert for account=%s triggeredBy=%s message="%s"', account.id, triggeredBy, result.message)
+        this.addAlert(account.id, triggeredBy, result.message)
 
         return result
       }

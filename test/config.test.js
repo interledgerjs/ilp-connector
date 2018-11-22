@@ -1,10 +1,10 @@
 'use strict'
 
 const _ = require('lodash')
-const Config = require('../src/services/config').default
+const Config = require('../build/services/config').default
 const expect = require('chai').expect
 const assert = require('chai').assert
-const logger = require('../src/common/log')
+const logger = require('../build/common/log')
 const logHelper = require('./helpers/log')
 const env = _.cloneDeep(process.env)
 
@@ -213,6 +213,54 @@ describe('Config', function () {
 
         expect(config.accounts)
           .to.deep.equal(accountCredentials)
+      })
+    })
+
+    describe('connector profiles', () => {
+      beforeEach(() => {
+        process.env.CONNECTOR_PROFILE = 'plugin'
+      })
+
+      describe('plugin mode', () => {
+        it('fails if no parent configured', () => {
+          const accountCredentialsEnv = {
+            'cad-ledger': {
+              relation: 'peer',
+              assetCode: 'CAD',
+              assetScale: 9,
+              plugin: 'ilp-plugin-mock',
+              options: {
+                account: 'http://cad-ledger.example:1000/accounts/mark',
+                username: 'mark',
+                password: 'mark'
+              }
+            }
+          }
+
+          process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
+          const config = new Config()
+          assert.throws(config.loadFromEnv.bind(config), Error, 'Connector profile of plugin mode requires uplink account to have an id of \'parent\'')
+        })
+
+        it('succeeds if parent configured', () => {
+          const accountCredentialsEnv = {
+            'parent': {
+              relation: 'parent',
+              assetCode: 'CAD',
+              assetScale: 9,
+              plugin: 'ilp-plugin-mock',
+              options: {
+                account: 'http://cad-ledger.example:1000/accounts/mark',
+                username: 'mark',
+                password: 'mark'
+              }
+            }
+          }
+
+          process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
+          const config = new Config()
+          config.loadFromEnv()
+        })
       })
     })
   })

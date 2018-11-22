@@ -3,7 +3,7 @@ export interface StoreServices {
 }
 
 export interface StoreConstructor {
-  new (options: object, api: StoreServices): StoreInstance
+  new(options: object, api: StoreServices): StoreInstance
 }
 
 export interface StoreInstance {

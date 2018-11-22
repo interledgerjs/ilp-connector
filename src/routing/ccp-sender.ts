@@ -1,4 +1,5 @@
 import ForwardingRoutingTable, { RouteUpdate } from '../services/forwarding-routing-table'
+import Account from '../types/account'
 import { BroadcastRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
 import { Relation } from './relation'
@@ -9,11 +10,10 @@ import {
   ModeReverseMap,
   serializeCcpRouteUpdateRequest
 } from 'ilp-protocol-ccp'
-import { PluginInstance } from '../types/plugin'
+import { deserializeIlpPrepare } from 'ilp-packet'
 
 export interface CcpSenderOpts {
-  accountId: string
-  plugin: PluginInstance
+  account: Account
   forwardingRoutingTable: ForwardingRoutingTable
   getOwnAddress: () => string
   getAccountRelation: (accountId: string) => Relation
@@ -26,10 +26,9 @@ const MINIMUM_UPDATE_INTERVAL = 150
 const MAX_EPOCHS_PER_UPDATE = 50
 
 export default class CcpSender {
-  private plugin: PluginInstance
+  private account: Account
   private forwardingRoutingTable: ForwardingRoutingTable
   private log: ConnectorLogger
-  private accountId: string
   private mode: Mode = Mode.MODE_IDLE
   private getOwnAddress: () => string
   private getAccountRelation: (accountId: string) => Relation
@@ -45,18 +44,16 @@ export default class CcpSender {
   private sendRouteUpdateTimer?: NodeJS.Timer
 
   constructor ({
-    accountId,
-    plugin,
+    account,
     forwardingRoutingTable,
     getOwnAddress,
     getAccountRelation,
     routeExpiry,
     routeBroadcastInterval
   }: CcpSenderOpts) {
-    this.plugin = plugin
+    this.account = account
     this.forwardingRoutingTable = forwardingRoutingTable
-    this.log = createLogger(`ccp-sender[${accountId}]`)
-    this.accountId = accountId
+    this.log = createLogger(`ccp-sender[${account.id}]`)
     this.getOwnAddress = getOwnAddress
     this.getAccountRelation = getAccountRelation
     this.routeExpiry = routeExpiry
@@ -67,10 +64,6 @@ export default class CcpSender {
     if (this.sendRouteUpdateTimer) {
       clearTimeout(this.sendRouteUpdateTimer)
     }
-  }
-
-  getAccountId () {
-    return this.accountId
   }
 
   getLastUpdate () {
@@ -107,7 +100,7 @@ export default class CcpSender {
       this.log.trace('peer has old routing table id, resetting lastKnownEpoch to zero. theirTableId=%s correctTableId=%s', lastKnownRoutingTableId, this.forwardingRoutingTable.routingTableId)
       this.lastKnownEpoch = 0
     } else {
-      this.log.trace('peer epoch set. epoch=%s currentEpoch=%s', this.accountId, lastKnownEpoch, this.forwardingRoutingTable.currentEpoch)
+      this.log.trace('peer epoch set. epoch=%s currentEpoch=%s', this.account.id, lastKnownEpoch, this.forwardingRoutingTable.currentEpoch)
       this.lastKnownEpoch = lastKnownEpoch
     }
 
@@ -147,13 +140,13 @@ export default class CcpSender {
 
     delay = Math.max(MINIMUM_UPDATE_INTERVAL, delay)
 
-    this.log.trace('scheduling next route update. accountId=%s delay=%s currentEpoch=%s peerHasEpoch=%s', this.accountId, delay, this.forwardingRoutingTable.currentEpoch, this.lastKnownEpoch)
+    this.log.trace('scheduling next route update. accountId=%s delay=%s currentEpoch=%s peerHasEpoch=%s', this.account.id, delay, this.forwardingRoutingTable.currentEpoch, this.lastKnownEpoch)
     this.sendRouteUpdateTimer = setTimeout(() => {
       this.sendSingleRouteUpdate()
         .then(() => this.scheduleRouteUpdate())
         .catch((err: any) => {
           const errInfo = (err instanceof Object && err.stack) ? err.stack : err
-          this.log.debug('failed to broadcast route information to peer. peer=%s error=%s', this.accountId, errInfo)
+          this.log.debug('failed to broadcast route information to peer. peer=%s error=%s', this.account.id, errInfo)
         })
     }, delay)
     this.sendRouteUpdateTimer.unref()
@@ -162,7 +155,7 @@ export default class CcpSender {
   private async sendSingleRouteUpdate () {
     this.lastUpdate = Date.now()
 
-    if (!this.plugin.isConnected()) {
+    if (!this.account.isConnected()) {
       this.log.debug('cannot send routes, plugin not connected (yet).')
       return
     }
@@ -173,7 +166,7 @@ export default class CcpSender {
 
     const toEpoch = nextRequestedEpoch + allUpdates.length
 
-    const relation = this.getAccountRelation(this.accountId)
+    const relation = this.getAccountRelation(this.account.id)
     function isRouteUpdate (update: RouteUpdate | null): update is RouteUpdate {
       return !!update
     }
@@ -185,7 +178,7 @@ export default class CcpSender {
 
         if (
           // Don't send peer their own routes
-          update.route.nextHop === this.accountId ||
+          update.route.nextHop === this.account.id ||
 
           // Don't advertise peer and provider routes to providers
           (
@@ -221,7 +214,7 @@ export default class CcpSender {
       }
     }
 
-    this.log.trace('broadcasting routes to peer. speaker=%s peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.getOwnAddress(), this.accountId, this.lastKnownEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
+    this.log.trace('broadcasting routes to peer. speaker=%s peer=%s fromEpoch=%s toEpoch=%s routeCount=%s unreachableCount=%s', this.getOwnAddress(), this.account.id, this.lastKnownEpoch, toEpoch, newRoutes.length, withdrawnRoutes.length)
 
     const routeUpdate: CcpRouteUpdateRequest = {
       speaker: this.getOwnAddress(),
@@ -254,7 +247,7 @@ export default class CcpSender {
 
     try {
       await Promise.race([
-        this.plugin.sendData(serializeCcpRouteUpdateRequest(routeUpdate)),
+        this.account.sendIlpPacket(deserializeIlpPrepare(serializeCcpRouteUpdateRequest(routeUpdate))),
         timerPromise
       ])
     } catch (err) {

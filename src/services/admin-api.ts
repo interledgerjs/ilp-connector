@@ -3,19 +3,19 @@ import Ajv = require('ajv')
 import { mapValues as pluck } from 'lodash'
 import Accounts from './accounts'
 import Config from './config'
-import MiddlewareManager from './middleware-manager'
-import BalanceMiddleware from '../middlewares/balance'
-import AlertMiddleware from '../middlewares/alert'
 import RoutingTable from './routing-table'
 import RouteBroadcaster from './route-broadcaster'
 import Stats from './stats'
 import RateBackend from './rate-backend'
 import { formatRoutingTableAsJson } from '../routing/utils'
 import { Server, IncomingMessage, ServerResponse } from 'http'
-import InvalidJsonBodyError from '../errors/invalid-json-body-error'
-import { BalanceUpdate } from '../schemas/BalanceUpdate'
 import { create as createLogger } from '../common/log'
 import * as Prometheus from 'prom-client'
+import AlertMiddleware from '../middlewares/alert'
+import BalanceMiddleware from '../middlewares/balance'
+import InvalidJsonBodyError from '../errors/invalid-json-body-error'
+import { BalanceUpdate } from '../schemas/BalanceUpdate'
+import WrapperAccount from '../accounts/wrapper'
 const log = createLogger('admin-api')
 const ajv = new Ajv()
 const validateBalanceUpdate = ajv.compile(require('../schemas/BalanceUpdate.json'))
@@ -30,7 +30,6 @@ interface Route {
 export default class AdminApi {
   private accounts: Accounts
   private config: Config
-  private middlewareManager: MiddlewareManager
   private routingTable: RoutingTable
   private routeBroadcaster: RouteBroadcaster
   private rateBackend: RateBackend
@@ -42,7 +41,6 @@ export default class AdminApi {
   constructor (deps: reduct.Injector) {
     this.accounts = deps(Accounts)
     this.config = deps(Config)
-    this.middlewareManager = deps(MiddlewareManager)
     this.routingTable = deps(RoutingTable)
     this.routeBroadcaster = deps(RouteBroadcaster)
     this.rateBackend = deps(RateBackend)
@@ -147,7 +145,7 @@ export default class AdminApi {
   }
 
   private async getBalanceStatus () {
-    const middleware = this.middlewareManager.getMiddleware('balance')
+    const middleware = this.accounts.getMiddleware('balance')
     if (!middleware) return {}
     const balanceMiddleware = middleware as BalanceMiddleware
     return balanceMiddleware.getStatus()
@@ -164,10 +162,11 @@ export default class AdminApi {
     }
 
     const data = _data as BalanceUpdate
-    const middleware = this.middlewareManager.getMiddleware('balance')
+    const middleware = this.accounts.getMiddleware('balance')
     if (!middleware) return
     const balanceMiddleware = middleware as BalanceMiddleware
-    balanceMiddleware.modifyBalance(data.accountId, data.amountDiff)
+    const account = this.accounts.get(data.accountId)
+    balanceMiddleware.modifyBalance(account, data.amountDiff)
   }
 
   private getBackendStatus (): Promise<{ [s: string]: any }> {
@@ -179,7 +178,7 @@ export default class AdminApi {
   }
 
   private async getAlerts () {
-    const middleware = this.middlewareManager.getMiddleware('alert')
+    const middleware = this.accounts.getMiddleware('alert')
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
     return {
@@ -188,7 +187,7 @@ export default class AdminApi {
   }
 
   private async deleteAlert (url: string) {
-    const middleware = this.middlewareManager.getMiddleware('alert')
+    const middleware = this.accounts.getMiddleware('alert')
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
     const match = /^\/alerts\/(\d+)$/.exec(url.split('?')[0])
@@ -203,13 +202,13 @@ export default class AdminApi {
   private _getPlugin (url: string) {
     const match = /^\/accounts\/([A-Za-z0-9_.\-~]+)$/.exec(url.split('?')[0])
     if (!match) throw new Error('invalid account.')
-    const account = match[1]
-    const plugin = this.accounts.getPlugin(account)
-    if (!plugin) throw new Error('account does not exist. account=' + account)
-    const info = this.accounts.getInfo(account)
+    const accountId = match[1]
+    const account = this.accounts.get(accountId)
+    const plugin = (account as WrapperAccount).getPlugin()
+
     return {
-      account,
-      info,
+      account: accountId,
+      info: account.info,
       plugin
     }
   }

@@ -1,7 +1,13 @@
-import reduct = require('reduct')
+import { default as reduct, Injector } from 'reduct'
 import { partial } from 'lodash'
-import { create as createLogger } from './common/log'
-const log = createLogger('app')
+import ILDCP = require('ilp-protocol-ildcp')
+import {
+  deserializeIlpPrepare,
+  serializeIlpFulfill,
+  serializeIlpReject,
+  isFulfill
+} from 'ilp-packet'
+import * as Prometheus from 'prom-client'
 
 import Config from './services/config'
 import RouteBuilder from './services/route-builder'
@@ -9,10 +15,12 @@ import RouteBroadcaster from './services/route-broadcaster'
 import Accounts from './services/accounts'
 import RateBackend from './services/rate-backend'
 import Store from './services/store'
-import MiddlewareManager from './services/middleware-manager'
+import Account from './types/account'
+import PluginAccount from './accounts/plugin'
+import Core from './services/core'
 import AdminApi from './services/admin-api'
-import * as Prometheus from 'prom-client'
-import { PluginInstance } from './types/plugin'
+import { create as createLogger } from './common/log'
+const log = createLogger('app')
 
 function listen (
   config: Config,
@@ -21,11 +29,10 @@ function listen (
   store: Store,
   routeBuilder: RouteBuilder,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
   adminApi: AdminApi
 ) {
   // Start a coroutine that connects to the backend and
-  // subscribes to all the accounts in the background
+  // sets up the account manager that will start a grpc server to communicate with accounts
   return (async function () {
     adminApi.listen()
 
@@ -36,29 +43,30 @@ function listen (
       process.exit(1)
     }
 
-    await middlewareManager.setup()
-
-    // If we have no configured ILP address, try to get one via ILDCP
-    await accounts.loadIlpAddress()
-
-    if (config.routeBroadcastEnabled) {
-      routeBroadcaster.start()
-    }
-
-    // Connect other plugins, give up after initialConnectTimeout
-    await new Promise((resolve, reject) => {
+    // Start account providers
+    // If no address is configured, wait for one to be inherited, give up after initialConnectTimeout
+    await new Promise(async (resolve) => {
       const connectTimeout = setTimeout(() => {
         log.warn('one or more accounts failed to connect within the time limit, continuing anyway.')
         resolve()
       }, config.initialConnectTimeout)
-      accounts.connect({ timeout: config.initialConnectTimeout })
-        .then(() => {
-          clearTimeout(connectTimeout)
+      if (config.ilpAddress) {
+        accounts.setOwnAddress(config.ilpAddress)
+        await accounts.startup()
+        resolve()
+      } else {
+        await accounts.startup()
+        // This event will be emitted when we set the address
+        accounts.once('address', () => {
           resolve()
-        }, reject)
+        })
+      }
+      clearTimeout(connectTimeout)
     })
 
-    await middlewareManager.startup()
+    if (config.routeBroadcastEnabled) {
+      routeBroadcaster.start()
+    }
 
     if (config.collectDefaultMetrics) {
       Prometheus.collectDefaultMetrics()
@@ -68,23 +76,23 @@ function listen (
   })().catch((err) => log.error(err))
 }
 
+async function shutdown (
+  accounts: Accounts,
+  routeBroadcaster: RouteBroadcaster
+) {
+  routeBroadcaster.stop()
+}
+
 async function addPlugin (
   config: Config,
   accounts: Accounts,
   backend: RateBackend,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
 
   id: string,
   options: any
 ) {
-  accounts.add(id, options)
-  const plugin = accounts.getPlugin(id)
-  await middlewareManager.addPlugin(id, plugin)
-
-  await plugin.connect({ timeout: Infinity })
-  routeBroadcaster.track(id)
-  routeBroadcaster.reloadLocalRoutes()
+  await accounts.addPlugin(id, options)
 }
 
 async function removePlugin (
@@ -92,16 +100,12 @@ async function removePlugin (
   accounts: Accounts,
   backend: RateBackend,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
 
   id: string
 ) {
-  const plugin = accounts.getPlugin(id)
-  await middlewareManager.removePlugin(id, plugin)
-  await plugin.disconnect()
-  routeBroadcaster.untrack(id)
-  accounts.remove(id)
+  routeBroadcaster.untrack(accounts.get(id))
   routeBroadcaster.reloadLocalRoutes()
+  await accounts.removePlugin(id)
 }
 
 function getPlugin (
@@ -109,18 +113,13 @@ function getPlugin (
 
   id: string
 ) {
-  return accounts.getPlugin(id)
+  const accountService = accounts.get(id)
+  if (accountService && accountService instanceof PluginAccount) {
+    return accountService.getPlugin()
+  }
 }
 
-function shutdown (
-  accounts: Accounts,
-  routeBroadcaster: RouteBroadcaster
-) {
-  routeBroadcaster.stop()
-  return accounts.disconnect()
-}
-
-export default function createApp (opts?: object, container?: reduct.Injector) {
+export default function createApp (opts?: object, container?: Injector) {
   const deps = container || reduct()
 
   const config = deps(Config)
@@ -143,23 +142,63 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   }
 
   const accounts = deps(Accounts)
+  const core = deps(Core)
   const routeBuilder = deps(RouteBuilder)
   const routeBroadcaster = deps(RouteBroadcaster)
   const backend = deps(RateBackend)
   const store = deps(Store)
-  const middlewareManager = deps(MiddlewareManager)
   const adminApi = deps(AdminApi)
+  const pendingAccounts: Set<Account> = new Set()
 
-  const credentials = config.accounts
-  for (let id of Object.keys(credentials)) {
-    accounts.add(id, credentials[id])
-  }
+  accounts.setup(deps)
+  // TODO - Different behaviour for plugin profile
+  accounts.registerCoreIlpPacketHandler(core.processIlpPacket.bind(core))
+  accounts.registerCoreMoneyHandler(async () => { return })
+
+  accounts.on('add', async (account: Account) => {
+
+    if (accounts.getOwnAddress() === 'unknown') {
+      if (account.info.relation === 'parent') {
+        // If there is an explicit parent account configured to inherit from, and this is not it, skip it, otherwise return it
+        if (!(account.id !== config.ilpAddressInheritFrom)) {
+          log.trace('connecting to parent to get address. accountId=%s', account.id)
+          await account.startup()
+
+          // TODO - Clean this up after removing extra serialization in ILDCP
+          const address = (await ILDCP.fetch(async (data: Buffer) => {
+            const reply = await account.sendIlpPacket(deserializeIlpPrepare(data))
+            return isFulfill(reply) ? serializeIlpFulfill(reply) : serializeIlpReject(reply)
+          })).clientAddress
+
+          accounts.setOwnAddress(address)
+          routeBroadcaster.track(account)
+          routeBroadcaster.reloadLocalRoutes()
+
+          // Start pending accounts that were held back waiting for the parent
+          for (const pendingAccount of pendingAccounts) {
+            await pendingAccount.startup()
+            routeBroadcaster.track(pendingAccount)
+            routeBroadcaster.reloadLocalRoutes()
+          }
+          pendingAccounts.clear()
+        }
+      } else {
+        // Don't start this account up yet
+        pendingAccounts.add(account)
+      }
+    } else {
+      await account.startup()
+      routeBroadcaster.track(account)
+      routeBroadcaster.reloadLocalRoutes()
+    }
+
+  })
 
   return {
     config,
-    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager, adminApi),
-    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
-    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
+    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, adminApi),
+    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster),
+    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster),
     getPlugin: partial(getPlugin, accounts),
     shutdown: partial(shutdown, accounts, routeBroadcaster)
   }

@@ -1,7 +1,7 @@
 import { create as createLogger } from '../common/log'
 const log = createLogger('echo')
 import reduct = require('reduct')
-import { serializeIlpPrepare, IlpPrepare, Errors } from 'ilp-packet'
+import { IlpReply, IlpPrepare, Errors } from 'ilp-packet'
 import { Reader, Writer } from 'oer-utils'
 import Config from '../services/config'
 import RouteBuilder from '../services/route-builder'
@@ -20,31 +20,28 @@ export default class EchoController {
   }
 
   async handle (
-    data: Buffer,
+    packet: IlpPrepare,
     sourceAccount: string,
-    { parsedPacket, outbound }: {
-      parsedPacket: IlpPrepare,
-      outbound: (data: Buffer, accountId: string) => Promise<Buffer>
-    }
-  ) {
-    if (parsedPacket.data.length < MINIMUM_ECHO_PACKET_DATA_LENGTH) {
-      throw new InvalidPacketError('packet data too short for echo request. length=' + parsedPacket.data.length)
+    outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>
+  ): Promise<IlpReply> {
+    if (packet.data.length < MINIMUM_ECHO_PACKET_DATA_LENGTH) {
+      throw new InvalidPacketError('packet data too short for echo request. length=' + packet.data.length)
     }
 
-    if (!parsedPacket.data.slice(0, 16).equals(ECHO_DATA_PREFIX)) {
+    if (!packet.data.slice(0, 16).equals(ECHO_DATA_PREFIX)) {
       throw new InvalidPacketError('packet data does not start with ECHO prefix.')
     }
 
-    const reader = new Reader(parsedPacket.data)
+    const reader = new Reader(packet.data)
 
     reader.skip(ECHO_DATA_PREFIX.length)
 
-    const type = reader.readUInt8()
+    const type = Number(reader.readUInt8())
 
     if (type === 0) {
       const sourceAddress = reader.readVarOctetString().toString('ascii')
 
-      log.trace('responding to ping. sourceAccount=%s sourceAddress=%s cond=%s', sourceAccount, sourceAddress, parsedPacket.executionCondition.slice(0, 9).toString('base64'))
+      log.trace('responding to ping. sourceAccount=%s sourceAddress=%s cond=%s', sourceAccount, sourceAddress, packet.executionCondition.slice(0, 9).toString('base64'))
 
       const nextHop = this.routeBuilder.getNextHop(sourceAccount, sourceAddress)
 
@@ -54,13 +51,13 @@ export default class EchoController {
 
       writer.writeUInt8(0x01) // type = response
 
-      return outbound(serializeIlpPrepare({
-        amount: parsedPacket.amount,
+      return outbound({
+        amount: packet.amount,
         destination: sourceAddress,
-        executionCondition: parsedPacket.executionCondition,
-        expiresAt: new Date(Number(parsedPacket.expiresAt) - this.config.minMessageWindow),
+        executionCondition: packet.executionCondition,
+        expiresAt: new Date(Number(packet.expiresAt) - this.config.minMessageWindow),
         data: writer.getBuffer()
-      }), nextHop)
+      }, nextHop)
     } else {
       log.error('received unexpected ping response. sourceAccount=%s', sourceAccount)
       throw new InvalidPacketError('unexpected ping response.')

@@ -1,47 +1,57 @@
-import * as IlpPacket from 'ilp-packet'
+import reduct = require('reduct')
+import { IlpReply, IlpPrepare } from 'ilp-packet'
 import Config from '../services/config'
 import Accounts from '../services/accounts'
-import RouteBroadcaster from '../services/route-broadcaster'
-import RouteBuilder from '../services/route-builder'
 import IlpPrepareController from '../controllers/ilp-prepare'
 import { create as createLogger } from '../common/log'
 const log = createLogger('core-middleware')
-import reduct = require('reduct')
-const { InvalidPacketError } = IlpPacket.Errors
 
 export default class Core {
   protected config: Config
   protected accounts: Accounts
-  protected routeBroadcaster: RouteBroadcaster
-  protected routeBuilder: RouteBuilder
-  protected ilpPrepareController: IlpPrepareController
+  protected handler: (packet: IlpPrepare, sourceAccount: string, outbound: (data: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
     this.accounts = deps(Accounts)
-    this.routeBroadcaster = deps(RouteBroadcaster)
-    this.routeBuilder = deps(RouteBuilder)
 
-    this.ilpPrepareController = deps(IlpPrepareController)
-  }
-
-  async processData (data: Buffer, accountId: string, outbound: (data: Buffer, accountId: string) => Promise<Buffer>): Promise<Buffer> {
-    if (!this.accounts.getInfo(accountId)) {
-      log.warn('got data from unknown account id. accountId=%s', accountId)
-      throw new Error('got data from unknown account id. accountId=' + accountId)
-    }
-
-    if (!Buffer.isBuffer(data)) {
-      log.error('data handler was passed a non-buffer. typeof=%s data=%s', typeof data, data)
-      throw new Error('data handler was passed a non-buffer. typeof=' + typeof data)
-    }
-
-    switch (data[0]) {
-      case IlpPacket.Type.TYPE_ILP_PREPARE:
-        return this.ilpPrepareController.sendData(data, accountId, outbound)
+    switch (this.config.profile) {
+      case 'cluster':
+      case 'connector':
+        const controller = deps(IlpPrepareController)
+        this.handler = async (packet: IlpPrepare, sourceAccount: string,
+          outbound: (data: IlpPrepare, accountId: string) => Promise<IlpReply>) => {
+          return controller.sendIlpPacket(packet, sourceAccount, outbound)
+        }
+        break
+      case 'plugin':
+        this.handler = async (packet: IlpPrepare, sourceAccount: string,
+          outbound: (data: IlpPrepare, accountId: string) => Promise<IlpReply>) => {
+          return outbound(packet, 'parent')
+        }
+        break
       default:
-        log.error('received invalid packet type. source=%s type=%s', accountId, data[0])
-        throw new InvalidPacketError('invalid packet type received. type=' + data[0])
+        throw new Error(`Unknown configuration profile: ${this.config.profile}`)
     }
+
   }
+
+  /**
+   * This fucntion is invoked at the end of the incoming middleware pipeline.
+   * Calling 'outbound' invokes the outbound middleware pipeline.
+   *
+   * @param packet The incoming ILP packet
+   * @param sourceAccountId The account id of the account that is the origin of the packet
+   * @param outbound The callback to send the outbound ILP packet and get the response
+   */
+  public async processIlpPacket (packet: IlpPrepare, sourceAccountId: string, outbound: (packet: IlpPrepare, destAccountId: string) => Promise<IlpReply>): Promise<IlpReply> {
+    if (!this.accounts.get(sourceAccountId)) {
+      log.warn('got data from unknown account id. accountId=%s', sourceAccountId)
+      throw new Error('got data from unknown account id. accountId=' + sourceAccountId)
+    }
+
+    return this.handler(packet, sourceAccountId, outbound)
+
+  }
+
 }

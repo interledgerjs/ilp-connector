@@ -1,15 +1,19 @@
 import InvalidJsonBodyError from '../errors/invalid-json-body-error'
 import { constantCase } from 'change-case'
-import { create as createLogger } from '../common/log'
-import { Config as ConfigSchemaTyping } from '../schemas/Config'
-const log = createLogger('config')
-const schema = require('../schemas/Config.json')
-const {
-  extractDefaultsFromSchema
-} = require('../lib/utils')
+import { Config as ConfigSchemaTyping, AccountProviderConfig, AccountConfig } from '../schemas/Config'
 import Ajv = require('ajv')
+import { create as createLogger } from '../common/log'
+const log = createLogger('config')
+const configSchema = require('../schemas/Config.json')
+const accountSchema = require('../schemas/AccountConfig.json')
+const moduleSchema = require('../schemas/ModuleConfig.json')
+const accountProviderSchema = require('../schemas/AccountProviderConfig.json')
 
 const ajv = new Ajv()
+ajv
+  .addSchema(accountSchema)
+  .addSchema(moduleSchema)
+  .addSchema(accountProviderSchema)
 
 const ENV_PREFIX = 'CONNECTOR_'
 
@@ -21,12 +25,16 @@ const BOOLEAN_VALUES = {
   '': false
 }
 
+export type ConfigProfile = 'connector' | 'plugin' | 'cluster'
+
 export default class Config extends ConfigSchemaTyping {
   // TODO: These fields are already all defined in the config schema, however
   //   they are defined as optional and as a result, TypeScript thinks that they
   //   may not be set. However, when we construct a new Config instance, we load
   //   the defaults from the schema, so these *will* always be set. These
   //   declarations make TypeScript happy.
+  public profile!: ConfigProfile
+  public accountProviders!: { [k: string]: AccountProviderConfig; }
   public store!: string
   public quoteExpiry!: number
   public routeExpiry!: number
@@ -39,15 +47,8 @@ export default class Config extends ConfigSchemaTyping {
 
   constructor () {
     super()
-
-    this.loadDefaults()
-
-    this._validate = ajv.compile(schema)
-    this._validateAccount = ajv.compile(schema.properties.accounts.additionalProperties)
-  }
-
-  loadDefaults () {
-    Object.assign(this, extractDefaultsFromSchema(schema))
+    this._validate = ajv.compile(configSchema)
+    this._validateAccount = ajv.compile(accountSchema)
   }
 
   loadFromEnv (env?: NodeJS.ProcessEnv) {
@@ -62,14 +63,14 @@ export default class Config extends ConfigSchemaTyping {
     )
 
     const config = {}
-    for (let key of Object.keys(schema.properties)) {
+    for (let key of Object.keys(configSchema.properties)) {
       const envKey = ENV_PREFIX + constantCase(key)
       const envValue = env[envKey]
 
       unrecognizedEnvKeys.delete(envKey)
 
       if (typeof envValue === 'string') {
-        switch (schema.properties[key].type) {
+        switch (configSchema.properties[key].type) {
           case 'string':
             config[key] = envValue
             break
@@ -89,7 +90,7 @@ export default class Config extends ConfigSchemaTyping {
             config[key] = Number(envValue)
             break
           default:
-            throw new TypeError('Unknown JSON schema type: ' + schema.properties[key].type)
+            throw new TypeError('Unknown JSON schema type: ' + configSchema.properties[key].type)
         }
       }
     }
@@ -100,13 +101,17 @@ export default class Config extends ConfigSchemaTyping {
 
     this.validate(config)
 
-    Object.assign(this, config)
+    const profile = config['profile'] || 'connector' as ConfigProfile
+    Object.assign(this, extractDefaultsFromSchema(profile, configSchema), config)
+    this.validateProfile()
   }
 
   loadFromOpts (opts: object) {
     this.validate(opts)
 
-    Object.assign(this, opts)
+    const profile = opts['profile'] || 'connector' as ConfigProfile
+    Object.assign(this, extractDefaultsFromSchema(profile, configSchema), opts)
+    this.validateProfile()
   }
 
   validate (config: object) {
@@ -115,6 +120,16 @@ export default class Config extends ConfigSchemaTyping {
         ? this._validate.errors[0]
         : { message: 'unknown validation error', dataPath: '' }
       throw new InvalidJsonBodyError('config failed to validate. error=' + firstError.message + ' dataPath=' + firstError.dataPath, this._validate.errors || [])
+    }
+  }
+
+  // TODO - remove in future, this is just a way to check if profile configs are being dealt with correctly.
+  validateProfile () {
+    switch (this.profile) {
+      case 'plugin':
+        if (!this.accounts['parent']) {
+          throw new InvalidJsonBodyError('Connector profile of plugin mode requires uplink account to have an id of \'parent\'',[])
+        }
     }
   }
 
@@ -127,4 +142,30 @@ export default class Config extends ConfigSchemaTyping {
   get (key: string) {
     return this[key]
   }
+}
+
+export const extractDefaultsFromSchema = (profile: ConfigProfile, schema: any, path = '') => {
+  if (typeof schema.default !== 'undefined') {
+    if (typeof schema.default === 'object' && schema.default[profile]) {
+      return schema.default[profile]
+    }
+    return schema.default
+  }
+  switch (schema.type) {
+    case 'object':
+      const result = {}
+      for (let key of Object.keys(schema.properties)) {
+        // TODO, check this is actually even correct to past profile in. Add test coverage for the profile stuff
+        result[key] = extractDefaultsFromSchema(profile, schema.properties[key], path + '.' + key)
+      }
+      return result
+    default:
+      throw new Error('No default found for schema path: ' + path)
+  }
+}
+
+function filterByRelation (accounts: {[k: string]: AccountConfig }, relation: 'parent' | 'peer' | 'child'): {[k: string]: AccountConfig } {
+  return Object.keys(accounts)
+  .filter(key => accounts[key].relation === relation)
+  .reduce((res, key) => Object.assign(res, { [key]: accounts[key] }), {})
 }

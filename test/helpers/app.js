@@ -2,19 +2,19 @@
 
 const reduct = require('reduct')
 const Prometheus = require('prom-client')
-const Config = require('../../src/services/config').default
-const RouteBuilder = require('../../src/services/route-builder').default
-const RouteBroadcaster = require('../../src/services/route-broadcaster').default
-const Accounts = require('../../src/services/accounts').default
-const RateBackend = require('../../src/services/rate-backend').default
-const RoutingTable = require('../../src/services/routing-table').default
-const MiddlewareManager = require('../../src/services/middleware-manager').default
-const AdminApi = require('../../src/services/admin-api').default
-const CcpController = require('../../src/controllers/ccp').default
-const Store = require('../../src/services/store').default
+const Config = require('../../build/services/config').default
+const RouteBuilder = require('../../build/services/route-builder').default
+const RouteBroadcaster = require('../../build/services/route-broadcaster').default
+const Accounts = require('../../build/services/accounts').default
+const RateBackend = require('../../build/services/rate-backend').default
+const RoutingTable = require('../../build/services/routing-table').default
+const AdminApi = require('../../build/services/admin-api').default
+const CcpController = require('../../build/controllers/ccp').default
+const Store = require('../../build/services/store').default
 const ratesResponse = require('../data/fxRates.json')
+const IlpPrepareController = require("../../build/controllers/ilp-prepare").default
 
-const createApp = require('../../src').createApp
+const createApp = require('../../build').createApp
 
 exports.create = function (context, opts) {
   process.env.CONNECTOR_STORE = 'memdown'
@@ -47,8 +47,8 @@ exports.create = function (context, opts) {
   context.routeBuilder = deps(RouteBuilder)
   context.accounts = deps(Accounts)
   context.config = deps(Config)
-  context.middlewareManager = deps(MiddlewareManager)
   context.adminApi = deps(AdminApi)
   context.ccpController = deps(CcpController)
   context.store = deps(Store)
+  context.ilpPrepareController = deps(IlpPrepareController)
 }

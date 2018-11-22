@@ -1,8 +1,8 @@
 import * as riverpig from 'riverpig'
 import * as debug from 'debug'
+import { PassThrough } from 'stream'
 
-import through2 = require('through2')
-const logStream = through2()
+const logStream = new PassThrough()
 logStream.pipe(process.stdout)
 
 export class ConnectorLogger {

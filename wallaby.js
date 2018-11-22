@@ -6,7 +6,7 @@ module.exports = function (wallaby) {
 
   return {
     files: [
-      'src/**/*.js',
+      'build/**/*.js',
       'schemas/*.json',
       'test/node_modules',
       'test/data/*',

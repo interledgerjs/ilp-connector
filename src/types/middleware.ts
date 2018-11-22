@@ -1,19 +1,19 @@
-import { AccountInfo } from './accounts'
+import * as reduct from 'reduct'
+import Account, { AccountInfo } from './account'
+import { IlpPacket, IlpReply, IlpPrepare } from 'ilp-packet'
 import Stats from '../services/stats'
+import Config from '../services/config'
 
 export interface MiddlewareDefinition {
   type: string,
   options?: object
 }
 
-/**
- * Services the connector exposes to middleware.
- */
 export interface MiddlewareServices {
-  stats: Stats
+  config: Config,
+  stats: Stats,
   getInfo (accountId: string): AccountInfo
   getOwnAddress (): string
-  sendData (data: Buffer, accountId: string): Promise<Buffer>
   sendMoney (amount: string, accountId: string): Promise<void>
 }
 
@@ -26,7 +26,7 @@ export interface MiddlewareMethod<T,U> {
 }
 
 export interface MiddlewareMethods {
-  data: MiddlewareMethod<Buffer, Buffer>
+  data: MiddlewareMethod<IlpPacket, IlpPacket>
   money: MiddlewareMethod<string, void>
 }
 
@@ -45,17 +45,17 @@ export interface Pipeline<T,U> {
 
 export interface Pipelines {
   readonly startup: Pipeline<void, void>,
-  readonly teardown: Pipeline<void, void>,
-  readonly incomingData: Pipeline<Buffer, Buffer>,
+  readonly incomingData: Pipeline<IlpPrepare, IlpReply>,
   readonly incomingMoney: Pipeline<string, void>,
-  readonly outgoingData: Pipeline<Buffer, Buffer>
+  readonly outgoingData: Pipeline<IlpPrepare, IlpReply>
   readonly outgoingMoney: Pipeline<string, void>
+  readonly shutdown: Pipeline<void, void>
 }
 
-export interface Middleware {
-  applyToPipelines: (pipelines: Pipelines, accountId: string) => Promise<void>
+export default interface Middleware {
+  applyToPipelines: (pipelines: Pipelines, account: Account) => Promise<void>
 }
 
 export interface MiddlewareConstructor {
-  new (options: object, api: MiddlewareServices): Middleware
+  new (options: object, deps: reduct.Injector): Middleware
 }

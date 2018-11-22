@@ -1,35 +1,27 @@
-import * as IlpPacket from 'ilp-packet'
-import {
-  Middleware,
+import * as reduct from 'reduct'
+import Middleware, {
   MiddlewareCallback,
   MiddlewareServices,
   Pipelines
 } from '../types/middleware'
+import { IlpPrepare, IlpReply, isFulfill } from 'ilp-packet'
 import Stats from '../services/stats'
-import { AccountInfo } from '../types/accounts'
+import Account, { AccountInfo } from '../types/account'
 
 export default class StatsMiddleware implements Middleware {
   private stats: Stats
 
-  private getInfo: (accountId: string) => AccountInfo
-
-  constructor (opts: {}, { stats, getInfo }: MiddlewareServices) {
-    this.stats = stats
-    this.getInfo = getInfo
+  constructor (opts: {}, deps: reduct.Injector) {
+    this.stats = deps(Stats)
   }
 
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
-    const accountInfo = this.getInfo(accountId)
-    if (!accountInfo) {
-      throw new Error('could not load info for account. accountId=' + accountId)
-    }
-    const account = { accountId, accountInfo }
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
     pipelines.incomingData.insertLast({
       name: 'stats',
-      method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
+      method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {
         try {
-          const result = await next(data)
-          if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
+          const result = await next(packet)
+          if (isFulfill(result)) {
             this.stats.incomingDataPackets.increment(account, { result: 'fulfilled' })
           } else {
             this.stats.incomingDataPackets.increment(account, { result: 'rejected' })
@@ -42,50 +34,20 @@ export default class StatsMiddleware implements Middleware {
       }
     })
 
-    pipelines.incomingMoney.insertLast({
-      name: 'stats',
-      method: async (amount: string, next: MiddlewareCallback<string, void>) => {
-        try {
-          const result = await next(amount)
-          this.stats.incomingMoney.setValue(account, { result: 'succeeded' }, +amount)
-          return result
-        } catch (err) {
-          this.stats.incomingMoney.setValue(account, { result: 'failed' }, +amount)
-          throw err
-        }
-      }
-    })
-
     pipelines.outgoingData.insertLast({
       name: 'stats',
-      method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
+      method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {
         try {
-          const result = await next(data)
-          if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
+          const result = await next(packet)
+          if (isFulfill(result)) {
             this.stats.outgoingDataPackets.increment(account, { result: 'fulfilled' })
           } else {
-            const rejectPacket = IlpPacket.deserializeIlpReject(result)
-            const { code } = rejectPacket
-            this.stats.outgoingDataPackets.increment(account,
-              { result: 'rejected', code })
+            const { code } = result
+            this.stats.outgoingDataPackets.increment(account, { result: 'rejected', code })
           }
           return result
         } catch (err) {
           this.stats.outgoingDataPackets.increment(account, { result: 'failed' })
-          throw err
-        }
-      }
-    })
-
-    pipelines.outgoingMoney.insertLast({
-      name: 'stats',
-      method: async (amount: string, next: MiddlewareCallback<string, void>) => {
-        try {
-          const result = await next(amount)
-          this.stats.outgoingMoney.setValue(account, { result: 'succeeded' }, +amount)
-          return result
-        } catch (err) {
-          this.stats.outgoingMoney.setValue(account, { result: 'failed' }, +amount)
           throw err
         }
       }

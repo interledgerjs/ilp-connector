@@ -20,10 +20,8 @@ export default class RateBackend implements BackendInstance {
     this.accounts = deps(Accounts)
 
     const Backend: BackendConstructor = loadModuleOfType('backend', config.backend || DEFAULT_BACKEND)
-    this.backend = new Backend(Object.assign({
-      spread: config.spread
-    }, config.backendConfig), {
-      getInfo: (account: string) => this.accounts.getInfo(account)
+    this.backend = new Backend(Object.assign({ spread: config.spread }, config.backendConfig), {
+      getInfo: (account: string) => this.accounts.get(account).info
     })
   }
 
@@ -41,7 +39,7 @@ export default class RateBackend implements BackendInstance {
 
   async getStatus () {
     const rates = {}
-    const accountIds = this.accounts.getAccountIds()
+    const accountIds = [...this.accounts.keys()]
     for (const srcAccount of accountIds) {
       const accountRates = rates[srcAccount] = {}
       for (const dstAccount of accountIds) {

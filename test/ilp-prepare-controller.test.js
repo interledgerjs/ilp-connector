@@ -3,7 +3,7 @@
 const assert = require('assert')
 const _ = require('lodash')
 const appHelper = require('./helpers/app')
-const logger = require('../src/common/log')
+const logger = require('../build/common/log')
 const logHelper = require('./helpers/log')
 const mockPlugin = require('./mocks/mockPlugin')
 const nock = require('nock')
@@ -61,20 +61,22 @@ describe('IlpPrepareController', function () {
 
     appHelper.create(this)
     await this.backend.connect()
-    await this.accounts.connect()
-    await this.routeBroadcaster.reloadLocalRoutes()
+    this.accounts.setOwnAddress(this.config.ilpAddress)
+    await this.accounts.startup()
 
+    await new Promise(resolve => setInterval(resolve, 500))
     this.setTimeout = setTimeout
     this.setInterval = setInterval
     this.clock = sinon.useFakeTimers(START_DATE)
 
-    this.mockPlugin1Wrapped = this.accounts.getPlugin('mock.test1')
-    this.mockPlugin1 = this.mockPlugin1Wrapped.oldPlugin
-    this.mockPlugin2Wrapped = this.accounts.getPlugin('mock.test2')
-    this.mockPlugin2 = this.mockPlugin2Wrapped.oldPlugin
+    this.mockAccountService1 = this.accounts.get('mock.test1')
+    this.mockAccountService2 = this.accounts.get('mock.test2')
   })
 
   afterEach(async function () {
+    if (mockPlugin.prototype.sendData.isSinonProxy) {
+      mockPlugin.prototype.sendData.restore()
+    }
     this.clock.restore()
     process.env = _.cloneDeep(env)
   })
@@ -92,13 +94,10 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
-    sinon.stub(this.mockPlugin2Wrapped, 'sendData')
-      .resolves(fulfillPacket)
+    sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
 
-    await this.middlewareManager.setup()
-    const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-
-    assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+    const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
+    assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
   })
 
   it('should reject when given an invalid fulfillment', async function () {
@@ -109,19 +108,17 @@ describe('IlpPrepareController', function () {
       destination: 'mock.test2.bob',
       data: Buffer.alloc(0)
     })
-    const fulfillPacket = IlpPacket.serializeIlpFulfill({
+    const fulfillPacket = {
       fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
       data: Buffer.alloc(0)
-    })
+    }
 
-    sinon.stub(this.mockPlugin2Wrapped, 'sendData')
-      .resolves(fulfillPacket)
+    sinon.stub(mockPlugin.prototype, 'sendData').resolves(IlpPacket.serializeIlpFulfill(fulfillPacket))
 
-    await this.middlewareManager.setup()
-    const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+    const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
-    assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-    assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+    assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+    assert.deepStrictEqual(IlpPacket.deserializeIlpReply(result), {
       code: 'F05',
       message: 'fulfillment did not match expected value.',
       triggeredBy: 'test.connie',
@@ -130,14 +127,13 @@ describe('IlpPrepareController', function () {
   })
 
   it('applies its rate and reduces the expiry date by one second', async function () {
-    const sendSpy = sinon.stub(this.mockPlugin2Wrapped, 'sendData')
-      .resolves(IlpPacket.serializeIlpFulfill({
+    const sendSpy = sinon.stub(this.mockAccountService2, 'sendIlpPacket')
+      .resolves({
         fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
         data: Buffer.alloc(0)
-      }))
+      })
 
-    await this.middlewareManager.setup()
-    await this.mockPlugin1Wrapped._dataHandler(IlpPacket.serializeIlpPrepare({
+    await this.mockAccountService1.getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare({
       amount: '100',
       executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
       expiresAt: new Date(START_DATE + 2000),
@@ -146,24 +142,23 @@ describe('IlpPrepareController', function () {
     }))
 
     sinon.assert.calledOnce(sendSpy)
-    sinon.assert.calledWithMatch(sendSpy, sinon.match(packet => assert.deepEqual(IlpPacket.deserializeIlpPrepare(packet), {
+    sinon.assert.calledWith(sendSpy, {
       amount: '94',
-      executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
       expiresAt: new Date(START_DATE + 1000),
+      executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
       destination: 'mock.test2.bob',
       data: Buffer.alloc(0)
-    }) || true))
+    })
   })
 
   it('reduces the destination expiry to its max hold time if that time would otherwise be exceeded', async function () {
-    const sendSpy = sinon.stub(this.mockPlugin2Wrapped, 'sendData')
-      .resolves(IlpPacket.serializeIlpFulfill({
+    const sendSpy = sinon.stub(this.mockAccountService2, 'sendIlpPacket')
+      .resolves({
         fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
         data: Buffer.alloc(0)
-      }))
+      })
 
-    await this.middlewareManager.setup()
-    await this.mockPlugin1Wrapped._dataHandler(IlpPacket.serializeIlpPrepare({
+    await this.mockAccountService1.getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare({
       amount: '100',
       executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
       expiresAt: new Date(START_DATE + 200000),
@@ -172,18 +167,18 @@ describe('IlpPrepareController', function () {
     }))
 
     sinon.assert.calledOnce(sendSpy)
-    sinon.assert.calledWithMatch(sendSpy, sinon.match(packet => assert.deepEqual(IlpPacket.deserializeIlpPrepare(packet), {
+    sinon.assert.calledWith(sendSpy, {
       amount: '94',
-      executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
       expiresAt: new Date(START_DATE + 30000),
+      executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
       destination: 'mock.test2.bob',
       data: Buffer.alloc(0)
-    }) || true))
+    })
   })
 
   it.skip('supports optimistic mode', async function () {
-    const sendSpy = sinon.stub(this.mockPlugin2Wrapped, 'sendTransfer')
-    await this.mockPlugin1.emitAsync('incoming_transfer', {
+    const sendSpy = sinon.stub(this.mockAccountService2, 'sendTransfer')
+    await this.mockAccountService1.plugin.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
       ledger: 'mock.test1',
@@ -211,9 +206,9 @@ describe('IlpPrepareController', function () {
   // TODO What is this functionality used for?
   it.skip('authorizes the payment even if the connector is also the payee of the destination transfer', async function () {
     this.mockPlugin2.FOO = 'bar'
-    const sendSpy = sinon.stub(this.mockPlugin2Wrapped, 'sendTransfer')
+    const sendSpy = sinon.stub(this.mockAccountService2, 'sendTransfer')
 
-    await this.mockPlugin1Wrapped.emitAsync('incoming_transfer', {
+    await this.mockAccountService1.plugin.emitAsync('incoming_transfer', {
       amount: '100',
       ilp: IlpPacket.serializeIlpPayment({
         account: 'mock.test2.mark',
@@ -236,8 +231,8 @@ describe('IlpPrepareController', function () {
   })
 
   it.skip('ignores if the connector is the payee of a payment', async function () {
-    const rejectSpy = sinon.spy(this.mockPlugin1, 'rejectIncomingTransfer')
-    await this.mockPlugin1.emitAsync('incoming_transfer', {
+    const rejectSpy = sinon.spy(this.mockAccountService1.plugin, 'rejectIncomingTransfer')
+    await this.mockAccountService1.plugin.emitAsync('incoming_transfer', {
       id: '5857d460-2a46-4545-8311-1539d99e78e8',
       direction: 'incoming',
       ledger: 'mock.test1',
@@ -259,73 +254,17 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
-    sinon.stub(this.mockPlugin2Wrapped, 'sendData')
-      .rejects(new Error('fail!'))
+    sinon.stub(mockPlugin.prototype, 'sendData').rejects(new Error('fail!'))
 
-    await this.middlewareManager.setup()
-    const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+    const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
-    assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-    assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+    assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+    assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'F02',
       message: 'failed to send packet: fail!',
       triggeredBy: 'test.connie',
       data: Buffer.alloc(0)
     })
-  })
-
-  it('fulfills the source transfer even if settlement fails', async function () {
-    const preparePacket = IlpPacket.serializeIlpPrepare({
-      amount: '100',
-      executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-      expiresAt: new Date(START_DATE + 2000),
-      destination: 'mock.test2.bob',
-      data: Buffer.alloc(0)
-    })
-    const fulfillPacket = IlpPacket.serializeIlpFulfill({
-      fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-      data: Buffer.alloc(0)
-    })
-
-    sinon.stub(this.mockPlugin2Wrapped, 'sendData')
-      .resolves(fulfillPacket)
-    sinon.stub(this.mockPlugin2Wrapped, 'sendMoney')
-      .rejects(new Error('fail!'))
-
-    await this.middlewareManager.setup()
-    const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-
-    assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
-  })
-
-  it.skip('rejects the source transfer if settlement fails with insufficient liquidity', async function () {
-    sinon.stub(this.mockPlugin2Wrapped, 'sendTransfer')
-      .rejects({
-        name: 'InsufficientBalanceError',
-        message: 'Sender has insufficient funds.'
-      })
-
-    try {
-      await this.mockPlugin1Wrapped._transferHandler({
-        amount: '100',
-        executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-        expiresAt: (new Date(START_DATE + 2000)).toISOString(),
-        ilp: IlpPacket.serializeIlpForwardedPayment({
-          account: 'mock.test2.bob'
-        }),
-        custom: {}
-      })
-    } catch (err) {
-      assert.equal(err.name, 'InterledgerRejectionError')
-      assert.deepEqual(IlpPacket.deserializeIlpRejection(err.ilpRejection), {
-        code: 'T04',
-        triggeredBy: 'test.connie',
-        message: 'destination transfer failed: Sender has insufficient funds.',
-        data: Buffer.alloc(0)
-      })
-      return
-    }
-    assert(false)
   })
 
   it('rejects with Insufficient Timeout if the incoming transfer is expired', async function () {
@@ -337,11 +276,10 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
-    await this.middlewareManager.setup()
-    const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+    const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
-    assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-    assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+    assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+    assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'R02',
       message: 'source transfer has already expired. sourceExpiry=2015-06-15T23:59:59.999Z currentTime=2015-06-16T00:00:00.000Z',
       triggeredBy: 'test.connie',
@@ -358,8 +296,7 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
-    await this.middlewareManager.setup()
-    const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+    const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
     assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
     assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
@@ -378,8 +315,8 @@ describe('IlpPrepareController', function () {
         message: 'Error 1',
         data: Buffer.alloc(0)
       }
-      const rejectStub = sinon.stub(this.mockPlugin2Wrapped, 'sendData')
-        .resolves(IlpPacket.serializeIlpReject(rejection))
+
+      const rejectStub = sinon.stub(mockPlugin.prototype, 'sendData').resolves(IlpPacket.serializeIlpReject(rejection))
 
       const preparePacket = IlpPacket.serializeIlpPrepare({
         amount: '100',
@@ -389,8 +326,7 @@ describe('IlpPrepareController', function () {
         data: Buffer.alloc(0)
       })
 
-      await this.middlewareManager.setup()
-      const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+      const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
       sinon.assert.calledOnce(rejectStub)
       assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
@@ -398,14 +334,14 @@ describe('IlpPrepareController', function () {
     })
 
     it('does not send funds', async function () {
-      const dataStub = sinon.stub(this.mockPlugin2Wrapped, 'sendData')
-        .resolves(IlpPacket.serializeIlpReject({
+      const dataStub = sinon.stub(this.mockAccountService2, 'sendIlpPacket')
+        .resolves({
           code: '123',
           triggeredBy: 'test.foo',
           message: 'Error 1',
           data: Buffer.alloc(0)
-        }))
-      const moneyStub = sinon.stub(this.mockPlugin2Wrapped, 'sendMoney')
+        })
+      const moneyStub = sinon.stub(this.mockAccountService2, 'sendMoney')
 
       const preparePacket = IlpPacket.serializeIlpPrepare({
         amount: '100',
@@ -415,8 +351,7 @@ describe('IlpPrepareController', function () {
         data: Buffer.alloc(0)
       })
 
-      await this.middlewareManager.setup()
-      await this.mockPlugin1Wrapped._dataHandler(preparePacket)
+      await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
       sinon.assert.calledOnce(dataStub)
       sinon.assert.notCalled(moneyStub)
@@ -445,11 +380,11 @@ describe('IlpPrepareController', function () {
     ;[
       {
         label: 'doesn\'t send when the case\'s expiry is too far in the future',
-        case: {expires_at: future(15000)},
+        case: { expires_at: future(15000) },
         message: 'Destination transfer expiry is too far in the future. The connector\'s money would need to be held for too long'
       }, {
         label: 'doesn\'t send when the case has already expired',
-        case: {expires_at: future(-15000)},
+        case: { expires_at: future(-15000) },
         message: 'Transfer has already expired'
       }, {
         label: 'doesn\'t send when the case is missing an expiry',
@@ -461,7 +396,7 @@ describe('IlpPrepareController', function () {
         const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
         nock(this.caseId1).get('').reply(200, data.case)
         await this.mockPlugin1.emitAsync('incoming_prepare',
-          Object.assign(this.transfer, {cases: [this.caseId1]}))
+          Object.assign(this.transfer, { cases: [this.caseId1] }))
         assert.equal(sendSpy.called, false)
       })
     })
@@ -469,21 +404,21 @@ describe('IlpPrepareController', function () {
     // Two cases
 
     it('doesn\'t send when the cases have different expiries', async function () {
-      nock(this.caseId1).get('').reply(200, {expires_at: future(5000)})
-      nock(this.caseId2).get('').reply(200, {expires_at: future(6000)})
+      nock(this.caseId1).get('').reply(200, { expires_at: future(5000) })
+      nock(this.caseId2).get('').reply(200, { expires_at: future(6000) })
       const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
       await this.mockPlugin1.emitAsync('incoming_prepare',
-        Object.assign(this.transfer, {cases: [this.caseId1, this.caseId2]}))
+        Object.assign(this.transfer, { cases: [this.caseId1, this.caseId2] }))
       assert.equal(sendSpy.called, false)
     })
 
     it('authorizes the payment if the case expiries match', async function () {
-      nock(this.caseId1).get('').reply(200, {expires_at: future(5000)})
-      nock(this.caseId2).get('').reply(200, {expires_at: future(5000)})
+      nock(this.caseId1).get('').reply(200, { expires_at: future(5000) })
+      nock(this.caseId2).get('').reply(200, { expires_at: future(5000) })
 
       const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
       await this.mockPlugin1.emitAsync('incoming_prepare',
-        Object.assign(this.transfer, {cases: [this.caseId1, this.caseId2]}))
+        Object.assign(this.transfer, { cases: [this.caseId1, this.caseId2] }))
 
       sinon.assert.calledOnce(sendSpy)
       sinon.assert.calledWithMatch(sendSpy, {
@@ -502,16 +437,50 @@ describe('IlpPrepareController', function () {
   })
 
   describe('peer protocol', function () {
-    beforeEach(function () {
-      this.accounts.add('mock.test3', {
-        relation: 'child',
-        assetCode: 'USD',
-        assetScale: 4,
-        plugin: 'ilp-plugin-mock',
-        options: {}
+    beforeEach(async function () {
+      process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
+        'mock.test1': {
+          relation: 'peer',
+          assetCode: 'USD',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          options: {
+            type: 'mock',
+            host: 'http://test1.mock',
+            account: 'xyz',
+            username: 'bob',
+            password: 'bob'
+          }
+        },
+        'mock.test2': {
+          relation: 'peer',
+          assetCode: 'EUR',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          options: {
+            type: 'mock',
+            host: 'http://test2.mock',
+            account: 'xyz',
+            username: 'bob',
+            password: 'bob'
+          }
+        },
+        'mock.test3': {
+          relation: 'child',
+          assetCode: 'USD',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          balance: { minimum: '-50', maximum: '100' }
+        }
       })
-      this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-      this.mockPlugin3 = this.mockPlugin3Wrapped.oldPlugin
+
+      appHelper.create(this)
+      await this.backend.connect()
+      await this.accounts.startup()
+
+      this.mockAccountService1 = this.accounts.get('mock.test1')
+      this.mockAccountService2 = this.accounts.get('mock.test2')
+      this.mockAccountService3 = this.accounts.get('mock.test3')
     })
 
     it('handles ILDCP requests', async function () {
@@ -522,14 +491,144 @@ describe('IlpPrepareController', function () {
         destination: 'peer.config',
         data: Buffer.alloc(0)
       })
-      const fulfillPacket = IlpPacket.serializeIlpFulfill({
+      const fulfillPacket = {
         fulfillment: Buffer.alloc(32),
         data: Buffer.from('FnRlc3QuY29ubmllLm1vY2sudGVzdDMEA1VTRA==', 'base64')
+      }
+
+      const result = await this.mockAccountService3.getPlugin()._dataHandler(preparePacket)
+      assert.strictEqual(result.toString('hex'), IlpPacket.serializeIlpFulfill(fulfillPacket).toString('hex'))
+    })
+  })
+
+  describe('with max-packet-amount middleware', function () {
+    beforeEach(async function () {
+      process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
+        'mock.test1': {
+          relation: 'peer',
+          assetCode: 'USD',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          options: {
+            type: 'mock',
+            host: 'http://test1.mock',
+            account: 'xyz',
+            username: 'bob',
+            password: 'bob'
+          }
+        },
+        'mock.test2': {
+          relation: 'peer',
+          assetCode: 'EUR',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          options: {
+            type: 'mock',
+            host: 'http://test2.mock',
+            account: 'xyz',
+            username: 'bob',
+            password: 'bob'
+          }
+        },
+        'mock.test3': {
+          relation: 'child',
+          assetCode: 'USD',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          maxPacketAmount: '100'
+        }
+      })
+      process.env.CONNECTOR_ROUTES = JSON.stringify([{
+        targetPrefix: 'mock.test1',
+        peerId: 'mock.test1'
+      }, {
+        targetPrefix: 'mock.test2',
+        peerId: 'mock.test2'
+      }, {
+        targetPrefix: 'mock.test3',
+        peerId: 'mock.test3'
+      }])
+
+      appHelper.create(this)
+      await this.backend.connect()
+      await this.accounts.startup()
+
+      this.mockAccountService1 = this.accounts.get('mock.test1')
+      this.mockAccountService2 = this.accounts.get('mock.test2')
+      this.mockAccountService3 = this.accounts.get('mock.test3')
+    })
+
+    it('rejects when the packet amount is too high', async function () {
+      const preparePacket = IlpPacket.serializeIlpPrepare({
+        amount: '101',
+        executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
+        expiresAt: new Date(START_DATE + 2000),
+        destination: 'mock.test1.bob',
+        data: Buffer.alloc(0)
       })
 
-      await this.middlewareManager.setup()
-      const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
-      assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+      sinon.stub(this.mockAccountService2, 'sendIlpPacket')
+
+      const result = await this.mockAccountService3.getPlugin()._dataHandler(preparePacket)
+
+      assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+      assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+        code: 'F08',
+        message: 'packet size too large. maxAmount=100 actualAmount=101',
+        triggeredBy: 'test.connie',
+        data: Buffer.from([
+          0, 0, 0, 0, 0, 0, 0, 101,
+          0, 0, 0, 0, 0, 0, 0, 100
+        ])
+      })
+    })
+  })
+
+  describe('with rate-limit middleware', function () {
+    beforeEach(async function () {
+      process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
+        'mock.test1': {
+          relation: 'peer',
+          assetCode: 'USD',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          options: {
+            type: 'mock',
+            host: 'http://test1.mock',
+            account: 'xyz',
+            username: 'bob',
+            password: 'bob'
+          }
+        },
+        'mock.test2': {
+          relation: 'peer',
+          assetCode: 'EUR',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          options: {
+            type: 'mock',
+            host: 'http://test2.mock',
+            account: 'xyz',
+            username: 'bob',
+            password: 'bob'
+          }
+        },
+        'mock.test3': {
+          relation: 'child',
+          assetCode: 'USD',
+          assetScale: 4,
+          plugin: 'ilp-plugin-mock',
+          rateLimit: { refillCount: 3, capacity: 3 }
+        }
+      })
+
+      appHelper.create(this)
+      await this.backend.connect()
+      await this.accounts.startup()
+
+      this.mockAccountService1 = this.accounts.get('mock.test1')
+      this.mockAccountService2 = this.accounts.get('mock.test2')
+      this.mockAccountService3 = this.accounts.get('mock.test3')
     })
   })
 })

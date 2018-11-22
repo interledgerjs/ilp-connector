@@ -10,9 +10,7 @@
 /coverage/
 
 # TypeScript compiler output
-/src/**/*.js
-/src/**/*.js.map
-/src/**/*.d.ts
+/build
 
 # Generated typings for schemas should not be checked in
 /src/schemas/*.ts
@@ -25,4 +23,5 @@
 *.log
 /.tags*
 /web/
-.vscode/settings.json
+.vscode
+.idea

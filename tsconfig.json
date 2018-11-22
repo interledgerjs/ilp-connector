@@ -4,15 +4,23 @@
     "module": "commonjs",
     "sourceMap": true,
     "declaration": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "removeComments": true,
     "moduleResolution": "node",
     "inlineSources": true,
     "strict": true,
-    "suppressImplicitAnyIndexErrors": true
+    "strictPropertyInitialization": false,
+    "suppressImplicitAnyIndexErrors": true,
+    "outDir": "./build",
+    "rootDir": "./src"
   },
   "include": [
-      "src/**/*.ts"
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/tests/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
   ],
   "compileOnSave": true
 }
