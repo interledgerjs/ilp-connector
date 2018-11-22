@@ -16,16 +16,16 @@
   "bugs": {
     "url": "https://github.com/interledgerjs/ilp-connector/issues"
   },
-  "main": "src/index.js",
-  "types": "src/index.d.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "bin": {
-    "ilp-connector": "./src/index.js"
+    "ilp-connector": "./build/index.js"
   },
   "scripts": {
     "clean": "rm -Rf .nyc_output && rm -Rf coverage && rm -Rf build ",
-    "start": "node src/index.js",
-    "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} src/index.js",
-    "start:watch": "nodemon src/index.js",
+    "start": "node build/index.js",
+    "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} build/index.js",
+    "start:watch": "nodemon build/index.js",
     "build": "npm run clean && npm run schema-to-tsd && npm run compile-ts && npm run copy-schemas",
     "schema-to-tsd": "node scripts/build_schema_types",
     "copy-schemas": "mkdir -p ./build/schemas && cp ./src/schemas/*.json ./build/schemas",
