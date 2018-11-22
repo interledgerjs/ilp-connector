@@ -33,7 +33,7 @@
     "lint": "tslint --project . && eslint test/",
     "test": "nyc mocha",
     "report-coverage": "nyc report --reporter=json && codecov -f coverage/*.json",
-    "integration": "integration-loader && integration all",
+    "integration": "integration-loader && integration all -- --exit",
     "commitmsg": "commitlint -e $GIT_PARAMS"
   },
   "engines": {
