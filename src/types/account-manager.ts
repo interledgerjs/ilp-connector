@@ -18,5 +18,6 @@ export interface AccountManagerInstance {
   deregisterRemoveAccountHandler (): void,
   getAccounts (): Map<string, AccountService>
   startup (): void,
+  loadIlpAddress (): Promise<string>,
   shutdown (): void
 }

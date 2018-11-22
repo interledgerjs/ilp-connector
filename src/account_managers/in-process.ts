@@ -6,6 +6,9 @@ import { create as createLogger } from '../common/log'
 import { EventEmitter } from 'events'
 import { AccountService } from '../types/account-service'
 import PluginAccountService from '../account_services/plugin'
+import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject } from 'ilp-packet'
+import { isFulfill } from '../types/packet'
+import ILDCP = require('ilp-protocol-ildcp')
 
 const log = createLogger('in-process-account-manager')
 
@@ -72,9 +75,37 @@ export default class InProcessAccountManager extends EventEmitter implements Acc
 
   }
 
-  public async startup () {
-
+  public async loadIlpAddress () {
     const credentials = this.config.accounts
+
+    const map = new Map(Object.entries(credentials))
+    const inheritFrom = this.config.ilpAddressInheritFrom ||
+      // Get account id of first parent
+      [...map]
+        .filter(([key, value]) => value.relation === 'parent')
+        .map(([key]) => key)[0]
+
+    if (this.config.ilpAddress === 'unknown' && !inheritFrom) {
+      throw new Error('When there is no parent, ILP address must be specified in configuration.')
+    } else if (this.config.ilpAddress === 'unknown' && inheritFrom) {
+
+      await this.add(inheritFrom, credentials[inheritFrom])
+
+      // TODO - Fix up after removing extra serializtion in ILDCP
+      const ildcpInfo = await ILDCP.fetch(async (data: Buffer) => {
+        const reply = await this.getAccountService(inheritFrom).sendIlpPacket(deserializeIlpPrepare(data))
+        return isFulfill(reply) ? serializeIlpFulfill(reply) : serializeIlpReject(reply)
+      })
+
+      return ildcpInfo.clientAddress
+    }
+
+    return this.config.ilpAddress || 'unknown'
+  }
+
+  public async startup () {
+    const credentials = this.config.accounts
+
     for (let id of Object.keys(credentials)) {
       await this.add(id, credentials[id])
     }

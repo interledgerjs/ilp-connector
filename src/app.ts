@@ -88,8 +88,6 @@ export default function createApp (opts?: object, container?: Injector) {
 
     await middlewareManager.startup(id)
 
-    await accounts.loadIlpAddress()
-
     routeBroadcaster.track(id)
 
     routeBroadcaster.reloadLocalRoutes()
