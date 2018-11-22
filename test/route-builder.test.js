@@ -6,7 +6,7 @@ const sinon = require('sinon')
 const { cloneDeep } = require('lodash')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
-const logger = require('../src/common/log')
+const logger = require('../build/common/log')
 chai.use(require('chai-as-promised'))
 const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 const { InvalidPacketError } = require('ilp-packet').Errors
@@ -57,14 +57,11 @@ describe('RouteBuilder', function () {
       }
     })
     appHelper.create(this)
-    this.routeBroadcaster.reloadLocalRoutes()
-    await this.middlewareManager.setup()
-    await this.accounts.connect()
-
+    await this.accounts.startup()
     const testAccounts = Object.keys(accountCredentials)
     for (let accountId of testAccounts) {
-      this.routeBroadcaster.add(accountId)
-      this.accounts.getPlugin(accountId)._dataHandler(serializeCcpRouteUpdateRequest({
+
+      this.accounts.getAccountService(accountId).plugin._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: accountId,
         routingTableId: '31812543-9935-4160-bdde-6e459bb37cfe',
         currentEpochIndex: 1,

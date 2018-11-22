@@ -4,7 +4,6 @@ import { mapValues as pluck } from 'lodash'
 import Accounts from './accounts'
 import Config from './config'
 import MiddlewareManager from './middleware-manager'
-import BalanceMiddleware from '../middlewares/balance'
 import AlertMiddleware from '../middlewares/alert'
 import RoutingTable from './routing-table'
 import RouteBroadcaster from './route-broadcaster'
@@ -12,13 +11,9 @@ import Stats from './stats'
 import RateBackend from './rate-backend'
 import { formatRoutingTableAsJson } from '../routing/utils'
 import { Server, IncomingMessage, ServerResponse } from 'http'
-import InvalidJsonBodyError from '../errors/invalid-json-body-error'
-import { BalanceUpdate } from '../schemas/BalanceUpdate'
 import { create as createLogger } from '../common/log'
 import * as Prometheus from 'prom-client'
 const log = createLogger('admin-api')
-const ajv = new Ajv()
-const validateBalanceUpdate = ajv.compile(require('../schemas/BalanceUpdate.json'))
 
 interface Route {
   method: 'GET' | 'POST' | 'DELETE'
@@ -52,10 +47,6 @@ export default class AdminApi {
       { method: 'GET', match: '/status$', fn: this.getStatus },
       { method: 'GET', match: '/routing$', fn: this.getRoutingStatus },
       { method: 'GET', match: '/accounts$', fn: this.getAccountStatus },
-      { method: 'GET', match: '/accounts/', fn: this.getAccountAdminInfo },
-      { method: 'POST', match: '/accounts/', fn: this.sendAccountAdminInfo },
-      { method: 'GET', match: '/balance$', fn: this.getBalanceStatus },
-      { method: 'POST', match: '/balance$', fn: this.postBalance },
       { method: 'GET', match: '/rates$', fn: this.getBackendStatus },
       { method: 'GET', match: '/stats$', fn: this.getStats },
       { method: 'GET', match: '/alerts$', fn: this.getAlerts },
@@ -129,10 +120,8 @@ export default class AdminApi {
   }
 
   private async getStatus () {
-    const balanceStatus = await this.getBalanceStatus()
     const accountStatus = await this.getAccountStatus()
     return {
-      balances: pluck(balanceStatus['accounts'], 'balance'),
       connected: pluck(accountStatus['accounts'], 'connected'),
       localRoutingTable: formatRoutingTableAsJson(this.routingTable)
     }
@@ -144,30 +133,6 @@ export default class AdminApi {
 
   private async getAccountStatus () {
     return this.accounts.getStatus()
-  }
-
-  private async getBalanceStatus () {
-    const middleware = this.middlewareManager.getMiddleware('balance')
-    if (!middleware) return {}
-    const balanceMiddleware = middleware as BalanceMiddleware
-    return balanceMiddleware.getStatus()
-  }
-
-  private async postBalance (url: string, _data: object) {
-    try {
-      validateBalanceUpdate(_data)
-    } catch (err) {
-      const firstError = (validateBalanceUpdate.errors &&
-        validateBalanceUpdate.errors[0]) ||
-        { message: 'unknown validation error', dataPath: '' }
-      throw new InvalidJsonBodyError('invalid balance update: error=' + firstError.message + ' dataPath=' + firstError.dataPath, validateBalanceUpdate.errors || [])
-    }
-
-    const data = _data as BalanceUpdate
-    const middleware = this.middlewareManager.getMiddleware('balance')
-    if (!middleware) return
-    const balanceMiddleware = middleware as BalanceMiddleware
-    balanceMiddleware.modifyBalance(data.accountId, data.amountDiff)
   }
 
   private getBackendStatus (): Promise<{ [s: string]: any }> {
@@ -198,40 +163,5 @@ export default class AdminApi {
 
   private async getMetrics () {
     return Prometheus.register.metrics()
-  }
-
-  private _getPlugin (url: string) {
-    const match = /^\/accounts\/([A-Za-z0-9_.\-~]+)$/.exec(url.split('?')[0])
-    if (!match) throw new Error('invalid account.')
-    const account = match[1]
-    const plugin = this.accounts.getPlugin(account)
-    if (!plugin) throw new Error('account does not exist. account=' + account)
-    const info = this.accounts.getInfo(account)
-    return {
-      account,
-      info,
-      plugin
-    }
-  }
-
-  private async getAccountAdminInfo (url: string) {
-    const { account, info, plugin } = this._getPlugin(url)
-    if (!plugin.getAdminInfo) throw new Error('plugin has no admin info. account=' + account)
-    return {
-      account,
-      plugin: info.plugin,
-      info: (await plugin.getAdminInfo())
-    }
-  }
-
-  private async sendAccountAdminInfo (url: string, body?: object) {
-    if (!body) throw new Error('no json body provided to set admin info.')
-    const { account, info, plugin } = this._getPlugin(url)
-    if (!plugin.sendAdminInfo) throw new Error('plugin does not support sending admin info. account=' + account)
-    return {
-      account,
-      plugin: info.plugin,
-      result: (await plugin.sendAdminInfo(body))
-    }
   }
 }

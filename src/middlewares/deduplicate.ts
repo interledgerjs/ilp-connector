@@ -1,10 +1,12 @@
 import { createHash } from 'crypto'
-import * as IlpPacket from 'ilp-packet'
+import { IlpPrepare } from 'ilp-packet'
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
+import { IlpReply } from '../types/packet'
 import BigNumber from 'bignumber.js'
 
 // Where in the ILP packet does the static data begin (i.e. the data that is not modified hop-to-hop)
-const STATIC_DATA_OFFSET = 25 // 8 byte amount + 17 byte expiry date
+// Used by previous algorithm which hashed the raw bytes of the packet
+// const STATIC_DATA_OFFSET = 25 // 8 byte amount + 17 byte expiry date
 
 const CACHE_CLEANUP_INTERVAL = 30000
 const PACKET_CACHE_DURATION = 30000
@@ -12,7 +14,7 @@ const PACKET_CACHE_DURATION = 30000
 interface CachedPacket {
   amount: string,
   expiresAt: Date,
-  promise: Promise<Buffer>
+  promise: Promise<IlpReply>
 }
 
 export default class DeduplicateMiddleware implements Middleware {
@@ -38,38 +40,34 @@ export default class DeduplicateMiddleware implements Middleware {
 
     pipelines.outgoingData.insertLast({
       name: 'deduplicate',
-      method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
-        if (data[0] === IlpPacket.Type.TYPE_ILP_PREPARE) {
-          const { contents } = IlpPacket.deserializeEnvelope(data)
+      method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {
 
-          const index = createHash('sha256')
-            .update(contents.slice(STATIC_DATA_OFFSET))
-            .digest()
-            .slice(0, 16) // 128 bits is enough and saves some memory
-            .toString('base64')
+        const index = createHash('sha256')
+        // TODO - Review efficiency of new algorithm
+          .update(packet.destination + packet.executionCondition.toString() + packet.data.toString())
+          .digest()
+          .slice(0, 16) // 128 bits is enough and saves some memory
+          .toString('base64')
 
-          const { amount, expiresAt } = IlpPacket.deserializeIlpPrepare(data)
+        const { amount, expiresAt } = packet
 
-          const cachedPacket = this.packetCache.get(index)
-          if (cachedPacket) {
-            // We have seen this packet before, let's check if previous amount and expiresAt were larger
-            if (new BigNumber(cachedPacket.amount).gte(amount) && cachedPacket.expiresAt >= expiresAt) {
-              return cachedPacket.promise
-            }
+        const cachedPacket = this.packetCache.get(index)
+        if (cachedPacket) {
+          // We have seen this packet before, let's check if previous amount and expiresAt were larger
+          if (new BigNumber(cachedPacket.amount).gte(amount) && cachedPacket.expiresAt >= expiresAt) {
+            return cachedPacket.promise
           }
-
-          const promise = next(data)
-
-          this.packetCache.set(index, {
-            amount,
-            expiresAt,
-            promise
-          })
-
-          return promise
         }
 
-        return next(data)
+        const promise = next(packet)
+
+        this.packetCache.set(index, {
+          amount,
+          expiresAt,
+          promise
+        })
+
+        return promise
       }
     })
   }

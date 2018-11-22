@@ -1,0 +1,83 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+      # Use active LTS release: https://github.com/nodejs/Release#release-schedule
+    - image: circleci/node:8.12
+
+jobs:
+  test:
+    <<: *defaults
+    steps:
+
+      - checkout
+
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - "node-v1-{{ .Branch }}-{{ checksum \"package-lock.json\" }}"
+            - "node-v1-{{ .Branch }}-"
+            - "node-v1-"
+
+      - run:
+          name: Install
+          command: npm install
+
+      - run:
+          name: Lint
+          command: npm run lint
+
+      - run:
+          name: Test
+          command: npm test
+
+      - run:
+          name: Upload Test Coverage to codecov.io
+          command: npm run codecov
+
+# TODO: Re-enable integration tests once they are updated for ILPv4
+#      - run:
+#          name: Run Integration Tests
+#          command: if git log -1 --pretty=%B | grep -qF "[skip tests]"; then true; else npm run integration; fi
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+
+      - persist_to_workspace:
+          root: ~/repo
+          paths: .
+  deploy:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
+      - run:
+          name: Publish package
+          command: npm publish
+
+workflows:
+  version: 2
+  test-deploy:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /^v.*/
+      - deploy:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/

@@ -1,4 +1,4 @@
-import reduct = require('reduct')
+import { default as reduct, Injector } from 'reduct'
 import { partial } from 'lodash'
 import { create as createLogger } from './common/log'
 const log = createLogger('app')
@@ -12,7 +12,7 @@ import Store from './services/store'
 import MiddlewareManager from './services/middleware-manager'
 import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
-import { PluginInstance } from './types/plugin'
+import { AccountService } from './types/account-service'
 
 function listen (
   config: Config,
@@ -25,7 +25,7 @@ function listen (
   adminApi: AdminApi
 ) {
   // Start a coroutine that connects to the backend and
-  // subscribes to all the accounts in the background
+  // sets up the account manager that will start a grpc server to communicate with accounts
   return (async function () {
     adminApi.listen()
 
@@ -36,29 +36,7 @@ function listen (
       process.exit(1)
     }
 
-    await middlewareManager.setup()
-
-    // If we have no configured ILP address, try to get one via ILDCP
-    await accounts.loadIlpAddress()
-
-    if (config.routeBroadcastEnabled) {
-      routeBroadcaster.start()
-    }
-
-    // Connect other plugins, give up after initialConnectTimeout
-    await new Promise((resolve, reject) => {
-      const connectTimeout = setTimeout(() => {
-        log.warn('one or more accounts failed to connect within the time limit, continuing anyway.')
-        resolve()
-      }, config.initialConnectTimeout)
-      accounts.connect({ timeout: config.initialConnectTimeout })
-        .then(() => {
-          clearTimeout(connectTimeout)
-          resolve()
-        }, reject)
-    })
-
-    await middlewareManager.startup()
+    await accounts.startup()
 
     if (config.collectDefaultMetrics) {
       Prometheus.collectDefaultMetrics()
@@ -68,59 +46,14 @@ function listen (
   })().catch((err) => log.error(err))
 }
 
-async function addPlugin (
-  config: Config,
-  accounts: Accounts,
-  backend: RateBackend,
-  routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
-
-  id: string,
-  options: any
-) {
-  accounts.add(id, options)
-  const plugin = accounts.getPlugin(id)
-  await middlewareManager.addPlugin(id, plugin)
-
-  await plugin.connect({ timeout: Infinity })
-  routeBroadcaster.track(id)
-  routeBroadcaster.reloadLocalRoutes()
-}
-
-async function removePlugin (
-  config: Config,
-  accounts: Accounts,
-  backend: RateBackend,
-  routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
-
-  id: string
-) {
-  const plugin = accounts.getPlugin(id)
-  await middlewareManager.removePlugin(id, plugin)
-  await plugin.disconnect()
-  routeBroadcaster.untrack(id)
-  accounts.remove(id)
-  routeBroadcaster.reloadLocalRoutes()
-}
-
-function getPlugin (
-  accounts: Accounts,
-
-  id: string
-) {
-  return accounts.getPlugin(id)
-}
-
-function shutdown (
+async function shutdown (
   accounts: Accounts,
   routeBroadcaster: RouteBroadcaster
 ) {
   routeBroadcaster.stop()
-  return accounts.disconnect()
 }
 
-export default function createApp (opts?: object, container?: reduct.Injector) {
+export default function createApp (opts?: object, container?: Injector) {
   const deps = container || reduct()
 
   const config = deps(Config)
@@ -150,17 +83,32 @@ export default function createApp (opts?: object, container?: reduct.Injector) {
   const middlewareManager = deps(MiddlewareManager)
   const adminApi = deps(AdminApi)
 
-  const credentials = config.accounts
-  for (let id of Object.keys(credentials)) {
-    accounts.add(id, credentials[id])
+  const newAccountHandler = async (id: string, accountService: AccountService) => {
+    await middlewareManager.addAccountService(id, accountService)
+
+    await middlewareManager.startup(id)
+
+    await accounts.loadIlpAddress()
+
+    routeBroadcaster.track(id)
+
+    routeBroadcaster.reloadLocalRoutes()
   }
+
+  const removeAccountHandler = (id: string) => {
+    middlewareManager.removeAccountService(id)
+
+    routeBroadcaster.untrack(id)
+
+    routeBroadcaster.reloadLocalRoutes()
+  }
+
+  accounts.registerNewAccountHandler(newAccountHandler)
+  accounts.registerRemoveAccountHandler(removeAccountHandler)
 
   return {
     config,
     listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager, adminApi),
-    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
-    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
-    getPlugin: partial(getPlugin, accounts),
     shutdown: partial(shutdown, accounts, routeBroadcaster)
   }
 }

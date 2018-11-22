@@ -22,6 +22,11 @@
       "type": "string",
       "default": ""
     },
+    "account-manager": {
+      "description": "Manages communication between connector and the account plugins",
+      "type": "string",
+      "default": "in-process"
+    },
     "accounts": {
       "description": "Description of connector account plugins.",
       "type": "object",
@@ -305,6 +310,18 @@
     },
     "adminApiHost": {
       "description": "Host to bind to. Warning: The admin API interface should never be made public! Default: '127.0.0.1'",
+      "type": "string",
+      "default": "127.0.0.1"
+    },
+    "grpcServerPort": {
+      "description": "Which port the grpc server should listen on. Default: 5505",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535,
+      "default": 5505
+    },
+    "grpcServerHost": {
+      "description": "Host to bind to. Warning: Default: '127.0.0.1'",
       "type": "string",
       "default": "127.0.0.1"
     },

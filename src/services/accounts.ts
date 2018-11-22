@@ -1,56 +1,53 @@
 import reduct = require('reduct')
-import compat from 'ilp-compat-plugin'
 import Store from '../services/store'
 import Config from './config'
 import { EventEmitter } from 'events'
 import { AccountInfo } from '../types/accounts'
-import {
-  ConnectOptions,
-  PluginInstance
-} from '../types/plugin'
+import { AccountService } from '../types/account-service'
 import ILDCP = require('ilp-protocol-ildcp')
 
 import { create as createLogger } from '../common/log'
+import { AccountManagerInstance, AccountManagerConstructor } from '../types/account-manager'
+import { loadModuleOfType } from '../lib/utils'
+import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject } from 'ilp-packet'
+import { isFulfill } from '../types/packet'
 const log = createLogger('accounts')
 
-export interface AccountEntry {
-  plugin: PluginInstance,
-  info: AccountInfo
-}
+const DEFAULT_ACCOUNT_MANAGER = 'in-process'
 
 export default class Accounts extends EventEmitter {
   protected config: Config
   protected store: Store
 
   protected address: string
-  protected accounts: Map<string, AccountEntry>
+  protected accountManager: AccountManagerInstance
 
   constructor (deps: reduct.Injector) {
     super()
 
     this.config = deps(Config)
     this.store = deps(Store)
-
     this.address = this.config.ilpAddress || 'unknown'
-    this.accounts = new Map()
+    const AccountManager: AccountManagerConstructor = loadModuleOfType('account_manager', this.config['account-manager'] || DEFAULT_ACCOUNT_MANAGER)
+    this.accountManager = new AccountManager(deps)
   }
 
   async loadIlpAddress () {
     const inheritFrom = this.config.ilpAddressInheritFrom ||
       // Get account id of first parent
-      [...this.accounts]
-        .filter(([key, value]) => value.info.relation === 'parent')
+      [...this.accountManager.getAccounts()]
+        .filter(([key, value]) => value.getInfo().relation === 'parent')
         .map(([key]) => key)[0]
 
     if (this.config.ilpAddress === 'unknown' && !inheritFrom) {
       throw new Error('When there is no parent, ILP address must be specified in configuration.')
     } else if (this.config.ilpAddress === 'unknown' && inheritFrom) {
-      const parent = this.getPlugin(inheritFrom)
 
-      log.trace('connecting to parent. accountId=%s', inheritFrom)
-      await parent.connect({})
-
-      const ildcpInfo = await ILDCP.fetch(parent.sendData.bind(parent))
+      // TODO - Fix up after removing extra serializtion in ILDCP
+      const ildcpInfo = await ILDCP.fetch(async (data: Buffer) => {
+        const reply = await this.getAccountService(inheritFrom).sendIlpPacket(deserializeIlpPrepare(data))
+        return isFulfill(reply) ? serializeIlpFulfill(reply) : serializeIlpReject(reply)
+      })
 
       this.setOwnAddress(ildcpInfo.clientAddress)
 
@@ -59,18 +56,6 @@ export default class Accounts extends EventEmitter {
         throw new Error('no ilp address configured.')
       }
     }
-  }
-
-  async connect (options: ConnectOptions) {
-    const unconnectedAccounts = Array.from(this.accounts.values())
-      .filter(account => !account.plugin.isConnected())
-    return Promise.all(unconnectedAccounts.map(account => account.plugin.connect(options)))
-  }
-
-  async disconnect () {
-    const connectedAccounts = Array.from(this.accounts.values())
-      .filter(account => account.plugin.isConnected())
-    return Promise.all(connectedAccounts.map(account => account.plugin.disconnect()))
   }
 
   getOwnAddress () {
@@ -82,89 +67,33 @@ export default class Accounts extends EventEmitter {
     this.address = newAddress
   }
 
-  getPlugin (accountId: string) {
-    const account = this.accounts.get(accountId)
-
-    if (!account) {
-      log.error('could not find plugin for account id. accountId=%s', accountId)
-      throw new Error('unknown account id. accountId=' + accountId)
-    }
-
-    return account.plugin
-  }
-
   exists (accountId: string) {
-    return this.accounts.has(accountId)
+    return this.accountManager.getAccounts().has(accountId)
   }
 
   getAccountIds () {
-    return Array.from(this.accounts.keys())
+    return Array.from(this.accountManager.getAccounts().keys())
   }
 
   getAssetCode (accountId: string) {
-    const account = this.accounts.get(accountId)
+    const accountService = this.getAccountService(accountId)
 
-    if (!account) {
+    if (!accountService) {
       log.error('no currency found. account=%s', accountId)
       return undefined
     }
 
-    return account.info.assetCode
+    return accountService.getInfo().assetCode
   }
 
-  add (accountId: string, creds: any) {
-    log.info('add account. accountId=%s', accountId)
+  getInfo (accountId: string): AccountInfo {
+    const accountService = this.getAccountService(accountId)
 
-    // Although cloning the options object that comes in from
-    // code that includes ilp-connector is good practice,
-    // this breaks for instance when the plugin options
-    // contain for instance a https server like in `wsOpts` in
-    // https://github.com/interledgerjs/ilp-plugin-mini-accounts/blob/a77f1a6b984b6816856a0948dfa57fe95e7ddd8b/README.md#example
-    //
-    // creds = cloneDeep(creds)
-
-    try {
-      this.config.validateAccount(accountId, creds)
-    } catch (err) {
-      if (err.name === 'InvalidJsonBodyError') {
-        log.error('validation error in account config. id=%s', accountId)
-        err.debugPrint(log.warn.bind(log))
-        throw new Error('error while adding account, see error log for details.')
-      }
-
-      throw err
-    }
-
-    const plugin = this.getPluginFromCreds(accountId, creds)
-    this.accounts.set(accountId, {
-      info: creds,
-      plugin
-    })
-
-    this.emit('add', accountId, plugin)
-  }
-
-  remove (accountId: string) {
-    const plugin = this.getPlugin(accountId)
-    if (!plugin) {
-      return undefined
-    }
-    log.info('remove account. accountId=' + accountId)
-
-    this.emit('remove', accountId, plugin)
-
-    this.accounts.delete(accountId)
-    return plugin
-  }
-
-  getInfo (accountId: string) {
-    const account = this.accounts.get(accountId)
-
-    if (!account) {
+    if (!accountService) {
       throw new Error('unknown account id. accountId=' + accountId)
     }
 
-    return account.info
+    return accountService.getInfo()
   }
 
   getChildAddress (accountId: string) {
@@ -181,12 +110,11 @@ export default class Accounts extends EventEmitter {
 
   getStatus () {
     const accounts = {}
-    this.accounts.forEach((account, accountId) => {
+    this.accountManager.getAccounts().forEach((accountService, accountId) => {
       accounts[accountId] = {
         // Set info.options to undefined so that credentials aren't exposed.
-        info: Object.assign({}, account.info, { options: undefined }),
-        connected: account.plugin.isConnected(),
-        adminInfo: !!account.plugin.getAdminInfo
+        info: Object.assign({}, accountService.getInfo(), { options: undefined }),
+        connected: accountService.isConnected()
       }
     })
     return {
@@ -195,21 +123,32 @@ export default class Accounts extends EventEmitter {
     }
   }
 
-  private getPluginFromCreds (accountId: string, creds: any): PluginInstance {
-    // Use a plugin instance directly.
-    if (typeof creds.plugin === 'object') return creds.plugin
-    const Plugin = require(creds.plugin)
-
-    const api: any = {
-      store: this.store.getPluginStore(accountId),
-      log: createLogger(`${creds.plugin}[${accountId}]`)
+  getAccountService (accountId: string): AccountService {
+    const accountService = this.accountManager.getAccounts().get(accountId)
+    if (!accountService) {
+      log.error('could not find account service for account id. accountId=%s', accountId)
+      throw new Error('unknown account id. accountId=' + accountId)
     }
+    return accountService
+  }
 
-    const opts = Object.assign({
-      // Provide old deprecated _store and _log properties
-      _store: api.store,
-      _log: api.log
-    }, creds.options)
-    return compat(new Plugin(opts, api))
+  registerNewAccountHandler (handler: (id: string, accountService: AccountService) => Promise<void>) {
+    this.accountManager.registerNewAccountHandler(handler)
+  }
+
+  deregisterNewAccountHandler () {
+    this.accountManager.deregisterNewAccountHandler()
+  }
+
+  registerRemoveAccountHandler (handler: (id: string) => void) {
+    this.accountManager.registerRemoveAccountHandler(handler)
+  }
+
+  deregisterRemoveAccountHandler () {
+    this.accountManager.deregisterRemoveAccountHandler()
+  }
+
+  async startup () {
+    await this.accountManager.startup()
   }
 }

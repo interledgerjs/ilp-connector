@@ -1,10 +1,10 @@
 'use strict'
 
 const _ = require('lodash')
-const Config = require('../src/services/config').default
+const Config = require('../build/services/config').default
 const expect = require('chai').expect
 const assert = require('chai').assert
-const logger = require('../src/common/log')
+const logger = require('../build/common/log')
 const logHelper = require('./helpers/log')
 const env = _.cloneDeep(process.env)
 

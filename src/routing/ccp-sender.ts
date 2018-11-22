@@ -1,3 +1,4 @@
+import { AccountService } from '../types/account-service'
 import ForwardingRoutingTable, { RouteUpdate } from '../services/forwarding-routing-table'
 import { BroadcastRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
@@ -9,11 +10,11 @@ import {
   ModeReverseMap,
   serializeCcpRouteUpdateRequest
 } from 'ilp-protocol-ccp'
-import { PluginInstance } from '../types/plugin'
+import { deserializeIlpPrepare } from 'ilp-packet'
 
 export interface CcpSenderOpts {
   accountId: string
-  plugin: PluginInstance
+  accountService: AccountService
   forwardingRoutingTable: ForwardingRoutingTable
   getOwnAddress: () => string
   getAccountRelation: (accountId: string) => Relation
@@ -26,7 +27,7 @@ const MINIMUM_UPDATE_INTERVAL = 150
 const MAX_EPOCHS_PER_UPDATE = 50
 
 export default class CcpSender {
-  private plugin: PluginInstance
+  private accountService: AccountService
   private forwardingRoutingTable: ForwardingRoutingTable
   private log: ConnectorLogger
   private accountId: string
@@ -46,14 +47,14 @@ export default class CcpSender {
 
   constructor ({
     accountId,
-    plugin,
+    accountService,
     forwardingRoutingTable,
     getOwnAddress,
     getAccountRelation,
     routeExpiry,
     routeBroadcastInterval
   }: CcpSenderOpts) {
-    this.plugin = plugin
+    this.accountService = accountService
     this.forwardingRoutingTable = forwardingRoutingTable
     this.log = createLogger(`ccp-sender[${accountId}]`)
     this.accountId = accountId
@@ -162,7 +163,7 @@ export default class CcpSender {
   private async sendSingleRouteUpdate () {
     this.lastUpdate = Date.now()
 
-    if (!this.plugin.isConnected()) {
+    if (!this.accountService.isConnected()) {
       this.log.debug('cannot send routes, plugin not connected (yet).')
       return
     }
@@ -254,7 +255,7 @@ export default class CcpSender {
 
     try {
       await Promise.race([
-        this.plugin.sendData(serializeCcpRouteUpdateRequest(routeUpdate)),
+        this.accountService.sendIlpPacket(deserializeIlpPrepare(serializeCcpRouteUpdateRequest(routeUpdate))),
         timerPromise
       ])
     } catch (err) {

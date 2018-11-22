@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package account;
+
+service Account {
+
+  rpc AddAccount (NewAccountRequest) returns (NewAccountResponse) {}
+
+  rpc RemoveAccount(ConnectionRequest) returns (ConnectionResponse) {}
+
+  rpc HandleData (HandleDataRequest) returns (HandleDataResponse) {}
+
+  rpc TrackConnection (ConnectionRequest) returns (ConnectionResponse) {}
+
+  rpc UntrackConnection (ConnectionRequest) returns (ConnectionResponse) {}
+
+  rpc HandleConnectionChange (ConnectionChangeRequest) returns (ConnectionResponse) {}
+
+  rpc RegisterDataStream (stream HandleDataRequest) returns (stream HandleDataResponse) {}
+}
+
+message AccountInfo {
+    string relation = 1;
+    int32 assetScale = 2;
+    string assetCode = 3;
+    string plugin = 4;
+
+    AccountOptions options = 5;
+}
+
+message AccountOptions {
+
+    AccountOptionsInfo info = 1;
+    string account = 2;
+    int32 balance = 3;
+
+}
+
+message AccountOptionsInfo {
+    string prefix = 1;
+    string grpcAddress = 2;
+}
+
+message NewAccountRequest {
+    string id = 1;
+
+    AccountInfo info = 2;
+}
+
+message NewAccountResponse {
+
+}
+
+message HandleDataRequest {
+    string accountId = 1;
+    bytes buffer = 2;
+    string type = 3;
+}
+
+message HandleDataResponse{
+    bytes buffer = 1;
+    string error = 2;
+}
+
+message ConnectionRequest{
+    string accountId = 1;
+}
+
+message ConnectionResponse{
+
+}
+
+message ConnectionChangeRequest{
+    string accountId = 1;
+    bool isConnected = 2;
+}

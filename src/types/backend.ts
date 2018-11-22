@@ -13,7 +13,7 @@ export interface BackendServices {
 }
 
 export interface BackendConstructor {
-  new (options: object, api: BackendServices): BackendInstance
+  new(options: object, api: BackendServices): BackendInstance
 }
 
 export interface BackendInstance {

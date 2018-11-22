@@ -1,5 +1,7 @@
 import { AccountInfo } from './accounts'
 import Stats from '../services/stats'
+import { IlpPacket, IlpPrepare } from 'ilp-packet'
+import { IlpReply } from './packet'
 
 export interface MiddlewareDefinition {
   type: string,
@@ -13,43 +15,39 @@ export interface MiddlewareServices {
   stats: Stats
   getInfo (accountId: string): AccountInfo
   getOwnAddress (): string
-  sendData (data: Buffer, accountId: string): Promise<Buffer>
-  sendMoney (amount: string, accountId: string): Promise<void>
+  sendIlpPacket (data: IlpPacket, accountId: string): Promise<IlpPacket>
 }
 
-export interface MiddlewareCallback<T,U> {
+export interface MiddlewareCallback<T, U> {
   (val: T): Promise<U>
 }
 
-export interface MiddlewareMethod<T,U> {
-  (val: T, next: MiddlewareCallback<T,U>): Promise<U>
+export interface MiddlewareMethod<T, U> {
+  (val: T, next: MiddlewareCallback<T, U>): Promise<U>
 }
 
 export interface MiddlewareMethods {
-  data: MiddlewareMethod<Buffer, Buffer>
-  money: MiddlewareMethod<string, void>
+  data: MiddlewareMethod<IlpPacket, IlpPacket>
 }
 
-export interface PipelineEntry<T,U> {
+export interface PipelineEntry<T, U> {
   name: string,
-  method: MiddlewareMethod<T,U>
+  method: MiddlewareMethod<T, U>
 }
 
-export interface Pipeline<T,U> {
-  insertFirst (entry: PipelineEntry<T,U>): void
-  insertLast (entry: PipelineEntry<T,U>): void
-  insertBefore (middlewareName: string, entry: PipelineEntry<T,U>): void
-  insertAfter (middlewareName: string, entry: PipelineEntry<T,U>): void
-  getMethods (): MiddlewareMethod<T,U>[]
+export interface Pipeline<T, U> {
+  insertFirst (entry: PipelineEntry<T, U>): void
+  insertLast (entry: PipelineEntry<T, U>): void
+  insertBefore (middlewareName: string, entry: PipelineEntry<T, U>): void
+  insertAfter (middlewareName: string, entry: PipelineEntry<T, U>): void
+  getMethods (): MiddlewareMethod<T, U>[]
 }
 
 export interface Pipelines {
   readonly startup: Pipeline<void, void>,
   readonly teardown: Pipeline<void, void>,
-  readonly incomingData: Pipeline<Buffer, Buffer>,
-  readonly incomingMoney: Pipeline<string, void>,
-  readonly outgoingData: Pipeline<Buffer, Buffer>
-  readonly outgoingMoney: Pipeline<string, void>
+  readonly incomingData: Pipeline<IlpPrepare, IlpReply>,
+  readonly outgoingData: Pipeline<IlpPrepare, IlpReply>
 }
 
 export interface Middleware {
@@ -57,5 +55,5 @@ export interface Middleware {
 }
 
 export interface MiddlewareConstructor {
-  new (options: object, api: MiddlewareServices): Middleware
+  new(options: object, api: MiddlewareServices): Middleware
 }

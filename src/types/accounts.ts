@@ -1,8 +1,8 @@
 export interface AccountInfo {
   relation: 'parent' | 'peer' | 'child',
-  plugin: string,
   assetCode: string,
   assetScale: number,
+  plugin?: string,
   balance?: {
     minimum: string,
     maximum: string,

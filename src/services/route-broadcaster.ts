@@ -81,10 +81,10 @@ export default class RouteBroadcaster {
       return
     }
 
-    const plugin = this.accounts.getPlugin(accountId)
+    const accountService = this.accounts.getAccountService(accountId)
 
     const connectHandler = () => {
-      if (!plugin.isConnected()) {
+      if (!accountService.isConnected()) {
         // some plugins don't set `isConnected() = true` before emitting the
         // connect event, setImmediate has a good chance of working.
         log.error('(!!!) plugin emitted connect, but then returned false for isConnected, broken plugin. account=%s', accountId)
@@ -97,12 +97,12 @@ export default class RouteBroadcaster {
       this.remove(accountId)
     }
 
-    plugin.on('connect', connectHandler)
-    plugin.on('disconnect', disconnectHandler)
+    accountService.registerConnectHandler(connectHandler.bind(this))
+    accountService.registerDisconnectHandler(disconnectHandler.bind(this))
 
     this.untrackCallbacks.set(accountId, () => {
-      plugin.removeListener('connect', connectHandler)
-      plugin.removeListener('disconnect', disconnectHandler)
+      accountService.deregisterConnectHandler()
+      accountService.deregisterDisconnectHandler()
     })
 
     this.add(accountId)
@@ -116,6 +116,8 @@ export default class RouteBroadcaster {
     if (callback) {
       callback()
     }
+
+    this.untrackCallbacks.delete(accountId)
   }
 
   add (accountId: string) {
@@ -159,9 +161,9 @@ export default class RouteBroadcaster {
       return
     }
 
-    const plugin = this.accounts.getPlugin(accountId)
+    const accountService = this.accounts.getAccountService(accountId)
 
-    if (plugin.isConnected()) {
+    if (accountService.isConnected()) {
       log.trace('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
       const peer = new Peer({ deps: this.deps, accountId, sendRoutes, receiveRoutes })
       this.peers.set(accountId, peer)
@@ -197,7 +199,9 @@ export default class RouteBroadcaster {
       }
     }
     if (this.getAccountRelation(accountId) === 'child') {
-      this.updatePrefix(this.accounts.getChildAddress(accountId))
+      const childAddress = this.accounts.getChildAddress(accountId)
+      this.localRoutes.delete(childAddress)
+      this.updatePrefix(childAddress)
     }
   }
 
@@ -496,7 +500,12 @@ export default class RouteBroadcaster {
         epoch
       }
 
-      this.forwardingRoutingTable.insert(prefix, routeUpdate)
+      // this.forwardingRoutingTable.insert(prefix, routeUpdate)
+      if (typeof newNextHop === 'string') {
+        this.forwardingRoutingTable.insert(prefix, routeUpdate)
+      } else {
+        this.forwardingRoutingTable.delete(prefix)
+      }
 
       log.trace('logging route update. update=%j', routeUpdate)
 

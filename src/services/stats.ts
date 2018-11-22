@@ -54,24 +54,29 @@ export default class Stats {
   public incomingMoney = new AccountGauge({
     name: 'ilp_connector_incoming_money',
     help: 'Total of incoming money',
-    labelNames: [ 'result' ] })
+    labelNames: ['result']
+  })
 
   public outgoingMoney = new AccountGauge({
     name: 'ilp_connector_outgoing_money',
     help: 'Total of outgoing money',
-    labelNames: [ 'result' ] })
+    labelNames: ['result']
+  })
 
   public rateLimitedPackets = new AccountCounter({
     name: 'ilp_connector_rate_limited_ilp_packets',
-    help: 'Total of rate limited ILP packets' })
+    help: 'Total of rate limited ILP packets'
+  })
 
   public rateLimitedMoney = new AccountCounter({
     name: 'ilp_connector_rate_limited_money',
-    help: 'Total of rate limited money requests' })
+    help: 'Total of rate limited money requests'
+  })
 
   public balance = new AccountGauge({
     name: 'ilp_connector_balance',
-    help: 'Balances on peer account' })
+    help: 'Balances on peer account'
+  })
 
   getStatus () {
     return Prometheus.register.getMetricsAsJSON()

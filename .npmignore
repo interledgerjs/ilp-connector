@@ -3,5 +3,8 @@ integration-test/
 *.cluster
 /npm-debug.log
 /coverage
-
+src
+tsconfig.json
+tslint.json
+typedoc.js
 .npmrc

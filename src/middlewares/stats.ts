@@ -1,10 +1,12 @@
-import * as IlpPacket from 'ilp-packet'
 import {
   Middleware,
   MiddlewareCallback,
   MiddlewareServices,
   Pipelines
 } from '../types/middleware'
+import BigNumber from 'bignumber.js'
+import { IlpPrepare } from 'ilp-packet'
+import { IlpReply, isFulfill } from '../types/packet'
 import Stats from '../services/stats'
 import { AccountInfo } from '../types/accounts'
 
@@ -26,31 +28,20 @@ export default class StatsMiddleware implements Middleware {
     const account = { accountId, accountInfo }
     pipelines.incomingData.insertLast({
       name: 'stats',
-      method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
+      method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {
         try {
-          const result = await next(data)
-          if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
+          const result = await next(packet)
+          if (isFulfill(result)) {
             this.stats.incomingDataPackets.increment(account, { result: 'fulfilled' })
+            this.stats.incomingDataPacketValue.increment(account, { result: 'fulfilled' }, new BigNumber(packet.amount).toNumber())
           } else {
             this.stats.incomingDataPackets.increment(account, { result: 'rejected' })
+            this.stats.incomingDataPacketValue.increment(account, { result: 'fulfilled' }, new BigNumber(packet.amount).toNumber())
           }
           return result
         } catch (err) {
           this.stats.incomingDataPackets.increment(account, { result: 'failed' })
-          throw err
-        }
-      }
-    })
-
-    pipelines.incomingMoney.insertLast({
-      name: 'stats',
-      method: async (amount: string, next: MiddlewareCallback<string, void>) => {
-        try {
-          const result = await next(amount)
-          this.stats.incomingMoney.setValue(account, { result: 'succeeded' }, +amount)
-          return result
-        } catch (err) {
-          this.stats.incomingMoney.setValue(account, { result: 'failed' }, +amount)
+          this.stats.incomingDataPacketValue.increment(account, { result: 'failed' }, new BigNumber(packet.amount).toNumber())
           throw err
         }
       }
@@ -58,34 +49,21 @@ export default class StatsMiddleware implements Middleware {
 
     pipelines.outgoingData.insertLast({
       name: 'stats',
-      method: async (data: Buffer, next: MiddlewareCallback<Buffer, Buffer>) => {
+      method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {
         try {
-          const result = await next(data)
-          if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
+          const result = await next(packet)
+          if (isFulfill(result)) {
             this.stats.outgoingDataPackets.increment(account, { result: 'fulfilled' })
+            this.stats.outgoingDataPacketValue.increment(account, { result: 'fulfilled' }, new BigNumber(packet.amount).toNumber())
           } else {
-            const rejectPacket = IlpPacket.deserializeIlpReject(result)
-            const { code } = rejectPacket
-            this.stats.outgoingDataPackets.increment(account,
-              { result: 'rejected', code })
+            const { code } = result
+            this.stats.outgoingDataPackets.increment(account, { result: 'rejected', code })
+            this.stats.outgoingDataPacketValue.increment(account, { result: 'rejected', code }, new BigNumber(packet.amount).toNumber())
           }
           return result
         } catch (err) {
           this.stats.outgoingDataPackets.increment(account, { result: 'failed' })
-          throw err
-        }
-      }
-    })
-
-    pipelines.outgoingMoney.insertLast({
-      name: 'stats',
-      method: async (amount: string, next: MiddlewareCallback<string, void>) => {
-        try {
-          const result = await next(amount)
-          this.stats.outgoingMoney.setValue(account, { result: 'succeeded' }, +amount)
-          return result
-        } catch (err) {
-          this.stats.outgoingMoney.setValue(account, { result: 'failed' }, +amount)
+          this.stats.outgoingDataPacketValue.increment(account, { result: 'failed' }, new BigNumber(packet.amount).toNumber())
           throw err
         }
       }

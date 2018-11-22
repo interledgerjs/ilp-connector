@@ -25,13 +25,12 @@ export default class Peer {
     this.accounts = deps(Accounts)
     this.accountId = accountId
 
-    const plugin = this.accounts.getPlugin(accountId)
     const forwardingRoutingTable = deps(ForwardingRoutingTable)
-
+    const accountService = this.accounts.getAccountService(this.accountId)
     if (sendRoutes) {
       this.ccpSender = new CcpSender({
         accountId,
-        plugin,
+        accountService,
         forwardingRoutingTable,
         getOwnAddress: () => this.accounts.getOwnAddress(),
         getAccountRelation: this.getAccountRelation,
@@ -41,7 +40,7 @@ export default class Peer {
     }
 
     if (receiveRoutes) {
-      this.ccpReceiver = new CcpReceiver({ accountId, plugin })
+      this.ccpReceiver = new CcpReceiver({ accountService, accountId })
     }
   }
 

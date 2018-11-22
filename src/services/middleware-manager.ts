@@ -16,9 +16,10 @@ import {
   Pipeline,
   Pipelines
 } from '../types/middleware'
-import { PluginInstance, DataHandler, MoneyHandler } from '../types/plugin'
 import MiddlewarePipeline from '../lib/middleware-pipeline'
-import { Errors } from 'ilp-packet'
+import { Errors, IlpPrepare } from 'ilp-packet'
+import { AccountService } from '../types/account-service'
+import { IlpReply } from '../types/packet'
 const { codes, UnreachableError } = Errors
 
 interface VoidHandler {
@@ -29,18 +30,18 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   errorHandler: {
     type: 'error-handler'
   },
-  rateLimit: {
-    type: 'rate-limit'
-  },
+  // rateLimit: {
+  //   type: 'rate-limit'
+  // },
   maxPacketAmount: {
     type: 'max-packet-amount'
   },
-  throughput: {
-    type: 'throughput'
-  },
-  balance: {
-    type: 'balance'
-  },
+  // throughput: {
+  //   type: 'throughput'
+  // },
+  // balance: {
+  //   type: 'balance'
+  // },
   deduplicate: {
     type: 'deduplicate'
   },
@@ -66,9 +67,8 @@ export default class MiddlewareManager {
   protected stats: Stats
   private startupHandlers: Map<string, VoidHandler> = new Map()
   private teardownHandlers: Map<string, VoidHandler> = new Map()
-  private outgoingDataHandlers: Map<string, DataHandler> = new Map()
-  private outgoingMoneyHandlers: Map<string, MoneyHandler> = new Map()
-  private started: boolean = false
+  private outgoingDataHandlers: Map<string, (param: IlpPrepare) => Promise<IlpReply>> = new Map()
+  private started: boolean = false // TODO Manage per account?
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
@@ -106,17 +106,14 @@ export default class MiddlewareManager {
     return new Middleware(definition.options || {}, {
       getInfo: accountId => this.accounts.getInfo(accountId),
       getOwnAddress: () => this.accounts.getOwnAddress(),
-      sendData: this.sendData.bind(this),
-      sendMoney: this.sendMoney.bind(this),
+      sendIlpPacket: this.sendIlpPacket.bind(this),
       stats: this.stats
     })
   }
 
   async setup () {
     for (const accountId of this.accounts.getAccountIds()) {
-      const plugin = this.accounts.getPlugin(accountId)
-
-      await this.addPlugin(accountId, plugin)
+      await this.addAccountService(accountId, this.accounts.getAccountService(accountId))
     }
   }
 
@@ -125,21 +122,24 @@ export default class MiddlewareManager {
    *
    * This should be called after the plugins are connected
    */
-  async startup () {
-    this.started = true
-    for (const handler of this.startupHandlers.values()) {
-      await handler(undefined)
+  async startup (accountId?: string) {
+    if (accountId) {
+      const handler = this.startupHandlers.get(accountId)
+      if (handler) await handler(undefined)
+    } else {
+      this.started = true
+      for (const handler of this.startupHandlers.values()) {
+        await handler(undefined)
+      }
     }
   }
 
-  async addPlugin (accountId: string, plugin: PluginInstance) {
+  async addAccountService (accountId: string, accountService: AccountService) {
     const pipelines: Pipelines = {
       startup: new MiddlewarePipeline<void, void>(),
       teardown: new MiddlewarePipeline<void, void>(),
-      incomingData: new MiddlewarePipeline<Buffer, Buffer>(),
-      incomingMoney: new MiddlewarePipeline<string, void>(),
-      outgoingData: new MiddlewarePipeline<Buffer, Buffer>(),
-      outgoingMoney: new MiddlewarePipeline<string, void>()
+      incomingData: new MiddlewarePipeline<IlpPrepare, IlpReply>(),
+      outgoingData: new MiddlewarePipeline<IlpPrepare, IlpReply>()
     }
     for (const middlewareName of Object.keys(this.middlewares)) {
       const middleware = this.middlewares[middlewareName]
@@ -154,9 +154,9 @@ export default class MiddlewareManager {
     }
 
     // Generate outgoing middleware
-    const submitData = async (data: Buffer) => {
+    const sendOutgoingIlpPacket = async (packet: IlpPrepare): Promise<IlpReply> => {
       try {
-        return await plugin.sendData(data)
+        return await accountService.sendIlpPacket(packet)
       } catch (e) {
         let err = e
         if (!err || typeof err !== 'object') {
@@ -172,75 +172,51 @@ export default class MiddlewareManager {
         throw err
       }
     }
-    const submitMoney = plugin.sendMoney.bind(plugin)
+
     const startupHandler = this.createHandler(pipelines.startup, accountId, async () => { return })
     const teardownHandler = this.createHandler(pipelines.teardown, accountId, async () => { return })
-    const outgoingDataHandler: DataHandler =
-      this.createHandler(pipelines.outgoingData, accountId, submitData)
-    const outgoingMoneyHandler: MoneyHandler =
-      this.createHandler(pipelines.outgoingMoney, accountId, submitMoney)
+    const outgoingDataHandler: (param: IlpPrepare) => Promise<IlpReply> =
+          this.createHandler(pipelines.outgoingData, accountId, sendOutgoingIlpPacket)
 
     this.startupHandlers.set(accountId, startupHandler)
     this.teardownHandlers.set(accountId, teardownHandler)
     this.outgoingDataHandlers.set(accountId, outgoingDataHandler)
-    this.outgoingMoneyHandlers.set(accountId, outgoingMoneyHandler)
 
     // Generate incoming middleware
-    const handleData: DataHandler = (data: Buffer) => this.core.processData(data, accountId, this.sendData.bind(this))
-    const handleMoney: MoneyHandler = async () => void 0
-    const incomingDataHandler: DataHandler =
-      this.createHandler(pipelines.incomingData, accountId, handleData)
-    const incomingMoneyHandler: MoneyHandler =
-      this.createHandler(pipelines.incomingMoney, accountId, handleMoney)
+    const handleIlpPacket: (param: IlpPrepare) => Promise<IlpReply> =
+      (packet: IlpPrepare) => this.core.processIlpPacket(packet, accountId, this.sendIlpPacket.bind(this))
+    const incomingIlpPacketHandler: (param: IlpPrepare) => Promise<IlpReply> =
+      this.createHandler(pipelines.incomingData, accountId, handleIlpPacket)
 
-    plugin.registerDataHandler(incomingDataHandler)
-    plugin.registerMoneyHandler(incomingMoneyHandler)
-
-    if (this.started) {
-      // If the plugin is being added dynamically (after connector init),
-      // make sure it's startup pipeline is run.
-      await startupHandler(undefined)
-    }
+    accountService.registerIlpPacketHandler(incomingIlpPacketHandler)
   }
 
-  async removePlugin (accountId: string, plugin: PluginInstance) {
-    plugin.deregisterDataHandler()
-    plugin.deregisterMoneyHandler()
+  async removeAccountService (accountId: string) {
+    this.accounts.getAccountService(accountId).deregisterIlpPacketHandler()
 
     this.startupHandlers.delete(accountId)
     const teardownHandler = this.teardownHandlers.get(accountId)
     if (teardownHandler) await teardownHandler(undefined)
     this.teardownHandlers.delete(accountId)
     this.outgoingDataHandlers.delete(accountId)
-    this.outgoingMoneyHandlers.delete(accountId)
   }
 
-  async sendData (data: Buffer, accountId: string) {
+  async sendIlpPacket (packet: IlpPrepare, accountId: string) {
     const handler = this.outgoingDataHandlers.get(accountId)
 
     if (!handler) {
       throw new UnreachableError('tried to send data to non-existent account. accountId=' + accountId)
     }
 
-    return handler(data)
-  }
-
-  async sendMoney (amount: string, accountId: string) {
-    const handler = this.outgoingMoneyHandlers.get(accountId)
-
-    if (!handler) {
-      throw new UnreachableError('tried to send money to non-existent account. accountId=' + accountId)
-    }
-
-    return handler(amount)
+    return handler(packet)
   }
 
   getMiddleware (name: string): Middleware | undefined {
     return this.middlewares[name]
   }
 
-  private createHandler<T,U> (pipeline: Pipeline<T,U>, accountId: string, next: (param: T) => Promise<U>): (param: T) => Promise<U> {
-    const middleware: MiddlewareMethod<T,U> = composeMiddleware(pipeline.getMethods())
+  private createHandler<T, U> (pipeline: Pipeline<T, U>, accountId: string, next: (param: T) => Promise<U>): (param: T) => Promise<U> {
+    const middleware: MiddlewareMethod<T, U> = composeMiddleware(pipeline.getMethods())
 
     return (param: T) => middleware(param, next)
   }

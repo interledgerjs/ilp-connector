@@ -1,7 +1,7 @@
 'use strict'
 
 const assert = require('chai').assert
-const logger = require('../src/common/log')
+const logger = require('../build/common/log')
 const logHelper = require('./helpers/log')
 const appHelper = require('./helpers/app')
 

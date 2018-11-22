@@ -1,24 +1,25 @@
 import PrefixMap from './prefix-map'
+import { AccountService } from '../types/account-service'
 import { IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
-import { Type, deserializeIlpReject } from 'ilp-packet'
+import { deserializeIlpPrepare } from 'ilp-packet'
 import {
   CcpRouteControlRequest,
   CcpRouteUpdateRequest,
   Mode,
   serializeCcpRouteControlRequest
 } from 'ilp-protocol-ccp'
-import { PluginInstance } from '../types/plugin'
+import { isFulfill } from '../types/packet'
 
 export interface CcpReceiverOpts {
-  plugin: PluginInstance
+  accountService: AccountService
   accountId: string
 }
 
 const ROUTE_CONTROL_RETRY_INTERVAL = 30000
 
 export default class CcpReceiver {
-  private plugin: PluginInstance
+  private accountService: AccountService
   private log: ConnectorLogger
   private accountId: string
   private routes: PrefixMap<IncomingRoute>
@@ -35,8 +36,8 @@ export default class CcpReceiver {
    */
   private epoch: number = 0
 
-  constructor ({ plugin, accountId }: CcpReceiverOpts) {
-    this.plugin = plugin
+  constructor ({ accountService, accountId }: CcpReceiverOpts) {
+    this.accountService = accountService
     this.log = createLogger(`ccp-receiver[${accountId}]`)
     this.accountId = accountId
     this.routes = new PrefixMap()
@@ -141,7 +142,7 @@ export default class CcpReceiver {
   }
 
   sendRouteControl = () => {
-    if (!this.plugin.isConnected()) {
+    if (!this.accountService.isConnected()) {
       this.log.debug('cannot send route control message, plugin not connected (yet).')
       return
     }
@@ -153,16 +154,13 @@ export default class CcpReceiver {
       features: []
     }
 
-    this.plugin.sendData(serializeCcpRouteControlRequest(routeControl))
-      .then(data => {
-        if (data[0] === Type.TYPE_ILP_FULFILL) {
+    this.accountService.sendIlpPacket(deserializeIlpPrepare(serializeCcpRouteControlRequest(routeControl)))
+      .then(packet => {
+        if (isFulfill(packet)) {
           this.log.trace('successfully sent route control message.')
-        } else if (data[0] === Type.TYPE_ILP_REJECT) {
-          this.log.debug('route control message was rejected. rejection=%j', deserializeIlpReject(data))
-          throw new Error('route control message rejected.')
         } else {
-          this.log.debug('unknown response packet type. type=' + data[0])
-          throw new Error('route control message returned unknown response.')
+          this.log.debug('route control message was rejected. rejection=%j', packet)
+          throw new Error('route control message rejected.')
         }
       })
       .catch((err: any) => {

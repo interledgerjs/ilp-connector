@@ -1,18 +1,18 @@
 import { Pipeline, PipelineEntry, MiddlewareMethod } from '../types/middleware'
 
-export default class MiddlewarePipeline<T,U> implements Pipeline<T,U> {
-  private entries: PipelineEntry<T,U>[] = []
+export default class MiddlewarePipeline<T, U> implements Pipeline<T, U> {
+  private entries: PipelineEntry<T, U>[] = []
 
-  insertFirst (entry: PipelineEntry<T,U>) {
+  insertFirst (entry: PipelineEntry<T, U>) {
     this.entries = [entry, ...this.entries]
   }
 
-  insertLast (entry: PipelineEntry<T,U>) {
+  insertLast (entry: PipelineEntry<T, U>) {
     this.entries = [...this.entries, entry]
   }
 
-  insertBefore (middlewareName: string, entry: PipelineEntry<T,U>) {
-    const pipelineNames = this.entries.map((m: PipelineEntry<T,U>) => m.name)
+  insertBefore (middlewareName: string, entry: PipelineEntry<T, U>) {
+    const pipelineNames = this.entries.map((m: PipelineEntry<T, U>) => m.name)
     const index = pipelineNames.indexOf(middlewareName)
 
     if (index === -1) {
@@ -26,8 +26,8 @@ export default class MiddlewarePipeline<T,U> implements Pipeline<T,U> {
     ]
   }
 
-  insertAfter (middlewareName: string, entry: PipelineEntry<T,U>) {
-    const pipelineNames = this.entries.map((m: PipelineEntry<T,U>) => m.name)
+  insertAfter (middlewareName: string, entry: PipelineEntry<T, U>) {
+    const pipelineNames = this.entries.map((m: PipelineEntry<T, U>) => m.name)
     const index = pipelineNames.indexOf(middlewareName)
 
     if (index === -1) {
@@ -41,7 +41,7 @@ export default class MiddlewarePipeline<T,U> implements Pipeline<T,U> {
     ]
   }
 
-  getMethods (): MiddlewareMethod<T,U>[] {
+  getMethods (): MiddlewareMethod<T, U>[] {
     return this.entries.map(e => e.method)
   }
 }
