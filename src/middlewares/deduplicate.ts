@@ -21,7 +21,7 @@ export default class DeduplicateMiddleware implements Middleware {
   private packetCache: Map<string, CachedPacket> = new Map()
 
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
-    let interval
+    let interval: NodeJS.Timeout
     pipelines.startup.insertLast({
       name: 'deduplicate',
       method: async (dummy: void, next: MiddlewareCallback<void, void>) => {
