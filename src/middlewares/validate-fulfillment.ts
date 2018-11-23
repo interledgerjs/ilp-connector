@@ -3,7 +3,7 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('validate-fulfillment-middleware')
 import { IlpPrepare, Errors as IlpPacketErrors } from 'ilp-packet'
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-import { IlpReply, isFulfill } from '../types/packet'
+import { IlpReply, isFulfill } from 'ilp-account-service'
 const { UnreachableError, WrongConditionError } = IlpPacketErrors
 
 export default class ValidateFulfillmentMiddleware implements Middleware {

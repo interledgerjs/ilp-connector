@@ -1,7 +1,7 @@
 import { AccountInfo } from './accounts'
 import Stats from '../services/stats'
 import { IlpPacket, IlpPrepare } from 'ilp-packet'
-import { IlpReply } from './packet'
+import { IlpReply } from 'ilp-account-service'
 
 export interface MiddlewareDefinition {
   type: string,

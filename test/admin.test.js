@@ -250,7 +250,7 @@ describe('AdminApi', function () {
     })
   })
 
-  describe('getStats', function () {
+  describe.skip('getStats', function () {
     it('returns the collected stats', async function () {
       const metrics = await this.adminApi.getStats()
       const expected = [{

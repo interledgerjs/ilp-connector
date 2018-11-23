@@ -7,7 +7,7 @@ import IlpPrepareController from '../controllers/ilp-prepare'
 import { create as createLogger } from '../common/log'
 const log = createLogger('core-middleware')
 import reduct = require('reduct')
-import { IlpReply } from '../types/packet'
+import { IlpReply } from 'ilp-account-service'
 const { InvalidPacketError } = IlpPacketErrors
 
 export default class Core {

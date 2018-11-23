@@ -4,7 +4,7 @@ import ILDCP = require('ilp-protocol-ildcp')
 const log = createLogger('ildcp-host')
 import reduct = require('reduct')
 import { IlpPrepare, serializeIlpPrepare } from 'ilp-packet'
-import { IlpReply, deserializeIlpReply } from '../types/packet'
+import { IlpReply, deserializeIlpReply } from 'ilp-account-service'
 
 export default class IldcpHostController {
   protected accounts: Accounts

@@ -1,5 +1,5 @@
 import reduct = require('reduct')
-import { AccountService } from './account-service'
+import { AccountService } from 'ilp-account-service'
 import { AccountInfo } from './accounts'
 
 export interface AccountManagerConstructor {

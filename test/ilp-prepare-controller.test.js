@@ -86,17 +86,16 @@ describe('IlpPrepareController', function () {
       destination: 'mock.test2.bob',
       data: Buffer.alloc(0)
     })
-    const fulfillPacket = IlpPacket.serializeIlpFulfill({
+    const fulfillPacket = {
       fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
       data: Buffer.alloc(0)
-    })
+    }
 
-    sinon.stub(this.mockAccountService2, 'sendData')
+    sinon.stub(this.mockAccountService2, 'sendIlpPacket')
       .resolves(fulfillPacket)
 
     const result = await this.mockAccountService1.plugin._dataHandler(preparePacket)
-
-    assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+    assert.strictEqual(result.toString('hex'), IlpPacket.serializeIlpFulfill(fulfillPacket).toString('hex'))
   })
 
   it('should reject when given an invalid fulfillment', async function () {
@@ -112,13 +111,14 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
-    sinon.stub(this.mockAccountService2, 'sendData')
+    sinon.stub(this.mockAccountService2, 'sendIlpPacket')
       .resolves(fulfillPacket)
 
     const result = await this.mockAccountService1.plugin._dataHandler(preparePacket)
+    console.log(IlpPacket.deserializeIlpFulfill(result))
 
-    assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-    assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+    assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+    assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'F05',
       message: 'fulfillment did not match expected value.',
       triggeredBy: 'test.connie',
@@ -127,12 +127,11 @@ describe('IlpPrepareController', function () {
   })
 
   it('applies its rate and reduces the expiry date by one second', async function () {
-    const sendSpy = sinon.stub(this.mockAccountService2, 'sendData')
-      .resolves(IlpPacket.serializeIlpFulfill({
+    const sendSpy = sinon.stub(this.mockAccountService2, 'sendIlpPacket')
+      .resolves({
         fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
         data: Buffer.alloc(0)
-      }))
-
+      })
 
     await this.mockAccountService1.plugin._dataHandler(IlpPacket.serializeIlpPrepare({
       amount: '100',
@@ -153,11 +152,11 @@ describe('IlpPrepareController', function () {
   })
 
   it('reduces the destination expiry to its max hold time if that time would otherwise be exceeded', async function () {
-    const sendSpy = sinon.stub(this.mockAccountService2, 'sendData')
-      .resolves(IlpPacket.serializeIlpFulfill({
+    const sendSpy = sinon.stub(this.mockAccountService2, 'sendIlpPacket')
+      .resolves({
         fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
         data: Buffer.alloc(0)
-      }))
+      })
 
 
     await this.mockAccountService1.plugin._dataHandler(IlpPacket.serializeIlpPrepare({
@@ -169,7 +168,7 @@ describe('IlpPrepareController', function () {
     }))
 
     sinon.assert.calledOnce(sendSpy)
-    sinon.assert.calledWithMatch(sendSpy, sinon.match(packet => assert.deepEqual(IlpPacket.deserializeIlpPrepare(packet), {
+    sinon.assert.calledWithMatch(sendSpy, sinon.match(packet => assert.deepStrictEqual(IlpPacket.deserializeIlpPrepare(packet), {
       amount: '94',
       executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
       expiresAt: new Date(START_DATE + 30000),
@@ -256,71 +255,18 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
-    sinon.stub(this.mockAccountService2, 'sendData')
+    sinon.stub(this.mockAccountService2, 'sendIlpPacket')
       .rejects(new Error('fail!'))
 
     const result = await this.mockAccountService1.plugin._dataHandler(preparePacket)
 
-    assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-    assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+    assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+    assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'F02',
       message: 'failed to send packet: fail!',
       triggeredBy: 'test.connie',
       data: Buffer.alloc(0)
     })
-  })
-
-  it('fulfills the source transfer even if settlement fails', async function () {
-    const preparePacket = IlpPacket.serializeIlpPrepare({
-      amount: '100',
-      executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-      expiresAt: new Date(START_DATE + 2000),
-      destination: 'mock.test2.bob',
-      data: Buffer.alloc(0)
-    })
-    const fulfillPacket = IlpPacket.serializeIlpFulfill({
-      fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-      data: Buffer.alloc(0)
-    })
-
-    sinon.stub(this.mockAccountService2, 'sendData')
-      .resolves(fulfillPacket)
-    sinon.stub(this.mockAccountService2, 'sendMoney')
-      .rejects(new Error('fail!'))
-
-    const result = await this.mockAccountService1.plugin._dataHandler(preparePacket)
-
-    assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
-  })
-
-  it.skip('rejects the source transfer if settlement fails with insufficient liquidity', async function () {
-    sinon.stub(this.mockAccountService2, 'sendTransfer')
-      .rejects({
-        name: 'InsufficientBalanceError',
-        message: 'Sender has insufficient funds.'
-      })
-
-    try {
-      await this.mockAccountService1._transferHandler({
-        amount: '100',
-        executionCondition: 'I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk',
-        expiresAt: (new Date(START_DATE + 2000)).toISOString(),
-        ilp: IlpPacket.serializeIlpForwardedPayment({
-          account: 'mock.test2.bob'
-        }),
-        custom: {}
-      })
-    } catch (err) {
-      assert.equal(err.name, 'InterledgerRejectionError')
-      assert.deepEqual(IlpPacket.deserializeIlpRejection(err.ilpRejection), {
-        code: 'T04',
-        triggeredBy: 'test.connie',
-        message: 'destination transfer failed: Sender has insufficient funds.',
-        data: Buffer.alloc(0)
-      })
-      return
-    }
-    assert(false)
   })
 
   it('rejects with Insufficient Timeout if the incoming transfer is expired', async function () {
@@ -334,8 +280,8 @@ describe('IlpPrepareController', function () {
 
     const result = await this.mockAccountService1.plugin._dataHandler(preparePacket)
 
-    assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-    assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+    assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+    assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'R02',
       message: 'source transfer has already expired. sourceExpiry=2015-06-15T23:59:59.999Z currentTime=2015-06-16T00:00:00.000Z',
       triggeredBy: 'test.connie',

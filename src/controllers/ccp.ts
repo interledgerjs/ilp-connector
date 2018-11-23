@@ -10,7 +10,7 @@ import {
   deserializeCcpRouteControlRequest,
   serializeCcpResponse
 } from 'ilp-protocol-ccp'
-import { IlpReply, deserializeIlpReply } from '../types/packet'
+import { IlpReply, deserializeIlpReply } from 'ilp-account-service'
 
 export default class CcpController {
   protected routeBroadcaster: RouteBroadcaster

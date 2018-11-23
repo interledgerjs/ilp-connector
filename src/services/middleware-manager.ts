@@ -18,8 +18,7 @@ import {
 } from '../types/middleware'
 import MiddlewarePipeline from '../lib/middleware-pipeline'
 import { Errors, IlpPrepare } from 'ilp-packet'
-import { AccountService } from '../types/account-service'
-import { IlpReply } from '../types/packet'
+import { AccountService, IlpReply } from 'ilp-account-service'
 const { codes, UnreachableError } = Errors
 
 interface VoidHandler {

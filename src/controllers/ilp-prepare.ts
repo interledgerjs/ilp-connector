@@ -8,7 +8,7 @@ import RouteBuilder from '../services/route-builder'
 import RateBackend from '../services/rate-backend'
 import PeerProtocolController from '../controllers/peer-protocol'
 import EchoController from '../controllers/echo'
-import { IlpReply, isFulfill } from '../types/packet'
+import { IlpReply, isFulfill } from 'ilp-account-service'
 
 const PEER_PROTOCOL_PREFIX = 'peer.'
 

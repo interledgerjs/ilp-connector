@@ -3,17 +3,16 @@ import Store from '../services/store'
 import Config from './config'
 import { EventEmitter } from 'events'
 import { AccountInfo } from '../types/accounts'
-import { AccountService } from '../types/account-service'
+import { AccountService, isFulfill } from 'ilp-account-service'
 import ILDCP = require('ilp-protocol-ildcp')
-
-import { create as createLogger } from '../common/log'
 import { AccountManagerInstance, AccountManagerConstructor } from '../types/account-manager'
 import { loadModuleOfType } from '../lib/utils'
 import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject } from 'ilp-packet'
-import { isFulfill } from '../types/packet'
+import PluginAccountManager from '../account_managers/plugin'
+import { create as createLogger } from '../common/log'
 const log = createLogger('accounts')
 
-const DEFAULT_ACCOUNT_MANAGER = 'in-process'
+const DEFAULT_ACCOUNT_MANAGER = 'plugin'
 
 export default class Accounts extends EventEmitter {
   protected config: Config
@@ -58,6 +57,19 @@ export default class Accounts extends EventEmitter {
     }
   }
 
+  async add (accountId: string, creds: any) {
+    log.info('add account. accountId=%s', accountId)
+    if (this.accountManager instanceof PluginAccountManager) {
+      return this.accountManager.addAccount(accountId, creds)
+    }
+  }
+
+  async remove (accountId: string) {
+    log.info('remove account. accountId=%s', accountId)
+    if (this.accountManager instanceof PluginAccountManager) {
+      return this.accountManager.removeAccount(accountId)
+    }
+  }
   getOwnAddress () {
     return this.address
   }

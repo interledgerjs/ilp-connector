@@ -1,5 +1,5 @@
 import PrefixMap from './prefix-map'
-import { AccountService } from '../types/account-service'
+import { AccountService, isFulfill } from 'ilp-account-service'
 import { IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
 import { deserializeIlpPrepare } from 'ilp-packet'
@@ -9,7 +9,6 @@ import {
   Mode,
   serializeCcpRouteControlRequest
 } from 'ilp-protocol-ccp'
-import { isFulfill } from '../types/packet'
 
 export interface CcpReceiverOpts {
   accountService: AccountService

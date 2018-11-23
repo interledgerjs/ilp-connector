@@ -12,7 +12,7 @@ import Store from './services/store'
 import MiddlewareManager from './services/middleware-manager'
 import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
-import { AccountService } from './types/account-service'
+import { AccountService, PluginAccountService } from 'ilp-account-service'
 
 function listen (
   config: Config,
@@ -51,6 +51,42 @@ async function shutdown (
   routeBroadcaster: RouteBroadcaster
 ) {
   routeBroadcaster.stop()
+}
+
+async function addPlugin (
+  config: Config,
+  accounts: Accounts,
+  backend: RateBackend,
+  routeBroadcaster: RouteBroadcaster,
+  middlewareManager: MiddlewareManager,
+
+  id: string,
+  options: any
+) {
+  await accounts.add(id, options)
+}
+
+async function removePlugin (
+  config: Config,
+  accounts: Accounts,
+  backend: RateBackend,
+  routeBroadcaster: RouteBroadcaster,
+  middlewareManager: MiddlewareManager,
+
+  id: string
+) {
+  await accounts.remove(id)
+}
+
+function getPlugin (
+  accounts: Accounts,
+
+  id: string
+) {
+  const accountService = accounts.getAccountService(id)
+  if (accountService && accountService instanceof PluginAccountService) {
+    return accountService.getPlugin()
+  }
 }
 
 export default function createApp (opts?: object, container?: Injector) {
@@ -109,6 +145,9 @@ export default function createApp (opts?: object, container?: Injector) {
   return {
     config,
     listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager, adminApi),
+    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
+    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
+    getPlugin: partial(getPlugin, accounts),
     shutdown: partial(shutdown, accounts, routeBroadcaster)
   }
 }

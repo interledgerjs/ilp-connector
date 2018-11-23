@@ -4,12 +4,11 @@ import { AccountManagerInstance } from '../types/account-manager'
 import Store from '../services/store'
 import { create as createLogger } from '../common/log'
 import { EventEmitter } from 'events'
-import { AccountService } from '../types/account-service'
-import PluginAccountService from '../account_services/plugin'
+import { AccountService, PluginAccountService } from 'ilp-account-service'
 
-const log = createLogger('in-process-account-manager')
+const log = createLogger('plugin-account-manager')
 
-export default class InProcessAccountManager extends EventEmitter implements AccountManagerInstance {
+export default class PluginAccountManager extends EventEmitter implements AccountManagerInstance {
 
   protected config: Config
   protected store: Store
@@ -76,7 +75,7 @@ export default class InProcessAccountManager extends EventEmitter implements Acc
 
     const credentials = this.config.accounts
     for (let id of Object.keys(credentials)) {
-      await this.add(id, credentials[id])
+      await this.addAccount(id, credentials[id])
     }
 
   }
@@ -85,7 +84,7 @@ export default class InProcessAccountManager extends EventEmitter implements Acc
 
     log.info('shutting down')
 
-    this.accountServices.forEach((accountService, accountId) => this.remove(accountId))
+    this.accountServices.forEach((accountService, accountId) => this.removeAccount(accountId))
 
   }
 
@@ -102,7 +101,7 @@ export default class InProcessAccountManager extends EventEmitter implements Acc
     return this.accountServices
   }
 
-  private async add (accountId: string, accountInfo: any) {
+  async addAccount (accountId: string, accountInfo: any) {
 
     // Validate config
     try {
@@ -138,21 +137,21 @@ export default class InProcessAccountManager extends EventEmitter implements Acc
 
     log.info('started plugin for account ' + accountId)
 
-    const accountService = new PluginAccountService(accountId, accountInfo, plugin)
+    const accountService = new PluginAccountService(accountId, accountInfo, plugin, [])
     this.accountServices.set(accountId, accountService)
 
     if (this.newAccountHandler) {
       await this.newAccountHandler(accountId, accountService)
     }
     // TODO Should this await?
-    await accountService.connect()
+    await accountService.startup()
   }
 
-  private remove (accountId: string) {
+  async removeAccount (accountId: string) {
 
     const accountService = this.getAccountService(accountId)
 
-    accountService.disconnect()
+    accountService.shutdown()
     accountService.deregisterIlpPacketHandler()
     accountService.deregisterConnectHandler()
     accountService.deregisterDisconnectHandler()

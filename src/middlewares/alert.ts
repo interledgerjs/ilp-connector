@@ -2,7 +2,7 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('alert-middleware')
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
 import { IlpPrepare, Errors as IlpPacketErrors, Type as IlpPacketType } from 'ilp-packet'
-import { IlpReply, isFulfill } from '../types/packet'
+import { IlpReply, isFulfill } from 'ilp-account-service'
 
 const { T04_INSUFFICIENT_LIQUIDITY } = IlpPacketErrors.codes
 
