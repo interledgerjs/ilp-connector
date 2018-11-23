@@ -1,7 +1,6 @@
 import { create as createLogger } from '../common/log'
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-import { IlpPrepare, Errors as IlpPacketErrors } from 'ilp-packet'
-import { IlpReply } from 'ilp-account-service'
+import { IlpPrepare, Errors as IlpPacketErrors, IlpReply } from 'ilp-packet'
 const { InternalError } = IlpPacketErrors
 const log = createLogger('expire-middleware')
 

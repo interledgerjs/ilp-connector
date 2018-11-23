@@ -1,7 +1,6 @@
 import { createHash } from 'crypto'
-import { IlpPrepare } from 'ilp-packet'
+import { IlpPrepare, IlpReply } from 'ilp-packet'
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-import { IlpReply } from 'ilp-account-service'
 import BigNumber from 'bignumber.js'
 
 // Where in the ILP packet does the static data begin (i.e. the data that is not modified hop-to-hop)

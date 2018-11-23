@@ -1,8 +1,8 @@
 import PrefixMap from './prefix-map'
-import { AccountService, isFulfill } from 'ilp-account-service'
+import { AccountService } from 'ilp-account-service'
 import { IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
-import { deserializeIlpPrepare } from 'ilp-packet'
+import { deserializeIlpPrepare, isFulfill } from 'ilp-packet'
 import {
   CcpRouteControlRequest,
   CcpRouteUpdateRequest,

@@ -1,8 +1,7 @@
 import { create as createLogger } from '../common/log'
 import BigNumber from 'bignumber.js'
 import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
-import { IlpPrepare, Errors as IlpPacketErrors } from 'ilp-packet'
-import { IlpReply } from 'ilp-account-service'
+import { IlpPrepare, Errors as IlpPacketErrors, IlpReply } from 'ilp-packet'
 import { AccountInfo } from '../types/accounts'
 const { AmountTooLargeError } = IlpPacketErrors
 const log = createLogger('max-packet-amount-middleware')

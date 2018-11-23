@@ -5,8 +5,7 @@ import {
   Pipelines
 } from '../types/middleware'
 import BigNumber from 'bignumber.js'
-import { IlpPrepare } from 'ilp-packet'
-import { IlpReply, isFulfill } from 'ilp-account-service'
+import { IlpPrepare, IlpReply, isFulfill } from 'ilp-packet'
 import Stats from '../services/stats'
 import { AccountInfo } from '../types/accounts'
 

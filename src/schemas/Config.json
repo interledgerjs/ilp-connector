@@ -25,7 +25,7 @@
     "account-manager": {
       "description": "Manages communication between connector and the account plugins",
       "type": "string",
-      "default": "in-process"
+      "default": "plugin"
     },
     "accounts": {
       "description": "Description of connector account plugins.",

@@ -17,8 +17,8 @@ import {
   Pipelines
 } from '../types/middleware'
 import MiddlewarePipeline from '../lib/middleware-pipeline'
-import { Errors, IlpPrepare } from 'ilp-packet'
-import { AccountService, IlpReply } from 'ilp-account-service'
+import { Errors, IlpPrepare, IlpReply } from 'ilp-packet'
+import { AccountService } from 'ilp-account-service'
 const { codes, UnreachableError } = Errors
 
 interface VoidHandler {
@@ -29,18 +29,9 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   errorHandler: {
     type: 'error-handler'
   },
-  // rateLimit: {
-  //   type: 'rate-limit'
-  // },
   maxPacketAmount: {
     type: 'max-packet-amount'
   },
-  // throughput: {
-  //   type: 'throughput'
-  // },
-  // balance: {
-  //   type: 'balance'
-  // },
   deduplicate: {
     type: 'deduplicate'
   },

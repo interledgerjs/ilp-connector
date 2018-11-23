@@ -1,4 +1,4 @@
-import { Errors as IlpPacketErrors, IlpPacket, Type, IlpPrepare } from 'ilp-packet'
+import { IlpReply, IlpPrepare } from 'ilp-packet'
 import Config from '../services/config'
 import Accounts from '../services/accounts'
 import RouteBroadcaster from '../services/route-broadcaster'
@@ -7,8 +7,6 @@ import IlpPrepareController from '../controllers/ilp-prepare'
 import { create as createLogger } from '../common/log'
 const log = createLogger('core-middleware')
 import reduct = require('reduct')
-import { IlpReply } from 'ilp-account-service'
-const { InvalidPacketError } = IlpPacketErrors
 
 export default class Core {
   protected config: Config

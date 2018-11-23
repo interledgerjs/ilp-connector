@@ -2,7 +2,7 @@ import { create as createLogger } from '../common/log'
 const log = createLogger('ccp')
 import RouteBroadcaster from '../services/route-broadcaster'
 import reduct = require('reduct')
-import { IlpPrepare, serializeIlpPrepare } from 'ilp-packet'
+import { IlpPrepare, serializeIlpPrepare, IlpReply, deserializeIlpReply } from 'ilp-packet'
 import {
   CCP_CONTROL_DESTINATION,
   CCP_UPDATE_DESTINATION,
@@ -10,7 +10,6 @@ import {
   deserializeCcpRouteControlRequest,
   serializeCcpResponse
 } from 'ilp-protocol-ccp'
-import { IlpReply, deserializeIlpReply } from 'ilp-account-service'
 
 export default class CcpController {
   protected routeBroadcaster: RouteBroadcaster

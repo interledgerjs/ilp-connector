@@ -3,11 +3,11 @@ import Store from '../services/store'
 import Config from './config'
 import { EventEmitter } from 'events'
 import { AccountInfo } from '../types/accounts'
-import { AccountService, isFulfill } from 'ilp-account-service'
+import { AccountService } from 'ilp-account-service'
 import ILDCP = require('ilp-protocol-ildcp')
 import { AccountManagerInstance, AccountManagerConstructor } from '../types/account-manager'
 import { loadModuleOfType } from '../lib/utils'
-import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject } from 'ilp-packet'
+import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject, isFulfill } from 'ilp-packet'
 import PluginAccountManager from '../account_managers/plugin'
 import { create as createLogger } from '../common/log'
 const log = createLogger('accounts')

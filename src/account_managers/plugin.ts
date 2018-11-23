@@ -4,8 +4,8 @@ import { AccountManagerInstance } from '../types/account-manager'
 import Store from '../services/store'
 import { create as createLogger } from '../common/log'
 import { EventEmitter } from 'events'
-import { AccountService, PluginAccountService, isFulfill } from 'ilp-account-service'
-import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject } from 'ilp-packet'
+import { AccountService, PluginAccountService } from 'ilp-account-service'
+import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject, isFulfill } from 'ilp-packet'
 import ILDCP = require('ilp-protocol-ildcp')
 
 const log = createLogger('plugin-account-manager')

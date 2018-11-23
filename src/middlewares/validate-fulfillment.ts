@@ -1,10 +1,9 @@
 import { createHash } from 'crypto'
 import { create as createLogger } from '../common/log'
 const log = createLogger('validate-fulfillment-middleware')
-import { IlpPrepare, Errors as IlpPacketErrors } from 'ilp-packet'
+import { IlpPrepare, Errors as IlpPacketErrors, IlpReply, isFulfill } from 'ilp-packet'
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-import { IlpReply, isFulfill } from 'ilp-account-service'
-const { UnreachableError, WrongConditionError } = IlpPacketErrors
+const { WrongConditionError } = IlpPacketErrors
 
 export default class ValidateFulfillmentMiddleware implements Middleware {
   async applyToPipelines (pipelines: Pipelines, accountId: string) {
