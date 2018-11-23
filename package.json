@@ -123,11 +123,6 @@
     }
   },
   "nyc": {
-    "check-coverage": true,
-    "lines": 80,
-    "statements": 80,
-    "functions": 80,
-    "branches": 80,
     "include": [
       "build/**/*"
     ],
