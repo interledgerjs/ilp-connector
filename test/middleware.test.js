@@ -61,16 +61,16 @@ describe('Middleware Manager', function () {
 
     appHelper.create(this)
     await this.backend.connect()
-    await this.accounts.connect()
+    await this.accounts.startup()
     await this.routeBroadcaster.reloadLocalRoutes()
 
     this.setTimeout = setTimeout
     this.setInterval = setInterval
     this.clock = sinon.useFakeTimers(START_DATE)
 
-    this.mockPlugin1Wrapped = this.accounts.getPlugin('mock.test1')
+    this.mockPlugin1Wrapped = this.accounts.getAccountService('mock.test1').getPlugin()
     this.mockPlugin1 = this.mockPlugin1Wrapped.oldPlugin
-    this.mockPlugin2Wrapped = this.accounts.getPlugin('mock.test2')
+    this.mockPlugin2Wrapped = this.accounts.getAccountService('mock.test2').getPlugin()
     this.mockPlugin2 = this.mockPlugin2Wrapped.oldPlugin
   })
 
@@ -80,76 +80,18 @@ describe('Middleware Manager', function () {
   })
 
   describe('incoming data middleware', function () {
-    describe('with balance middleware', function () {
-      beforeEach(async function () {
-        this.accounts.add('mock.test3', {
-          relation: 'child',
-          assetCode: 'USD',
-          assetScale: 4,
-          plugin: 'ilp-plugin-mock',
-          balance: {minimum: '-50', maximum: '100'}
-        })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-      })
-
-      it('rejects when balance exceeds maximum', async function () {
-        const preparePacket = IlpPacket.serializeIlpPrepare({
-          amount: '101',
-          executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-          expiresAt: new Date(START_DATE + 2000),
-          destination: 'mock.test1.bob',
-          data: Buffer.alloc(0)
-        })
-
-        await this.middlewareManager.setup()
-        const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
-
-        assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-        assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
-          code: 'T04',
-          message: 'exceeded maximum balance.',
-          triggeredBy: 'test.connie',
-          data: Buffer.alloc(0)
-        })
-      })
-
-      it('fulfills when the incoming balance isn\'t too high', async function () {
-        const preparePacket = IlpPacket.serializeIlpPrepare({
-          amount: '99',
-          executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-          expiresAt: new Date(START_DATE + 2000),
-          destination: 'mock.test1.bob',
-          data: Buffer.alloc(0)
-        })
-        const fulfillPacket = IlpPacket.serializeIlpFulfill({
-          fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-          data: Buffer.alloc(0)
-        })
-
-        sinon.stub(this.mockPlugin1Wrapped, 'sendData')
-          .resolves(fulfillPacket)
-
-        await this.middlewareManager.setup()
-        const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
-
-        assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
-      })
-    })
 
     describe('with max-packet-amount middleware', function () {
       beforeEach(async function () {
-        this.accounts.add('mock.test3', {
+        await this.accounts.add('mock.test3', {
           relation: 'child',
           assetCode: 'USD',
           assetScale: 4,
           plugin: 'ilp-plugin-mock',
           maxPacketAmount: '100'
         })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+        this.routingTable.insert('mock.test3', { nextHop: 'mock.test3', path: [] })
+        this.mockPlugin3Wrapped = this.accounts.getAccountService('mock.test3').getPlugin()
       })
 
       it('fulfills when the packet amount is within limit', async function () {
@@ -168,7 +110,6 @@ describe('Middleware Manager', function () {
         sinon.stub(this.mockPlugin1Wrapped, 'sendData')
           .resolves(fulfillPacket)
 
-        await this.middlewareManager.setup()
         const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
 
         assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
@@ -183,7 +124,6 @@ describe('Middleware Manager', function () {
           data: Buffer.alloc(0)
         })
 
-        await this.middlewareManager.setup()
         const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
 
         assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
@@ -198,67 +138,19 @@ describe('Middleware Manager', function () {
         })
       })
     })
-
-    describe('with rate-limit middleware', function () {
-      beforeEach(async function () {
-        this.accounts.add('mock.test3', {
-          relation: 'child',
-          assetCode: 'USD',
-          assetScale: 4,
-          plugin: 'ilp-plugin-mock',
-          rateLimit: {refillCount: 3, capacity: 3}
-        })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-      })
-
-      it('rejects when payments arrive too quickly', async function () {
-        const preparePacket = IlpPacket.serializeIlpPrepare({
-          amount: '49',
-          executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-          expiresAt: new Date(START_DATE + 2000),
-          destination: 'mock.test1.bob',
-          data: Buffer.alloc(0)
-        })
-        const fulfillPacket = IlpPacket.serializeIlpFulfill({
-          fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-          data: Buffer.alloc(0)
-        })
-
-        sinon.stub(this.mockPlugin1Wrapped, 'sendData')
-          .resolves(fulfillPacket)
-
-        await this.middlewareManager.setup()
-        for (let i = 0; i < 3; i++) {
-          // Empty the token buffer
-          await this.mockPlugin3Wrapped._dataHandler(preparePacket)
-        }
-        const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
-
-        assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-        assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
-          code: 'T05',
-          message: 'too many requests, throttling.',
-          triggeredBy: 'test.connie',
-          data: Buffer.alloc(0)
-        })
-      })
-    })
   })
 
   describe('outgoing data middleware', function () {
     describe('with alert middleware', function () {
       beforeEach(async function () {
-        this.accounts.add('mock.test3', {
+        await this.accounts.add('mock.test3', {
           relation: 'child',
           assetCode: 'USD',
           assetScale: 4,
           plugin: 'ilp-plugin-mock'
         })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+        this.routingTable.insert('mock.test3', { nextHop: 'mock.test3', path: [] })
+        this.mockPlugin3Wrapped = this.accounts.getAccountService('mock.test3').getPlugin()
       })
 
       it('adds an alert for insufficent liquidity', async function () {
@@ -280,7 +172,6 @@ describe('Middleware Manager', function () {
         const alerts = this.middlewareManager.getMiddleware('alert').alerts
 
         mAssert.isEmpty(alerts)
-        await this.middlewareManager.setup()
 
         await this.mockPlugin3Wrapped._dataHandler(preparePacket)
         mAssert.isNotEmpty(alerts)
@@ -305,7 +196,6 @@ describe('Middleware Manager', function () {
         const alerts = this.middlewareManager.getMiddleware('alert').alerts
 
         mAssert.isEmpty(alerts)
-        await this.middlewareManager.setup()
 
         await this.mockPlugin3Wrapped._dataHandler(preparePacket)
 
@@ -313,82 +203,17 @@ describe('Middleware Manager', function () {
       })
     })
 
-    describe('with balance middleware', function () {
-      beforeEach(async function () {
-        this.accounts.add('mock.test3', {
-          relation: 'child',
-          assetCode: 'USD',
-          assetScale: 4,
-          plugin: 'ilp-plugin-mock',
-          balance: {minimum: '-50', maximum: '100'}
-        })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-      })
-
-      it('rejects when the next hope has insufficient funds', async function () {
-        const preparePacket = IlpPacket.serializeIlpPrepare({
-          amount: '55',
-          executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-          expiresAt: new Date(START_DATE + 2000),
-          destination: 'mock.test3.bob',
-          data: Buffer.alloc(0)
-        })
-        const fulfillPacket = IlpPacket.serializeIlpFulfill({
-          fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-          data: Buffer.alloc(0)
-        })
-
-        sinon.stub(this.mockPlugin3Wrapped, 'sendData')
-          .resolves(fulfillPacket)
-
-        await this.middlewareManager.setup()
-        const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-
-        assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-        assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
-          code: 'F00',
-          message: 'insufficient funds. oldBalance=0 proposedBalance=-54',
-          triggeredBy: 'test.connie',
-          data: Buffer.alloc(0)
-        })
-      })
-
-      it('fulfills when the outgoing balance isn\'t too low', async function () {
-        const preparePacket = IlpPacket.serializeIlpPrepare({
-          amount: '49',
-          executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-          expiresAt: new Date(START_DATE + 2000),
-          destination: 'mock.test3.bob',
-          data: Buffer.alloc(0)
-        })
-        const fulfillPacket = IlpPacket.serializeIlpFulfill({
-          fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-          data: Buffer.alloc(0)
-        })
-
-        sinon.stub(this.mockPlugin3Wrapped, 'sendData')
-          .resolves(fulfillPacket)
-
-        await this.middlewareManager.setup()
-        const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-
-        assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
-      })
-    })
 
     describe('with deduplicate middleware', function () {
       beforeEach(async function () {
-        this.accounts.add('mock.test3', {
+        await this.accounts.add('mock.test3', {
           relation: 'child',
           assetCode: 'USD',
           assetScale: 4,
           plugin: 'ilp-plugin-mock'
         })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+        this.routingTable.insert('mock.test3', { nextHop: 'mock.test3', path: [] })
+        this.mockPlugin3Wrapped = this.accounts.getAccountService('mock.test3').getPlugin()
       })
 
       it('Adds outgoing packets into duplicate cache', async function () {
@@ -407,12 +232,10 @@ describe('Middleware Manager', function () {
         sinon.stub(this.mockPlugin1Wrapped, 'sendData')
           .resolves(fulfillPacket)
 
-        await this.middlewareManager.setup()
-
         await this.mockPlugin3Wrapped._dataHandler(preparePacket)
 
         const cachedPacket = this.middlewareManager.getMiddleware('deduplicate').packetCache.values().next().value
-        assert.equal(cachedPacket.amount, 48)
+        assert.strictEqual(cachedPacket.amount, '48')
       })
 
       it('Duplicate Packets response is served from packetCache', async function () {
@@ -423,13 +246,12 @@ describe('Middleware Manager', function () {
           destination: 'mock.test1',
           data: Buffer.alloc(0)
         })
-        const fulfillPacket = IlpPacket.serializeIlpFulfill({
+        const fulfillPacket = {
           fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
           data: Buffer.alloc(0)
-        })
+        }
 
-        await this.middlewareManager.setup()
-        this.middlewareManager.getMiddleware('deduplicate').packetCache.set('wLGdgkJP9a+6RG/9ZfPM7A==',
+        this.middlewareManager.getMiddleware('deduplicate').packetCache.set('+EpxyhksFbUHDS9LkoTXlg==',
           {
             amount: '48',
             expiresAt: new Date('2015-06-16T00:00:01.000Z'),
@@ -437,21 +259,20 @@ describe('Middleware Manager', function () {
           })
 
         const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
-        assert.equal(result, fulfillPacket)
+        assert.strictEqual(result.toString(), IlpPacket.serializeIlpFulfill(fulfillPacket).toString())
       })
     })
 
     describe('with expire middleware', function () {
       beforeEach(async function () {
-        this.accounts.add('mock.test3', {
+        await this.accounts.add('mock.test3', {
           relation: 'child',
           assetCode: 'USD',
           assetScale: 4,
           plugin: 'ilp-plugin-mock'
         })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+        this.routingTable.insert('mock.test3', { nextHop: 'mock.test3', path: [] })
+        this.mockPlugin3Wrapped = this.accounts.getAccountService('mock.test3').getPlugin()
       })
 
       it('fulfills for responses received within expiration window', async function () {
@@ -469,7 +290,6 @@ describe('Middleware Manager', function () {
         sinon.stub(this.mockPlugin3Wrapped, 'sendData')
           .resolves(fulfillPacket)
 
-        await this.middlewareManager.setup()
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
         assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
@@ -494,35 +314,36 @@ describe('Middleware Manager', function () {
           return fulfillPacket
         }.bind(this))
 
-        await this.middlewareManager.setup()
         const result = this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
-        // waiting here is necessary
+        // Order and workings of rest of code in this test is really important! Beware on changing stuff.
         await new Promise(resolve => setTimeout(resolve, 10))
-        result.then(data => {
-          assert.equal(data[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-          assert.deepEqual(IlpPacket.deserializeIlpReject(data), {
+        let promise = result.then(data => {
+          assert.strictEqual(data[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+          assert.deepStrictEqual(IlpPacket.deserializeIlpReject(data), {
             code: 'R00',
             message: 'packet expired.',
             triggeredBy: 'test.connie',
             data: Buffer.alloc(0)
           })
+        }).catch(error => {
+          throw new Error(error)
         })
         this.clock.tick(2000)
+        await promise
       })
     })
 
     describe('with stats middleware', function () {
       beforeEach(async function () {
-        this.accounts.add('mock.test3', {
+        await this.accounts.add('mock.test3', {
           relation: 'child',
           assetCode: 'USD',
           assetScale: 4,
           plugin: 'ilp-plugin-mock'
         })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+        this.routingTable.insert('mock.test3', { nextHop: 'mock.test3', path: [] })
+        this.mockPlugin3Wrapped = this.accounts.getAccountService('mock.test3').getPlugin()
       })
 
       it('fulfills response increments stats with fulfilled result', async function () {
@@ -541,7 +362,6 @@ describe('Middleware Manager', function () {
         sinon.stub(this.mockPlugin3Wrapped, 'sendData')
           .resolves(fulfillPacket)
 
-        await this.middlewareManager.setup()
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
         const stats = await this.adminApi.getStats()
         assert.equal(stats[0].values.length, 1)
@@ -567,7 +387,6 @@ describe('Middleware Manager', function () {
         sinon.stub(this.mockPlugin3Wrapped, 'sendData')
           .resolves(rejectPacket)
 
-        await this.middlewareManager.setup()
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
         const stats = await this.adminApi.getStats()
         assert.equal(stats[0].values.length, 1)
@@ -587,7 +406,6 @@ describe('Middleware Manager', function () {
         sinon.stub(this.mockPlugin3Wrapped, 'sendData')
           .resolves(Buffer.from('1'))
 
-        await this.middlewareManager.setup()
         await this.mockPlugin1Wrapped._dataHandler(preparePacket)
         const stats = await this.adminApi.getStats()
         assert.equal(stats[0].values.length, 1)
@@ -595,82 +413,16 @@ describe('Middleware Manager', function () {
       })
     })
 
-    describe('with throughput middleware', function () {
-      beforeEach(async function () {
-        this.accounts.add('mock.test3', {
-          relation: 'child',
-          assetCode: 'USD',
-          assetScale: 4,
-          plugin: 'ilp-plugin-mock',
-          throughput: {outgoingAmount: '50'}
-        })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
-      })
-
-      it('fulfills response within the throughput limit', async function () {
-        const preparePacket = IlpPacket.serializeIlpPrepare({
-          amount: '49',
-          executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-          expiresAt: new Date(START_DATE + 2000),
-          destination: 'mock.test3.bob',
-          data: Buffer.alloc(0)
-        })
-        const fulfillPacket = IlpPacket.serializeIlpFulfill({
-          fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-          data: Buffer.alloc(0)
-        })
-
-        sinon.stub(this.mockPlugin3Wrapped, 'sendData')
-          .resolves(fulfillPacket)
-
-        await this.middlewareManager.setup()
-        const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-        assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
-      })
-
-      it('rejects response within the throughput limit', async function () {
-        const preparePacket = IlpPacket.serializeIlpPrepare({
-          amount: '52',
-          executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),
-          expiresAt: new Date(START_DATE + 2000),
-          destination: 'mock.test3.bob',
-          data: Buffer.alloc(0)
-        })
-        const fulfillPacket = IlpPacket.serializeIlpFulfill({
-          fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-          data: Buffer.alloc(0)
-        })
-
-        sinon.stub(this.mockPlugin3Wrapped, 'sendData')
-          .resolves(fulfillPacket)
-
-        await this.middlewareManager.setup()
-        const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-        assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-        assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
-          code: 'T04',
-          message: 'exceeded money bandwidth, throttling.',
-          triggeredBy: 'test.connie',
-          data: Buffer.alloc(0)
-        })
-      })
-
-      // TODO add test that will ensure some succeed and then fails within overgoing bandwidth in alloted time
-    })
-
     describe('with validate-fulfillment middleware', function () {
       beforeEach(async function () {
-        this.accounts.add('mock.test3', {
+        await this.accounts.add('mock.test3', {
           relation: 'child',
           assetCode: 'USD',
           assetScale: 4,
           plugin: 'ilp-plugin-mock'
         })
-        this.routingTable.insert('mock.test3', {nextHop: 'mock.test3', path: []})
-        await this.accounts.connect()
-        this.mockPlugin3Wrapped = this.accounts.getPlugin('mock.test3')
+        this.routingTable.insert('mock.test3', { nextHop: 'mock.test3', path: [] })
+        this.mockPlugin3Wrapped = this.accounts.getAccountService('mock.test3').getPlugin()
       })
 
       it('fulfills response within the correct fulfillment condition', async function () {
@@ -689,7 +441,6 @@ describe('Middleware Manager', function () {
         sinon.stub(this.mockPlugin3Wrapped, 'sendData')
           .resolves(fulfillPacket)
 
-        await this.middlewareManager.setup()
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
         assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
       })
@@ -710,7 +461,6 @@ describe('Middleware Manager', function () {
         sinon.stub(this.mockPlugin3Wrapped, 'sendData')
           .resolves(fulfillPacket)
 
-        await this.middlewareManager.setup()
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
         assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
         assert.deepEqual(IlpPacket.deserializeIlpReject(result), {

@@ -35,7 +35,7 @@ describe('AdminApi', function () {
     await this.accounts.startup()
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
-      await this.accounts.getAccountService(accountId).plugin._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.getAccountService(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: accountId,
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 1,
@@ -73,7 +73,7 @@ describe('AdminApi', function () {
     }
 
     const stub = sinon.stub(this.mockAccountService2, 'sendIlpPacket').resolves(fulfillPacket)
-    const result = await this.mockAccountService1.plugin._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
+    const result = await this.mockAccountService1.getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
     assert.strictEqual(IlpPacket.deserializeIlpFulfill(result).fulfillment.toString('hex'), fulfillPacket.fulfillment.toString('hex'))
     stub.restore()
   })
@@ -394,7 +394,7 @@ describe('AdminApi', function () {
 
       for (let i = 0; i < 3; i++) {
         preparePacket.data = Buffer.from(i.toString())
-        await this.mockAccountService1.plugin._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
+        await this.mockAccountService1.getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
       }
       const res = await this.adminApi.getAlerts()
       assert.deepEqual(res, {

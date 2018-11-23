@@ -1,4 +1,6 @@
 'use strict'
+const deserializeIlpPrepare = require('ilp-packet').deserializeIlpPrepare
+
 const chai = require('chai')
 const assert = chai.assert
 chai.use(require('chai-as-promised'))
@@ -38,7 +40,7 @@ describe('In process account manager', function () {
   describe('add account', function () {
     it('should add a new account service to accountsServices', async function () {
       assert.equal(this.accounts.accountManager.getAccounts().size, 4)
-      await this.accounts.accountManager.add('test.eur-ledger-2', {
+      await this.accounts.add('test.eur-ledger-2', {
         relation: 'peer',
         assetCode: 'EUR',
         assetScale: 4,
@@ -60,7 +62,7 @@ describe('In process account manager', function () {
 
         await assert.isRejected(packetPromise, UnreachableError, /no route found. source=test.usd-ledger destination=test.jpy.ledger\.bob/)
 
-        await this.accounts.accountManager.add('test.jpy-ledger', {
+        await this.accounts.accountManager.addAccount('test.jpy-ledger', {
           relation: 'peer',
           assetCode: 'JPY',
           assetScale: 4,
@@ -68,7 +70,7 @@ describe('In process account manager', function () {
           options: {}
         })
 
-        await this.accounts.getAccountService('test.jpy-ledger').plugin._dataHandler(serializeCcpRouteUpdateRequest({
+        await this.accounts.getAccountService('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
           speaker: 'test.jpy-ledger',
           routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
           currentEpochIndex: 0,
@@ -96,7 +98,7 @@ describe('In process account manager', function () {
       })
 
       it('should add a peer for the added ledger', async function () {
-        await this.accounts.accountManager.add('test.eur-ledger-2', {
+        await this.accounts.accountManager.addAccount('test.eur-ledger-2', {
           relation: 'peer',
           assetCode: 'EUR',
           assetScale: 4,
@@ -113,7 +115,7 @@ describe('In process account manager', function () {
 
   describe('remove account', function () {
     beforeEach(async function () {
-      await this.accounts.accountManager.add('test.jpy-ledger', {
+      await this.accounts.accountManager.addAccount('test.jpy-ledger', {
         relation: 'peer',
         assetCode: 'JPY',
         assetScale: 4,
@@ -121,7 +123,7 @@ describe('In process account manager', function () {
         options: {}
       })
 
-      await this.accounts.getAccountService('test.jpy-ledger').plugin._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.getAccountService('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: 'test.jpy-ledger',
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 0,
@@ -140,7 +142,7 @@ describe('In process account manager', function () {
 
     it('should remove an account from accountsServices', async function () {
       assert.isOk(this.accounts.exists('test.jpy-ledger'))
-      await this.accounts.accountManager.remove('test.jpy-ledger')
+      await this.accounts.accountManager.removeAccount('test.jpy-ledger')
       assert.isNotOk(this.accounts.exists('test.jpy-ledger'))
     })
 
@@ -156,7 +158,7 @@ describe('In process account manager', function () {
 
         await assert.isFulfilled(packetPromise)
 
-        await this.accounts.accountManager.remove('test.jpy-ledger')
+        await this.accounts.accountManager.removeAccount('test.jpy-ledger')
 
         const packetPromise2 = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
           amount: '100',
@@ -171,7 +173,7 @@ describe('In process account manager', function () {
 
       it('should depeer the removed ledger', async function () {
         assert.isOk(this.routeBroadcaster.peers.get('test.jpy-ledger'))
-        await this.accounts.accountManager.remove('test.jpy-ledger')
+        await this.accounts.accountManager.removeAccount('test.jpy-ledger')
 
         assert.isNotOk(this.routeBroadcaster.peers.get('test.jpy-ledger'))
       })

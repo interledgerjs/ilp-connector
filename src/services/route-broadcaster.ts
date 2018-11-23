@@ -61,6 +61,7 @@ export default class RouteBroadcaster {
     this.localRoutes = new Map()
   }
 
+  // TODO new architecture doesn't require this anymore. as the new account handler calls the tracking of accounts
   start () {
     this.reloadLocalRoutes()
 
