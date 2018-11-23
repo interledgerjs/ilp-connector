@@ -11,7 +11,7 @@ nock.enableNetConnect(['localhost'])
 const logger = require('../build/common/log')
 const logHelper = require('./helpers/log')
 const Peer = require('../build/routing/peer').default
-const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
+const { serializeCcpRouteUpdateRequest, serializeCcpResponse } = require('ilp-protocol-ccp')
 const { UnreachableError } = require('ilp-packet').Errors
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
@@ -26,12 +26,9 @@ describe('Modify Plugins', function () {
     appHelper.create(this)
 
     await this.backend.connect()
-    await this.accounts.connect()
-    await this.routeBroadcaster.reloadLocalRoutes()
-    await this.middlewareManager.setup()
+    await this.accounts.startup()
 
     this.clock = sinon.useFakeTimers(START_DATE)
-    await this.middlewareManager.startup()
   })
 
   afterEach(async function () {
@@ -39,8 +36,8 @@ describe('Modify Plugins', function () {
   })
 
   describe('addPlugin', function () {
-    it('should add a new plugin to accounts', async function () {
-      assert.equal(this.accounts.accounts.size, 4)
+    it('should add new account service to accounts', async function () {
+      assert.notInclude(this.accounts.getAccountIds(), 'test.eur-ledger-2')
       await this.app.addPlugin('test.eur-ledger-2', {
         relation: 'peer',
         assetCode: 'EUR',
@@ -48,7 +45,7 @@ describe('Modify Plugins', function () {
         plugin: 'ilp-plugin-mock',
         options: {}
       })
-      assert.equal(this.accounts.accounts.size, 5)
+      assert.isOk(this.accounts.getAccountService('test.eur-ledger-2'), "Did not create account service")
     })
 
     it('should support new ledger', async function () {
@@ -70,9 +67,9 @@ describe('Modify Plugins', function () {
         options: {}
       })
 
-      this.accounts.getPlugin('test.jpy-ledger').sendData = () => Buffer.alloc(0)
+      this.accounts.getAccountService('test.jpy-ledger').getPlugin().sendData = () => serializeCcpResponse()
 
-      await this.accounts.getPlugin('test.jpy-ledger')._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.getAccountService('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: 'test.jpy-ledger',
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 0,
@@ -146,7 +143,7 @@ describe('Modify Plugins', function () {
         }
       })
 
-      await this.accounts.getPlugin('test.jpy-ledger')._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.getAccountService('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: 'test.jpy-ledger',
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 0,
@@ -163,10 +160,10 @@ describe('Modify Plugins', function () {
       }))
     })
 
-    it('should remove a plugin from accounts', async function () {
-      assert.isOk(this.accounts.getPlugin('test.jpy-ledger'))
+    it('should remove the account service from accounts', async function () {
+      assert.isOk(this.accounts.getAccountService('test.jpy-ledger'))
       await this.app.removePlugin('test.jpy-ledger')
-      assert.throws(() => this.accounts.getPlugin('test.jpy-ledger'), 'unknown account id. accountId=test.jpy-ledger')
+      assert.throws(() => this.accounts.getAccountService('test.jpy-ledger'), 'unknown account id. accountId=test.jpy-ledger')
     })
 
     it('should no longer route to that plugin', async function () {

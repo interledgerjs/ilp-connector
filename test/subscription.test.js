@@ -30,7 +30,7 @@ describe('Subscriptions', function () {
 
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
-      await this.accounts.getAccountService(accountId).plugin._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.getAccountService(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: accountId,
         routingTableId: 'c951b674-c6f5-42ca-83a3-39a8d4e293b3',
         currentEpochIndex: 1,
@@ -123,10 +123,10 @@ describe('Subscriptions', function () {
       fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
       data: Buffer.from('ABAB', 'base64')
     }
-    const sendStub = sinon.stub(this.accounts.getAccountService(destinationAccount), 'sendData')
+    const sendStub = sinon.stub(this.accounts.getAccountService(destinationAccount).getPlugin(), 'sendData')
       .resolves(IlpPacket.serializeIlpFulfill(ilpFulfill))
 
-    const result = await this.accounts.getAccountService(sourceAccount).plugin._dataHandler(IlpPacket.serializeIlpPrepare({
+    const result = await this.accounts.getAccountService(sourceAccount).getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare({
         amount: sourceAmount,
         executionCondition,
         expiresAt,
@@ -158,13 +158,13 @@ describe('Subscriptions', function () {
       fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
       data: Buffer.from('ABAB', 'base64')
     }
-    sinon.stub(this.accounts.getAccountService(destinationAccount), 'sendData')
+    sinon.stub(this.accounts.getAccountService(destinationAccount).getPlugin(), 'sendData')
       .resolves(IlpPacket.serializeIlpFulfill(ilpFulfill))
-    sinon.stub(this.accounts.getAccountService(destinationAccount), 'sendMoney')
+    sinon.stub(this.accounts.getAccountService(destinationAccount).getPlugin(), 'sendMoney')
       .resolves()
     const backendSpy = sinon.spy(this.backend, 'submitPayment')
 
-    await this.accounts.getAccountService(sourceAccount).plugin._dataHandler(IlpPacket.serializeIlpPrepare({
+    await this.accounts.getAccountService(sourceAccount).getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare({
         amount: sourceAmount,
         executionCondition,
         expiresAt,

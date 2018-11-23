@@ -7,8 +7,27 @@ import { EventEmitter } from 'events'
 import { AccountService, PluginAccountService } from 'ilp-account-service'
 import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject, isFulfill } from 'ilp-packet'
 import ILDCP = require('ilp-protocol-ildcp')
+import { MiddlewareDefinition } from '../types/middleware'
 
 const log = createLogger('plugin-account-manager')
+
+const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
+  errorHandler: {
+    type: 'error-handler'
+  },
+  rateLimit: {
+    type: 'rate-limit'
+  },
+  throughput: {
+    type: 'throughput'
+  },
+  balance: {
+    type: 'balance'
+  },
+  expire: {
+    type: 'expire'
+  }
+}
 
 export default class PluginAccountManager extends EventEmitter implements AccountManagerInstance {
 
@@ -167,7 +186,18 @@ export default class PluginAccountManager extends EventEmitter implements Accoun
 
     log.info('started plugin for account ' + accountId)
 
-    const accountService = new PluginAccountService(accountId, accountConfig, plugin, [])
+    const middleware: string[] = []
+    const disabledMiddlewareConfig: string[] = this.config.disableMiddleware || []
+
+    for (const name of Object.keys(BUILTIN_MIDDLEWARES)) {
+      if (disabledMiddlewareConfig.includes(name)) {
+        continue
+      }
+
+      middleware.push(name)
+    }
+
+    const accountService = new PluginAccountService(accountId, accountConfig, plugin, middleware)
     this.accountServices.set(accountId, accountService)
 
     if (this.newAccountHandler) {
