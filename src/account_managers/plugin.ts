@@ -4,7 +4,9 @@ import { AccountManagerInstance } from '../types/account-manager'
 import Store from '../services/store'
 import { create as createLogger } from '../common/log'
 import { EventEmitter } from 'events'
-import { AccountService, PluginAccountService } from 'ilp-account-service'
+import { AccountService, PluginAccountService, isFulfill } from 'ilp-account-service'
+import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject } from 'ilp-packet'
+import ILDCP = require('ilp-protocol-ildcp')
 
 const log = createLogger('plugin-account-manager')
 
@@ -71,9 +73,37 @@ export default class PluginAccountManager extends EventEmitter implements Accoun
 
   }
 
-  public async startup () {
-
+  public async loadIlpAddress () {
     const credentials = this.config.accounts
+
+    const map = new Map(Object.entries(credentials))
+    const inheritFrom = this.config.ilpAddressInheritFrom ||
+      // Get account id of first parent
+      [...map]
+        .filter(([key, value]) => value.relation === 'parent')
+        .map(([key]) => key)[0]
+
+    if (this.config.ilpAddress === 'unknown' && !inheritFrom) {
+      throw new Error('When there is no parent, ILP address must be specified in configuration.')
+    } else if (this.config.ilpAddress === 'unknown' && inheritFrom) {
+
+      await this.addAccount(inheritFrom, credentials[inheritFrom])
+
+      // TODO - Fix up after removing extra serializtion in ILDCP
+      const ildcpInfo = await ILDCP.fetch(async (data: Buffer) => {
+        const reply = await this.getAccountService(inheritFrom).sendIlpPacket(deserializeIlpPrepare(data))
+        return isFulfill(reply) ? serializeIlpFulfill(reply) : serializeIlpReject(reply)
+      })
+
+      return ildcpInfo.clientAddress
+    }
+
+    return this.config.ilpAddress || 'unknown'
+  }
+
+  public async startup () {
+    const credentials = this.config.accounts
+
     for (let id of Object.keys(credentials)) {
       await this.addAccount(id, credentials[id])
     }
@@ -101,12 +131,12 @@ export default class PluginAccountManager extends EventEmitter implements Accoun
     return this.accountServices
   }
 
-  async addAccount (accountId: string, accountInfo: any) {
+  async addAccount (accountId: string, accountConfig: any) {
 
     // Validate config
     try {
-      this.config.validateAccount(accountId, accountInfo)
-      if (typeof accountInfo.plugin !== 'string') {
+      this.config.validateAccount(accountId, accountConfig)
+      if (typeof accountConfig.plugin !== 'string') {
         throw new Error('no plugin configured.')
       }
     } catch (err) {
@@ -127,17 +157,17 @@ export default class PluginAccountManager extends EventEmitter implements Accoun
     })
     Object.defineProperty(api, 'log', {
       get: () => {
-        return createLogger(`${accountInfo.plugin}[${accountId}]`)
+        return createLogger(`${accountConfig.plugin}[${accountId}]`)
       }
     })
 
-    const Plugin = require(accountInfo.plugin)
-    const opts = Object.assign({}, accountInfo.options)
+    const Plugin = require(accountConfig.plugin)
+    const opts = Object.assign({}, accountConfig.options)
     const plugin = new Plugin(opts, api)
 
     log.info('started plugin for account ' + accountId)
 
-    const accountService = new PluginAccountService(accountId, accountInfo, plugin, [])
+    const accountService = new PluginAccountService(accountId, accountConfig, plugin, [])
     this.accountServices.set(accountId, accountService)
 
     if (this.newAccountHandler) {

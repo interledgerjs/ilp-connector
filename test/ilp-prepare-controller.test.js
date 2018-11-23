@@ -114,6 +114,7 @@ describe('IlpPrepareController', function () {
     sinon.stub(this.mockAccountService2, 'sendIlpPacket')
       .resolves(fulfillPacket)
 
+    const result = await this.mockAccountService1.p(preparePacket)
     const result = await this.mockAccountService1.plugin._dataHandler(preparePacket)
     console.log(IlpPacket.deserializeIlpFulfill(result))
 

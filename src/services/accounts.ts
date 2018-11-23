@@ -161,6 +161,14 @@ export default class Accounts extends EventEmitter {
   }
 
   async startup () {
+    const ilpAddress = await this.accountManager.loadIlpAddress()
+    this.setOwnAddress(ilpAddress)
+
+    if (this.getOwnAddress() === 'unknown') {
+      log.error('could not get ilp address from parent.')
+      throw new Error('no ilp address configured.')
+    }
+
     await this.accountManager.startup()
   }
 }
