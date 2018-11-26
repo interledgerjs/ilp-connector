@@ -19,5 +19,7 @@ export interface AccountManagerInstance {
   getAccounts (): Map<string, AccountService>
   startup (): void,
   loadIlpAddress (): Promise<string>,
-  shutdown (): void
+  shutdown (): void,
+  addAccount(accountId: string, accountInfo: object): void,
+  removeAccount(accountId: string): void
 }

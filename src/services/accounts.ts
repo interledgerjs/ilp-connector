@@ -8,7 +8,6 @@ import ILDCP = require('ilp-protocol-ildcp')
 import { AccountManagerInstance, AccountManagerConstructor } from '../types/account-manager'
 import { loadModuleOfType } from '../lib/utils'
 import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject, isFulfill } from 'ilp-packet'
-import PluginAccountManager from '../account_managers/plugin'
 import { create as createLogger } from '../common/log'
 const log = createLogger('accounts')
 
@@ -59,16 +58,12 @@ export default class Accounts extends EventEmitter {
 
   async add (accountId: string, creds: any) {
     log.info('add account. accountId=%s', accountId)
-    if (this.accountManager instanceof PluginAccountManager) {
-      return this.accountManager.addAccount(accountId, creds)
-    }
+    return this.accountManager.addAccount(accountId, creds)
   }
 
   async remove (accountId: string) {
     log.info('remove account. accountId=%s', accountId)
-    if (this.accountManager instanceof PluginAccountManager) {
-      return this.accountManager.removeAccount(accountId)
-    }
+    return this.accountManager.removeAccount(accountId)
   }
   getOwnAddress () {
     return this.address
