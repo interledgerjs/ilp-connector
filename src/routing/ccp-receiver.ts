@@ -11,16 +11,14 @@ import {
 } from 'ilp-protocol-ccp'
 
 export interface CcpReceiverOpts {
-  accountService: AccountService
-  accountId: string
+  account: AccountService
 }
 
 const ROUTE_CONTROL_RETRY_INTERVAL = 30000
 
 export default class CcpReceiver {
-  private accountService: AccountService
+  private account: AccountService
   private log: ConnectorLogger
-  private accountId: string
   private routes: PrefixMap<IncomingRoute>
   private expiry: number = 0
 
@@ -35,19 +33,14 @@ export default class CcpReceiver {
    */
   private epoch: number = 0
 
-  constructor ({ accountService, accountId }: CcpReceiverOpts) {
-    this.accountService = accountService
-    this.log = createLogger(`ccp-receiver[${accountId}]`)
-    this.accountId = accountId
+  constructor ({ account }: CcpReceiverOpts) {
+    this.account = account
+    this.log = createLogger(`ccp-receiver[${account.id}]`)
     this.routes = new PrefixMap()
   }
 
   bump (holdDownTime: number) {
     this.expiry = Math.max(Date.now() + holdDownTime, this.expiry)
-  }
-
-  getAccountId () {
-    return this.accountId
   }
 
   getExpiry () {
@@ -120,7 +113,7 @@ export default class CcpReceiver {
 
     for (const route of newRoutes) {
       if (this.addRoute({
-        peer: this.accountId,
+        peer: this.account.id,
         prefix: route.prefix,
         path: route.path,
         auth: route.auth
@@ -141,7 +134,7 @@ export default class CcpReceiver {
   }
 
   sendRouteControl = () => {
-    if (!this.accountService.isConnected()) {
+    if (!this.account.isConnected()) {
       this.log.debug('cannot send route control message, plugin not connected (yet).')
       return
     }
@@ -153,7 +146,7 @@ export default class CcpReceiver {
       features: []
     }
 
-    this.accountService.sendIlpPacket(deserializeIlpPrepare(serializeCcpRouteControlRequest(routeControl)))
+    this.account.sendIlpPacket(deserializeIlpPrepare(serializeCcpRouteControlRequest(routeControl)))
       .then(packet => {
         if (isFulfill(packet)) {
           this.log.trace('successfully sent route control message.')

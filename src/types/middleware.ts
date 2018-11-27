@@ -1,4 +1,4 @@
-import { AccountInfo } from './accounts'
+import { AccountInfo } from 'ilp-account-service'
 import Stats from '../services/stats'
 import { IlpPacket, IlpPrepare, IlpReply } from 'ilp-packet'
 

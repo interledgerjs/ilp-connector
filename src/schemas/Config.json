@@ -22,10 +22,28 @@
       "type": "string",
       "default": ""
     },
-    "account-manager": {
-      "description": "Manages communication between connector and the account plugins",
-      "type": "string",
-      "default": "plugin"
+    "account-providers": {
+      "description": "Additional account-providers that should be loaded at startup.",
+      "type": "object",
+      "additionalProperties": {
+        "description": "Object describing account-provider instance.",
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "NPM module that should be `require`d to load the account-provider constructor.",
+            "type": "string"
+          },
+          "options": {
+            "description": "Options that will be passed to the account-provider constructor.",
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "default": {}
     },
     "accounts": {
       "description": "Description of connector account plugins.",

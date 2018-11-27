@@ -98,12 +98,12 @@ export default class RouteBroadcaster {
       this.remove(accountId)
     }
 
-    accountService.registerConnectHandler(connectHandler.bind(this))
-    accountService.registerDisconnectHandler(disconnectHandler.bind(this))
+    accountService.on('connect', connectHandler.bind(this))
+    accountService.on('disconnect', disconnectHandler.bind(this))
 
     this.untrackCallbacks.set(accountId, () => {
-      accountService.deregisterConnectHandler()
-      accountService.deregisterDisconnectHandler()
+      accountService.removeListener('connect', connectHandler)
+      accountService.removeListener('disconnect', disconnectHandler)
     })
 
     this.add(accountId)

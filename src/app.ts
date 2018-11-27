@@ -63,7 +63,7 @@ async function addPlugin (
   id: string,
   options: any
 ) {
-  await accounts.add(id, options)
+  await accounts.addPlugin(id, options)
 }
 
 async function removePlugin (
@@ -75,7 +75,10 @@ async function removePlugin (
 
   id: string
 ) {
-  await accounts.remove(id)
+  await accounts.removePlugin(id)
+  await middlewareManager.removeAccountService(id)
+  routeBroadcaster.untrack(id)
+  routeBroadcaster.reloadLocalRoutes()
 }
 
 function getPlugin (
@@ -119,26 +122,12 @@ export default function createApp (opts?: object, container?: Injector) {
   const middlewareManager = deps(MiddlewareManager)
   const adminApi = deps(AdminApi)
 
-  const newAccountHandler = async (id: string, accountService: AccountService) => {
-    await middlewareManager.addAccountService(id, accountService)
-
-    await middlewareManager.startup(id)
-
-    routeBroadcaster.track(id)
-
+  accounts.on('add', async (account: AccountService) => {
+    await middlewareManager.addAccountService(account)
+    await middlewareManager.startup(account.id)
+    routeBroadcaster.track(account.id)
     routeBroadcaster.reloadLocalRoutes()
-  }
-
-  const removeAccountHandler = (id: string) => {
-    middlewareManager.removeAccountService(id)
-
-    routeBroadcaster.untrack(id)
-
-    routeBroadcaster.reloadLocalRoutes()
-  }
-
-  accounts.registerNewAccountHandler(newAccountHandler)
-  accounts.registerRemoveAccountHandler(removeAccountHandler)
+  })
 
   return {
     config,
