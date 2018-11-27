@@ -26,7 +26,7 @@ export default class Peer {
     this.accountId = accountId
 
     const forwardingRoutingTable = deps(ForwardingRoutingTable)
-    const account = this.accounts.getAccountService(this.accountId)
+    const account = this.accounts.get(this.accountId)
     if (sendRoutes) {
       this.ccpSender = new CcpSender({
         account,
@@ -56,6 +56,6 @@ export default class Peer {
   }
 
   private getAccountRelation = (accountId: string): Relation => {
-    return accountId ? this.accounts.getInfo(accountId).relation : 'local'
+    return accountId ? this.accounts.get(accountId).info.relation : 'local'
   }
 }

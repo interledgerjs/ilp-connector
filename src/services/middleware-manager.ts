@@ -94,7 +94,7 @@ export default class MiddlewareManager {
       loadModuleOfType('middleware', definition.type)
 
     return new Middleware(definition.options || {}, {
-      getInfo: accountId => this.accounts.getInfo(accountId),
+      getInfo: accountId => this.accounts.get(accountId).info,
       getOwnAddress: () => this.accounts.getOwnAddress(),
       sendIlpPacket: this.sendIlpPacket.bind(this),
       stats: this.stats
@@ -102,8 +102,8 @@ export default class MiddlewareManager {
   }
 
   async setup () {
-    for (const accountId of this.accounts.getAccountIds()) {
-      await this.addAccountService(this.accounts.getAccountService(accountId))
+    for (const accountId of this.accounts.keys()) {
+      await this.addAccountService(this.accounts.get(accountId))
     }
   }
 
@@ -182,7 +182,7 @@ export default class MiddlewareManager {
   }
 
   async removeAccountService (accountId: string) {
-    this.accounts.getAccountService(accountId).deregisterIlpPacketHandler()
+    this.accounts.get(accountId).deregisterIlpPacketHandler()
 
     this.startupHandlers.delete(accountId)
     const teardownHandler = this.teardownHandlers.get(accountId)

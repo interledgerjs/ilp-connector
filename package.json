@@ -53,7 +53,6 @@
     "debug": "^4.1.0",
     "extensible-error": "^1.0.2",
     "ilp-account-service": "github:interledgerjs/ilp-account-service#feat/factories",
-    "ilp-compat-plugin": "^2.0.3",
     "ilp-packet": "^3.0.6",
     "ilp-plugin-btp": "^1.3.4",
     "ilp-protocol-ccp": "^1.1.1",

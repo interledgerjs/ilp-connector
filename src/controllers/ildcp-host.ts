@@ -14,7 +14,7 @@ export default class IldcpHostController {
 
   async handle (packet: IlpPrepare, sourceAccount: string): Promise<IlpReply> {
     const clientAddress = this.accounts.getChildAddress(sourceAccount)
-    const info = this.accounts.getInfo(sourceAccount)
+    const info = this.accounts.get(sourceAccount).info
     log.trace('responding to ILDCP config request. clientAddress=%s', clientAddress)
 
     return deserializeIlpReply(await ILDCP.serve({

@@ -57,7 +57,7 @@ export default class ECBBackend implements BackendInstance {
     let apiData
     if (this.mockData) {
       log.info('connect using mock data.')
-      apiData = this.mockData as ApiData
+      apiData = this.mockData
     } else {
       log.info('connect. uri=' + this.ratesApiUrl)
       let result = await fetchUri(this.ratesApiUrl)

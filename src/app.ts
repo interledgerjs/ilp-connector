@@ -86,7 +86,7 @@ function getPlugin (
 
   id: string
 ) {
-  const accountService = accounts.getAccountService(id)
+  const accountService = accounts.get(id)
   if (accountService && accountService instanceof PluginAccountService) {
     return accountService.getPlugin()
   }

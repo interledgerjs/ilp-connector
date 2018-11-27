@@ -2,7 +2,7 @@ import reduct = require('reduct')
 import Store from '../services/store'
 import Config from './config'
 import { EventEmitter } from 'events'
-import { AccountInfo, AccountService, AccountServiceProvider, AccountServiceProviderDefinition, PluginAccountServiceProvider } from 'ilp-account-service'
+import { AccountInfo, AccountService, AccountServiceProvider, AccountServiceProviderDefinition, PluginAccountServiceProvider, AccountServiceBase } from 'ilp-account-service'
 import ILDCP = require('ilp-protocol-ildcp')
 import { loadModuleOfType } from '../lib/utils'
 import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject, isFulfill } from 'ilp-packet'
@@ -29,25 +29,25 @@ const BUILTIN_ACCOUNT_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   }
 }
 export default class Accounts extends EventEmitter {
-  protected config: Config
-  protected store: Store
-  protected address: string
-  protected accounts: Map<string, AccountService>
+  protected _config: Config
+  protected _store: Store
+  protected _address: string
+  protected _accounts: Map<string, AccountService>
   protected _pendingAccounts: Set<AccountService>
   protected _accountProviders: Map<string, AccountServiceProvider>
 
   constructor (deps: reduct.Injector) {
     super()
-    this.config = deps(Config)
-    this.store = deps(Store)
-    this.address = this.config.ilpAddress || 'unknown'
+    this._config = deps(Config)
+    this._store = deps(Store)
+    this._address = this._config.ilpAddress || 'unknown'
     this._pendingAccounts = new Set()
-    this.accounts = new Map()
+    this._accounts = new Map()
     this._accountProviders = new Map()
 
     this._loadPluginsAccountServiceProvider()
     const customAccountProviderConfig: { [key: string]: AccountServiceProviderDefinition } =
-      this.config['account-providers'] || {}
+      this._config['account-providers'] || {}
 
     for (const name of Object.keys(customAccountProviderConfig)) {
       this._loadProvider(name, customAccountProviderConfig[name])
@@ -56,13 +56,13 @@ export default class Accounts extends EventEmitter {
   }
 
   // Handle new account from one of the account providers
-  private _onAccount (account: AccountService) {
+  private _handleNewAccount (account: AccountService) {
 
-    this.accounts.set(account.id, account)
+    this._accounts.set(account.id, account)
 
-    if (!this.address) {
-      if (this.config.ilpAddressInheritFrom) {
-        if (account.id === this.config.ilpAddressInheritFrom) {
+    if (!this._address) {
+      if (this._config.ilpAddressInheritFrom) {
+        if (account.id === this._config.ilpAddressInheritFrom) {
           this._getAddressFromParent(account)
         }
       } else if (account.info.relation === 'parent') {
@@ -70,10 +70,18 @@ export default class Accounts extends EventEmitter {
       }
       this._pendingAccounts.add(account)
     } else {
-      this.emit('add', account)
+      this._emitAccount(account, true)
     }
 
   }
+
+  private async _emitAccount (account: AccountService, startFirst: boolean = true): Promise<void> {
+    if (startFirst) {
+      await account.startup()
+    }
+    this.emit('add', account)
+  }
+
   private async _getAddressFromParent (account: AccountService): Promise<void> {
     log.trace('connecting to parent. accountId=%s', account.id)
     await account.startup()
@@ -84,14 +92,15 @@ export default class Accounts extends EventEmitter {
       return isFulfill(reply) ? serializeIlpFulfill(reply) : serializeIlpReject(reply)
     })).clientAddress
 
-    this.setOwnAddress(address)
+    this._setOwnAddress(address)
+    this._emitAccount(account, false)
   }
 
   private _loadProvider (name: string, definition: AccountServiceProviderDefinition) {
     const AccountServiceProviderConstructor = loadModuleOfType('account-provider', definition.type)
     const provider = new AccountServiceProviderConstructor(definition.options || {}, {
-      config: this.config.accounts,
-      store: this.store
+      config: this._config.accounts,
+      store: this._store
     }) as AccountServiceProvider
     this._accountProviders.set(name, provider)
   }
@@ -100,10 +109,10 @@ export default class Accounts extends EventEmitter {
   private _loadPluginsAccountServiceProvider () {
 
     const accountConfig: { [key: string]: AccountInfo } = {}
-    Object.keys(this.config.accounts).forEach(accountId => {
+    Object.keys(this._config.accounts).forEach(accountId => {
       try {
-        const accountInfo = this.config.accounts[accountId]
-        this.config.validateAccount(accountId, accountInfo)
+        const accountInfo = this._config.accounts[accountId]
+        this._config.validateAccount(accountId, accountInfo)
         accountConfig[accountId] = accountInfo
       } catch (err) {
         if (err.name === 'InvalidJsonBodyError') {
@@ -116,7 +125,7 @@ export default class Accounts extends EventEmitter {
     })
 
     const middleware: string[] = []
-    const disabledMiddlewareConfig: string[] = this.config.disableMiddleware || []
+    const disabledMiddlewareConfig: string[] = this._config.disableMiddleware || []
     for (const name of Object.keys(BUILTIN_ACCOUNT_MIDDLEWARES)) {
       if (disabledMiddlewareConfig.includes(name)) {
         continue
@@ -130,9 +139,9 @@ export default class Accounts extends EventEmitter {
       accounts: accountConfig,
       createStore: (prefix: string) => {
         return {
-          get: (key: string) => this.store.get(prefix + key),
-          del: (key: string) => this.store.del(prefix + key),
-          put: (key: string, value: string) => this.store.put(prefix + key, value)
+          get: (key: string) => this._store.get(prefix + key),
+          del: (key: string) => this._store.del(prefix + key),
+          put: (key: string, value: string) => this._store.put(prefix + key, value)
         }
       },
       createLogger: (prefix: string) => createLogger(`plugin-account-service[${prefix}]`)
@@ -142,58 +151,67 @@ export default class Accounts extends EventEmitter {
 
   async startup (): Promise<string> {
     return new Promise<string>((resolve) => {
-      if (!this.address) {
-        const _setOwnAddress = this.setOwnAddress
-        this.setOwnAddress = (address: string) => {
+      if (!this._address) {
+        const setOwnAddress = this._setOwnAddress
+        this._setOwnAddress = (address: string) => {
           resolve(address)
-          _setOwnAddress(address)
-          this.setOwnAddress = _setOwnAddress
+          setOwnAddress(address)
+          this._setOwnAddress = setOwnAddress
         }
       } else {
-        resolve(this.address)
+        resolve(this._address)
       }
       this._accountProviders.forEach(provider => {
         provider.startup(account => {
-          this._onAccount(account)
+          this._handleNewAccount(account)
         })
       })
     })
   }
 
-  getOwnAddress () {
-    return this.address
+  public getOwnAddress () {
+    return this._address
   }
 
-  setOwnAddress (newAddress: string) {
-    log.trace('setting ilp address. oldAddress=%s newAddress=%s', this.address, newAddress)
-    this.address = newAddress
-    setImmediate(() => {
-      this.accounts.forEach(account => {
-        this.emit('add', account)
-      })
+  private _setOwnAddress (newAddress: string) {
+    log.trace('setting ilp address. oldAddress=%s newAddress=%s', this._address, newAddress)
+    this._address = newAddress
+    this._pendingAccounts.forEach(account => {
+      this._emitAccount(account, true)
     })
+    this._pendingAccounts.clear()
   }
 
-  exists (accountId: string) {
-    return this.accounts.has(accountId)
-  }
+  getChildAddress (accountId: string) {
+    const info = this.get(accountId).info
 
-  getAccountIds () {
-    return Array.from(this.accounts.keys())
-  }
-
-  getAssetCode (accountId: string) {
-    const account = this.accounts.get(accountId)
-
-    if (!account) {
-      log.error('no currency found. account=%s', accountId)
-      return undefined
+    if (info.relation !== 'child') {
+      throw new Error('Can\'t generate child address for account that is isn\'t a child')
     }
 
-    return account.info.assetCode
+    const ilpAddressSegment = info.ilpAddressSegment || accountId
+
+    return this._address + '.' + ilpAddressSegment
   }
 
-  async addPlugin (accountId: string, creds: any) {
+  public has (accountId: string) {
+    return this._accounts.has(accountId)
+  }
+
+  public keys () {
+    return this._accounts.keys()
+  }
+
+  public get (accountId: string): AccountService {
+    const accountService = this._accounts.get(accountId)
+    if (!accountService) {
+      log.error('could not find account service for account id. accountId=%s', accountId)
+      throw new Error('unknown account id. accountId=' + accountId)
+    }
+    return accountService
+  }
+
+  public async addPlugin (accountId: string, creds: any) {
     log.info('add plugin for account. accountId=%s', accountId)
     const accountProvider = this._accountProviders.get(PLUGIN_ACCOUNT_PROVIDER) as PluginAccountServiceProvider
     if (accountProvider) {
@@ -203,34 +221,14 @@ export default class Accounts extends EventEmitter {
     }
   }
 
-  async removePlugin (accountId: string) {
+  public async removePlugin (accountId: string) {
     log.info('remove plugin for account. accountId=%s', accountId)
     // TODO - What should we do here?
   }
 
-  getInfo (accountId: string): AccountInfo {
-    const account = this.accounts.get(accountId)
-    if (!account) {
-      throw new Error('unknown account id. accountId=' + accountId)
-    }
-    return account.info
-  }
-
-  getChildAddress (accountId: string) {
-    const info = this.getInfo(accountId)
-
-    if (info.relation !== 'child') {
-      throw new Error('Can\'t generate child address for account that is isn\'t a child')
-    }
-
-    const ilpAddressSegment = info.ilpAddressSegment || accountId
-
-    return this.address + '.' + ilpAddressSegment
-  }
-
-  getStatus () {
+  public getStatus () {
     const accounts = {}
-    this.accounts.forEach((account, accountId) => {
+    this._accounts.forEach((account, accountId) => {
       accounts[accountId] = {
         // Set info.options to undefined so that credentials aren't exposed.
         info: Object.assign({}, account.info, { options: undefined }),
@@ -238,18 +236,9 @@ export default class Accounts extends EventEmitter {
       }
     })
     return {
-      address: this.address,
+      address: this._address,
       accounts
     }
-  }
-
-  getAccountService (accountId: string): AccountService {
-    const accountService = this.accounts.get(accountId)
-    if (!accountService) {
-      log.error('could not find account service for account id. accountId=%s', accountId)
-      throw new Error('unknown account id. accountId=' + accountId)
-    }
-    return accountService
   }
 
 }

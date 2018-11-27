@@ -65,7 +65,7 @@ export default class RouteBroadcaster {
   start () {
     this.reloadLocalRoutes()
 
-    for (const accountId of this.accounts.getAccountIds()) {
+    for (const accountId of this.accounts.keys()) {
       this.track(accountId)
     }
   }
@@ -82,7 +82,7 @@ export default class RouteBroadcaster {
       return
     }
 
-    const accountService = this.accounts.getAccountService(accountId)
+    const accountService = this.accounts.get(accountId)
 
     const connectHandler = () => {
       if (!accountService.isConnected()) {
@@ -122,7 +122,7 @@ export default class RouteBroadcaster {
   }
 
   add (accountId: string) {
-    const accountInfo = this.accounts.getInfo(accountId)
+    const accountInfo = this.accounts.get(accountId).info
 
     let sendRoutes
     if (typeof accountInfo.sendRoutes === 'boolean') {
@@ -162,7 +162,7 @@ export default class RouteBroadcaster {
       return
     }
 
-    const accountService = this.accounts.getAccountService(accountId)
+    const accountService = this.accounts.get(accountId)
 
     if (accountService.isConnected()) {
       log.trace('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
@@ -276,7 +276,7 @@ export default class RouteBroadcaster {
     log.trace('reload local and configured routes.')
 
     this.localRoutes = new Map()
-    const localAccounts = this.accounts.getAccountIds()
+    const localAccounts = Array.from(this.accounts.keys())
 
     // Add a route for our own address
     const ownAddress = this.accounts.getOwnAddress()
@@ -288,7 +288,7 @@ export default class RouteBroadcaster {
 
     let defaultRoute = this.config.defaultRoute
     if (defaultRoute === 'auto') {
-      defaultRoute = localAccounts.filter(id => this.accounts.getInfo(id).relation === 'parent')[0]
+      defaultRoute = localAccounts.filter(id => this.accounts.get(id).info.relation === 'parent')[0]
     }
     if (defaultRoute) {
       const globalPrefix = this.getGlobalPrefix()
@@ -330,7 +330,7 @@ export default class RouteBroadcaster {
     // configured routes have highest priority
     const configuredRoute = find(this.config.routes, { targetPrefix: prefix })
     if (configuredRoute) {
-      if (this.accounts.exists(configuredRoute.peerId)) {
+      if (this.accounts.has(configuredRoute.peerId)) {
         return {
           nextHop: configuredRoute.peerId,
           path: [],
@@ -537,6 +537,6 @@ export default class RouteBroadcaster {
   }
 
   private getAccountRelation = (accountId: string): Relation => {
-    return accountId ? this.accounts.getInfo(accountId).relation : 'local'
+    return accountId ? this.accounts.get(accountId).info.relation : 'local'
   }
 }

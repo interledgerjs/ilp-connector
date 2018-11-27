@@ -25,7 +25,7 @@ export default class Core {
   }
 
   async processIlpPacket (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>): Promise<IlpReply> {
-    if (!this.accounts.getInfo(accountId)) {
+    if (!this.accounts.get(accountId).info) {
       log.warn('got data from unknown account id. accountId=%s', accountId)
       throw new Error('got data from unknown account id. accountId=' + accountId)
     }
