@@ -12,7 +12,9 @@ const schemas = ['Config.json', 'BalanceUpdate.json']
     // Have to pass an empty options object, otherwise we trigger a bug where
     // the cwd for the JSON schema $ref resolver defaults to the current
     // working directory instead of the file's directory.
-    let ts = await compileFromFile(resolve(__dirname, '../src/schemas/', schema), {})
+    const input = resolve(__dirname, '../src/schemas/', schema)
+    console.log(`compiling ${input}`)
+    let ts = await compileFromFile(input, {})
 
     if (schema === 'Config.json') {
       ts = ts
@@ -24,7 +26,9 @@ const schemas = ['Config.json', 'BalanceUpdate.json']
         .replace('accounts: {', 'accounts!: {')
     }
 
-    fs.writeFileSync(resolve(__dirname, '../src/schemas/', schema.split('.')[0] + '.ts'), ts)
+    const output = resolve(__dirname, '../src/schemas/', schema.split('.')[0] + '.ts')
+    console.log(`writing to ${output}`)
+    fs.writeFileSync(output, ts)
   }
 })()
   .catch(err => console.error(err))

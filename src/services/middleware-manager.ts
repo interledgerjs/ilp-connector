@@ -94,7 +94,7 @@ export default class MiddlewareManager {
       loadModuleOfType('middleware', definition.type)
 
     return new Middleware(definition.options || {}, {
-      getInfo: accountId => this.accounts.getInfo(accountId),
+      getInfo: accountId => this.accounts.get(accountId).info,
       getOwnAddress: () => this.accounts.getOwnAddress(),
       sendIlpPacket: this.sendIlpPacket.bind(this),
       stats: this.stats
@@ -102,8 +102,8 @@ export default class MiddlewareManager {
   }
 
   async setup () {
-    for (const accountId of this.accounts.getAccountIds()) {
-      await this.addAccountService(accountId, this.accounts.getAccountService(accountId))
+    for (const accountId of this.accounts.keys()) {
+      await this.addAccountService(this.accounts.get(accountId))
     }
   }
 
@@ -124,7 +124,7 @@ export default class MiddlewareManager {
     }
   }
 
-  async addAccountService (accountId: string, accountService: AccountService) {
+  async addAccountService (account: AccountService) {
     const pipelines: Pipelines = {
       startup: new MiddlewarePipeline<void, void>(),
       teardown: new MiddlewarePipeline<void, void>(),
@@ -134,11 +134,11 @@ export default class MiddlewareManager {
     for (const middlewareName of Object.keys(this.middlewares)) {
       const middleware = this.middlewares[middlewareName]
       try {
-        await middleware.applyToPipelines(pipelines, accountId)
+        await middleware.applyToPipelines(pipelines, account.id)
       } catch (err) {
         const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : String(err)
 
-        log.error('failed to apply middleware to account. middlewareName=%s accountId=%s error=%s', middlewareName, accountId, errInfo)
+        log.error('failed to apply middleware to account. middlewareName=%s accountId=%s error=%s', middlewareName, account.id, errInfo)
         throw new Error('failed to apply middleware. middlewareName=' + middlewareName)
       }
     }
@@ -146,7 +146,7 @@ export default class MiddlewareManager {
     // Generate outgoing middleware
     const sendOutgoingIlpPacket = async (packet: IlpPrepare): Promise<IlpReply> => {
       try {
-        return await accountService.sendIlpPacket(packet)
+        return await account.sendIlpPacket(packet)
       } catch (e) {
         let err = e
         if (!err || typeof err !== 'object') {
@@ -163,26 +163,26 @@ export default class MiddlewareManager {
       }
     }
 
-    const startupHandler = this.createHandler(pipelines.startup, accountId, async () => { return })
-    const teardownHandler = this.createHandler(pipelines.teardown, accountId, async () => { return })
+    const startupHandler = this.createHandler(pipelines.startup, account.id, async () => { return })
+    const teardownHandler = this.createHandler(pipelines.teardown, account.id, async () => { return })
     const outgoingDataHandler: (param: IlpPrepare) => Promise<IlpReply> =
-          this.createHandler(pipelines.outgoingData, accountId, sendOutgoingIlpPacket)
+          this.createHandler(pipelines.outgoingData, account.id, sendOutgoingIlpPacket)
 
-    this.startupHandlers.set(accountId, startupHandler)
-    this.teardownHandlers.set(accountId, teardownHandler)
-    this.outgoingDataHandlers.set(accountId, outgoingDataHandler)
+    this.startupHandlers.set(account.id, startupHandler)
+    this.teardownHandlers.set(account.id, teardownHandler)
+    this.outgoingDataHandlers.set(account.id, outgoingDataHandler)
 
     // Generate incoming middleware
     const handleIlpPacket: (param: IlpPrepare) => Promise<IlpReply> =
-      (packet: IlpPrepare) => this.core.processIlpPacket(packet, accountId, this.sendIlpPacket.bind(this))
+      (packet: IlpPrepare) => this.core.processIlpPacket(packet, account.id, this.sendIlpPacket.bind(this))
     const incomingIlpPacketHandler: (param: IlpPrepare) => Promise<IlpReply> =
-      this.createHandler(pipelines.incomingData, accountId, handleIlpPacket)
+      this.createHandler(pipelines.incomingData, account.id, handleIlpPacket)
 
-    accountService.registerIlpPacketHandler(incomingIlpPacketHandler)
+    account.registerIlpPacketHandler(incomingIlpPacketHandler)
   }
 
   async removeAccountService (accountId: string) {
-    this.accounts.getAccountService(accountId).deregisterIlpPacketHandler()
+    this.accounts.get(accountId).deregisterIlpPacketHandler()
 
     this.startupHandlers.delete(accountId)
     const teardownHandler = this.teardownHandlers.get(accountId)

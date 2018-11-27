@@ -129,7 +129,7 @@ export default class RouteBuilder {
   }
 
   _verifyAccountServiceIsConnected (account: string) {
-    if (!this.accounts.getAccountService(account).isConnected()) {
+    if (!this.accounts.get(account).isConnected()) {
       throw new PeerUnreachableError('no connection to account. account=' + account)
     }
   }

@@ -1,4 +1,4 @@
-import { AccountInfo } from '../types/accounts'
+import { AccountInfo } from 'ilp-account-service'
 
 export interface SubmitPaymentParams {
   sourceAccount: string

@@ -1,8 +1,7 @@
 import { create as createLogger } from '../common/log'
 import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
 import { IlpPrepare, Errors as IlpPacketErrors, IlpReply } from 'ilp-packet'
-import {TransferTimedOutError} from 'ilp-packet/dist/src/errors'
-const { InternalError } = IlpPacketErrors
+import { TransferTimedOutError } from 'ilp-packet/dist/src/errors'
 const log = createLogger('expire-middleware')
 
 export default class ExpireMiddleware implements Middleware {

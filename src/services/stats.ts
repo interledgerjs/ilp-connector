@@ -1,5 +1,5 @@
 import * as Prometheus from 'prom-client'
-import { AccountInfo } from '../types/accounts'
+import { AccountInfo } from 'ilp-account-service'
 
 function mergeAccountLabels (account: { accountId: string, accountInfo: AccountInfo }, labels: Prometheus.labelValues): Prometheus.labelValues {
   labels['account'] = account.accountId

@@ -1,7 +1,7 @@
 import fetchUri from 'node-fetch'
 import * as sax from 'sax'
 import BigNumber from 'bignumber.js'
-import { AccountInfo } from '../types/accounts'
+import { AccountInfo } from 'ilp-account-service'
 import { BackendInstance, BackendServices } from '../types/backend'
 
 import { create as createLogger } from '../common/log'
@@ -57,7 +57,7 @@ export default class ECBBackend implements BackendInstance {
     let apiData
     if (this.mockData) {
       log.info('connect using mock data.')
-      apiData = this.mockData as ApiData
+      apiData = this.mockData
     } else {
       log.info('connect. uri=' + this.ratesApiUrl)
       let result = await fetchUri(this.ratesApiUrl)
