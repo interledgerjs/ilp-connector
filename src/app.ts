@@ -9,13 +9,11 @@ import RouteBroadcaster from './services/route-broadcaster'
 import Accounts from './services/accounts'
 import RateBackend from './services/rate-backend'
 import Store from './services/store'
-import MiddlewareManager from './services/middleware-manager'
 import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
 import { AccountService } from './types/account-service'
 import { default as PluginAccountService } from './account-services/plugin'
 import Core from './services/core'
-import Stats from './services/stats'
 
 function listen (
   config: Config,
@@ -114,12 +112,14 @@ export default function createApp (opts?: object, container?: Injector) {
   }
 
   const accounts = deps(Accounts)
+  const core = deps(Core)
   const routeBuilder = deps(RouteBuilder)
   const routeBroadcaster = deps(RouteBroadcaster)
   const backend = deps(RateBackend)
   const store = deps(Store)
   const adminApi = deps(AdminApi)
 
+  accounts.registerProcessIlpPacketHandler(core.processIlpPacket)
   accounts.on('add', async (account: AccountService) => {
     routeBroadcaster.track(account.id)
     routeBroadcaster.reloadLocalRoutes()

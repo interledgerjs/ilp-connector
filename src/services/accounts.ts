@@ -10,7 +10,7 @@ import {
   serializeIlpReject,
   isFulfill,
   IlpPrepare,
-  IlpPacketHander
+  IlpPacketHander, IlpReply
 } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 import { MiddlewareDefinition } from '../types/middleware'
@@ -18,7 +18,6 @@ import { AccountService } from '../types/account-service';
 import { AccountServiceProvider, AccountServiceProviderDefinition } from '../types/account-service-provider'
 import { AccountInfo } from '../types/accounts';
 import PluginAccountServiceProvider from '../account-service-providers/plugin';
-import Core from './core'
 import MiddlewareManager from './middleware-manager'
 import Stats from './stats'
 import { MoneyHandler, VoidHandler } from '../types/plugin'
@@ -45,7 +44,6 @@ const BUILTIN_ACCOUNT_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
 export default class Accounts extends EventEmitter {
   protected _config: Config
   protected _store: Store
-  protected _core: Core
   protected _stats: Stats
   protected _middlewareManager: MiddlewareManager
   protected _address: string
@@ -55,13 +53,13 @@ export default class Accounts extends EventEmitter {
   protected _outgoingIlpPacketPipelines: Map<string, IlpPacketHander>
   protected _outgoingMoneyPipelines: Map<string, MoneyHandler>
   protected _shutdownPipelines: Map<string, VoidHandler>
+  protected _processIlpPacket?: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>
 
   constructor (deps: reduct.Injector) {
     super()
 
     this._config = deps(Config)
     this._store = deps(Store)
-    this._core = deps(Core)
     this._stats = deps(Stats)
     this._middlewareManager = new MiddlewareManager({
       getInfo: (accountId: string) => this.get(accountId).info,
@@ -88,6 +86,10 @@ export default class Accounts extends EventEmitter {
 
   }
 
+  registerProcessIlpPacketHandler (handler: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>) {
+    this._processIlpPacket = handler
+  }
+
   // Handle new account from one of the account providers
   private async _handleNewAccount (account: AccountService) {
 
@@ -102,7 +104,7 @@ export default class Accounts extends EventEmitter {
       shutdownPipeline } = await this._middlewareManager.setupHandlers(account.id, {
         outgoingIlpPacket: account.sendIlpPacket,
         outgoingMoney: (amount: string) => account.sendMoney(amount),
-        incomingIlpPacket: (packet: IlpPrepare) => this._core.processIlpPacket(packet, account.id, this.sendIlpPacket.bind(this)),
+        incomingIlpPacket: (packet: IlpPrepare) => this._processIlpPacket!(packet, account.id, this.sendIlpPacket.bind(this)),
         incomingMoney: (amount: string) => this.sendMoney(amount, account.id)
       })
     account.registerIlpPacketHandler(incomingIlpPacketPipeline)
@@ -219,6 +221,8 @@ export default class Accounts extends EventEmitter {
   }
 
   async startup (): Promise<string> {
+    if(!this._processIlpPacket) throw new Error('no processIlpPacketHandler registered')
+
     return new Promise<string>((resolve) => {
       if (!this._address) {
         const setOwnAddress = this._setOwnAddress
