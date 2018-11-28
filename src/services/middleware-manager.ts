@@ -78,7 +78,7 @@ export default class MiddlewareManager {
     return new Middleware(definition.options || {}, {
       getInfo: (accountId: string) => { return this.accounts.get(accountId).info },
       getOwnAddress: () => { return this.accounts.getOwnAddress() },
-      sendMoney: async (amount: string) => { return }
+      sendMoney: async (amount: string) => { return },
       stats: this.stats
     })
   }
