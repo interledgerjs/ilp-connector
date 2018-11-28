@@ -1,8 +1,8 @@
 import PrefixMap from './prefix-map'
-import { AccountService } from 'ilp-account-service'
+import { AccountService } from '../types/account-service'
 import { IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
-import { deserializeIlpPrepare, isFulfill } from 'ilp-packet'
+import { deserializeIlpPrepare, IlpReply, isFulfill } from 'ilp-packet'
 import {
   CcpRouteControlRequest,
   CcpRouteUpdateRequest,
@@ -147,7 +147,7 @@ export default class CcpReceiver {
     }
 
     this.account.sendIlpPacket(deserializeIlpPrepare(serializeCcpRouteControlRequest(routeControl)))
-      .then(packet => {
+      .then((packet: IlpReply) => {
         if (isFulfill(packet)) {
           this.log.trace('successfully sent route control message.')
         } else {

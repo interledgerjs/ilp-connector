@@ -12,7 +12,8 @@ import Store from './services/store'
 import MiddlewareManager from './services/middleware-manager'
 import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
-import { AccountService, PluginAccountService } from 'ilp-account-service'
+import { AccountService } from './types/account-service'
+import { default as PluginAccountService } from './account-services/plugin'
 
 function listen (
   config: Config,

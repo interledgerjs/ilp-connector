@@ -1,4 +1,4 @@
-import { AccountService } from 'ilp-account-service'
+import { AccountService } from '../types/account-service'
 import ForwardingRoutingTable, { RouteUpdate } from '../services/forwarding-routing-table'
 import { BroadcastRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'

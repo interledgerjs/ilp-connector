@@ -7,7 +7,7 @@ import {
 import BigNumber from 'bignumber.js'
 import { IlpPrepare, IlpReply, isFulfill } from 'ilp-packet'
 import Stats from '../services/stats'
-import { AccountInfo } from 'ilp-account-service'
+import { AccountInfo } from '../types/accounts'
 
 export default class StatsMiddleware implements Middleware {
   private stats: Stats
