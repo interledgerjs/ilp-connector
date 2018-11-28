@@ -4,9 +4,6 @@ import { create as createLogger } from '../common/log'
 import { Config as ConfigSchemaTyping } from '../schemas/Config'
 const log = createLogger('config')
 const schema = require('../schemas/Config.json')
-const {
-  extractDefaultsFromSchema
-} = require('../lib/utils')
 import Ajv = require('ajv')
 
 const ajv = new Ajv()
@@ -21,12 +18,15 @@ const BOOLEAN_VALUES = {
   '': false
 }
 
+type ConfigProfile = 'connector' | 'plugin' | 'server' | 'cluster'
+
 export default class Config extends ConfigSchemaTyping {
   // TODO: These fields are already all defined in the config schema, however
   //   they are defined as optional and as a result, TypeScript thinks that they
   //   may not be set. However, when we construct a new Config instance, we load
   //   the defaults from the schema, so these *will* always be set. These
   //   declarations make TypeScript happy.
+  public profile!: ConfigProfile
   public store!: string
   public quoteExpiry!: number
   public routeExpiry!: number
@@ -40,14 +40,8 @@ export default class Config extends ConfigSchemaTyping {
   constructor () {
     super()
 
-    this.loadDefaults()
-
     this._validate = ajv.compile(schema)
     this._validateAccount = ajv.compile(schema.properties.accounts.additionalProperties)
-  }
-
-  loadDefaults () {
-    Object.assign(this, extractDefaultsFromSchema(schema))
   }
 
   loadFromEnv (env?: NodeJS.ProcessEnv) {
@@ -100,13 +94,15 @@ export default class Config extends ConfigSchemaTyping {
 
     this.validate(config)
 
-    Object.assign(this, config)
+    const profile = config['profile'] || 'connector' as ConfigProfile
+    Object.assign(this, extractDefaultsFromSchema(profile, schema), config)
   }
 
   loadFromOpts (opts: object) {
     this.validate(opts)
 
-    Object.assign(this, opts)
+    const profile = opts['profile'] || 'connector' as ConfigProfile
+    Object.assign(this, extractDefaultsFromSchema(profile, schema), opts)
   }
 
   validate (config: object) {
@@ -126,5 +122,25 @@ export default class Config extends ConfigSchemaTyping {
 
   get (key: string) {
     return this[key]
+  }
+}
+
+export const extractDefaultsFromSchema = (profile: ConfigProfile, schema: any, path = '') => {
+  if (typeof schema.default !== 'undefined') {
+    if (typeof schema.default === 'object' && schema.default[profile]) {
+      return schema.default[profile]
+    }
+    return schema.default
+  }
+
+  switch (schema.type) {
+    case 'object':
+      const result = {}
+      for (let key of Object.keys(schema.properties)) {
+        result[key] = extractDefaultsFromSchema(schema.properties[key], path + '.' + key)
+      }
+      return result
+    default:
+      throw new Error('No default found for schema path: ' + path)
   }
 }

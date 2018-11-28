@@ -29,7 +29,7 @@ export default class DeduplicateMiddleware implements Middleware {
       }
     })
 
-    pipelines.teardown.insertLast({
+    pipelines.shutdown.insertLast({
       name: 'deduplicate',
       method: async (dummy: void, next: MiddlewareCallback<void, void>) => {
         clearInterval(interval)

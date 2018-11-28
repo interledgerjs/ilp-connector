@@ -2,12 +2,15 @@ import reduct = require('reduct')
 import Store from '../services/store'
 import Config from './config'
 import { EventEmitter } from 'events'
-import { AccountInfo, AccountService, AccountServiceProvider, AccountServiceProviderDefinition, PluginAccountServiceProvider, AccountServiceBase } from 'ilp-account-service'
 import ILDCP = require('ilp-protocol-ildcp')
 import { loadModuleOfType } from '../lib/utils'
 import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject, isFulfill } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 import { MiddlewareDefinition } from '../types/middleware'
+import { AccountService } from '../types/account-service';
+import { AccountServiceProvider, AccountServiceProviderDefinition } from '../types/account-service-provider'
+import { AccountInfo } from '../types/accounts';
+import PluginAccountServiceProvider from '../account-service-providers/plugin';
 const log = createLogger('accounts')
 
 const PLUGIN_ACCOUNT_PROVIDER = 'plugin'

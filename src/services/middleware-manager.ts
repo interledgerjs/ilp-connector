@@ -1,13 +1,5 @@
 import reduct = require('reduct')
-
 import { loadModuleOfType, composeMiddleware } from '../lib/utils'
-import { create as createLogger } from '../common/log'
-const log = createLogger('middleware-manager')
-
-import Config from './config'
-import Accounts from './accounts'
-import Core from './core'
-import Stats from './stats'
 import {
   Middleware,
   MiddlewareDefinition,
@@ -16,10 +8,12 @@ import {
   Pipeline,
   Pipelines
 } from '../types/middleware'
+import { MoneyHandler } from '../types/plugin'
 import MiddlewarePipeline from '../lib/middleware-pipeline'
-import { Errors, IlpPrepare, IlpReply } from 'ilp-packet'
-import { AccountService } from 'ilp-account-service'
-const { codes, UnreachableError } = Errors
+import { IlpPrepare, Errors, IlpReply, IlpPacketHander } from 'ilp-packet'
+import Stats from './stats'
+import Config from './config'
+import Accounts from './accounts'
 
 interface VoidHandler {
   (dummy: void): Promise<void>
@@ -29,41 +23,29 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   errorHandler: {
     type: 'error-handler'
   },
-  maxPacketAmount: {
-    type: 'max-packet-amount'
+  rateLimit: {
+    type: 'rate-limit'
   },
-  deduplicate: {
-    type: 'deduplicate'
+  throughput: {
+    type: 'throughput'
+  },
+  balance: {
+    type: 'balance'
   },
   expire: {
     type: 'expire'
-  },
-  validateFulfillment: {
-    type: 'validate-fulfillment'
-  },
-  stats: {
-    type: 'stats'
-  },
-  alert: {
-    type: 'alert'
   }
 }
 
 export default class MiddlewareManager {
   protected config: Config
   protected accounts: Accounts
-  protected core: Core
   protected middlewares: { [key: string]: Middleware }
   protected stats: Stats
-  private startupHandlers: Map<string, VoidHandler> = new Map()
-  private teardownHandlers: Map<string, VoidHandler> = new Map()
-  private outgoingDataHandlers: Map<string, (param: IlpPrepare) => Promise<IlpReply>> = new Map()
-  private started: boolean = false // TODO Manage per account?
 
   constructor (deps: reduct.Injector) {
     this.config = deps(Config)
     this.accounts = deps(Accounts)
-    this.core = deps(Core)
     this.stats = deps(Stats)
 
     const disabledMiddlewareConfig: string[] = this.config.disableMiddleware || []
@@ -94,120 +76,82 @@ export default class MiddlewareManager {
       loadModuleOfType('middleware', definition.type)
 
     return new Middleware(definition.options || {}, {
-      getInfo: accountId => this.accounts.get(accountId).info,
-      getOwnAddress: () => this.accounts.getOwnAddress(),
-      sendIlpPacket: this.sendIlpPacket.bind(this),
+      getInfo: (accountId: string) => { return this.accounts.get(accountId).info },
+      getOwnAddress: () => { return this.accounts.getOwnAddress() },
+      sendMoney: async (amount: string) => { return }
       stats: this.stats
     })
   }
 
-  async setup () {
-    for (const accountId of this.accounts.keys()) {
-      await this.addAccountService(this.accounts.get(accountId))
-    }
-  }
-
-  /**
-   * Executes middleware hooks for connector startup.
-   *
-   * This should be called after the plugins are connected
-   */
-  async startup (accountId?: string) {
-    if (accountId) {
-      const handler = this.startupHandlers.get(accountId)
-      if (handler) await handler(undefined)
-    } else {
-      this.started = true
-      for (const handler of this.startupHandlers.values()) {
-        await handler(undefined)
-      }
-    }
-  }
-
-  async addAccountService (account: AccountService) {
+  public async setupHandlers (accountid: string, handlers: {
+    outgoingMoney: MoneyHandler,
+    outgoingIlpPacket: IlpPacketHander,
+    incomingMoney: MoneyHandler,
+    incomingIlpPacket: IlpPacketHander
+  }): Promise<{
+    startupPipeline: VoidHandler
+    outgoingIlpPacketPipeline: IlpPacketHander,
+    outgoingMoneyPipeline: MoneyHandler
+    incomingIlpPacketPipeline: IlpPacketHander,
+    incomingMoneyPipeline: MoneyHandler
+    shutdownPipeline: VoidHandler
+  }> {
+    const {
+      outgoingMoney,
+      outgoingIlpPacket,
+      incomingMoney,
+      incomingIlpPacket
+    } = handlers
     const pipelines: Pipelines = {
       startup: new MiddlewarePipeline<void, void>(),
-      teardown: new MiddlewarePipeline<void, void>(),
       incomingData: new MiddlewarePipeline<IlpPrepare, IlpReply>(),
-      outgoingData: new MiddlewarePipeline<IlpPrepare, IlpReply>()
+      incomingMoney: new MiddlewarePipeline<string, void>(),
+      outgoingData: new MiddlewarePipeline<IlpPrepare, IlpReply>(),
+      outgoingMoney: new MiddlewarePipeline<string, void>(),
+      shutdown: new MiddlewarePipeline<void, void>()
     }
     for (const middlewareName of Object.keys(this.middlewares)) {
       const middleware = this.middlewares[middlewareName]
       try {
-        await middleware.applyToPipelines(pipelines, account.id)
+        await middleware.applyToPipelines(pipelines, accountid)
       } catch (err) {
         const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : String(err)
 
-        log.error('failed to apply middleware to account. middlewareName=%s accountId=%s error=%s', middlewareName, account.id, errInfo)
+        console.log('failed to apply middleware middlewareName=%s error=%s', middlewareName, errInfo)
         throw new Error('failed to apply middleware. middlewareName=' + middlewareName)
       }
     }
 
-    // Generate outgoing middleware
-    const sendOutgoingIlpPacket = async (packet: IlpPrepare): Promise<IlpReply> => {
-      try {
-        return await account.sendIlpPacket(packet)
-      } catch (e) {
-        let err = e
-        if (!err || typeof err !== 'object') {
-          err = new Error('non-object thrown. value=' + e)
-        }
+    // Generate startup middleware
+    const startupPipeline = this.createHandler(pipelines.startup, async () => { return })
 
-        if (!err.ilpErrorCode) {
-          err.ilpErrorCode = codes.F02_UNREACHABLE
-        }
+    // Generate outgoing middleware (ILP prepare from connector to plugin)
+    const outgoingIlpPacketPipeline = this.createHandler(pipelines.outgoingData, outgoingIlpPacket)
+    const outgoingMoneyPipeline = this.createHandler(pipelines.outgoingMoney, outgoingMoney)
 
-        err.message = 'failed to send packet: ' + err.message
+    // Generate incoming middleware (ILP Prepare from plugin to connector)
+    const incomingIlpPacketPipeline = this.createHandler(pipelines.incomingData, incomingIlpPacket)
+    const incomingMoneyPipeline = this.createHandler(pipelines.incomingMoney, incomingMoney)
 
-        throw err
-      }
+    // Generate shutdown middleware
+    const shutdownPipeline = this.createHandler(pipelines.shutdown, async () => { return })
+
+    return {
+      startupPipeline,
+      outgoingIlpPacketPipeline,
+      outgoingMoneyPipeline,
+      incomingIlpPacketPipeline,
+      incomingMoneyPipeline,
+      shutdownPipeline
     }
-
-    const startupHandler = this.createHandler(pipelines.startup, account.id, async () => { return })
-    const teardownHandler = this.createHandler(pipelines.teardown, account.id, async () => { return })
-    const outgoingDataHandler: (param: IlpPrepare) => Promise<IlpReply> =
-          this.createHandler(pipelines.outgoingData, account.id, sendOutgoingIlpPacket)
-
-    this.startupHandlers.set(account.id, startupHandler)
-    this.teardownHandlers.set(account.id, teardownHandler)
-    this.outgoingDataHandlers.set(account.id, outgoingDataHandler)
-
-    // Generate incoming middleware
-    const handleIlpPacket: (param: IlpPrepare) => Promise<IlpReply> =
-      (packet: IlpPrepare) => this.core.processIlpPacket(packet, account.id, this.sendIlpPacket.bind(this))
-    const incomingIlpPacketHandler: (param: IlpPrepare) => Promise<IlpReply> =
-      this.createHandler(pipelines.incomingData, account.id, handleIlpPacket)
-
-    account.registerIlpPacketHandler(incomingIlpPacketHandler)
   }
 
-  async removeAccountService (accountId: string) {
-    this.accounts.get(accountId).deregisterIlpPacketHandler()
+  private _sendOutgoingMoney (accountId: string, amount: string): Promise<void> {
 
-    this.startupHandlers.delete(accountId)
-    const teardownHandler = this.teardownHandlers.get(accountId)
-    if (teardownHandler) await teardownHandler(undefined)
-    this.teardownHandlers.delete(accountId)
-    this.outgoingDataHandlers.delete(accountId)
   }
 
-  async sendIlpPacket (packet: IlpPrepare, accountId: string) {
-    const handler = this.outgoingDataHandlers.get(accountId)
-
-    if (!handler) {
-      throw new UnreachableError('tried to send data to non-existent account. accountId=' + accountId)
-    }
-
-    return handler(packet)
-  }
-
-  getMiddleware (name: string): Middleware | undefined {
-    return this.middlewares[name]
-  }
-
-  private createHandler<T, U> (pipeline: Pipeline<T, U>, accountId: string, next: (param: T) => Promise<U>): (param: T) => Promise<U> {
-    const middleware: MiddlewareMethod<T, U> = composeMiddleware(pipeline.getMethods())
-
+  private createHandler<T,U> (pipeline: Pipeline<T,U>, next: (param: T) => Promise<U>): (param: T) => Promise<U> {
+    const middleware: MiddlewareMethod<T,U> = composeMiddleware(pipeline.getMethods())
     return (param: T) => middleware(param, next)
   }
 }
