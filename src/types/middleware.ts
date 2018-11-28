@@ -1,6 +1,7 @@
 import { AccountInfo } from './accounts'
 import { IlpPacket, IlpReply, IlpPrepare } from 'ilp-packet'
 import Stats from '../services/stats'
+import Config from '../services/config'
 
 export interface MiddlewareDefinition {
   type: string,
@@ -8,6 +9,7 @@ export interface MiddlewareDefinition {
 }
 
 export interface MiddlewareServices {
+  config: Config,
   stats: Stats,
   getInfo (accountId: string): AccountInfo
   getOwnAddress (): string

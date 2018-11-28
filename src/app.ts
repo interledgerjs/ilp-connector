@@ -14,6 +14,8 @@ import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
 import { AccountService } from './types/account-service'
 import { default as PluginAccountService } from './account-services/plugin'
+import Core from './services/core'
+import Stats from './services/stats'
 
 function listen (
   config: Config,
@@ -22,7 +24,6 @@ function listen (
   store: Store,
   routeBuilder: RouteBuilder,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
   adminApi: AdminApi
 ) {
   // Start a coroutine that connects to the backend and
@@ -59,7 +60,6 @@ async function addPlugin (
   accounts: Accounts,
   backend: RateBackend,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
 
   id: string,
   options: any
@@ -72,14 +72,12 @@ async function removePlugin (
   accounts: Accounts,
   backend: RateBackend,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
 
   id: string
 ) {
-  await accounts.removePlugin(id)
-  // TODO: do we need to handle removal of middleware?
   routeBroadcaster.untrack(id)
   routeBroadcaster.reloadLocalRoutes()
+  await accounts.removePlugin(id)
 }
 
 function getPlugin (
@@ -120,20 +118,18 @@ export default function createApp (opts?: object, container?: Injector) {
   const routeBroadcaster = deps(RouteBroadcaster)
   const backend = deps(RateBackend)
   const store = deps(Store)
-  const middlewareManager = deps(MiddlewareManager)
   const adminApi = deps(AdminApi)
 
   accounts.on('add', async (account: AccountService) => {
-    // TODO: setup middleware
     routeBroadcaster.track(account.id)
     routeBroadcaster.reloadLocalRoutes()
   })
 
   return {
     config,
-    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager, adminApi),
-    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
-    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
+    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, adminApi),
+    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster),
+    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster),
     getPlugin: partial(getPlugin, accounts),
     shutdown: partial(shutdown, accounts, routeBroadcaster)
   }

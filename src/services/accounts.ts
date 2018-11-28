@@ -4,13 +4,24 @@ import Config from './config'
 import { EventEmitter } from 'events'
 import ILDCP = require('ilp-protocol-ildcp')
 import { loadModuleOfType } from '../lib/utils'
-import { deserializeIlpPrepare, serializeIlpFulfill, serializeIlpReject, isFulfill } from 'ilp-packet'
+import {
+  deserializeIlpPrepare,
+  serializeIlpFulfill,
+  serializeIlpReject,
+  isFulfill,
+  IlpPrepare,
+  IlpPacketHander
+} from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 import { MiddlewareDefinition } from '../types/middleware'
 import { AccountService } from '../types/account-service';
 import { AccountServiceProvider, AccountServiceProviderDefinition } from '../types/account-service-provider'
 import { AccountInfo } from '../types/accounts';
 import PluginAccountServiceProvider from '../account-service-providers/plugin';
+import Core from './core'
+import MiddlewareManager from './middleware-manager'
+import Stats from './stats'
+import { MoneyHandler, VoidHandler } from '../types/plugin'
 const log = createLogger('accounts')
 
 const PLUGIN_ACCOUNT_PROVIDER = 'plugin'
@@ -34,19 +45,38 @@ const BUILTIN_ACCOUNT_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
 export default class Accounts extends EventEmitter {
   protected _config: Config
   protected _store: Store
+  protected _core: Core
+  protected _stats: Stats
+  protected _middlewareManager: MiddlewareManager
   protected _address: string
   protected _accounts: Map<string, AccountService>
   protected _pendingAccounts: Set<AccountService>
   protected _accountProviders: Map<string, AccountServiceProvider>
+  protected _outgoingIlpPacketPipelines: Map<string, IlpPacketHander>
+  protected _outgoingMoneyPipelines: Map<string, MoneyHandler>
+  protected _shutdownPipelines: Map<string, VoidHandler>
 
   constructor (deps: reduct.Injector) {
     super()
+
     this._config = deps(Config)
     this._store = deps(Store)
+    this._core = deps(Core)
+    this._stats = deps(Stats)
+    this._middlewareManager = new MiddlewareManager({
+      getInfo: (accountId: string) => this.get(accountId).info,
+      getOwnAddress: this.getOwnAddress,
+      sendMoney: (amount: string): Promise<void> => { return Promise.resolve()},
+      stats: this._stats,
+      config: this._config
+    })
     this._address = this._config.ilpAddress || 'unknown'
     this._pendingAccounts = new Set()
     this._accounts = new Map()
     this._accountProviders = new Map()
+    this._outgoingIlpPacketPipelines = new Map()
+    this._outgoingMoneyPipelines = new Map()
+    this._shutdownPipelines = new Map()
 
     this._loadPluginsAccountServiceProvider()
     const customAccountProviderConfig: { [key: string]: AccountServiceProviderDefinition } =
@@ -59,9 +89,29 @@ export default class Accounts extends EventEmitter {
   }
 
   // Handle new account from one of the account providers
-  private _handleNewAccount (account: AccountService) {
+  private async _handleNewAccount (account: AccountService) {
 
     this._accounts.set(account.id, account)
+
+    const {
+      startupPipeline,
+      incomingIlpPacketPipeline,
+      incomingMoneyPipeline,
+      outgoingIlpPacketPipeline,
+      outgoingMoneyPipeline,
+      shutdownPipeline } = await this._middlewareManager.setupHandlers(account.id, {
+        outgoingIlpPacket: account.sendIlpPacket,
+        outgoingMoney: (amount: string) => account.sendMoney(amount),
+        incomingIlpPacket: (packet: IlpPrepare) => this._core.processIlpPacket(packet, account.id, this.sendIlpPacket.bind(this)),
+        incomingMoney: (amount: string) => this.sendMoney(amount, account.id)
+      })
+    account.registerIlpPacketHandler(incomingIlpPacketPipeline)
+    account.registerMoneyHandler(incomingMoneyPipeline)
+
+    this._outgoingIlpPacketPipelines.set(account.id, outgoingIlpPacketPipeline)
+    this._outgoingMoneyPipelines.set(account.id, outgoingMoneyPipeline)
+    this._shutdownPipelines.set(account.id, shutdownPipeline)
+    await startupPipeline(undefined)
 
     if (!this._address) {
       if (this._config.ilpAddressInheritFrom) {
@@ -76,6 +126,22 @@ export default class Accounts extends EventEmitter {
       this._emitAccount(account, true)
     }
 
+  }
+
+  sendIlpPacket (packet: IlpPrepare, accountId: string) {
+    const handler = this._outgoingIlpPacketPipelines.get(accountId)
+
+    if(!handler) throw new Error('Can\'t find outgoing ilp packet pipeline for accountId=' + accountId)
+
+    return handler(packet)
+  }
+
+  sendMoney (amount: string, accountId: string) {
+    const handler = this._outgoingMoneyPipelines.get(accountId)
+
+    if(!handler) throw new Error('Can\'t find outgoing money pipeline for accountId=' + accountId)
+
+    return handler(amount)
   }
 
   private async _emitAccount (account: AccountService, startFirst: boolean = true): Promise<void> {

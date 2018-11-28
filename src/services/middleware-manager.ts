@@ -1,4 +1,3 @@
-import reduct = require('reduct')
 import { loadModuleOfType, composeMiddleware } from '../lib/utils'
 import {
   Middleware,
@@ -6,18 +5,13 @@ import {
   MiddlewareMethod,
   MiddlewareConstructor,
   Pipeline,
-  Pipelines
+  Pipelines, MiddlewareServices
 } from '../types/middleware'
-import { MoneyHandler } from '../types/plugin'
+import { MoneyHandler, VoidHandler } from '../types/plugin'
 import MiddlewarePipeline from '../lib/middleware-pipeline'
-import { IlpPrepare, Errors, IlpReply, IlpPacketHander } from 'ilp-packet'
+import { IlpPrepare, IlpReply, IlpPacketHander } from 'ilp-packet'
 import Stats from './stats'
 import Config from './config'
-import Accounts from './accounts'
-
-interface VoidHandler {
-  (dummy: void): Promise<void>
-}
 
 const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   errorHandler: {
@@ -39,14 +33,12 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
 
 export default class MiddlewareManager {
   protected config: Config
-  protected accounts: Accounts
   protected middlewares: { [key: string]: Middleware }
   protected stats: Stats
 
-  constructor (deps: reduct.Injector) {
-    this.config = deps(Config)
-    this.accounts = deps(Accounts)
-    this.stats = deps(Stats)
+  constructor (services: MiddlewareServices) {
+    this.config = services.config
+    this.stats = services.stats
 
     const disabledMiddlewareConfig: string[] = this.config.disableMiddleware || []
     const customMiddlewareConfig: { [key: string]: MiddlewareDefinition } = this.config.middlewares || {}
@@ -58,7 +50,7 @@ export default class MiddlewareManager {
         continue
       }
 
-      this.middlewares[name] = this.construct(name, BUILTIN_MIDDLEWARES[name])
+      this.middlewares[name] = this.construct(name, BUILTIN_MIDDLEWARES[name], services)
     }
 
     for (const name of Object.keys(customMiddlewareConfig)) {
@@ -66,21 +58,16 @@ export default class MiddlewareManager {
         throw new Error('custom middleware has same name as built-in middleware. name=' + name)
       }
 
-      this.middlewares[name] = this.construct(name, customMiddlewareConfig[name])
+      this.middlewares[name] = this.construct(name, customMiddlewareConfig[name], services)
     }
   }
 
-  construct (name: string, definition: MiddlewareDefinition): Middleware {
+  construct (name: string, definition: MiddlewareDefinition, services: MiddlewareServices): Middleware {
     // Custom middleware
     const Middleware: MiddlewareConstructor =
       loadModuleOfType('middleware', definition.type)
 
-    return new Middleware(definition.options || {}, {
-      getInfo: (accountId: string) => { return this.accounts.get(accountId).info },
-      getOwnAddress: () => { return this.accounts.getOwnAddress() },
-      sendMoney: async (amount: string) => { return },
-      stats: this.stats
-    })
+    return new Middleware(definition.options || {}, services)
   }
 
   public async setupHandlers (accountid: string, handlers: {
@@ -144,11 +131,6 @@ export default class MiddlewareManager {
       incomingMoneyPipeline,
       shutdownPipeline
     }
-  }
-
-  private _sendOutgoingMoney (accountId: string, amount: string): Promise<void> {
-    //TODO
-    return Promise.resolve()
   }
 
   private createHandler<T,U> (pipeline: Pipeline<T,U>, next: (param: T) => Promise<U>): (param: T) => Promise<U> {

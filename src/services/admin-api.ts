@@ -3,7 +3,6 @@ import Ajv = require('ajv')
 import { mapValues as pluck } from 'lodash'
 import Accounts from './accounts'
 import Config from './config'
-import MiddlewareManager from './middleware-manager'
 import AlertMiddleware from '../middlewares/alert'
 import RoutingTable from './routing-table'
 import RouteBroadcaster from './route-broadcaster'
@@ -25,7 +24,6 @@ interface Route {
 export default class AdminApi {
   private accounts: Accounts
   private config: Config
-  private middlewareManager: MiddlewareManager
   private routingTable: RoutingTable
   private routeBroadcaster: RouteBroadcaster
   private rateBackend: RateBackend
@@ -37,7 +35,6 @@ export default class AdminApi {
   constructor (deps: reduct.Injector) {
     this.accounts = deps(Accounts)
     this.config = deps(Config)
-    this.middlewareManager = deps(MiddlewareManager)
     this.routingTable = deps(RoutingTable)
     this.routeBroadcaster = deps(RouteBroadcaster)
     this.rateBackend = deps(RateBackend)

@@ -12,6 +12,10 @@ export interface MoneyHandler {
   (amount: string): Promise<void>
 }
 
+export interface VoidHandler {
+  (dummy: void): Promise<void>
+}
+
 export interface PluginInstance extends EventEmitter {
   connect (options: ConnectOptions): Promise<void>
   disconnect (): Promise<void>
