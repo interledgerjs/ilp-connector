@@ -158,8 +158,7 @@ export default class Accounts extends EventEmitter {
     const handler = this._outgoingIlpPacketPipelines.get(accountId)
 
     if (!handler) throw new Error('Can\'t find outgoing ilp packet pipeline for accountId=' + accountId)
-    return this.get(accountId).sendIlpPacket(packet)
-    // return handler(packet)
+    return handler(packet)
   }
 
   sendMoney (amount: string, accountId: string) {
