@@ -1,6 +1,6 @@
 import { Config } from '../schemas/Config'
 export type AccountsConfig = Config['accounts']
-export type Account = keyof AccountsConfig
+
 export interface AccountInfo {
   relation: 'parent' | 'peer' | 'child',
   assetCode: string,

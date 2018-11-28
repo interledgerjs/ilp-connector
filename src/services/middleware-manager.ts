@@ -147,7 +147,7 @@ export default class MiddlewareManager {
   }
 
   private _sendOutgoingMoney (accountId: string, amount: string): Promise<void> {
-
+    //TODO
   }
 
   private createHandler<T,U> (pipeline: Pipeline<T,U>, next: (param: T) => Promise<U>): (param: T) => Promise<U> {
