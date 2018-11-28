@@ -119,7 +119,7 @@ export default function createApp (opts?: object, container?: Injector) {
   const store = deps(Store)
   const adminApi = deps(AdminApi)
 
-  accounts.registerProcessIlpPacketHandler(core.processIlpPacket)
+  accounts.registerProcessIlpPacketHandler(core.processIlpPacket.bind(core))
   accounts.on('add', async (account: AccountService) => {
     routeBroadcaster.track(account.id)
     routeBroadcaster.reloadLocalRoutes()

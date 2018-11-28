@@ -65,12 +65,13 @@ describe('IlpPrepareController', function () {
     await this.backend.connect()
     await this.accounts.startup()
 
+    await new Promise(resolve => setInterval(resolve, 500))
     this.setTimeout = setTimeout
     this.setInterval = setInterval
     this.clock = sinon.useFakeTimers(START_DATE)
 
-    this.mockAccountService1 = this.accounts.getAccountService('mock.test1')
-    this.mockAccountService2 = this.accounts.getAccountService('mock.test2')
+    this.mockAccountService1 = this.accounts.get('mock.test1')
+    this.mockAccountService2 = this.accounts.get('mock.test2')
   })
 
   afterEach(async function () {
@@ -166,7 +167,7 @@ describe('IlpPrepareController', function () {
     }))
 
     sinon.assert.calledOnce(sendSpy)
-    sinon.assert.calledWith(sendSpy,{
+    sinon.assert.calledWith(sendSpy, {
       amount: '94',
       expiresAt: new Date(START_DATE + 30000),
       executionCondition: Buffer.from('uzoYx3K6u+Nt6kZjbN6KmH0yARfhkj9e17eQfpSeB7U=', 'base64'),

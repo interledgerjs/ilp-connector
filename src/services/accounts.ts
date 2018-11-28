@@ -14,13 +14,14 @@ import {
 } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 import { MiddlewareDefinition } from '../types/middleware'
-import { AccountService } from '../types/account-service';
+import { AccountService } from '../types/account-service'
 import { AccountServiceProvider, AccountServiceProviderDefinition } from '../types/account-service-provider'
-import { AccountInfo } from '../types/accounts';
-import PluginAccountServiceProvider from '../account-service-providers/plugin';
+import { AccountInfo } from '../types/accounts'
+import PluginAccountServiceProvider from '../account-service-providers/plugin'
 import MiddlewareManager from './middleware-manager'
 import Stats from './stats'
 import { MoneyHandler, VoidHandler } from '../types/plugin'
+import {codes} from 'ilp-packet/dist/src/errors'
 const log = createLogger('accounts')
 
 const PLUGIN_ACCOUNT_PROVIDER = 'plugin'
@@ -62,8 +63,11 @@ export default class Accounts extends EventEmitter {
     this._store = deps(Store)
     this._stats = deps(Stats)
     this._middlewareManager = new MiddlewareManager({
-      getInfo: (accountId: string) => this.get(accountId).info,
-      getOwnAddress: this.getOwnAddress,
+      getInfo: (accountId: string) => {
+        let account = this.get(accountId)
+        return account.info
+      } ,
+      getOwnAddress: this.getOwnAddress.bind(this),
       sendMoney: (amount: string): Promise<void> => { return Promise.resolve()},
       stats: this._stats,
       config: this._config
@@ -95,6 +99,26 @@ export default class Accounts extends EventEmitter {
 
     this._accounts.set(account.id, account)
 
+    // Required to ensure you dont need to bind the account context to itself and also add error handling on outgoing
+    const sendIlpPacket = async (packet: IlpPrepare) => {
+      try {
+        return await account.sendIlpPacket(packet)
+      } catch (e) {
+        let err = e
+        if (!err || typeof err !== 'object') {
+          err = new Error('non-object thrown. value=' + e)
+        }
+
+        if (!err.ilpErrorCode) {
+          err.ilpErrorCode = codes.F02_UNREACHABLE
+        }
+
+        err.message = 'failed to send packet: ' + err.message
+
+        throw err
+      }
+    }
+
     const {
       startupPipeline,
       incomingIlpPacketPipeline,
@@ -102,7 +126,7 @@ export default class Accounts extends EventEmitter {
       outgoingIlpPacketPipeline,
       outgoingMoneyPipeline,
       shutdownPipeline } = await this._middlewareManager.setupHandlers(account.id, {
-        outgoingIlpPacket: account.sendIlpPacket,
+        outgoingIlpPacket: sendIlpPacket,
         outgoingMoney: (amount: string) => account.sendMoney(amount),
         incomingIlpPacket: (packet: IlpPrepare) => this._processIlpPacket!(packet, account.id, this.sendIlpPacket.bind(this)),
         incomingMoney: (amount: string) => this.sendMoney(amount, account.id)
@@ -133,15 +157,15 @@ export default class Accounts extends EventEmitter {
   sendIlpPacket (packet: IlpPrepare, accountId: string) {
     const handler = this._outgoingIlpPacketPipelines.get(accountId)
 
-    if(!handler) throw new Error('Can\'t find outgoing ilp packet pipeline for accountId=' + accountId)
-
-    return handler(packet)
+    if (!handler) throw new Error('Can\'t find outgoing ilp packet pipeline for accountId=' + accountId)
+    return this.get(accountId).sendIlpPacket(packet)
+    // return handler(packet)
   }
 
   sendMoney (amount: string, accountId: string) {
     const handler = this._outgoingMoneyPipelines.get(accountId)
 
-    if(!handler) throw new Error('Can\'t find outgoing money pipeline for accountId=' + accountId)
+    if (!handler) throw new Error('Can\'t find outgoing money pipeline for accountId=' + accountId)
 
     return handler(amount)
   }
@@ -221,7 +245,7 @@ export default class Accounts extends EventEmitter {
   }
 
   async startup (): Promise<string> {
-    if(!this._processIlpPacket) throw new Error('no processIlpPacketHandler registered')
+    if (!this._processIlpPacket) throw new Error('no processIlpPacketHandler registered')
 
     return new Promise<string>((resolve) => {
       if (!this._address) {
