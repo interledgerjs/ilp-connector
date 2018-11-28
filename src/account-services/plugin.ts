@@ -38,7 +38,7 @@ export default class PluginAccountService extends AccountServiceBase implements 
       throw new Error('No handler defined for outgoing packets. registerIlpPacketHander() must be called before startup.')
     } else {
       this._plugin.registerDataHandler(async (data: Buffer) => {
-        return serializeIlpReply(await this._incomingIlpPacketHandler(deserializeIlpPrepare(data)))
+        return serializeIlpReply(await this._incomingIlpPacketHandler!(deserializeIlpPrepare(data)))
       })
     }
 
@@ -46,7 +46,7 @@ export default class PluginAccountService extends AccountServiceBase implements 
       throw new Error('No handler defined for outgoing money. registerMoneyHandler() must be called before startup.')
     } else {
       this._plugin.registerMoneyHandler(async (amount: string) => {
-        return this._incomingMoneyHandler(amount)
+        return this._incomingMoneyHandler!(amount)
       })
     }
     return this._plugin.connect({})
