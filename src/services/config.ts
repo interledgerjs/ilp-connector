@@ -132,12 +132,12 @@ export const extractDefaultsFromSchema = (profile: ConfigProfile, schema: any, p
     }
     return schema.default
   }
-
   switch (schema.type) {
     case 'object':
       const result = {}
       for (let key of Object.keys(schema.properties)) {
-        result[key] = extractDefaultsFromSchema(schema.properties[key], path + '.' + key)
+        // TODO, check this is actually even correct to past profile in. Add test coverage for the profile stuff
+        result[key] = extractDefaultsFromSchema(profile, schema.properties[key], path + '.' + key)
       }
       return result
     default:
