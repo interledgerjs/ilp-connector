@@ -76,7 +76,7 @@ async function removePlugin (
   id: string
 ) {
   await accounts.removePlugin(id)
-  await middlewareManager.removeAccountService(id)
+  // TODO: do we need to handle removal of middleware?
   routeBroadcaster.untrack(id)
   routeBroadcaster.reloadLocalRoutes()
 }
@@ -123,8 +123,7 @@ export default function createApp (opts?: object, container?: Injector) {
   const adminApi = deps(AdminApi)
 
   accounts.on('add', async (account: AccountService) => {
-    await middlewareManager.addAccountService(account)
-    await middlewareManager.startup(account.id)
+    // TODO: setup middleware
     routeBroadcaster.track(account.id)
     routeBroadcaster.reloadLocalRoutes()
   })
