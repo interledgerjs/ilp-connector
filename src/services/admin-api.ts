@@ -144,7 +144,9 @@ export default class AdminApi {
   }
 
   private async getAlerts () {
-    const middleware = this.middlewareManager.getMiddleware('alert')
+    // TODO - Fix
+    // const middleware = this.middlewareManager.getMiddleware('alert')
+    const middleware = undefined
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
     return {
@@ -153,7 +155,9 @@ export default class AdminApi {
   }
 
   private async deleteAlert (url: string) {
-    const middleware = this.middlewareManager.getMiddleware('alert')
+    // TODO - Fix
+    // const middleware = this.middlewareManager.getMiddleware('alert')
+    const middleware = undefined
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
     const match = /^\/alerts\/(\d+)$/.exec(url.split('?')[0])
