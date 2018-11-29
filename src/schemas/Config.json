@@ -28,28 +28,15 @@
       "type": "string",
       "default": ""
     },
-    "account-providers": {
-      "description": "Additional account-providers that should be loaded at startup.",
-      "type": "object",
-      "additionalProperties": {
-        "description": "Object describing account-provider instance.",
-        "type": "object",
-        "properties": {
-          "type": {
-            "description": "NPM module that should be `require`d to load the account-provider constructor.",
-            "type": "string"
-          },
-          "options": {
-            "description": "Options that will be passed to the account-provider constructor.",
-            "type": "object",
-            "additionalProperties": true
-          }
-        },
-        "required": [
-          "type"
-        ]
-      },
-      "default": {}
+    "accountProviders": {
+      "description": "Account providers that should be loaded at startup.",
+      "type": "array",
+      "default": {
+        "connector": [ "plugin" ],
+        "server": [ "plugin" ],
+        "plugin": [ "plugin" ],
+        "cluster": [ "plugin" ]
+      }
     },
     "accounts": {
       "description": "Description of connector account plugins.",
@@ -231,7 +218,7 @@
       "type": "boolean",
       "default": {
         "connector": true,
-        "server": false,
+        "server": true,
         "plugin": false,
         "cluster": true
       }

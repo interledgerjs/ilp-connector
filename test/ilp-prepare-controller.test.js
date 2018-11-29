@@ -1,7 +1,5 @@
 'use strict'
 
-const BigNumber = require('bignumber.js')
-
 const assert = require('assert')
 const _ = require('lodash')
 const appHelper = require('./helpers/app')
@@ -63,6 +61,7 @@ describe('IlpPrepareController', function () {
 
     appHelper.create(this)
     await this.backend.connect()
+    this.accounts.setOwnAddress(this.config.ilpAddress)
     await this.accounts.startup()
 
     await new Promise(resolve => setInterval(resolve, 500))
@@ -92,10 +91,9 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     }
 
-    sinon.stub(this.mockAccountService2, 'sendIlpPacket')
-      .resolves(fulfillPacket)
-
+    sinon.stub(this.mockAccountService2, 'sendIlpPacket').resolves(fulfillPacket)
     const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
+    console.log(IlpPacket.deserializeIlpPacket(result))
     assert.strictEqual(result.toString('hex'), IlpPacket.serializeIlpFulfill(fulfillPacket).toString('hex'))
   })
 
@@ -479,9 +477,9 @@ describe('IlpPrepareController', function () {
       await this.backend.connect()
       await this.accounts.startup()
 
-      this.mockAccountService1 = this.accounts.getAccountService('mock.test1')
-      this.mockAccountService2 = this.accounts.getAccountService('mock.test2')
-      this.mockAccountService3 = this.accounts.getAccountService('mock.test3')
+      this.mockAccountService1 = this.accounts.get('mock.test1')
+      this.mockAccountService2 = this.accounts.get('mock.test2')
+      this.mockAccountService3 = this.accounts.get('mock.test3')
     })
 
     it('handles ILDCP requests', async function () {
@@ -554,9 +552,9 @@ describe('IlpPrepareController', function () {
       await this.backend.connect()
       await this.accounts.startup()
 
-      this.mockAccountService1 = this.accounts.getAccountService('mock.test1')
-      this.mockAccountService2 = this.accounts.getAccountService('mock.test2')
-      this.mockAccountService3 = this.accounts.getAccountService('mock.test3')
+      this.mockAccountService1 = this.accounts.get('mock.test1')
+      this.mockAccountService2 = this.accounts.get('mock.test2')
+      this.mockAccountService3 = this.accounts.get('mock.test3')
     })
 
     it('rejects when the packet amount is too high', async function () {
@@ -627,9 +625,9 @@ describe('IlpPrepareController', function () {
       await this.backend.connect()
       await this.accounts.startup()
 
-      this.mockAccountService1 = this.accounts.getAccountService('mock.test1')
-      this.mockAccountService2 = this.accounts.getAccountService('mock.test2')
-      this.mockAccountService3 = this.accounts.getAccountService('mock.test3')
+      this.mockAccountService1 = this.accounts.get('mock.test1')
+      this.mockAccountService2 = this.accounts.get('mock.test2')
+      this.mockAccountService3 = this.accounts.get('mock.test3')
     })
   })
 })

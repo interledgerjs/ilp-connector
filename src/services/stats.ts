@@ -1,10 +1,10 @@
 import * as Prometheus from 'prom-client'
-import { AccountInfo } from '../types/accounts'
+import Account from '../types/account'
 
-function mergeAccountLabels (account: { accountId: string, accountInfo: AccountInfo }, labels: Prometheus.labelValues): Prometheus.labelValues {
-  labels['account'] = account.accountId
-  labels['asset'] = account.accountInfo.assetCode
-  labels['scale'] = account.accountInfo.assetScale
+function mergeAccountLabels (account: Account, labels: Prometheus.labelValues): Prometheus.labelValues {
+  labels['account'] = account.id
+  labels['asset'] = account.info.assetCode
+  labels['scale'] = account.info.assetScale
   return labels
 }
 
@@ -14,7 +14,7 @@ export class AccountCounter extends Prometheus.Counter {
     configuration.labelNames.push('account', 'asset', 'scale')
     super(configuration)
   }
-  increment (account: { accountId: string, accountInfo: AccountInfo }, labels: Prometheus.labelValues, value?: number) {
+  increment (account: Account, labels: Prometheus.labelValues, value?: number) {
     return this.inc(mergeAccountLabels(account, labels), value)
   }
 }
@@ -25,7 +25,7 @@ export class AccountGauge extends Prometheus.Gauge {
     configuration.labelNames.push('account', 'asset', 'scale')
     super(configuration)
   }
-  setValue (account: { accountId: string, accountInfo: AccountInfo }, labels: Prometheus.labelValues, value: number) {
+  setValue (account: Account, labels: Prometheus.labelValues, value: number) {
     return this.set(mergeAccountLabels(account, labels), value)
   }
 }

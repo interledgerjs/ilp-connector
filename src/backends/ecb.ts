@@ -1,7 +1,7 @@
 import fetchUri from 'node-fetch'
 import * as sax from 'sax'
 import BigNumber from 'bignumber.js'
-import { AccountInfo } from '../types/accounts'
+import { AccountInfo } from '../types/account'
 import { BackendInstance, BackendServices } from '../types/backend'
 
 import { create as createLogger } from '../common/log'

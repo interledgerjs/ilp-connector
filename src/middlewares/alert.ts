@@ -1,7 +1,8 @@
+import Account from '../types/account'
+import Middleware, { MiddlewareCallback, Pipelines } from '../types/middleware'
+import { IlpPrepare, Errors as IlpPacketErrors, IlpReply, isFulfill } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('alert-middleware')
-import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-import { IlpPrepare, Errors as IlpPacketErrors, IlpReply, isFulfill } from 'ilp-packet'
 
 const { T04_INSUFFICIENT_LIQUIDITY } = IlpPacketErrors.codes
 
@@ -19,7 +20,7 @@ export default class AlertMiddleware implements Middleware {
   private alerts: { [id: number]: Alert } = {}
   private nextAlertId: number = Date.now()
 
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
     pipelines.outgoingData.insertLast({
       name: 'alert',
       method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {
@@ -34,8 +35,8 @@ export default class AlertMiddleware implements Middleware {
         if (result.message !== 'exceeded maximum balance.') return result
 
         const { triggeredBy } = result
-        log.warn('generating alert for account=%s triggeredBy=%s message="%s"', accountId, triggeredBy, result.message)
-        this.addAlert(accountId, triggeredBy, result.message)
+        log.warn('generating alert for account=%s triggeredBy=%s message="%s"', account.id, triggeredBy, result.message)
+        this.addAlert(account.id, triggeredBy, result.message)
 
         return result
       }

@@ -1,14 +1,12 @@
-import { AccountInfo } from '../types/accounts'
-import createLogger from 'ilp-logger'
-import MiddlewareManager from '../services/middleware-manager'
-import { AccountService } from '../types/account-service'
+import Account, { AccountInfo } from '../types/account'
 import { MoneyHandler } from '../types/plugin'
 import { IlpPrepare, IlpPacketHander, IlpReply, Errors } from 'ilp-packet'
 import { EventEmitter } from 'events'
 const { UnreachableError } = Errors
+import { create as createLogger } from '../common/log'
 const log = createLogger('plugin-account-service')
 
-export class AccountServiceBase extends EventEmitter implements AccountService {
+export class AccountBase extends EventEmitter implements Account {
 
   protected _id: string
   protected _info: AccountInfo
@@ -16,10 +14,9 @@ export class AccountServiceBase extends EventEmitter implements AccountService {
   protected _outgoingMoneyHandler?: MoneyHandler
   protected _incomingIlpPacketHandler?: IlpPacketHander
   protected _incomingMoneyHandler?: MoneyHandler
-  protected _middlewareManager?: MiddlewareManager
   private _started: boolean = false
 
-  constructor (accountId: string, accountInfo: AccountInfo, middlewares: string[]) {
+  constructor (accountId: string, accountInfo: AccountInfo) {
     super()
     this._id = accountId
     this._info = accountInfo

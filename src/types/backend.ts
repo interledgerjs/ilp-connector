@@ -1,4 +1,4 @@
-import { AccountInfo } from './accounts'
+import { AccountInfo } from './account'
 
 export interface SubmitPaymentParams {
   sourceAccount: string

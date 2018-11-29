@@ -1,60 +1,34 @@
 import reduct = require('reduct')
-import Store from '../services/store'
+import Store from './store'
 import Config from './config'
+import Stats from './stats'
 import { EventEmitter } from 'events'
-import ILDCP = require('ilp-protocol-ildcp')
 import { loadModuleOfType } from '../lib/utils'
 import {
-  deserializeIlpPrepare,
-  serializeIlpFulfill,
-  serializeIlpReject,
-  isFulfill,
   IlpPrepare,
-  IlpPacketHander, IlpReply
+  IlpReply,
+  Errors
 } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
-import { MiddlewareDefinition } from '../types/middleware'
-import { AccountService } from '../types/account-service'
-import { AccountServiceProvider, AccountServiceProviderDefinition } from '../types/account-service-provider'
-import { AccountInfo } from '../types/accounts'
-import PluginAccountServiceProvider from '../account-service-providers/plugin'
-import MiddlewareManager from './middleware-manager'
-import Stats from './stats'
-import { MoneyHandler, VoidHandler } from '../types/plugin'
-import {codes} from 'ilp-packet/dist/src/errors'
+import Middleware from '../types/middleware'
+import Account from '../types/account'
+import AccountProvider, { AccountProviderConstructor } from '../types/account-provider'
+import PluginAccountProvider from '../account-providers/plugin'
+import { constructMiddlewares, wrapMiddleware } from '../lib/middleware'
+const { UnreachableError } = Errors
 const log = createLogger('accounts')
 
-const PLUGIN_ACCOUNT_PROVIDER = 'plugin'
-const BUILTIN_ACCOUNT_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
-  errorHandler: {
-    type: 'error-handler'
-  },
-  rateLimit: {
-    type: 'rate-limit'
-  },
-  throughput: {
-    type: 'throughput'
-  },
-  balance: {
-    type: 'balance'
-  },
-  expire: {
-    type: 'expire'
-  }
-}
 export default class Accounts extends EventEmitter {
   protected _config: Config
   protected _store: Store
   protected _stats: Stats
-  protected _middlewareManager: MiddlewareManager
+  protected _middlewares: { [key: string]: Middleware } = {}
   protected _address: string
-  protected _accounts: Map<string, AccountService>
-  protected _pendingAccounts: Set<AccountService>
-  protected _accountProviders: Map<string, AccountServiceProvider>
-  protected _outgoingIlpPacketPipelines: Map<string, IlpPacketHander>
-  protected _outgoingMoneyPipelines: Map<string, MoneyHandler>
-  protected _shutdownPipelines: Map<string, VoidHandler>
-  protected _processIlpPacket?: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>
+  protected _accounts: Map<string, Account>
+  protected _accountProviders: Set<AccountProvider>
+
+  protected _coreIlpPacketHander: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>
+  protected _coreMoneyHandler: (amount: string, accountId: string) => Promise<void>
 
   constructor (deps: reduct.Injector) {
     super()
@@ -62,223 +36,124 @@ export default class Accounts extends EventEmitter {
     this._config = deps(Config)
     this._store = deps(Store)
     this._stats = deps(Stats)
-    this._middlewareManager = new MiddlewareManager({
-      getInfo: (accountId: string) => {
-        let account = this.get(accountId)
-        return account.info
-      } ,
-      getOwnAddress: this.getOwnAddress.bind(this),
-      sendMoney: (amount: string): Promise<void> => { return Promise.resolve()},
-      stats: this._stats,
-      config: this._config
-    })
     this._address = this._config.ilpAddress || 'unknown'
-    this._pendingAccounts = new Set()
     this._accounts = new Map()
-    this._accountProviders = new Map()
-    this._outgoingIlpPacketPipelines = new Map()
-    this._outgoingMoneyPipelines = new Map()
-    this._shutdownPipelines = new Map()
+    this._accountProviders = new Set()
 
-    this._loadPluginsAccountServiceProvider()
-    const customAccountProviderConfig: { [key: string]: AccountServiceProviderDefinition } =
-      this._config['account-providers'] || {}
-
-    for (const name of Object.keys(customAccountProviderConfig)) {
-      this._loadProvider(name, customAccountProviderConfig[name])
+    this._coreIlpPacketHander = (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => {
+      throw new UnreachableError('no core packet handler configured.')
     }
 
+    this._coreMoneyHandler = (amount: string, accountId: string) => {
+      throw new UnreachableError('no core money handler configured.')
+    }
   }
 
-  registerProcessIlpPacketHandler (handler: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>) {
-    this._processIlpPacket = handler
+  public setup (deps: reduct.Injector) {
+    // Setup middleware
+    this._middlewares = constructMiddlewares(deps)
+
+    // Load up account providers
+    for (const name of this._config.accountProviders) {
+      this._accountProviders.add(constructProvider(name, deps))
+    }
   }
 
-  // Handle new account from one of the account providers
-  private async _handleNewAccount (account: AccountService) {
-
-    this._accounts.set(account.id, account)
-
-    // Required to ensure you dont need to bind the account context to itself and also add error handling on outgoing
-    const sendIlpPacket = async (packet: IlpPrepare) => {
-      try {
+  public async sendIlpPacket (packet: IlpPrepare, accountId: string): Promise<IlpReply> {
+    try {
+      const account = this._accounts.get(accountId)
+      if (account) {
         return await account.sendIlpPacket(packet)
-      } catch (e) {
-        let err = e
-        if (!err || typeof err !== 'object') {
-          err = new Error('non-object thrown. value=' + e)
-        }
-
-        if (!err.ilpErrorCode) {
-          err.ilpErrorCode = codes.F02_UNREACHABLE
-        }
-
-        err.message = 'failed to send packet: ' + err.message
-
-        throw err
-      }
-    }
-
-    const {
-      startupPipeline,
-      incomingIlpPacketPipeline,
-      incomingMoneyPipeline,
-      outgoingIlpPacketPipeline,
-      outgoingMoneyPipeline,
-      shutdownPipeline } = await this._middlewareManager.setupHandlers(account.id, {
-        outgoingIlpPacket: sendIlpPacket,
-        outgoingMoney: (amount: string) => account.sendMoney(amount),
-        incomingIlpPacket: (packet: IlpPrepare) => this._processIlpPacket!(packet, account.id, this.sendIlpPacket.bind(this)),
-        incomingMoney: (amount: string) => this.sendMoney(amount, account.id)
-      })
-    account.registerIlpPacketHandler(incomingIlpPacketPipeline)
-    account.registerMoneyHandler(incomingMoneyPipeline)
-
-    this._outgoingIlpPacketPipelines.set(account.id, outgoingIlpPacketPipeline)
-    this._outgoingMoneyPipelines.set(account.id, outgoingMoneyPipeline)
-    this._shutdownPipelines.set(account.id, shutdownPipeline)
-    await startupPipeline(undefined)
-
-    if (!this._address) {
-      if (this._config.ilpAddressInheritFrom) {
-        if (account.id === this._config.ilpAddressInheritFrom) {
-          this._getAddressFromParent(account)
-        }
-      } else if (account.info.relation === 'parent') {
-        this._getAddressFromParent(account)
-      }
-      this._pendingAccounts.add(account)
-    } else {
-      this._emitAccount(account, true)
-    }
-
-  }
-
-  sendIlpPacket (packet: IlpPrepare, accountId: string) {
-    const handler = this._outgoingIlpPacketPipelines.get(accountId)
-
-    if (!handler) throw new Error('Can\'t find outgoing ilp packet pipeline for accountId=' + accountId)
-    return handler(packet)
-  }
-
-  sendMoney (amount: string, accountId: string) {
-    const handler = this._outgoingMoneyPipelines.get(accountId)
-
-    if (!handler) throw new Error('Can\'t find outgoing money pipeline for accountId=' + accountId)
-
-    return handler(amount)
-  }
-
-  private async _emitAccount (account: AccountService, startFirst: boolean = true): Promise<void> {
-    if (startFirst) {
-      await account.startup()
-    }
-    this.emit('add', account)
-  }
-
-  private async _getAddressFromParent (account: AccountService): Promise<void> {
-    log.trace('connecting to parent. accountId=%s', account.id)
-    await account.startup()
-
-    // TODO - Clean this up after removing extra serializtion in ILDCP
-    const address = (await ILDCP.fetch(async (data: Buffer) => {
-      const reply = await account.sendIlpPacket(deserializeIlpPrepare(data))
-      return isFulfill(reply) ? serializeIlpFulfill(reply) : serializeIlpReject(reply)
-    })).clientAddress
-
-    this._setOwnAddress(address)
-    this._emitAccount(account, false)
-  }
-
-  private _loadProvider (name: string, definition: AccountServiceProviderDefinition) {
-    const AccountServiceProviderConstructor = loadModuleOfType('account-provider', definition.type)
-    const provider = new AccountServiceProviderConstructor(definition.options || {}, {
-      config: this._config.accounts,
-      store: this._store
-    }) as AccountServiceProvider
-    this._accountProviders.set(name, provider)
-  }
-
-  // TODO - Use default loader for this provider too
-  private _loadPluginsAccountServiceProvider () {
-
-    const accountConfig: { [key: string]: AccountInfo } = {}
-    Object.keys(this._config.accounts).forEach(accountId => {
-      try {
-        const accountInfo = this._config.accounts[accountId]
-        this._config.validateAccount(accountId, accountInfo)
-        accountConfig[accountId] = accountInfo
-      } catch (err) {
-        if (err.name === 'InvalidJsonBodyError') {
-          log.error('validation error in account config. id=%s', accountId)
-          err.debugPrint(log.warn.bind(log))
-          throw new Error('error while adding account, see error log for details.')
-        }
-        throw err
-      }
-    })
-
-    const middleware: string[] = []
-    const disabledMiddlewareConfig: string[] = this._config.disableMiddleware || []
-    for (const name of Object.keys(BUILTIN_ACCOUNT_MIDDLEWARES)) {
-      if (disabledMiddlewareConfig.includes(name)) {
-        continue
-      }
-      middleware.push(name)
-    }
-
-    // TODO - Extract Middleware into a stand-alone module and reference from here
-    // We should pass in Middleware definitions not just types
-    const provider = new PluginAccountServiceProvider({ middleware }, {
-      accounts: accountConfig,
-      createStore: (prefix: string) => {
-        return {
-          get: (key: string) => this._store.get(prefix + key),
-          del: (key: string) => this._store.del(prefix + key),
-          put: (key: string, value: string) => this._store.put(prefix + key, value)
-        }
-      },
-      createLogger: (prefix: string) => createLogger(`plugin-account-service[${prefix}]`)
-    })
-    this._accountProviders.set(PLUGIN_ACCOUNT_PROVIDER, provider)
-  }
-
-  async startup (): Promise<string> {
-    if (!this._processIlpPacket) throw new Error('no processIlpPacketHandler registered')
-
-    return new Promise<string>((resolve) => {
-      if (!this._address) {
-        const setOwnAddress = this._setOwnAddress
-        this._setOwnAddress = (address: string) => {
-          resolve(address)
-          setOwnAddress(address)
-          this._setOwnAddress = setOwnAddress
-        }
       } else {
-        resolve(this._address)
+        throw new UnreachableError('unknown account: ' + accountId)
       }
-      this._accountProviders.forEach(provider => {
-        provider.startup(account => {
-          this._handleNewAccount(account)
-        })
-      })
+    } catch (e) {
+      let err = e
+      if (!err || typeof err !== 'object') {
+        err = new Error('non-object thrown. value=' + e)
+      }
+      if (!err.ilpErrorCode) {
+        err.ilpErrorCode = Errors.codes.F02_UNREACHABLE
+      }
+      err.message = 'failed to send packet: ' + err.message
+      throw err
+    }
+  }
+
+  public sendMoney (amount: string, accountId: string): Promise<void> {
+    const account = this.get(accountId)
+    if (!account) {
+      throw new Error('unable to send money. unknown account: ' + accountId)
+    }
+    return account.sendMoney(amount)
+  }
+
+  public registerCoreIlpPacketHander (handler: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>) {
+    this._coreIlpPacketHander = handler
+  }
+
+  public registerCoreMoneyHander (handler: (amount: string, accountId: string) => Promise<void>) {
+    this._coreMoneyHandler = handler
+  }
+
+  /**
+   * Handle a new account emitted by an account provider.
+   * This function will setup any configured middleware and then attach the middleware
+   *
+   * If there is no address configured then check if this is the parent account we'll get an address from
+   * and if so, return it.
+   *
+   * @param account
+   * @param provider
+   */
+  private async _handleNewAccount (account: Account, provider: AccountProvider): Promise<void> {
+
+    log.debug(`Loading new account: ${account.id} (provider: ${provider})`)
+    const wrapper = await wrapMiddleware(account, this._middlewares)
+    this._accounts.set(account.id, wrapper)
+
+    wrapper.registerIlpPacketHandler((packet: IlpPrepare) => {
+      return this._coreIlpPacketHander(packet, account.id, this.sendIlpPacket.bind(this))
     })
+    wrapper.registerMoneyHandler((amount: string) => {
+      return this._coreMoneyHandler(amount, account.id)
+    })
+
+    this.emit('add', wrapper)
+
+    // TODO - Is there a use case for providers to define a default handler for incoming packets and money?
+    // We accept the provider as a parameter to allow for this in future
+    // The default behaviour now is to pass ther packet or amount to the _coreIlpPacketHandler or _coreMoneyHandler
+    // The default _coreIlpPacketHandler is the Core service
+    // The default _coreMoneyHandler is a no-op
+  }
+
+  /**
+   * During startup we start all of the account providers.
+   */
+  public async startup (): Promise<void> {
+    if (!this._coreIlpPacketHander) throw new Error('no processIlpPacketHandler registered')
+    for (const provider of this._accountProviders) {
+      await provider.startup(async account => {
+        try {
+          await this._handleNewAccount(account, provider)
+        } catch (e) {
+          log.error(`error handling new account: ${account.id}`)
+        }
+      })
+    }
   }
 
   public getOwnAddress () {
     return this._address
   }
 
-  private _setOwnAddress (newAddress: string) {
-    log.trace('setting ilp address. oldAddress=%s newAddress=%s', this._address, newAddress)
-    this._address = newAddress
-    this._pendingAccounts.forEach(account => {
-      this._emitAccount(account, true)
-    })
-    this._pendingAccounts.clear()
+  public setOwnAddress (address: string) {
+    this._address = address
+    this.emit('address', address)
   }
 
-  getChildAddress (accountId: string) {
+  public getChildAddress (accountId: string) {
     const info = this.get(accountId).info
 
     if (info.relation !== 'child') {
@@ -293,33 +168,39 @@ export default class Accounts extends EventEmitter {
   public has (accountId: string) {
     return this._accounts.has(accountId)
   }
-
   public keys () {
     return this._accounts.keys()
   }
 
-  public get (accountId: string): AccountService {
-    const accountService = this._accounts.get(accountId)
-    if (!accountService) {
+  public values () {
+    return this._accounts.values()
+  }
+
+  public get (accountId: string): Account {
+    const account = this._accounts.get(accountId)
+    if (!account) {
       log.error('could not find account service for account id. accountId=%s', accountId)
       throw new Error('unknown account id. accountId=' + accountId)
     }
-    return accountService
+    return account
   }
 
   public async addPlugin (accountId: string, creds: any) {
     log.info('add plugin for account. accountId=%s', accountId)
-    const accountProvider = this._accountProviders.get(PLUGIN_ACCOUNT_PROVIDER) as PluginAccountServiceProvider
-    if (accountProvider) {
-      accountProvider.create(accountId, creds)
-    } else {
-      throw new Error('Can\'t add new plugin. The PluginAccountServiceProvider is not configured')
+    for (const provider of this._accountProviders) {
+      if (provider instanceof PluginAccountProvider) {
+        await provider.create(accountId, creds)
+        return
+      }
     }
+    throw new Error('Can\'t add new plugin. The PluginAccountServiceProvider is not configured')
   }
 
   public async removePlugin (accountId: string) {
     log.info('remove plugin for account. accountId=%s', accountId)
-    // TODO - What should we do here?
+    const account = this.get(accountId)
+    await account.shutdown()
+    this._accounts.delete(accountId)
   }
 
   public getStatus () {
@@ -336,5 +217,9 @@ export default class Accounts extends EventEmitter {
       accounts
     }
   }
+}
 
+function constructProvider (type: string, deps: reduct.Injector): AccountProvider {
+  const AccountServiceProviderConst = loadModuleOfType('account-provider', type)
+  return new AccountServiceProviderConst(deps) as AccountProvider
 }

@@ -1,8 +1,36 @@
-import { AccountInfo } from './accounts'
-import { IlpPrepare, IlpReply, IlpPacketHander } from 'ilp-packet'
+import { EventEmitter } from 'events'
+import { IlpPacketHander } from 'ilp-packet'
 import { MoneyHandler } from './plugin'
 
-export interface AccountService {
+export interface AccountInfo {
+  relation: 'parent' | 'peer' | 'child',
+  assetCode: string,
+  assetScale: number,
+  plugin?: string | { [k: string]: any },
+  balance?: {
+    minimum?: string,
+    maximum: string,
+    settleThreshold?: string,
+    settleTo?: string
+  },
+  maxPacketAmount?: string,
+  throughput?: {
+    refillPeriod?: number,
+    incomingAmount?: string,
+    outgoingAmount?: string
+  },
+  rateLimit?: {
+    refillPeriod?: number,
+    refillCount?: number,
+    capacity?: number
+  },
+  options?: object,
+  sendRoutes?: boolean,
+  receiveRoutes?: boolean,
+  ilpAddressSegment?: string
+}
+
+export default interface Account extends EventEmitter {
   readonly id: string,
   readonly info: AccountInfo,
   startup (): Promise<void>,
@@ -24,7 +52,7 @@ export interface AccountService {
    * Send an ILP prepare to the account entity
    * @param packet An ILP prepare packet
    */
-  sendIlpPacket (packet: IlpPrepare): Promise<IlpReply>,
+  sendIlpPacket: IlpPacketHander,
 
   /**
    * Register a handler for ILP prepare packets coming from the account entity

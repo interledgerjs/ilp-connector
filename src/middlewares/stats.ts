@@ -1,5 +1,5 @@
-import {
-  Middleware,
+import * as reduct from 'reduct'
+import Middleware, {
   MiddlewareCallback,
   MiddlewareServices,
   Pipelines
@@ -7,24 +7,16 @@ import {
 import BigNumber from 'bignumber.js'
 import { IlpPrepare, IlpReply, isFulfill } from 'ilp-packet'
 import Stats from '../services/stats'
-import { AccountInfo } from '../types/accounts'
+import Account, { AccountInfo } from '../types/account'
 
 export default class StatsMiddleware implements Middleware {
   private stats: Stats
 
-  private getInfo: (accountId: string) => AccountInfo
-
-  constructor (opts: {}, { stats, getInfo }: MiddlewareServices) {
-    this.stats = stats
-    this.getInfo = getInfo
+  constructor (opts: {}, deps: reduct.Injector) {
+    this.stats = deps(Stats)
   }
 
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
-    const accountInfo = this.getInfo(accountId)
-    if (!accountInfo) {
-      throw new Error('could not load info for account. accountId=' + accountId)
-    }
-    const account = { accountId, accountInfo }
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
     pipelines.incomingData.insertLast({
       name: 'stats',
       method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {

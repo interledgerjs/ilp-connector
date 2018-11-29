@@ -1,11 +1,12 @@
 import { create as createLogger } from '../common/log'
-import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
-import { IlpPrepare, Errors as IlpPacketErrors, IlpReply } from 'ilp-packet'
-import { TransferTimedOutError } from 'ilp-packet/dist/src/errors'
+import Middleware, { MiddlewareCallback, Pipelines } from '../types/middleware'
+import { IlpPrepare, Errors, IlpReply } from 'ilp-packet'
+import Account from '../types/account'
+const { TransferTimedOutError } = Errors
 const log = createLogger('expire-middleware')
 
 export default class ExpireMiddleware implements Middleware {
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
     pipelines.outgoingData.insertLast({
       name: 'expire',
       method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {

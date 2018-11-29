@@ -1,7 +1,5 @@
 import { randomBytes } from 'crypto'
 import { Errors } from 'ilp-packet'
-import { create as createLogger } from '../common/log'
-const log = createLogger('route-broadcaster')
 import { find } from 'lodash'
 import RoutingTable from './routing-table'
 import ForwardingRoutingTable, { RouteUpdate } from './forwarding-routing-table'
@@ -25,6 +23,9 @@ import {
   CcpRouteControlRequest,
   CcpRouteUpdateRequest
 } from 'ilp-protocol-ccp'
+import Account from '../types/account'
+import { create as createLogger } from '../common/log'
+const log = createLogger('route-broadcaster')
 const { BadRequestError } = Errors
 
 export default class RouteBroadcaster {
@@ -61,12 +62,10 @@ export default class RouteBroadcaster {
     this.localRoutes = new Map()
   }
 
-  // TODO new architecture doesn't require this anymore. as the new account handler calls the tracking of accounts
   start () {
     this.reloadLocalRoutes()
-
-    for (const accountId of this.accounts.keys()) {
-      this.track(accountId)
+    for (const account of this.accounts.values()) {
+      this.track(account)
     }
   }
 
@@ -76,78 +75,74 @@ export default class RouteBroadcaster {
     }
   }
 
-  track (accountId: string) {
-    if (this.untrackCallbacks.has(accountId)) {
+  track (account: Account) {
+    if (this.untrackCallbacks.has(account.id)) {
       // Already tracked
       return
     }
 
-    const accountService = this.accounts.get(accountId)
-
     const connectHandler = () => {
-      if (!accountService.isConnected()) {
+      if (!account.isConnected()) {
         // some plugins don't set `isConnected() = true` before emitting the
         // connect event, setImmediate has a good chance of working.
-        log.error('(!!!) plugin emitted connect, but then returned false for isConnected, broken plugin. account=%s', accountId)
-        setImmediate(() => this.add(accountId))
+        log.error('(!!!) plugin emitted connect, but then returned false for isConnected, broken plugin. account=%s', account.id)
+        setImmediate(() => this.add(account))
       } else {
-        this.add(accountId)
+        this.add(account)
       }
     }
     const disconnectHandler = () => {
-      this.remove(accountId)
+      this.remove(account.id)
     }
 
-    accountService.on('connect', connectHandler.bind(this))
-    accountService.on('disconnect', disconnectHandler.bind(this))
+    account.on('connect', connectHandler.bind(this))
+    account.on('disconnect', disconnectHandler.bind(this))
 
-    this.untrackCallbacks.set(accountId, () => {
-      accountService.removeListener('connect', connectHandler)
-      accountService.removeListener('disconnect', disconnectHandler)
+    this.untrackCallbacks.set(account.id, () => {
+      account.removeListener('connect', connectHandler)
+      account.removeListener('disconnect', disconnectHandler)
     })
 
-    this.add(accountId)
+    this.add(account)
   }
 
-  untrack (accountId: string) {
-    this.remove(accountId)
+  untrack (account: Account) {
+    this.remove(account.id)
 
-    const callback = this.untrackCallbacks.get(accountId)
+    const callback = this.untrackCallbacks.get(account.id)
 
     if (callback) {
       callback()
     }
 
-    this.untrackCallbacks.delete(accountId)
+    this.untrackCallbacks.delete(account.id)
   }
 
-  add (accountId: string) {
-    const accountInfo = this.accounts.get(accountId).info
-
+  add (account: Account) {
     let sendRoutes
-    if (typeof accountInfo.sendRoutes === 'boolean') {
-      sendRoutes = accountInfo.sendRoutes
-    } else if (accountInfo.relation !== 'child') {
+    if (typeof account.info.sendRoutes === 'boolean') {
+      sendRoutes = account.info.sendRoutes
+    } else if (account.info.relation !== 'child') {
       sendRoutes = true
     } else {
       sendRoutes = false
     }
 
     let receiveRoutes
-    if (typeof accountInfo.receiveRoutes === 'boolean') {
-      receiveRoutes = accountInfo.receiveRoutes
-    } else if (accountInfo.relation !== 'child') {
+    if (typeof account.info.receiveRoutes === 'boolean') {
+      receiveRoutes = account.info.receiveRoutes
+    } else if (account.info.relation !== 'child') {
       receiveRoutes = true
     } else {
       receiveRoutes = false
     }
 
     if (!sendRoutes && !receiveRoutes) {
-      log.warn('not sending/receiving routes for peer, set sendRoutes/receiveRoutes to override. accountId=%s', accountId)
+      log.warn('not sending/receiving routes for peer, set sendRoutes/receiveRoutes to override. accountId=%s', account.id)
       return
     }
 
-    const existingPeer = this.peers.get(accountId)
+    const existingPeer = this.peers.get(account.id)
     if (existingPeer) {
       // Every time we reconnect, we'll send a new route control message to make
       // sure they are still sending us routes.
@@ -162,12 +157,10 @@ export default class RouteBroadcaster {
       return
     }
 
-    const accountService = this.accounts.get(accountId)
-
-    if (accountService.isConnected()) {
-      log.trace('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', accountId, sendRoutes, receiveRoutes)
-      const peer = new Peer({ deps: this.deps, accountId, sendRoutes, receiveRoutes })
-      this.peers.set(accountId, peer)
+    if (account.isConnected()) {
+      log.trace('add peer. accountId=%s sendRoutes=%s receiveRoutes=%s', account.id, sendRoutes, receiveRoutes)
+      const peer = new Peer({ deps: this.deps, accountId: account.id, sendRoutes, receiveRoutes })
+      this.peers.set(account.id, peer)
       const receiver = peer.getReceiver()
       if (receiver) {
         receiver.sendRouteControl()
@@ -337,6 +330,7 @@ export default class RouteBroadcaster {
           auth: hmac(this.routingSecret, prefix)
         }
       } else {
+        // console.log(this.accounts)
         log.warn('ignoring configured route, account does not exist. prefix=%s accountId=%s', configuredRoute.targetPrefix, configuredRoute.peerId)
       }
     }

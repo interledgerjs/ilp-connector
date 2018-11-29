@@ -1,10 +1,10 @@
 import InvalidJsonBodyError from '../errors/invalid-json-body-error'
 import { constantCase } from 'change-case'
-import { create as createLogger } from '../common/log'
 import { Config as ConfigSchemaTyping } from '../schemas/Config'
+import Ajv = require('ajv')
+import { create as createLogger } from '../common/log'
 const log = createLogger('config')
 const schema = require('../schemas/Config.json')
-import Ajv = require('ajv')
 
 const ajv = new Ajv()
 
@@ -27,6 +27,7 @@ export default class Config extends ConfigSchemaTyping {
   //   the defaults from the schema, so these *will* always be set. These
   //   declarations make TypeScript happy.
   public profile!: ConfigProfile
+  public 'accountProviders'!: string[]
   public store!: string
   public quoteExpiry!: number
   public routeExpiry!: number

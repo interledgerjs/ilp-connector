@@ -1,35 +1,28 @@
-import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
+import Middleware, { MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
 import TokenBucket from '../lib/token-bucket'
 import { IlpPrepare, IlpReply, Errors } from 'ilp-packet'
 import createLogger from 'ilp-logger'
-import { AccountInfo } from '../../../ilp-account-service/build'
+import Account, { AccountInfo } from '../types/account'
 const log = createLogger('throughput-middleware')
 const { InsufficientLiquidityError } = Errors
 const DEFAULT_REFILL_PERIOD = 1000 // 1 second
 
 export default class ThroughputMiddleware implements Middleware {
-  private getInfo: (accountId: string) => AccountInfo
 
-  constructor (opts: {}, { getInfo }: MiddlewareServices) {
-    this.getInfo = getInfo
-  }
-
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
-    const accountInfo = this.getInfo(accountId)
-    const account = { accountId, accountInfo }
-    if (accountInfo.throughput) {
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
+    if (account.info.throughput) {
       const {
         refillPeriod = DEFAULT_REFILL_PERIOD,
         incomingAmount = false,
         outgoingAmount = false
-      } = accountInfo.throughput || {}
+      } = account.info.throughput || {}
 
       if (incomingAmount) {
         // TODO: When we add the ability to update middleware, our state will get
         //   reset every update, which may not be desired.
         const incomingBucket = new TokenBucket({ refillPeriod, refillCount: Number(incomingAmount) })
         log.trace('created incoming amount limit token bucket for account. accountId=%s refillPeriod=%s incomingAmount=%s',
-          accountId, refillPeriod, incomingAmount)
+          account.id, refillPeriod, incomingAmount)
 
         pipelines.incomingData.insertLast({
           name: 'throughput',
@@ -51,7 +44,7 @@ export default class ThroughputMiddleware implements Middleware {
         //   reset every update, which may not be desired.
         const incomingBucket = new TokenBucket({ refillPeriod, refillCount: Number(outgoingAmount) })
         log.trace('created outgoing amount limit token bucket for account. accountId=%s refillPeriod=%s outgoingAmount=%s',
-          accountId, refillPeriod, outgoingAmount)
+          account.id, refillPeriod, outgoingAmount)
 
         pipelines.outgoingData.insertLast({
           name: 'throughput',
