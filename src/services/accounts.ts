@@ -88,11 +88,11 @@ export default class Accounts extends EventEmitter {
     return account.sendMoney(amount)
   }
 
-  public registerCoreIlpPacketHander (handler: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>) {
+  public registerCoreIlpPacketHandler (handler: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>) {
     this._coreIlpPacketHander = handler
   }
 
-  public registerCoreMoneyHander (handler: (amount: string, accountId: string) => Promise<void>) {
+  public registerCoreMoneyHandler (handler: (amount: string, accountId: string) => Promise<void>) {
     this._coreMoneyHandler = handler
   }
 
