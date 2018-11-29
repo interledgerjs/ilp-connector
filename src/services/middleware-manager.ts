@@ -28,6 +28,9 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   },
   expire: {
     type: 'expire'
+  },
+  validateFulfillment: {
+    type: 'validate-fulfillment'
   }
 }
 

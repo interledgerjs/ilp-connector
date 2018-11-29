@@ -118,7 +118,7 @@ describe('IlpPrepareController', function () {
     const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
     assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-    assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
+    assert.deepStrictEqual(IlpPacket.deserializeIlpReply(result), {
       code: 'F05',
       message: 'fulfillment did not match expected value.',
       triggeredBy: 'test.connie',
