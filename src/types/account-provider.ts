@@ -2,7 +2,7 @@ import reduct = require('reduct')
 import Account from './account'
 
 export interface AccountProviderConstructor {
-  new (deps: reduct.Injector): AccountProvider
+  new (deps: reduct.Injector, opts?: object): AccountProvider
 }
 
 export interface AccountProviderDefinition {

@@ -66,7 +66,8 @@
     "riverpig": "^1.1.4",
     "sax": "^1.2.4",
     "source-map-support": "^0.5.9",
-    "through2": "^3.0.0"
+    "through2": "^3.0.0",
+    "ws": "^6.1.2"
   },
   "devDependencies": {
     "@commitlint/cli": "^7.2.1",
