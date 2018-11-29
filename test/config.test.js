@@ -215,5 +215,53 @@ describe('Config', function () {
           .to.deep.equal(accountCredentials)
       })
     })
+
+    describe('connector profiles', () => {
+      beforeEach(() => {
+        process.env.CONNECTOR_PROFILE = 'plugin'
+      })
+
+      describe('plugin mode', () => {
+        it('fails if no parent configured', () => {
+          const accountCredentialsEnv = {
+            'cad-ledger': {
+              relation: 'peer',
+              assetCode: 'CAD',
+              assetScale: 9,
+              plugin: 'ilp-plugin-mock',
+              options: {
+                account: 'http://cad-ledger.example:1000/accounts/mark',
+                username: 'mark',
+                password: 'mark'
+              }
+            }
+          }
+
+          process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
+          const config = new Config()
+          assert.throws(config.loadFromEnv.bind(config), Error, 'Connector profile of plugin mode requires a parent to be set for uplink')
+        })
+
+        it('succeeds if parent configured', () => {
+          const accountCredentialsEnv = {
+            'cad-ledger': {
+              relation: 'parent',
+              assetCode: 'CAD',
+              assetScale: 9,
+              plugin: 'ilp-plugin-mock',
+              options: {
+                account: 'http://cad-ledger.example:1000/accounts/mark',
+                username: 'mark',
+                password: 'mark'
+              }
+            }
+          }
+
+          process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
+          const config = new Config()
+          config.loadFromEnv()
+        })
+      })
+    })
   })
 })

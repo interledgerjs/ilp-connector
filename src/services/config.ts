@@ -97,6 +97,7 @@ export default class Config extends ConfigSchemaTyping {
 
     const profile = config['profile'] || 'connector' as ConfigProfile
     Object.assign(this, extractDefaultsFromSchema(profile, schema), config)
+    this.validateProfile()
   }
 
   loadFromOpts (opts: object) {
@@ -104,6 +105,7 @@ export default class Config extends ConfigSchemaTyping {
 
     const profile = opts['profile'] || 'connector' as ConfigProfile
     Object.assign(this, extractDefaultsFromSchema(profile, schema), opts)
+    this.validateProfile()
   }
 
   validate (config: object) {
@@ -112,6 +114,16 @@ export default class Config extends ConfigSchemaTyping {
         ? this._validate.errors[0]
         : { message: 'unknown validation error', dataPath: '' }
       throw new InvalidJsonBodyError('config failed to validate. error=' + firstError.message + ' dataPath=' + firstError.dataPath, this._validate.errors || [])
+    }
+  }
+
+  // TODO - remove in future, this is just a way to check if profile configs are being dealt with correctly.
+  validateProfile () {
+    switch (this.profile) {
+      case 'plugin':
+        if (!hasParentAccount(this.accounts)) {
+          throw new InvalidJsonBodyError('Connector profile of plugin mode requires a parent to be set for uplink',[])
+        }
     }
   }
 
@@ -144,4 +156,12 @@ export const extractDefaultsFromSchema = (profile: ConfigProfile, schema: any, p
     default:
       throw new Error('No default found for schema path: ' + path)
   }
+}
+
+const hasParentAccount = (accounts: any): boolean => {
+  const accs = Object.entries(accounts)
+  let parent = accs.filter((account: object) => {
+    return account[1].relation === 'parent'
+  })
+  return parent.length === 1
 }

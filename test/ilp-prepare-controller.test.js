@@ -86,15 +86,14 @@ describe('IlpPrepareController', function () {
       destination: 'mock.test2.bob',
       data: Buffer.alloc(0)
     })
-    const fulfillPacket = {
+    const fulfillPacket = IlpPacket.serializeIlpFulfill({
       fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
       data: Buffer.alloc(0)
-    }
+    })
 
-    sinon.stub(this.mockAccountService2, 'sendIlpPacket').resolves(fulfillPacket)
+    sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
     const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
-    console.log(IlpPacket.deserializeIlpPacket(result))
-    assert.strictEqual(result.toString('hex'), IlpPacket.serializeIlpFulfill(fulfillPacket).toString('hex'))
+    assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
   })
 
   it('should reject when given an invalid fulfillment', async function () {
