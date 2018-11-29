@@ -12,7 +12,7 @@ import {
 import { create as createLogger } from '../common/log'
 import Middleware from '../types/middleware'
 import Account from '../types/account'
-import AccountProvider, { AccountProviderConstructor } from '../types/account-provider'
+import AccountProvider from '../types/account-provider'
 import PluginAccountProvider from '../account-providers/plugin'
 import { constructMiddlewares, wrapMiddleware } from '../lib/middleware'
 const { UnreachableError } = Errors
@@ -46,6 +46,19 @@ export default class Accounts extends EventEmitter {
 
     this._coreMoneyHandler = (amount: string, accountId: string) => {
       throw new UnreachableError('no core money handler configured.')
+    }
+  }
+
+  private getAccountMiddleware (account: Account) {
+    switch (this._config.profile){
+      case 'connector':
+      case 'cluster':
+        return this._middlewares
+      case 'plugin':
+      case 'server':
+        return account.info.relation === 'parent' ? {} : this._middlewares
+      default:
+        throw new Error(`Can\'t get account middlewares for accountId=${account.id}. Unknown configuration profile: ${this._config.profile}`)
     }
   }
 
@@ -88,11 +101,11 @@ export default class Accounts extends EventEmitter {
     return account.sendMoney(amount)
   }
 
-  public registerCoreIlpPacketHander (handler: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>) {
+  public registerCoreIlpPacketHandler (handler: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>) {
     this._coreIlpPacketHander = handler
   }
 
-  public registerCoreMoneyHander (handler: (amount: string, accountId: string) => Promise<void>) {
+  public registerCoreMoneyHandler (handler: (amount: string, accountId: string) => Promise<void>) {
     this._coreMoneyHandler = handler
   }
 
@@ -109,7 +122,8 @@ export default class Accounts extends EventEmitter {
   private async _handleNewAccount (account: Account, provider: AccountProvider): Promise<void> {
 
     log.debug(`Loading new account: ${account.id} (provider: ${provider})`)
-    const wrapper = await wrapMiddleware(account, this._middlewares)
+    const middleware = this.getAccountMiddleware(account)
+    const wrapper = await wrapMiddleware(account, middleware)
     this._accounts.set(account.id, wrapper)
 
     wrapper.registerIlpPacketHandler((packet: IlpPrepare) => {

@@ -152,8 +152,8 @@ export default function createApp (opts?: object, container?: Injector) {
 
   accounts.setup(deps)
   // TODO - Different behaviour for plugin profile
-  accounts.registerCoreIlpPacketHander(core.processIlpPacket.bind(core))
-  accounts.registerCoreMoneyHander(async () => { return })
+  accounts.registerCoreIlpPacketHandler(core.processIlpPacket.bind(core))
+  accounts.registerCoreMoneyHandler(async () => { return })
 
   accounts.on('add', async (account: Account) => {
 
@@ -171,12 +171,16 @@ export default function createApp (opts?: object, container?: Injector) {
           })).clientAddress
 
           accounts.setOwnAddress(address)
+          routeBroadcaster.track(account)
+          routeBroadcaster.reloadLocalRoutes()
+
+          // Start pending accounts that were held back waiting for the parent
           for (const pendingAccount of pendingAccounts) {
             await pendingAccount.startup()
             routeBroadcaster.track(pendingAccount)
+            routeBroadcaster.reloadLocalRoutes()
           }
           pendingAccounts.clear()
-          routeBroadcaster.reloadLocalRoutes()
         }
       } else {
         // Don't start this account up yet
