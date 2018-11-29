@@ -1,17 +1,16 @@
-import { AccountInfo } from '../types/accounts'
+import Account , { AccountInfo } from '../types/account'
 import { PluginInstance } from '../types/plugin'
-import { AccountService } from '../types/account-service'
-import { AccountServiceBase } from './base'
+import { AccountBase } from './base'
 import { serializeIlpPrepare, deserializeIlpPrepare, deserializeIlpPacket, IlpReply, serializeIlpReply } from 'ilp-packet'
-import createLogger from 'ilp-logger'
+import { create as createLogger } from '../common/log'
 const log = createLogger('plugin-account-service')
 
-export default class PluginAccountService extends AccountServiceBase implements AccountService {
+export default class PluginAccount extends AccountBase implements Account {
 
   protected _plugin: PluginInstance
 
-  constructor (accountId: string, accountInfo: AccountInfo, plugin: PluginInstance, middlewares: string[]) {
-    super(accountId, accountInfo, middlewares)
+  constructor (accountId: string, accountInfo: AccountInfo, plugin: PluginInstance) {
+    super(accountId, accountInfo)
     this._plugin = plugin
     this._plugin.on('connect', this.emit.bind(this, 'connect'))
     this._plugin.on('disconnect', this.emit.bind(this, 'disconnect'))
@@ -23,13 +22,6 @@ export default class PluginAccountService extends AccountServiceBase implements 
       return this._plugin.sendMoney(amount)
     }
 
-  }
-
-  async sendMoney (amount: string): Promise<void> {
-    if (this._outgoingMoneyHandler) {
-      return this._outgoingMoneyHandler(amount)
-    }
-    throw new Error('No handler defined for outgoing packets. _outgoingMoneyHandler must be set before startup.')
   }
 
   protected async _startup () {

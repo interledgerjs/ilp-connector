@@ -23,7 +23,7 @@ describe('AdminApi', function () {
     this.accountData = Object.assign({}, require('./data/accountCredentials.json'))
     Object.keys(this.accountData).forEach((accountId) => {
       this.accountData[accountId] = Object.assign({
-        balance: {maximum: '1000'}
+        balance: { maximum: '1000' }
       }, this.accountData[accountId])
     })
     process.env.DEBUG = '*'
@@ -32,10 +32,11 @@ describe('AdminApi', function () {
     appHelper.create(this)
     this.clock = sinon.useFakeTimers(START_DATE)
 
+    this.accounts.setOwnAddress(this.config.ilpAddress)
     await this.accounts.startup()
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger', 'test.cny-ledger']
     for (let accountId of testAccounts) {
-      await this.accounts.getAccountService(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.get(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: accountId,
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 1,
@@ -57,8 +58,8 @@ describe('AdminApi', function () {
   })
 
   beforeEach(async function () {
-    this.mockAccountService1 = this.accounts.getAccountService('test.usd-ledger')
-    this.mockAccountService2 = this.accounts.getAccountService('test.eur-ledger')
+    this.mockAccountService1 = this.accounts.get('test.usd-ledger')
+    this.mockAccountService2 = this.accounts.get('test.eur-ledger')
 
     const preparePacket = {
       amount: '100',
@@ -74,6 +75,7 @@ describe('AdminApi', function () {
 
     const stub = sinon.stub(this.mockAccountService2, 'sendIlpPacket').resolves(fulfillPacket)
     const result = await this.mockAccountService1.getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
+    console.log(result)
     assert.strictEqual(IlpPacket.deserializeIlpFulfill(result).fulfillment.toString('hex'), fulfillPacket.fulfillment.toString('hex'))
     stub.restore()
   })

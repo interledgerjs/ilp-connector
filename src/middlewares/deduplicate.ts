@@ -1,6 +1,7 @@
+import Account from '../types/account'
 import { createHash } from 'crypto'
 import { IlpPrepare, IlpReply } from 'ilp-packet'
-import { Middleware, MiddlewareCallback, Pipelines } from '../types/middleware'
+import Middleware, { MiddlewareCallback, Pipelines } from '../types/middleware'
 import BigNumber from 'bignumber.js'
 
 // Where in the ILP packet does the static data begin (i.e. the data that is not modified hop-to-hop)
@@ -19,7 +20,7 @@ interface CachedPacket {
 export default class DeduplicateMiddleware implements Middleware {
   private packetCache: Map<string, CachedPacket> = new Map()
 
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
     let interval: NodeJS.Timeout
     pipelines.startup.insertLast({
       name: 'deduplicate',

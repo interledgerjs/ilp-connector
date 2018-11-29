@@ -1,9 +1,11 @@
-import { Middleware, MiddlewareCallback, MiddlewareServices, Pipelines } from '../types/middleware'
-import { AccountInfo } from '../types/accounts'
+import * as reduct from 'reduct'
+import Middleware, { MiddlewareCallback, Pipelines } from '../types/middleware'
+import Account from '../types/account'
 import BigNumber from 'bignumber.js'
 import { IlpPrepare, Errors, IlpReply, isFulfill } from 'ilp-packet'
 import Stats from '../services/stats'
 import createLogger from 'ilp-logger'
+import Accounts from '../services/accounts'
 const log = createLogger('balance-middleware')
 const { InsufficientLiquidityError } = Errors
 
@@ -62,43 +64,39 @@ class Balance {
 
 export default class BalanceMiddleware implements Middleware {
   private stats: Stats
-  private getInfo: (accountId: string) => AccountInfo
   private sendMoney: (amount: string, accountId: string) => Promise<void>
   private balances: Map<string, Balance> = new Map()
 
-  constructor (opts: {}, { getInfo, sendMoney, stats }: MiddlewareServices) {
-    this.getInfo = getInfo
-    this.sendMoney = sendMoney
-    this.stats = stats
+  constructor (opts: {}, deps: reduct.Injector) {
+    const accounts = deps(Accounts)
+    this.sendMoney = (amount: string, accountId: string) => {
+      return accounts.sendMoney(amount, accountId)
+    }
+    this.stats = deps(Stats)
   }
 
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
-    const accountInfo = this.getInfo(accountId)
-    if (!accountInfo) {
-      throw new Error('could not load info for account. accountId=' + accountId)
-    }
-    const account = { accountId, accountInfo }
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
 
-    if (accountInfo.balance) {
+    if (account.info.balance) {
       const {
         minimum = '-Infinity',
         maximum
-      } = accountInfo.balance
+      } = account.info.balance
 
       const balance = new Balance({
         minimum: new BigNumber(minimum),
         maximum: new BigNumber(maximum)
       })
-      this.balances.set(accountId, balance)
+      this.balances.set(account.id, balance)
 
-      log.info('initializing balance for account. accountId=%s minimumBalance=%s maximumBalance=%s', accountId, minimum, maximum)
+      log.info('initializing balance for account. account.id=%s minimumBalance=%s maximumBalance=%s', account.id, minimum, maximum)
 
       pipelines.startup.insertLast({
         name: 'balance',
         method: async (dummy: void, next: MiddlewareCallback<void, void>) => {
           // When starting up, check if we need to pre-fund / settle
           // tslint:disable-next-line:no-floating-promises
-          this.maybeSettle(accountId)
+          this.maybeSettle(account)
 
           this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
           return next(dummy)
@@ -116,7 +114,8 @@ export default class BalanceMiddleware implements Middleware {
 
           // Increase balance on prepare
           balance.add(amount)
-          log.info('balance increased due to incoming ilp prepare. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+          log.info('balance increased due to incoming ilp prepare. account.id=%s amount=%s newBalance=%s',
+            account.id, amount, balance.getValue())
           this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
 
           let result
@@ -125,19 +124,21 @@ export default class BalanceMiddleware implements Middleware {
           } catch (err) {
             // Refund on error
             balance.subtract(amount)
-            log.info('incoming packet refunded due to error. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+            log.info('incoming packet refunded due to error. account.id=%s amount=%s newBalance=%s',
+              account.id, amount, balance.getValue())
             this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
             this.stats.incomingDataPacketValue.increment(account, { result : 'failed' }, + amount)
             throw err
           }
 
           if (isFulfill(result)) {
-            this.maybeSettle(accountId).catch(log.error)
+            this.maybeSettle(account).catch(log.error)
             this.stats.incomingDataPacketValue.increment(account, { result : 'fulfilled' }, + amount)
           } else {
             // Refund on reject
             balance.subtract(amount)
-            log.info('incoming packet refunded due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+            log.info('incoming packet refunded due to ilp reject. account.id=%s amount=%s newBalance=%s',
+              account.id, amount, balance.getValue())
             this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
             this.stats.incomingDataPacketValue.increment(account, { result : 'rejected' }, + amount)
           }
@@ -150,7 +151,8 @@ export default class BalanceMiddleware implements Middleware {
         name: 'balance',
         method: (amount: string, next: MiddlewareCallback<string, void>) => {
           balance.subtract(amount)
-          log.info('balance reduced due to incoming settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+          log.info('balance reduced due to incoming settlement. account.id=%s amount=%s newBalance=%s',
+          account.id, amount, balance.getValue())
           this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
           return next(amount)
         }
@@ -173,7 +175,7 @@ export default class BalanceMiddleware implements Middleware {
           try {
             result = await next(packet)
           } catch (err) {
-            log.error('outgoing packet not applied due to error. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+            log.error('outgoing packet not applied due to error. account.id=%s amount=%s newBalance=%s', account.id, amount, balance.getValue())
             this.stats.outgoingDataPacketValue.increment(account, { result : 'failed' }, + amount)
             throw err
           }
@@ -181,12 +183,12 @@ export default class BalanceMiddleware implements Middleware {
           if (isFulfill(result)) {
             // Decrease balance on prepare
             balance.subtract(amount)
-            this.maybeSettle(accountId).catch(log.error)
-            log.info('balance decreased due to outgoing ilp fulfill. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+            this.maybeSettle(account).catch(log.error)
+            log.info('balance decreased due to outgoing ilp fulfill. account.id=%s amount=%s newBalance=%s', account.id, amount, balance.getValue())
             this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
             this.stats.outgoingDataPacketValue.increment(account, { result : 'fulfilled' }, + amount)
           } else {
-            log.info('outgoing packet not applied due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+            log.info('outgoing packet not applied due to ilp reject. account.id=%s amount=%s newBalance=%s', account.id, amount, balance.getValue())
             this.stats.outgoingDataPacketValue.increment(account, { result : 'rejected' }, + amount)
           }
 
@@ -198,14 +200,14 @@ export default class BalanceMiddleware implements Middleware {
         name: 'balance',
         method: (amount: string, next: MiddlewareCallback<string, void>) => {
           balance.add(amount)
-          log.info('balance increased due to outgoing settlement. accountId=%s amount=%s newBalance=%s', accountId, amount, balance.getValue())
+          log.info('balance increased due to outgoing settlement. account.id=%s amount=%s newBalance=%s', account.id, amount, balance.getValue())
           this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
 
           return next(amount)
         }
       })
     } else {
-      log.info('(!!!) balance middleware NOT enabled for account, this account can spend UNLIMITED funds. accountId=%s', accountId)
+      log.info('(!!!) balance middleware NOT enabled for account, this account can spend UNLIMITED funds. account.id=%s', account.id)
     }
   }
 
@@ -217,57 +219,47 @@ export default class BalanceMiddleware implements Middleware {
     return { accounts }
   }
 
-  private _getBalance (accountId: string): Balance {
-    const balance = this.balances.get(accountId)
+  private _getBalance (account: Account): Balance {
+    const balance = this.balances.get(account.id)
     if (!balance) {
-      throw new Error('account not found. accountId=' + accountId)
+      throw new Error('account not found. account.id=' + account.id)
     }
     return balance
   }
 
-  modifyBalance (accountId: string, _amountDiff: BigNumber.Value): BigNumber {
+  modifyBalance (account: Account, _amountDiff: BigNumber.Value): BigNumber {
     const amountDiff = new BigNumber(_amountDiff)
-    const accountInfo = this.getInfo(accountId)
-    if (!accountInfo) {
-      throw new Error('could not load info for account. accountId=' + accountId)
-    }
-    const account = { accountId, accountInfo }
-    const balance = this._getBalance(accountId)
-    log.info('modifying balance accountId=%s amount=%s', accountId, amountDiff.toString())
+    const balance = this._getBalance(account)
+    log.info('modifying balance account.id=%s amount=%s', account.id, amountDiff.toString())
     if (amountDiff.isPositive()) {
       balance.add(amountDiff)
     } else {
       balance.subtract(amountDiff.negated())
-      this.maybeSettle(accountId).catch(log.error)
+      this.maybeSettle(account).catch(log.error)
     }
     this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
     return balance.getValue()
   }
 
-  private async maybeSettle (accountId: string): Promise<void> {
-    const accountInfo = this.getInfo(accountId)
-    if (!accountInfo) {
-      throw new Error('could not load info for account. accountId=' + accountId)
-    }
-    const account = { accountId, accountInfo }
-    const { settleThreshold, settleTo = '0' } = accountInfo.balance!
+  private async maybeSettle (account: Account): Promise<void> {
+    const { settleThreshold, settleTo = '0' } = account.info.balance!
     const bnSettleThreshold = settleThreshold ? new BigNumber(settleThreshold) : undefined
     const bnSettleTo = new BigNumber(settleTo)
-    const balance = this._getBalance(accountId)
+    const balance = this._getBalance(account)
 
     const settle = bnSettleThreshold && bnSettleThreshold.gt(balance.getValue())
     if (!settle) return
 
     const settleAmount = bnSettleTo.minus(balance.getValue())
-    log.info('settlement triggered. accountId=%s balance=%s settleAmount=%s', accountId, balance.getValue(), settleAmount)
+    log.info('settlement triggered. account.id=%s balance=%s settleAmount=%s', account.id, balance.getValue(), settleAmount)
 
-    await this.sendMoney(settleAmount.toString(), accountId)
+    await this.sendMoney(settleAmount.toString(), account.id)
       .catch(e => {
         let err = e
         if (!err || typeof err !== 'object') {
           err = new Error('Non-object thrown: ' + e)
         }
-        log.error('error occurred during settlement. accountId=%s settleAmount=%s errInfo=%s', accountId, settleAmount, err.stack ? err.stack : err)
+        log.error('error occurred during settlement. account.id=%s settleAmount=%s errInfo=%s', account.id, settleAmount, err.stack ? err.stack : err)
       })
   }
 }

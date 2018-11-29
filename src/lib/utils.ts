@@ -1,6 +1,5 @@
 import { createHash, randomBytes, createHmac } from 'crypto'
 import { resolve } from 'path'
-import { MiddlewareMethod } from '../types/middleware'
 
 export const sha256 = (preimage: Buffer) => {
   return createHash('sha256').update(preimage).digest()
@@ -42,26 +41,6 @@ export const loadModuleOfType = (type: string, name: string) => {
     return loadedModule
   } else {
     throw new TypeError(`${type} does not export a constructor. module=${module}`)
-  }
-}
-
-export function composeMiddleware<T, U> (
-  middleware: MiddlewareMethod<T, U>[]
-): MiddlewareMethod<T, U> {
-  return function (val: T, next: MiddlewareMethod<T, U>) {
-    // last called middleware #
-    let index = -1
-    return dispatch(0, val)
-    async function dispatch (i: number, val: T): Promise<U> {
-      if (i <= index) {
-        throw new Error('next() called multiple times.')
-      }
-      index = i
-      const fn = (i === middleware.length) ? next : middleware[i]
-      return fn(val, function next (val: T) {
-        return dispatch(i + 1, val)
-      })
-    }
   }
 }
 

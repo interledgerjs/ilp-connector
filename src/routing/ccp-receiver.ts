@@ -1,5 +1,5 @@
 import PrefixMap from './prefix-map'
-import { AccountService } from '../types/account-service'
+import Account from '../types/account'
 import { IncomingRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
 import { deserializeIlpPrepare, IlpReply, isFulfill } from 'ilp-packet'
@@ -11,13 +11,13 @@ import {
 } from 'ilp-protocol-ccp'
 
 export interface CcpReceiverOpts {
-  account: AccountService
+  account: Account
 }
 
 const ROUTE_CONTROL_RETRY_INTERVAL = 30000
 
 export default class CcpReceiver {
-  private account: AccountService
+  private account: Account
   private log: ConnectorLogger
   private routes: PrefixMap<IncomingRoute>
   private expiry: number = 0

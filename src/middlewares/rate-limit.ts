@@ -1,40 +1,37 @@
+import * as reduct from 'reduct'
 import { IlpPrepare, IlpReply, Errors } from 'ilp-packet'
-import createLogger from 'ilp-logger'
-const log = createLogger('rate-limit-middleware')
-import {
-  Middleware,
+import Middleware, {
   MiddlewareCallback,
   MiddlewareServices,
   Pipelines
 } from '../types/middleware'
 import TokenBucket from '../lib/token-bucket'
 import Stats from '../services/stats'
-import { AccountInfo } from '../../../ilp-account-service/build'
+import Account, { AccountInfo } from '../types/account'
+import createLogger from 'ilp-logger'
+const log = createLogger('rate-limit-middleware')
 const { RateLimitedError } = Errors
+
 const DEFAULT_REFILL_PERIOD = 60 * 1000 // 1 minute
 const DEFAULT_REFILL_COUNT = 10000
 const DEFAULT_CAPACITY = 10000
 
 export default class RateLimitMiddleware implements Middleware {
-  private getInfo: (accountId: string) => AccountInfo
   private stats: Stats
 
-  constructor (opts: {}, { getInfo, stats }: MiddlewareServices) {
-    this.getInfo = getInfo
-    this.stats = stats
+  constructor (opts: {}, deps: reduct.Injector) {
+    this.stats = deps(Stats)
   }
 
-  async applyToPipelines (pipelines: Pipelines, accountId: string) {
-    const accountInfo = this.getInfo(accountId)
-    const account = { accountId, accountInfo }
+  async applyToPipelines (pipelines: Pipelines, account: Account) {
     const {
       refillPeriod = DEFAULT_REFILL_PERIOD,
       refillCount = DEFAULT_REFILL_COUNT,
       capacity = DEFAULT_CAPACITY
-    } = accountInfo.rateLimit || {}
+    } = account.info.rateLimit || {}
 
     log.trace('created token bucket for account. accountId=%s refillPeriod=%s refillCount=%s capacity=%s',
-      accountId, refillPeriod, refillCount, capacity)
+      account.id, refillPeriod, refillCount, capacity)
 
     // TODO: When we add the ability to update middleware, our state will get
     //   reset every update, which may not be desired.

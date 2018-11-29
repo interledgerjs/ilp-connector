@@ -1,4 +1,5 @@
-import { AccountInfo } from './accounts'
+import * as reduct from 'reduct'
+import Account, { AccountInfo } from './account'
 import { IlpPacket, IlpReply, IlpPrepare } from 'ilp-packet'
 import Stats from '../services/stats'
 import Config from '../services/config'
@@ -13,7 +14,7 @@ export interface MiddlewareServices {
   stats: Stats,
   getInfo (accountId: string): AccountInfo
   getOwnAddress (): string
-  sendMoney (amount: string): Promise<void>
+  sendMoney (amount: string, accountId: string): Promise<void>
 }
 
 export interface MiddlewareCallback<T,U> {
@@ -51,10 +52,10 @@ export interface Pipelines {
   readonly shutdown: Pipeline<void, void>
 }
 
-export interface Middleware {
-  applyToPipelines: (pipelines: Pipelines, accountId: string) => Promise<void>
+export default interface Middleware {
+  applyToPipelines: (pipelines: Pipelines, account: Account) => Promise<void>
 }
 
 export interface MiddlewareConstructor {
-  new (options: object, api: MiddlewareServices): Middleware
+  new (options: object, deps: reduct.Injector): Middleware
 }

@@ -1,5 +1,5 @@
-import { AccountService } from '../types/account-service'
 import ForwardingRoutingTable, { RouteUpdate } from '../services/forwarding-routing-table'
+import Account from '../types/account'
 import { BroadcastRoute } from '../types/routing'
 import { create as createLogger, ConnectorLogger } from '../common/log'
 import { Relation } from './relation'
@@ -13,7 +13,7 @@ import {
 import { deserializeIlpPrepare } from 'ilp-packet'
 
 export interface CcpSenderOpts {
-  account: AccountService
+  account: Account
   forwardingRoutingTable: ForwardingRoutingTable
   getOwnAddress: () => string
   getAccountRelation: (accountId: string) => Relation
@@ -26,7 +26,7 @@ const MINIMUM_UPDATE_INTERVAL = 150
 const MAX_EPOCHS_PER_UPDATE = 50
 
 export default class CcpSender {
-  private account: AccountService
+  private account: Account
   private forwardingRoutingTable: ForwardingRoutingTable
   private log: ConnectorLogger
   private mode: Mode = Mode.MODE_IDLE

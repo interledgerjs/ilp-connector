@@ -3,7 +3,6 @@ import Ajv = require('ajv')
 import { mapValues as pluck } from 'lodash'
 import Accounts from './accounts'
 import Config from './config'
-import AlertMiddleware from '../middlewares/alert'
 import RoutingTable from './routing-table'
 import RouteBroadcaster from './route-broadcaster'
 import Stats from './stats'
@@ -12,6 +11,7 @@ import { formatRoutingTableAsJson } from '../routing/utils'
 import { Server, IncomingMessage, ServerResponse } from 'http'
 import { create as createLogger } from '../common/log'
 import * as Prometheus from 'prom-client'
+import AlertMiddleware from '../middlewares/alert'
 const log = createLogger('admin-api')
 
 interface Route {

@@ -1,7 +1,13 @@
 import { default as reduct, Injector } from 'reduct'
 import { partial } from 'lodash'
-import { create as createLogger } from './common/log'
-const log = createLogger('app')
+import ILDCP = require('ilp-protocol-ildcp')
+import {
+  deserializeIlpPrepare,
+  serializeIlpFulfill,
+  serializeIlpReject,
+  isFulfill
+} from 'ilp-packet'
+import * as Prometheus from 'prom-client'
 
 import Config from './services/config'
 import RouteBuilder from './services/route-builder'
@@ -9,11 +15,12 @@ import RouteBroadcaster from './services/route-broadcaster'
 import Accounts from './services/accounts'
 import RateBackend from './services/rate-backend'
 import Store from './services/store'
-import AdminApi from './services/admin-api'
-import * as Prometheus from 'prom-client'
-import { AccountService } from './types/account-service'
-import { default as PluginAccountService } from './account-services/plugin'
+import Account from './types/account'
+import PluginAccount from './accounts/plugin'
 import Core from './services/core'
+import AdminApi from './services/admin-api'
+import { create as createLogger } from './common/log'
+const log = createLogger('app')
 
 function listen (
   config: Config,
@@ -36,7 +43,30 @@ function listen (
       process.exit(1)
     }
 
-    await accounts.startup()
+    // Start account providers
+    // If no address is configured, wait for one to be inherited, give up after initialConnectTimeout
+    await new Promise(async (resolve) => {
+      const connectTimeout = setTimeout(() => {
+        log.warn('one or more accounts failed to connect within the time limit, continuing anyway.')
+        resolve()
+      }, config.initialConnectTimeout)
+      if (config.ilpAddress) {
+        accounts.setOwnAddress(config.ilpAddress)
+        await accounts.startup()
+        resolve()
+      } else {
+        await accounts.startup()
+        // This event will be emitted when we set the address
+        accounts.once('address', () => {
+          resolve()
+        })
+      }
+      clearTimeout(connectTimeout)
+    })
+
+    if (config.routeBroadcastEnabled) {
+      routeBroadcaster.start()
+    }
 
     if (config.collectDefaultMetrics) {
       Prometheus.collectDefaultMetrics()
@@ -73,7 +103,7 @@ async function removePlugin (
 
   id: string
 ) {
-  routeBroadcaster.untrack(id)
+  routeBroadcaster.untrack(accounts.get(id))
   routeBroadcaster.reloadLocalRoutes()
   await accounts.removePlugin(id)
 }
@@ -84,7 +114,7 @@ function getPlugin (
   id: string
 ) {
   const accountService = accounts.get(id)
-  if (accountService && accountService instanceof PluginAccountService) {
+  if (accountService && accountService instanceof PluginAccount) {
     return accountService.getPlugin()
   }
 }
@@ -118,11 +148,46 @@ export default function createApp (opts?: object, container?: Injector) {
   const backend = deps(RateBackend)
   const store = deps(Store)
   const adminApi = deps(AdminApi)
+  const pendingAccounts: Set<Account> = new Set()
 
-  accounts.registerProcessIlpPacketHandler(core.processIlpPacket.bind(core))
-  accounts.on('add', async (account: AccountService) => {
-    routeBroadcaster.track(account.id)
-    routeBroadcaster.reloadLocalRoutes()
+  accounts.setup(deps)
+  // TODO - Different behaviour for plugin profile
+  accounts.registerCoreIlpPacketHander(core.processIlpPacket.bind(core))
+  accounts.registerCoreMoneyHander(async () => { return })
+
+  accounts.on('add', async (account: Account) => {
+
+    if (accounts.getOwnAddress() === 'unknown') {
+      if (account.info.relation === 'parent') {
+        // If there is an explicit parent account configured to inherit from, and this is not it, skip it, otherwise return it
+        if (!(account.id !== config.ilpAddressInheritFrom)) {
+          log.trace('connecting to parent to get address. accountId=%s', account.id)
+          await account.startup()
+
+          // TODO - Clean this up after removing extra serialization in ILDCP
+          const address = (await ILDCP.fetch(async (data: Buffer) => {
+            const reply = await account.sendIlpPacket(deserializeIlpPrepare(data))
+            return isFulfill(reply) ? serializeIlpFulfill(reply) : serializeIlpReject(reply)
+          })).clientAddress
+
+          accounts.setOwnAddress(address)
+          for (const pendingAccount of pendingAccounts) {
+            await pendingAccount.startup()
+            routeBroadcaster.track(pendingAccount)
+          }
+          pendingAccounts.clear()
+          routeBroadcaster.reloadLocalRoutes()
+        }
+      } else {
+        // Don't start this account up yet
+        pendingAccounts.add(account)
+      }
+    } else {
+      await account.startup()
+      routeBroadcaster.track(account)
+      routeBroadcaster.reloadLocalRoutes()
+    }
+
   })
 
   return {
