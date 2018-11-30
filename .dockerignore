@@ -1,4 +1,6 @@
 .npmrc
+node_modules
+npm-debug.log
 /integration-test/*
 /coverage/*
 
