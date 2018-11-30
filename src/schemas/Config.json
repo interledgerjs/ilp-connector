@@ -38,6 +38,16 @@
         "cluster": [ "plugin" ]
       }
     },
+    "providerPort": {
+      "description": "The port that the provider should listen on when running the connector using the server profile",
+      "type": "number",
+      "default": 5555
+    },
+    "providerDefaultAccountInfo": {
+      "description": "Account info that the provider should create accounts with when using the server profile",
+      "type": "object",
+      "default": {}
+    },
     "accounts": {
       "description": "Description of connector account plugins.",
       "type": "object",

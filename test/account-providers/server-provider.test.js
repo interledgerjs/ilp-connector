@@ -1,62 +1,92 @@
 'use strict'
 
+const Config = require("../../build/services/config").default
 const assert = require('assert')
-const sinon = require('sinon')
-const { cloneDeep } = require('lodash')
-const IlpPacket = require('ilp-packet')
-const appHelper = require('./helpers/app')
-const logHelper = require('./helpers/log')
-const logger = require('../build/common/log')
+const reduct = require('reduct')
+const logHelper = require('../helpers/log')
+const logger = require('../../build/common/log')
+const ServerAccountProvider = require('../../build/account-providers/server.js').default
+const tokenToAccount = require('../../build/account-providers/server.js').tokenToAccount
+const BtpPacket = require('btp-packet')
+const WebSocket = require('ws')
 
-const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
+async function sendAuthPacket (serverUrl, account, token) {
+  const protocolData = [{
+    protocolName: 'auth',
+    contentType: BtpPacket.MIME_APPLICATION_OCTET_STREAM,
+    data: Buffer.from([])
+  }]
 
-const mockPlugin = require('./mocks/mockPlugin')
-const mock = require('mock-require')
-mock('ilp-plugin-mock', mockPlugin)
+  if(account) protocolData.push({
+    protocolName: 'auth_username',
+    contentType: BtpPacket.MIME_TEXT_PLAIN_UTF8,
+    data: Buffer.from(account, 'utf8')
+  })
 
-const env = cloneDeep(process.env)
+  if(token) protocolData.push({
+    protocolName: 'auth_token',
+    contentType: BtpPacket.MIME_TEXT_PLAIN_UTF8,
+    data: Buffer.from(token, 'utf8')
+  })
+
+  const ws = new WebSocket(serverUrl)
+  await new Promise((resolve, reject) => {
+    ws.once('open', () => resolve())
+    ws.once('error', (err) => reject(err))
+  })
+
+
+  const result = new Promise((resolve) => {
+    ws.on('message', (msg) => {
+      resolve(BtpPacket.deserialize(msg))
+      ws.close()
+    })
+  })
+
+  await new Promise((resolve) => ws.send(BtpPacket.serialize({
+    type: BtpPacket.TYPE_MESSAGE,
+    requestId: 1,
+    data: { protocolData }
+  }), resolve))
+
+  return result
+}
 
 describe('server provider', function () {
   logHelper(logger)
   beforeEach(async function () {
-    process.env.DEBUG = '*'
-    process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
-      'test.cad-ledger': {
-        'relation': 'parent',
-        'assetCode': 'CAD',
-        'assetScale': 4,
-        'plugin': 'ilp-plugin-mock',
-        'options': {}
-      },
-    })
-    process.env.CONNECTOR_PROFILE = 'server'
-
-    appHelper.create(this)
-    this.accounts.setOwnAddress(this.config.ilpAddress)
-    await this.accounts.startup()
-    await this.backend.connect()
-    await this.routeBroadcaster.reloadLocalRoutes()
+    const deps = reduct()
+    this.config = deps(Config)
+    this.config.store = "memdown"
+    this.config.providerDefaultAccountInfo = {
+      plugin: 'ilp-plugin-btp',
+      relation: 'child',
+      assetCode: 'USD',
+      assetScale: 10,
+    }
+    this.serverUrl = 'ws://localhost:5555'
+    this.provider = new ServerAccountProvider(deps)
+    await this.provider.startup(async (account) => {this.account = account})
   })
-
 
   afterEach(async function () {
-    process.env = cloneDeep(env)
+    this.account = undefined
+    await this.provider.shutdown()
   })
 
-  describe('startup', function () {
-
-    it('registers handler', async function () {
-
-    })
-
-    it('starts a ws server', async function () {
-
-    })
-
+  it('creates new plugin account service for new ws connection', async function () {
+    await sendAuthPacket(this.serverUrl, 'test-account', 'test_token')
+    assert.ok(this.account)
   })
 
-  describe('handle new connection', async function () {
+  it('uses user_name as accountId if is set in auth message', async function () {
+    await sendAuthPacket(this.serverUrl, 'test-account', 'test_token')
+    assert.deepStrictEqual('test-account', this.account.id)
+  })
 
+  it('uses hashed token as accountId if is set in auth message', async function () {
+    await sendAuthPacket(this.serverUrl, null, 'test_token')
+    assert.deepStrictEqual(tokenToAccount('test_token'), this.account.id)
   })
 
 })

@@ -2,14 +2,11 @@ import reduct = require('reduct')
 import Account, { AccountInfo } from '../types/account'
 import AccountProvider from '../types/account-provider'
 import PluginAccount from '../accounts/plugin'
-import { PluginInstance } from '../types/plugin'
 import Store from '../services/store'
 import Config from '../services/config'
 import { create as createLogger } from '../common/log'
 import * as WebSocket from 'ws'
-import { WebSocketServerConstructor } from 'ilp-plugin-btp'
-import { BtpMessage, BtpPacket, deserialize, serializeResponse, serializeError, TYPE_MESSAGE, base64url } from 'btp-packet'
-import AbstractBtpPlugin, * as BtpPlugin from 'ilp-plugin-btp'
+import { deserialize, serializeResponse, serializeError, TYPE_MESSAGE, base64url, BtpPacket } from 'btp-packet'
 import { createHash } from 'crypto'
 import * as assert from 'assert'
 const log = createLogger('plugin-account-service-provider')
@@ -28,37 +25,34 @@ function tokenToAccount (token: string): string {
   return base64url(createHash('sha256').update(token).digest())
 }
 
+exports.tokenToAccount = tokenToAccount
+
 export default class ServerAccountProvider implements AccountProvider {
 
   protected _handler?: (accountService: Account) => Promise<void>
   protected _store: Store
   protected _port: number
-  protected _secret: string
   protected _accountMode: number
   protected _wss: WebSocket.Server | null = null
-  private _WebSocketServer?: WebSocketServerConstructor
+  protected _accountInfo: AccountInfo
 
   constructor (deps: reduct.Injector) {
     const config = deps(Config)
     this._store = deps(Store)
-    this._port = 5555
-    this._secret = ''
+    this._port = config.providerPort || 5555
+    this._accountInfo = config.providerDefaultAccountInfo as AccountInfo
     this._accountMode = AccountMode.UsernameOrHashToken
   }
 
   private async _create (accountId: string, socket: WebSocket) {
     if (!this._handler) throw new Error('no handler defined')
 
-    // TODO: load in from config?
-    const accountInfo = {
-      relation: 'child',
-      assetCode: 'USD',
-      assetScale: 10,
-    } as AccountInfo
-
-    const pluginModule = 'ilp-plugin-btp'
-    const plugin = new (require(pluginModule))({raw: {socket}})
-    await this._handler(new PluginAccount(accountId, accountInfo, plugin))
+    const pluginModule = this._accountInfo.plugin as string || 'ilp-plugin-btp'
+    const plugin = new (require(pluginModule))( {raw: {socket}}, {
+      log: createLogger(`${this._accountInfo.plugin}[${accountId}]`),
+      store: this._store.getPluginStore(accountId)
+    })
+    await this._handler(new PluginAccount(accountId, this._accountInfo, plugin))
   }
 
   async startup (handler: (accountService: Account) => Promise<void>) {
@@ -76,12 +70,12 @@ export default class ServerAccountProvider implements AccountProvider {
 
     let accountId: string
     let token: string
-    let authPacket: BtpPlugin.BtpPacket
+    let authPacket: BtpPacket
 
     wsIncoming.once('message', async (binaryAuthMessage: Buffer) => {
 
       try {
-        authPacket = deserialize(binaryAuthMessage)
+        authPacket = deserialize(binaryAuthMessage) as BtpPacket
         assert.strictEqual(authPacket.type, TYPE_MESSAGE, 'First message sent over BTP connection must be auth packet')
         assert(authPacket.data.protocolData.length >= 2, 'Auth packet must have auth and auth_token subprotocols')
         assert.strictEqual(authPacket.data.protocolData[0].protocolName, 'auth', 'First subprotocol must be auth')
@@ -110,21 +104,6 @@ export default class ServerAccountProvider implements AccountProvider {
         await this._create(accountId, wsIncoming)
         log.trace('got auth info. token=' + token, 'account=' + accountId)
 
-        // TODO: handle stored account mode?
-        // if (accountModeIsStored(this._accountMode) && this._store) {
-        //   const storedToken = await Token.load({ account, store: this._store })
-        //   const receivedToken = new Token({ account, token, store: this._store })
-        //   if (storedToken) {
-        //     if (!storedToken.equal(receivedToken)) {
-        //       throw new Error('incorrect token for account.' +
-        //         ' account=' + account +
-        //         ' token=' + token)
-        //     }
-        //   } else {
-        //     receivedToken.save()
-        //   }
-        // }
-
         wsIncoming.send(serializeResponse(authPacket.requestId, []))
       } catch (err) {
         if (authPacket) {
@@ -148,6 +127,7 @@ export default class ServerAccountProvider implements AccountProvider {
 
   async shutdown () {
     this._handler = undefined
+    if(this._wss) this._wss.close()
   }
 
 }

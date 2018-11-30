@@ -9,6 +9,7 @@
     "moduleResolution": "node",
     "inlineSources": true,
     "strict": true,
+    "strictPropertyInitialization": false,
     "suppressImplicitAnyIndexErrors": true,
     "outDir": "./build",
     "rootDir": "./src"
