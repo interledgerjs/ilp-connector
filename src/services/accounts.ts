@@ -50,7 +50,7 @@ export default class Accounts extends EventEmitter {
   }
 
   private getAccountMiddleware (account: Account) {
-    switch (this._config.profile){
+    switch (this._config.profile) {
       case 'connector':
       case 'cluster':
         return this._middlewares

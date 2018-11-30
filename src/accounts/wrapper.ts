@@ -58,4 +58,18 @@ export default class WrapperAccount extends AccountBase implements Account {
     throw new Error('no plugin for account.')
   }
 
+  handleIncomingIlpPacket (packet: IlpPrepare) {
+    if (this._incomingIlpPacketHandler) {
+      return this._incomingIlpPacketHandler(packet)
+    }
+    throw new Error('no plugin for account.')
+  }
+
+  handleIncomingMoney (packet: IlpPrepare) {
+    if (this._incomingIlpPacketHandler) {
+      return this._incomingIlpPacketHandler(packet)
+    }
+    throw new Error('no plugin for account.')
+  }
+
 }
