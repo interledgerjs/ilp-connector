@@ -37,7 +37,7 @@ describe('Modify Plugins', function () {
 
   describe('addPlugin', function () {
     it('should add new account service to accounts', async function () {
-      assert.notInclude(this.accounts.getAccountIds(), 'test.eur-ledger-2')
+      assert.throws(function () { this.accounts.get('test.eur-ledger-2') }.bind(this), Error, 'unknown account id. accountId=test.eur-ledger-2')
       await this.app.addPlugin('test.eur-ledger-2', {
         relation: 'peer',
         assetCode: 'EUR',
@@ -45,7 +45,7 @@ describe('Modify Plugins', function () {
         plugin: 'ilp-plugin-mock',
         options: {}
       })
-      assert.isOk(this.accounts.getAccountService('test.eur-ledger-2'), "Did not create account service")
+      assert.isOk(this.accounts.get('test.eur-ledger-2'), 'Did not create account service')
     })
 
     it('should support new ledger', async function () {
@@ -67,9 +67,9 @@ describe('Modify Plugins', function () {
         options: {}
       })
 
-      this.accounts.getAccountService('test.jpy-ledger').getPlugin().sendData = () => serializeCcpResponse()
+      this.accounts.get('test.jpy-ledger').getPlugin().sendData = () => serializeCcpResponse()
 
-      await this.accounts.getAccountService('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.get('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: 'test.jpy-ledger',
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 0,
@@ -143,7 +143,7 @@ describe('Modify Plugins', function () {
         }
       })
 
-      await this.accounts.getAccountService('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.get('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: 'test.jpy-ledger',
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 0,
@@ -161,9 +161,9 @@ describe('Modify Plugins', function () {
     })
 
     it('should remove the account service from accounts', async function () {
-      assert.isOk(this.accounts.getAccountService('test.jpy-ledger'))
+      assert.isOk(this.accounts.get('test.jpy-ledger'))
       await this.app.removePlugin('test.jpy-ledger')
-      assert.throws(() => this.accounts.getAccountService('test.jpy-ledger'), 'unknown account id. accountId=test.jpy-ledger')
+      assert.throws(() => this.accounts.get('test.jpy-ledger'), 'unknown account id. accountId=test.jpy-ledger')
     })
 
     it('should no longer route to that plugin', async function () {

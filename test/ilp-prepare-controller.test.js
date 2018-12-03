@@ -74,6 +74,9 @@ describe('IlpPrepareController', function () {
   })
 
   afterEach(async function () {
+    if (mockPlugin.prototype.sendData.isSinonProxy) {
+      mockPlugin.prototype.sendData.restore()
+    }
     this.clock.restore()
     process.env = _.cloneDeep(env)
   })
@@ -92,6 +95,7 @@ describe('IlpPrepareController', function () {
     })
 
     sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
+
     const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
     assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
   })
@@ -109,8 +113,7 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     }
 
-    sinon.stub(this.mockAccountService2, 'sendIlpPacket')
-      .resolves(fulfillPacket)
+    sinon.stub(mockPlugin.prototype, 'sendData').resolves(IlpPacket.serializeIlpFulfill(fulfillPacket))
 
     const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
@@ -251,8 +254,7 @@ describe('IlpPrepareController', function () {
       data: Buffer.alloc(0)
     })
 
-    sinon.stub(this.mockAccountService2, 'sendIlpPacket')
-      .rejects(new Error('fail!'))
+    sinon.stub(mockPlugin.prototype, 'sendData').rejects(new Error('fail!'))
 
     const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
@@ -313,8 +315,8 @@ describe('IlpPrepareController', function () {
         message: 'Error 1',
         data: Buffer.alloc(0)
       }
-      const rejectStub = sinon.stub(this.mockAccountService2, 'sendIlpPacket')
-        .resolves(rejection)
+
+      const rejectStub = sinon.stub(mockPlugin.prototype, 'sendData').resolves(IlpPacket.serializeIlpReject(rejection))
 
       const preparePacket = IlpPacket.serializeIlpPrepare({
         amount: '100',

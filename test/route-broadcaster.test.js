@@ -72,7 +72,7 @@ describe('RouteBroadcaster', function () {
 
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger']
     for (let accountId of testAccounts) {
-      this.accounts.getAccountService(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
+      this.accounts.get(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: accountId,
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 1,
@@ -192,9 +192,9 @@ describe('RouteBroadcaster', function () {
         fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
         data: Buffer.from('{}', 'ascii')
       }
-      const pluginABroadcastSpy = sinon.stub(this.accounts.getAccountService(ledgerA).getPlugin(), 'sendData')
+      const pluginABroadcastSpy = sinon.stub(this.accounts.get(ledgerA).getPlugin(), 'sendData')
         .resolves(serializeCcpResponse())
-      const pluginBBroadcastSpy = sinon.stub(this.accounts.getAccountService(ledgerB).getPlugin(), 'sendData')
+      const pluginBBroadcastSpy = sinon.stub(this.accounts.get(ledgerB).getPlugin(), 'sendData')
         .resolves(serializeCcpResponse())
 
       this.routeBroadcaster.forwardingRoutingTable.routingTableId = '3b069822-a754-4e44-8a60-0f9f7084144d'
@@ -232,9 +232,9 @@ describe('RouteBroadcaster', function () {
     })
 
     it('only sends the latest version of a route', async function () {
-      const pluginABroadcastSpy = sinon.stub(this.accounts.getAccountService(ledgerA).getPlugin(), 'sendData')
+      const pluginABroadcastSpy = sinon.stub(this.accounts.get(ledgerA).getPlugin(), 'sendData')
         .resolves(serializeCcpResponse())
-      const pluginBBroadcastSpy = sinon.stub(this.accounts.getAccountService(ledgerB).getPlugin(), 'sendData')
+      const pluginBBroadcastSpy = sinon.stub(this.accounts.get(ledgerB).getPlugin(), 'sendData')
         .resolves(serializeCcpResponse())
 
       this.routeBroadcaster.forwardingRoutingTable.routingTableId = '3b069822-a754-4e44-8a60-0f9f7084144d'
