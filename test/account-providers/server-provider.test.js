@@ -5,8 +5,8 @@ const assert = require('assert')
 const reduct = require('reduct')
 const logHelper = require('../helpers/log')
 const logger = require('../../build/common/log')
-const ServerAccountProvider = require('../../build/account-providers/server.js').default
-const tokenToAccount = require('../../build/account-providers/server.js').tokenToAccount
+const BtpServerAccountProvider = require('../../build/account-providers/btp-server').default
+const tokenToAccount = require('../../build/account-providers/btp-server').tokenToAccount
 const BtpPacket = require('btp-packet')
 const WebSocket = require('ws')
 
@@ -64,10 +64,13 @@ describe('server provider', function () {
         relation: 'child',
         assetCode: 'USD',
         assetScale: 10
+      },
+      listener: {
+        port: 5555
       }
     }
     this.serverUrl = 'ws://localhost:5555'
-    this.provider = new ServerAccountProvider(deps, options)
+    this.provider = new BtpServerAccountProvider(deps, options)
     await this.provider.startup(async (account) => { this.account = account })
   })
 

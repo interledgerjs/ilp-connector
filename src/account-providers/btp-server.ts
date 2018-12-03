@@ -1,8 +1,6 @@
 import reduct = require('reduct')
-import Account, { AccountInfo } from '../types/account'
 import AccountProvider, { AccountProviderOptions } from '../types/account-provider'
 import PluginAccount from '../accounts/plugin'
-import Store from '../services/store'
 import { create as createLogger } from '../common/log'
 import * as WebSocket from 'ws'
 import { deserialize, serializeResponse, serializeError, TYPE_MESSAGE, base64url, BtpPacket } from 'btp-packet'
@@ -37,8 +35,8 @@ export default class BtpServerAccountProvider extends ServerAccountProvider<WebS
 
   protected async _listen () {
     this._wss = new WebSocket.Server({ port: this._port })
-    this._wss.on('connection', this._handleNewConnection)
-    log.debug('started server account provider')
+    this._wss.on('connection', this._handleNewConnection.bind(this))
+    log.debug('started btp-server account provider')
   }
 
   private async _create (accountId: string, socket: WebSocket) {
