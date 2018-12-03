@@ -1,12 +1,12 @@
 import reduct = require('reduct')
 import Account, { AccountInfo } from '../types/account'
-import AccountProvider from '../types/account-provider'
+import AccountProvider, { AccountProviderOptions } from '../types/account-provider'
 import PluginAccount from '../accounts/plugin'
 import { PluginInstance } from '../types/plugin'
 import Store from '../services/store'
 import Config from '../services/config'
 import { create as createLogger } from '../common/log'
-const log = createLogger('plugin-account-service-provider')
+const log = createLogger('plugin-account-provider')
 
 export default class PluginAccountProvider implements AccountProvider {
 
@@ -14,13 +14,14 @@ export default class PluginAccountProvider implements AccountProvider {
   protected _address?: string
   protected _configuredAccounts: { [k: string]: AccountInfo }
   protected _store: Store
-  constructor (deps: reduct.Injector) {
+  constructor (deps: reduct.Injector, options?: AccountProviderOptions) {
 
     const config = deps(Config)
     this._configuredAccounts = {}
+    const defaultAccountInfo = (options && options.defaultAccountInfo) ? options.defaultAccountInfo : {}
     Object.keys(config.accounts).forEach(accountId => {
       try {
-        const accountInfo = config.accounts[accountId]
+        const accountInfo = Object.assign(defaultAccountInfo, config.accounts[accountId])
         config.validateAccount(accountId, accountInfo)
         this._configuredAccounts[accountId] = accountInfo
       } catch (err) {

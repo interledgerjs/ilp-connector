@@ -25,7 +25,6 @@ export default class Core {
         }
         break
       case 'plugin':
-      case 'server':
         this.handler = async (packet: IlpPrepare, sourceAccount: string,
           outbound: (data: IlpPrepare, accountId: string) => Promise<IlpReply>) => {
           return outbound(packet, 'parent')

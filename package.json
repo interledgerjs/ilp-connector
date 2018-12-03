@@ -33,7 +33,7 @@
     "prepack": "npm run build",
     "prepare": "npm run build",
     "lint": "tslint --project . && eslint test/",
-    "test": "nyc mocha --require source-map-support/register --exit test/ilp-prepare-controller.test.js",
+    "test": "nyc mocha --require source-map-support/register --exit test",
     "report-coverage": "nyc report --reporter=json && codecov -f coverage/*.json",
     "integration": "integration-loader && integration all"
   },

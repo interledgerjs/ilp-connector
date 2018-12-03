@@ -8,8 +8,9 @@ const toc = require('remark-toc')
 const stringify = require('remark-stringify')
 const inject = require('mdast-util-inject')
 const { constantCase } = require('change-case')
-const { render: renderJsonSchema } = require('@justmoon/json-schema-to-markdown')
+const { render: renderJsonSchema, loadSchemas } = require('@justmoon/json-schema-to-markdown')
 
+const allSchemas = loadSchemas(resolve(__dirname, '../src/schemas'))
 function injectConfigDocs () {
   return function transform (node) {
     const schemaMd = processSchema(require(resolve(__dirname, '../src/schemas/Config.json')))
@@ -30,7 +31,7 @@ const renderComplexDescription = optionDefinition => {
     )) ||
     optionDefinition.type === 'array'
   ) {
-    return renderJsonSchema(optionDefinition)
+    return renderJsonSchema(optionDefinition, allSchemas)
   } else {
     return optionDefinition.description
   }

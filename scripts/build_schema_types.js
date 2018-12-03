@@ -23,7 +23,7 @@ const schemas = ['Config.json', 'BalanceUpdate.json']
         .replace('export interface Config', 'export class Config')
         // Ignore the error stating that `accounts` isn't assigned in the
         // constructor.
-        .replace('accounts: {', 'accounts!: {')
+        // .replace('accounts: {', 'accounts!: {')
     }
 
     const output = resolve(__dirname, '../src/schemas/', schema.split('.')[0] + '.ts')

@@ -1,6 +1,6 @@
 'use strict'
 
-const Config = require("../../build/services/config").default
+const Config = require('../../build/services/config').default
 const assert = require('assert')
 const reduct = require('reduct')
 const logHelper = require('../helpers/log')
@@ -58,15 +58,17 @@ describe('server provider', function () {
     const deps = reduct()
     this.config = deps(Config)
     this.config.store = "memdown"
-    this.config.providerDefaultAccountInfo = {
-      plugin: 'ilp-plugin-btp',
-      relation: 'child',
-      assetCode: 'USD',
-      assetScale: 10,
+    const options = {
+      defaultAccountInfo: {
+        plugin: 'ilp-plugin-btp',
+        relation: 'child',
+        assetCode: 'USD',
+        assetScale: 10
+      }
     }
     this.serverUrl = 'ws://localhost:5555'
-    this.provider = new ServerAccountProvider(deps)
-    await this.provider.startup(async (account) => {this.account = account})
+    this.provider = new ServerAccountProvider(deps, options)
+    await this.provider.startup(async (account) => { this.account = account })
   })
 
   afterEach(async function () {

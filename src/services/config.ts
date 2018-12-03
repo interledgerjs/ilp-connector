@@ -1,12 +1,19 @@
 import InvalidJsonBodyError from '../errors/invalid-json-body-error'
 import { constantCase } from 'change-case'
-import { Config as ConfigSchemaTyping } from '../schemas/Config'
+import { Config as ConfigSchemaTyping, AccountProviderConfig, AccountConfig } from '../schemas/Config'
 import Ajv = require('ajv')
 import { create as createLogger } from '../common/log'
 const log = createLogger('config')
-const schema = require('../schemas/Config.json')
+const configSchema = require('../schemas/Config.json')
+const accountSchema = require('../schemas/AccountConfig.json')
+const moduleSchema = require('../schemas/ModuleConfig.json')
+const accountProviderSchema = require('../schemas/AccountProviderConfig.json')
 
 const ajv = new Ajv()
+ajv
+  .addSchema(accountSchema)
+  .addSchema(moduleSchema)
+  .addSchema(accountProviderSchema)
 
 const ENV_PREFIX = 'CONNECTOR_'
 
@@ -18,7 +25,7 @@ const BOOLEAN_VALUES = {
   '': false
 }
 
-type ConfigProfile = 'connector' | 'plugin' | 'server' | 'cluster'
+export type ConfigProfile = 'connector' | 'plugin' | 'cluster'
 
 export default class Config extends ConfigSchemaTyping {
   // TODO: These fields are already all defined in the config schema, however
@@ -27,7 +34,7 @@ export default class Config extends ConfigSchemaTyping {
   //   the defaults from the schema, so these *will* always be set. These
   //   declarations make TypeScript happy.
   public profile!: ConfigProfile
-  public 'accountProviders'!: string[]
+  public accountProviders!: { [k: string]: AccountProviderConfig; }
   public store!: string
   public quoteExpiry!: number
   public routeExpiry!: number
@@ -40,9 +47,8 @@ export default class Config extends ConfigSchemaTyping {
 
   constructor () {
     super()
-
-    this._validate = ajv.compile(schema)
-    this._validateAccount = ajv.compile(schema.properties.accounts.additionalProperties)
+    this._validate = ajv.compile(configSchema)
+    this._validateAccount = ajv.compile(accountSchema)
   }
 
   loadFromEnv (env?: NodeJS.ProcessEnv) {
@@ -57,14 +63,14 @@ export default class Config extends ConfigSchemaTyping {
     )
 
     const config = {}
-    for (let key of Object.keys(schema.properties)) {
+    for (let key of Object.keys(configSchema.properties)) {
       const envKey = ENV_PREFIX + constantCase(key)
       const envValue = env[envKey]
 
       unrecognizedEnvKeys.delete(envKey)
 
       if (typeof envValue === 'string') {
-        switch (schema.properties[key].type) {
+        switch (configSchema.properties[key].type) {
           case 'string':
             config[key] = envValue
             break
@@ -84,7 +90,7 @@ export default class Config extends ConfigSchemaTyping {
             config[key] = Number(envValue)
             break
           default:
-            throw new TypeError('Unknown JSON schema type: ' + schema.properties[key].type)
+            throw new TypeError('Unknown JSON schema type: ' + configSchema.properties[key].type)
         }
       }
     }
@@ -96,7 +102,7 @@ export default class Config extends ConfigSchemaTyping {
     this.validate(config)
 
     const profile = config['profile'] || 'connector' as ConfigProfile
-    Object.assign(this, extractDefaultsFromSchema(profile, schema), config)
+    Object.assign(this, extractDefaultsFromSchema(profile, configSchema), config)
     this.validateProfile()
   }
 
@@ -104,7 +110,7 @@ export default class Config extends ConfigSchemaTyping {
     this.validate(opts)
 
     const profile = opts['profile'] || 'connector' as ConfigProfile
-    Object.assign(this, extractDefaultsFromSchema(profile, schema), opts)
+    Object.assign(this, extractDefaultsFromSchema(profile, configSchema), opts)
     this.validateProfile()
   }
 
@@ -121,7 +127,7 @@ export default class Config extends ConfigSchemaTyping {
   validateProfile () {
     switch (this.profile) {
       case 'plugin':
-        if (!hasParentAccount(this.accounts)) {
+        if (Object.keys(filterByRelation(this.accounts, 'parent')).length === 0) {
           throw new InvalidJsonBodyError('Connector profile of plugin mode requires a parent to be set for uplink',[])
         }
     }
@@ -158,10 +164,8 @@ export const extractDefaultsFromSchema = (profile: ConfigProfile, schema: any, p
   }
 }
 
-const hasParentAccount = (accounts: any): boolean => {
-  const accs = Object.entries(accounts)
-  let parent = accs.filter((account: object) => {
-    return account[1].relation === 'parent'
-  })
-  return parent.length === 1
+function filterByRelation (accounts: {[k: string]: AccountConfig }, relation: 'parent' | 'peer' | 'child'): {[k: string]: AccountConfig } {
+  return Object.keys(accounts)
+  .filter(key => accounts[key].relation === relation)
+  .reduce((res, key) => Object.assign(res, { [key]: accounts[key] }), {})
 }

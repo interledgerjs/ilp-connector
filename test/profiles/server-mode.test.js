@@ -59,6 +59,6 @@ describe('Server Profile Mode', function () {
   })
 
   it('it does have middleware on plugin pipeline', async function () {
-    c
+
   })
 })

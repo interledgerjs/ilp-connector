@@ -12,9 +12,10 @@ import {
 import { create as createLogger } from '../common/log'
 import Middleware from '../types/middleware'
 import Account from '../types/account'
-import AccountProvider from '../types/account-provider'
+import AccountProvider, { constructAccountProvider } from '../types/account-provider'
 import PluginAccountProvider from '../account-providers/plugin'
 import { constructMiddlewares, wrapMiddleware } from '../lib/middleware'
+import { AccountProviderConfig } from '../schemas/Config'
 const { UnreachableError } = Errors
 const log = createLogger('accounts')
 
@@ -55,7 +56,6 @@ export default class Accounts extends EventEmitter {
       case 'cluster':
         return this._middlewares
       case 'plugin':
-      case 'server':
         return account.info.relation === 'parent' ? {} : this._middlewares
       default:
         throw new Error(`Can\'t get account middlewares for accountId=${account.id}. Unknown configuration profile: ${this._config.profile}`)
@@ -67,8 +67,8 @@ export default class Accounts extends EventEmitter {
     this._middlewares = constructMiddlewares(deps)
 
     // Load up account providers
-    for (const name of this._config.accountProviders) {
-      this._accountProviders.add(constructProvider(name, deps))
+    for (const config of Object.values(this._config.accountProviders)) {
+      this._accountProviders.add(constructAccountProvider(config, deps))
     }
   }
 
@@ -231,9 +231,4 @@ export default class Accounts extends EventEmitter {
       accounts
     }
   }
-}
-
-function constructProvider (type: string, deps: reduct.Injector): AccountProvider {
-  const AccountServiceProviderConst = loadModuleOfType('account-provider', type)
-  return new AccountServiceProviderConst(deps) as AccountProvider
 }

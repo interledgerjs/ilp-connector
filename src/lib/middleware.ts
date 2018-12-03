@@ -21,14 +21,29 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   rateLimit: {
     type: 'rate-limit'
   },
+  maxPacketAmount: {
+    type: 'max-packet-amount'
+  },
   throughput: {
     type: 'throughput'
   },
   balance: {
     type: 'balance'
   },
+  deduplicate: {
+    type: 'deduplicate'
+  },
   expire: {
     type: 'expire'
+  },
+  validateFulfillment: {
+    type: 'validate-fulfillment'
+  },
+  stats: {
+    type: 'stats'
+  },
+  alert: {
+    type: 'alert'
   }
 }
 
