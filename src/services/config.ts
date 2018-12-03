@@ -127,8 +127,8 @@ export default class Config extends ConfigSchemaTyping {
   validateProfile () {
     switch (this.profile) {
       case 'plugin':
-        if (Object.keys(filterByRelation(this.accounts, 'parent')).length === 0) {
-          throw new InvalidJsonBodyError('Connector profile of plugin mode requires a parent to be set for uplink',[])
+        if (!this.accounts['parent']) {
+          throw new InvalidJsonBodyError('Connector profile of plugin mode requires uplink account to have an id of \'parent\'',[])
         }
     }
   }

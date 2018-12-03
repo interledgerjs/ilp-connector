@@ -21,12 +21,12 @@ describe('Plugin Profile Mode', function () {
   beforeEach(async function () {
     process.env.DEBUG = '*'
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify({
-      'test.cad-ledger': {
+      'parent': {
         'relation': 'parent',
         'assetCode': 'CAD',
         'assetScale': 4,
         'plugin': 'ilp-plugin-mock',
-        'options': {}
+        'disableMiddleware': true
       },
       'test.usd-ledger': {
         'relation': 'peer',
@@ -65,9 +65,13 @@ describe('Plugin Profile Mode', function () {
       data: Buffer.alloc(0)
     })
 
-    sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
+    const stub = sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
+    const ilpPrepareControllerSpy = sinon.stub(this.ilpPrepareController, 'sendIlpPacket')
     const result = await this.accounts.get('test.usd-ledger').getPlugin()._dataHandler(preparePacket)
     assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
+    sinon.assert.notCalled(ilpPrepareControllerSpy)
+    stub.restore()
+    ilpPrepareControllerSpy.restore()
   })
 
   it('routes ILP packets sent from parent directly to plugin', async function () {
@@ -83,13 +87,17 @@ describe('Plugin Profile Mode', function () {
       data: Buffer.alloc(0)
     })
 
-    sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
-    const result = await this.accounts.get('test.cad-ledger').getPlugin()._dataHandler(preparePacket)
+    const stub = sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
+    const ilpPrepareControllerSpy = sinon.stub(this.ilpPrepareController, 'sendIlpPacket')
+    const result = await this.accounts.get('parent').getPlugin()._dataHandler(preparePacket)
     assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
+    sinon.assert.notCalled(ilpPrepareControllerSpy)
+    stub.restore()
+    ilpPrepareControllerSpy.restore()
   })
 
   it('doesnt have any middleware in parent pipeline', async function () {
-    const result = await this.accounts.getAccountMiddleware(this.accounts.get('test.cad-ledger'))
+    const result = await this.accounts.getAccountMiddleware(this.accounts.get('parent'))
     assert.deepStrictEqual(result, {})
   })
 

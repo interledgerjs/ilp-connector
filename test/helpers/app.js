@@ -12,6 +12,7 @@ const AdminApi = require('../../build/services/admin-api').default
 const CcpController = require('../../build/controllers/ccp').default
 const Store = require('../../build/services/store').default
 const ratesResponse = require('../data/fxRates.json')
+const IlpPrepareController = require("../../build/controllers/ilp-prepare").default
 
 const createApp = require('../../build').createApp
 
@@ -49,4 +50,5 @@ exports.create = function (context, opts) {
   context.adminApi = deps(AdminApi)
   context.ccpController = deps(CcpController)
   context.store = deps(Store)
+  context.ilpPrepareController = deps(IlpPrepareController)
 }
