@@ -79,6 +79,7 @@ export default class Accounts extends EventEmitter {
       if (!err.ilpErrorCode) {
         err.ilpErrorCode = Errors.codes.F02_UNREACHABLE
       }
+      // TODO - disabled for now
       err.message = 'failed to send packet: ' + err.message
       throw err
     }

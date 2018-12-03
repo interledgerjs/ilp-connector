@@ -61,7 +61,7 @@ describe('RouteBuilder', function () {
     const testAccounts = Object.keys(accountCredentials)
     for (let accountId of testAccounts) {
 
-      this.accounts.getAccountService(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
+      this.accounts.get(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: accountId,
         routingTableId: '31812543-9935-4160-bdde-6e459bb37cfe',
         currentEpochIndex: 1,

@@ -239,12 +239,12 @@ describe('Config', function () {
 
           process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accountCredentialsEnv)
           const config = new Config()
-          assert.throws(config.loadFromEnv.bind(config), Error, 'Connector profile of plugin mode requires a parent to be set for uplink')
+          assert.throws(config.loadFromEnv.bind(config), Error, 'Connector profile of plugin mode requires uplink account to have an id of \'parent\'')
         })
 
         it('succeeds if parent configured', () => {
           const accountCredentialsEnv = {
-            'cad-ledger': {
+            'parent': {
               relation: 'parent',
               assetCode: 'CAD',
               assetScale: 9,
