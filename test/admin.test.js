@@ -73,9 +73,8 @@ describe('AdminApi', function () {
       data: Buffer.alloc(0)
     }
 
-    const stub = sinon.stub(this.mockAccountService2, 'sendIlpPacket').resolves(fulfillPacket)
+    const stub = sinon.stub(this.mockAccountService2.getPlugin(), 'sendData').resolves(IlpPacket.serializeIlpFulfill(fulfillPacket))
     const result = await this.mockAccountService1.getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
-    console.log(result)
     assert.strictEqual(IlpPacket.deserializeIlpFulfill(result).fulfillment.toString('hex'), fulfillPacket.fulfillment.toString('hex'))
     stub.restore()
   })
@@ -88,6 +87,12 @@ describe('AdminApi', function () {
   describe('getStatus', function () {
     it('returns the status summary', async function () {
       assert.deepEqual(await this.adminApi.getStatus(), {
+        balances: {
+          'test.cad-ledger': '0',
+          'test.usd-ledger': '100',
+          'test.eur-ledger': '-94',
+          'test.cny-ledger': '0'
+        },
         connected: {
           'test.cad-ledger': true,
           'test.usd-ledger': true,
@@ -215,19 +220,36 @@ describe('AdminApi', function () {
           'test.cad-ledger': {
             info: Object.assign({}, this.accountData['test.cad-ledger'], { options: undefined }),
             connected: true,
+            adminInfo: true
           },
           'test.usd-ledger': {
             info: Object.assign({}, this.accountData['test.usd-ledger'], { options: undefined }),
             connected: true,
+            adminInfo: true
           },
           'test.eur-ledger': {
             info: Object.assign({}, this.accountData['test.eur-ledger'], { options: undefined }),
             connected: true,
+            adminInfo: true
           },
           'test.cny-ledger': {
             info: Object.assign({}, this.accountData['test.cny-ledger'], { options: undefined }),
             connected: true,
+            adminInfo: true
           }
+        }
+      })
+    })
+  })
+
+  describe('getBalanceStatus', function () {
+    it('returns the balance status', async function () {
+      assert.deepEqual(await this.adminApi.getBalanceStatus(), {
+        accounts: {
+          'test.cad-ledger': { balance: '0', minimum: '-Infinity', maximum: '1000' },
+          'test.usd-ledger': { balance: '100', minimum: '-Infinity', maximum: '1000' },
+          'test.eur-ledger': { balance: '-94', minimum: '-Infinity', maximum: '1000' },
+          'test.cny-ledger': { balance: '0', minimum: '-Infinity', maximum: '1000' }
         }
       })
     })
@@ -252,7 +274,7 @@ describe('AdminApi', function () {
     })
   })
 
-  describe.skip('getStats', function () {
+  describe('getStats', function () {
     it('returns the collected stats', async function () {
       const metrics = await this.adminApi.getStats()
       const expected = [{
@@ -357,6 +379,20 @@ describe('AdminApi', function () {
         aggregator: 'sum'
       },
       {
+        help: 'Total of incoming money',
+        name: 'ilp_connector_incoming_money',
+        type: 'gauge',
+        values: [],
+        aggregator: 'sum'
+      },
+      {
+        help: 'Total of outgoing money',
+        name: 'ilp_connector_outgoing_money',
+        type: 'gauge',
+        values: [],
+        aggregator: 'sum'
+      },
+      {
         help: 'Total of rate limited ILP packets',
         name: 'ilp_connector_rate_limited_ilp_packets',
         type: 'counter',
@@ -369,9 +405,45 @@ describe('AdminApi', function () {
         type: 'counter',
         values: [],
         aggregator: 'sum'
+      },
+      {
+        help: 'Balances on peer account',
+        name: 'ilp_connector_balance',
+        type: 'gauge',
+        values: [{
+          value: 100,
+          labels: { account: 'test.usd-ledger', asset: 'USD', scale: 4 },
+          timestamp: undefined
+        },
+        {
+          value: -94,
+          labels: { account: 'test.eur-ledger', asset: 'EUR', scale: 4 },
+          timestamp: undefined
+        }],
+        aggregator: 'sum'
       }]
 
       assert.deepEqual(metrics, expected)
+    })
+  })
+
+  describe('postBalance', function () {
+    it('adds/subtracts the balance by the given amount', async function () {
+      await this.adminApi.postBalance('', { accountId: 'test.cad-ledger', amountDiff: '12' })
+      await this.adminApi.postBalance('', { accountId: 'test.cad-ledger', amountDiff: '-34' })
+      const balanceMiddleware = this.accounts.getMiddleware('balance')
+      assert.equal(
+        balanceMiddleware.getStatus().accounts['test.cad-ledger'].balance,
+        (12 - 34).toString())
+    })
+
+    it('rejects on invalid BalanceUpdate', async function () {
+      try {
+        await this.adminApi.postBalance('', {})
+      } catch (err) {
+        return
+      }
+      assert(false)
     })
   })
 
@@ -381,12 +453,12 @@ describe('AdminApi', function () {
     })
 
     it('returns an alert when a peer returns "maximum balance exceeded"', async function () {
-      sinon.stub(this.mockAccountService2, 'sendIlpPacket').resolves({
+      sinon.stub(this.mockAccountService2.getPlugin(), 'sendData').resolves(IlpPacket.serializeIlpReply({
         code: 'T04',
         triggeredBy: 'test.foo',
         message: 'exceeded maximum balance.',
         data: Buffer.alloc(0)
-      })
+      }))
       const preparePacket = {
         amount: '100',
         executionCondition: Buffer.from('I3TZF5S3n0-07JWH0s8ArsxPmVP6s-0d0SqxR6C3Ifk', 'base64'),
@@ -399,6 +471,7 @@ describe('AdminApi', function () {
         await this.mockAccountService1.getPlugin()._dataHandler(IlpPacket.serializeIlpPrepare(preparePacket))
       }
       const res = await this.adminApi.getAlerts()
+
       assert.deepEqual(res, {
         alerts: [{
           id: res.alerts[0].id,
@@ -416,7 +489,7 @@ describe('AdminApi', function () {
   describe('deleteAlert', function () {
     beforeEach(function () {
       this.alertId = 123
-      const middleware = this.middlewareManager.getMiddleware('alert')
+      const middleware = this.accounts.getMiddleware('alert')
       middleware.alerts[this.alertId] = {
         id: this.alertId,
         accountId: 'test.eur-ledger',
@@ -433,4 +506,33 @@ describe('AdminApi', function () {
     })
   })
 
+  describe('plugin admin api', function () {
+    describe('getAccountAdminInfo', function () {
+      it('returns result of getAdminInfo', async function () {
+        const res = await this.adminApi.getAccountAdminInfo('/accounts/test.usd-ledger')
+        assert.deepEqual(res, {
+          account: 'test.usd-ledger',
+          plugin: 'ilp-plugin-mock',
+          info: {
+            foo: 'bar'
+          }
+        })
+      })
+    })
+
+    describe('sendAccountAdminInfo', function () {
+      it('passes the object into sendAdminInfo', async function () {
+        const res = await this.adminApi.sendAccountAdminInfo('/accounts/test.usd-ledger', { foo: 'bar' })
+        assert.deepEqual(res, {
+          account: 'test.usd-ledger',
+          plugin: 'ilp-plugin-mock',
+          result: {
+            foo: {
+              foo: 'bar'
+            }
+          }
+        })
+      })
+    })
+  })
 })

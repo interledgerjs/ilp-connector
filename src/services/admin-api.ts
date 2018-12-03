@@ -12,7 +12,13 @@ import { Server, IncomingMessage, ServerResponse } from 'http'
 import { create as createLogger } from '../common/log'
 import * as Prometheus from 'prom-client'
 import AlertMiddleware from '../middlewares/alert'
+import BalanceMiddleware from '../middlewares/balance'
+import InvalidJsonBodyError from '../errors/invalid-json-body-error'
+import { BalanceUpdate } from '../schemas/BalanceUpdate'
+import WrapperAccount from '../accounts/wrapper'
 const log = createLogger('admin-api')
+const ajv = new Ajv()
+const validateBalanceUpdate = ajv.compile(require('../schemas/BalanceUpdate.json'))
 
 interface Route {
   method: 'GET' | 'POST' | 'DELETE'
@@ -44,6 +50,10 @@ export default class AdminApi {
       { method: 'GET', match: '/status$', fn: this.getStatus },
       { method: 'GET', match: '/routing$', fn: this.getRoutingStatus },
       { method: 'GET', match: '/accounts$', fn: this.getAccountStatus },
+      { method: 'GET', match: '/accounts/', fn: this.getAccountAdminInfo },
+      { method: 'POST', match: '/accounts/', fn: this.sendAccountAdminInfo },
+      { method: 'GET', match: '/balance$', fn: this.getBalanceStatus },
+      { method: 'POST', match: '/balance$', fn: this.postBalance },
       { method: 'GET', match: '/rates$', fn: this.getBackendStatus },
       { method: 'GET', match: '/stats$', fn: this.getStats },
       { method: 'GET', match: '/alerts$', fn: this.getAlerts },
@@ -117,8 +127,10 @@ export default class AdminApi {
   }
 
   private async getStatus () {
+    const balanceStatus = await this.getBalanceStatus()
     const accountStatus = await this.getAccountStatus()
     return {
+      balances: pluck(balanceStatus['accounts'], 'balance'),
       connected: pluck(accountStatus['accounts'], 'connected'),
       localRoutingTable: formatRoutingTableAsJson(this.routingTable)
     }
@@ -132,6 +144,31 @@ export default class AdminApi {
     return this.accounts.getStatus()
   }
 
+  private async getBalanceStatus () {
+    const middleware = this.accounts.getMiddleware('balance')
+    if (!middleware) return {}
+    const balanceMiddleware = middleware as BalanceMiddleware
+    return balanceMiddleware.getStatus()
+  }
+
+  private async postBalance (url: string, _data: object) {
+    try {
+      validateBalanceUpdate(_data)
+    } catch (err) {
+      const firstError = (validateBalanceUpdate.errors &&
+        validateBalanceUpdate.errors[0]) ||
+        { message: 'unknown validation error', dataPath: '' }
+      throw new InvalidJsonBodyError('invalid balance update: error=' + firstError.message + ' dataPath=' + firstError.dataPath, validateBalanceUpdate.errors || [])
+    }
+
+    const data = _data as BalanceUpdate
+    const middleware = this.accounts.getMiddleware('balance')
+    if (!middleware) return
+    const balanceMiddleware = middleware as BalanceMiddleware
+    const account = this.accounts.get(data.accountId)
+    balanceMiddleware.modifyBalance(account, data.amountDiff)
+  }
+
   private getBackendStatus (): Promise<{ [s: string]: any }> {
     return this.rateBackend.getStatus()
   }
@@ -141,9 +178,7 @@ export default class AdminApi {
   }
 
   private async getAlerts () {
-    // TODO - Fix
-    // const middleware = this.middlewareManager.getMiddleware('alert')
-    const middleware = undefined
+    const middleware = this.accounts.getMiddleware('alert')
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
     return {
@@ -152,9 +187,7 @@ export default class AdminApi {
   }
 
   private async deleteAlert (url: string) {
-    // TODO - Fix
-    // const middleware = this.middlewareManager.getMiddleware('alert')
-    const middleware = undefined
+    const middleware = this.accounts.getMiddleware('alert')
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
     const match = /^\/alerts\/(\d+)$/.exec(url.split('?')[0])
@@ -164,5 +197,41 @@ export default class AdminApi {
 
   private async getMetrics () {
     return Prometheus.register.metrics()
+  }
+
+  private _getPlugin (url: string) {
+    const match = /^\/accounts\/([A-Za-z0-9_.\-~]+)$/.exec(url.split('?')[0])
+    if (!match) throw new Error('invalid account.')
+    const accountId = match[1]
+    const account = this.accounts.get(accountId)
+    const plugin = (account as WrapperAccount).getPlugin()
+    if (!plugin) throw new Error('cannot access plugin for account=' + account)
+
+    return {
+      account: accountId,
+      info: account.info,
+      plugin
+    }
+  }
+
+  private async getAccountAdminInfo (url: string) {
+    const { account, info, plugin } = this._getPlugin(url)
+    if (!plugin.getAdminInfo) throw new Error('plugin has no admin info. account=' + account)
+    return {
+      account,
+      plugin: info.plugin,
+      info: (await plugin.getAdminInfo())
+    }
+  }
+
+  private async sendAccountAdminInfo (url: string, body?: object) {
+    if (!body) throw new Error('no json body provided to set admin info.')
+    const { account, info, plugin } = this._getPlugin(url)
+    if (!plugin.sendAdminInfo) throw new Error('plugin does not support sending admin info. account=' + account)
+    return {
+      account,
+      plugin: info.plugin,
+      result: (await plugin.sendAdminInfo(body))
+    }
   }
 }

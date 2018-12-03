@@ -39,7 +39,7 @@ export default class RateBackend implements BackendInstance {
 
   async getStatus () {
     const rates = {}
-    const accountIds = this.accounts.keys()
+    const accountIds = [...this.accounts.keys()]
     for (const srcAccount of accountIds) {
       const accountRates = rates[srcAccount] = {}
       for (const dstAccount of accountIds) {

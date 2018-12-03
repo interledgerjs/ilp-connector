@@ -14,7 +14,7 @@ import Account from '../types/account'
 import AccountProvider, { constructAccountProvider } from '../types/account-provider'
 import PluginAccountProvider from '../account-providers/plugin'
 import { constructMiddlewares, wrapMiddleware } from '../lib/middleware'
-import PluginAccount from '../accounts/plugin'
+import WrapperAccount from '../accounts/wrapper'
 const { UnreachableError } = Errors
 const log = createLogger('accounts')
 
@@ -211,11 +211,18 @@ export default class Accounts extends EventEmitter {
   public getStatus () {
     const accounts = {}
     this._accounts.forEach((account, accountId) => {
+      let plugin = undefined
+      try{
+        plugin = (account as WrapperAccount).getPlugin()
+      }
+      catch {
+        //do nothing
+      }
       accounts[accountId] = {
         // Set info.options to undefined so that credentials aren't exposed.
         info: Object.assign({}, account.info, { options: undefined }),
         connected: account.isConnected(),
-        adminInfo: account instanceof PluginAccount ? !!account.getPlugin().getAdminInfo : false
+        adminInfo: plugin ? !!plugin.getAdminInfo : false
       }
     })
     return {
