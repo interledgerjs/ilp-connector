@@ -14,7 +14,7 @@
     "profile": {
       "description": "Determines the configuration defaults to use when running the connector. Can be: 'connector', 'server', 'plugin', 'cluster'. Default: 'connector'",
       "type": "string",
-      "enum": ["connector", "server", "plugin", "cluster"],
+      "enum": ["connector", "plugin", "cluster"],
       "default": "connector"
     },
     "ilpAddress": {
@@ -34,7 +34,6 @@
       "additionalProperties": { "$ref" : "AccountProviderConfig.json"},
       "default": {
         "connector": { "default": { "type" : "plugin" }},
-        "server": { "default": { "type" : "plugin" }},
         "plugin": { "default": { "type" : "plugin" }},
         "cluster": { "default": { "type" : "plugin" }}
       }

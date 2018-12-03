@@ -27,7 +27,8 @@ export interface AccountInfo {
   options?: object,
   sendRoutes?: boolean,
   receiveRoutes?: boolean,
-  ilpAddressSegment?: string
+  ilpAddressSegment?: string,
+  disableMiddleware?: boolean
 }
 
 export default interface Account extends EventEmitter {

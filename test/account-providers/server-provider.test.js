@@ -94,4 +94,11 @@ describe('server provider', function () {
     assert.deepStrictEqual(tokenToAccount('test_token'), this.account.id)
   })
 
+  it('creates accounts using the default account info specified in config', async function () {
+    await sendAuthPacket(this.serverUrl, 'test-account', 'test_token')
+    assert.deepStrictEqual('ilp-plugin-btp', this.account.info.plugin)
+    assert.deepStrictEqual(10, this.account.info.assetScale)
+    assert.deepStrictEqual('USD', this.account.info.assetCode)
+    assert.deepStrictEqual('child', this.account.info.relation)
+  })
 })

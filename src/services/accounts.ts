@@ -3,7 +3,6 @@ import Store from './store'
 import Config from './config'
 import Stats from './stats'
 import { EventEmitter } from 'events'
-import { loadModuleOfType } from '../lib/utils'
 import {
   IlpPrepare,
   IlpReply,
@@ -15,7 +14,6 @@ import Account from '../types/account'
 import AccountProvider, { constructAccountProvider } from '../types/account-provider'
 import PluginAccountProvider from '../account-providers/plugin'
 import { constructMiddlewares, wrapMiddleware } from '../lib/middleware'
-import { AccountProviderConfig } from '../schemas/Config'
 const { UnreachableError } = Errors
 const log = createLogger('accounts')
 
@@ -51,15 +49,7 @@ export default class Accounts extends EventEmitter {
   }
 
   private getAccountMiddleware (account: Account) {
-    switch (this._config.profile) {
-      case 'connector':
-      case 'cluster':
-        return this._middlewares
-      case 'plugin':
-        return account.info.relation === 'parent' ? {} : this._middlewares
-      default:
-        throw new Error(`Can\'t get account middlewares for accountId=${account.id}. Unknown configuration profile: ${this._config.profile}`)
-    }
+    return account.info.disableMiddleware ? {} : this._middlewares
   }
 
   public setup (deps: reduct.Injector) {

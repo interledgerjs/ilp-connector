@@ -21,7 +21,7 @@ export default class PluginAccountProvider implements AccountProvider {
     const defaultAccountInfo = (options && options.defaultAccountInfo) ? options.defaultAccountInfo : {}
     Object.keys(config.accounts).forEach(accountId => {
       try {
-        const accountInfo = Object.assign(defaultAccountInfo, config.accounts[accountId])
+        const accountInfo = Object.assign({}, defaultAccountInfo, config.accounts[accountId])
         config.validateAccount(accountId, accountInfo)
         this._configuredAccounts[accountId] = accountInfo
       } catch (err) {
