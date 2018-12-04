@@ -29,8 +29,8 @@ describe('AdminApi', function () {
     process.env.DEBUG = '*'
     process.env.CONNECTOR_ACCOUNTS = JSON.stringify(this.accountData)
 
-    appHelper.create(this)
     this.clock = sinon.useFakeTimers(START_DATE)
+    appHelper.create(this)
 
     this.accounts.setOwnAddress(this.config.ilpAddress)
     await this.accounts.startup()
@@ -348,7 +348,16 @@ describe('AdminApi', function () {
         help: 'Total number of outgoing ILP packets',
         name: 'ilp_connector_outgoing_ilp_packets',
         type: 'counter',
-        values: [{
+        values: [{ //added because sending of ccp routes fails because mock plugin cant send data
+          "labels": {
+            "account": "test.cad-ledger",
+            "asset": "CAD",
+            "result": "failed",
+            "scale": 4
+          },
+          "timestamp": undefined,
+          "value": 1
+        },{
           value: 1,
           labels:
           {
@@ -411,6 +420,10 @@ describe('AdminApi', function () {
         name: 'ilp_connector_balance',
         type: 'gauge',
         values: [{
+          labels: { account: "test.cad-ledger", asset: "CAD", "scale": 4},
+          timestamp: undefined,
+          value: 0
+        },{
           value: 100,
           labels: { account: 'test.usd-ledger', asset: 'USD', scale: 4 },
           timestamp: undefined
@@ -419,11 +432,15 @@ describe('AdminApi', function () {
           value: -94,
           labels: { account: 'test.eur-ledger', asset: 'EUR', scale: 4 },
           timestamp: undefined
-        }],
+        },{
+            labels: { account: "test.cny-ledger", asset: "CNY", scale: 4 },
+            timestamp: undefined,
+            value: 0
+          }],
         aggregator: 'sum'
       }]
 
-      assert.deepEqual(metrics, expected)
+      assert.deepStrictEqual(metrics, expected)
     })
   })
 

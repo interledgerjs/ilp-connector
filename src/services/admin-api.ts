@@ -205,7 +205,6 @@ export default class AdminApi {
     const accountId = match[1]
     const account = this.accounts.get(accountId)
     const plugin = (account as WrapperAccount).getPlugin()
-    if (!plugin) throw new Error('cannot access plugin for account=' + account)
 
     return {
       account: accountId,
