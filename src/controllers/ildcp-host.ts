@@ -18,7 +18,7 @@ export default class IldcpHostController {
 
     return ILDCP.serve({
       requestPacket: data,
-      handler: () => ({
+      handler: () => Promise.resolve({
         clientAddress,
         assetScale: info.assetScale,
         assetCode: info.assetCode
