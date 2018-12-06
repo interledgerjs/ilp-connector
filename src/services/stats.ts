@@ -31,49 +31,82 @@ export class AccountGauge extends Prometheus.Gauge {
 }
 
 export default class Stats {
-  public incomingDataPackets = new AccountCounter({
-    name: 'ilp_connector_incoming_ilp_packets',
-    help: 'Total number of incoming ILP packets',
-    labelNames: [ 'result', 'code'] })
+  public incomingDataPackets: AccountCounter
+  public incomingDataPacketValue: AccountCounter
+  public outgoingDataPackets: AccountCounter
+  public outgoingDataPacketValue: AccountCounter
+  public incomingMoney: AccountGauge
+  public outgoingMoney: AccountGauge
+  public rateLimitedPackets: AccountCounter
+  public rateLimitedMoney: AccountCounter
+  public balance: AccountGauge
+  private registry: Prometheus.Registry
 
-  public incomingDataPacketValue = new AccountCounter({
-    name: 'ilp_connector_incoming_ilp_packet_value',
-    help: 'Total value of incoming ILP packets',
-    labelNames: [ 'result', 'code'] })
+  constructor () {
+    this.registry = new (Prometheus.Registry)()
 
-  public outgoingDataPackets = new AccountCounter({
-    name: 'ilp_connector_outgoing_ilp_packets',
-    help: 'Total number of outgoing ILP packets',
-    labelNames: [ 'result', 'code' ] })
+    this.incomingDataPackets = new AccountCounter({
+      name: 'ilp_connector_incoming_ilp_packets',
+      help: 'Total number of incoming ILP packets',
+      labelNames: [ 'result', 'code'],
+      registers: [this.registry]
+    })
 
-  public outgoingDataPacketValue = new AccountCounter({
-    name: 'ilp_connector_outgoing_ilp_packet_value',
-    help: 'Total value of outgoing ILP packets',
-    labelNames: [ 'result', 'code' ] })
+    this.incomingDataPacketValue = new AccountCounter({
+      name: 'ilp_connector_incoming_ilp_packet_value',
+      help: 'Total value of incoming ILP packets',
+      labelNames: [ 'result', 'code'],
+      registers: [this.registry]
+    })
 
-  public incomingMoney = new AccountGauge({
-    name: 'ilp_connector_incoming_money',
-    help: 'Total of incoming money',
-    labelNames: [ 'result' ] })
+    this.outgoingDataPackets = new AccountCounter({
+      name: 'ilp_connector_outgoing_ilp_packets',
+      help: 'Total number of outgoing ILP packets',
+      labelNames: [ 'result', 'code' ],
+      registers: [this.registry]
+    })
 
-  public outgoingMoney = new AccountGauge({
-    name: 'ilp_connector_outgoing_money',
-    help: 'Total of outgoing money',
-    labelNames: [ 'result' ] })
+    this.outgoingDataPacketValue = new AccountCounter({
+      name: 'ilp_connector_outgoing_ilp_packet_value',
+      help: 'Total value of outgoing ILP packets',
+      labelNames: [ 'result', 'code' ],
+      registers: [this.registry]
+    })
 
-  public rateLimitedPackets = new AccountCounter({
-    name: 'ilp_connector_rate_limited_ilp_packets',
-    help: 'Total of rate limited ILP packets' })
+    this.incomingMoney = new AccountGauge({
+      name: 'ilp_connector_incoming_money',
+      help: 'Total of incoming money',
+      labelNames: [ 'result' ],
+      registers: [this.registry]
+    })
 
-  public rateLimitedMoney = new AccountCounter({
-    name: 'ilp_connector_rate_limited_money',
-    help: 'Total of rate limited money requests' })
+    this.outgoingMoney = new AccountGauge({
+      name: 'ilp_connector_outgoing_money',
+      help: 'Total of outgoing money',
+      labelNames: [ 'result' ],
+      registers: [this.registry]
+    })
 
-  public balance = new AccountGauge({
-    name: 'ilp_connector_balance',
-    help: 'Balances on peer account' })
+    this.rateLimitedPackets = new AccountCounter({
+      name: 'ilp_connector_rate_limited_ilp_packets',
+      help: 'Total of rate limited ILP packets',
+      registers: [this.registry]
+    })
+
+    this.rateLimitedMoney = new AccountCounter({
+      name: 'ilp_connector_rate_limited_money',
+      help: 'Total of rate limited money requests',
+      registers: [this.registry]
+    })
+
+    this.balance = new AccountGauge({
+      name: 'ilp_connector_balance',
+      help: 'Balances on peer account',
+      registers: [this.registry]
+    })
+  }
 
   getStatus () {
-    return Prometheus.register.getMetricsAsJSON()
+    return this.registry.getMetricsAsJSON()
   }
 }
