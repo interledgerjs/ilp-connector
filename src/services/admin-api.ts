@@ -110,7 +110,7 @@ export default class AdminApi {
       return
     }
 
-    const resBody = await route.fn.call(this, req.url, body && JSON.parse(body))
+    const resBody = await route.fn.call(this, req.url!, body && JSON.parse(body))
     if (resBody) {
       res.statusCode = 200
       if (route.responseType) {

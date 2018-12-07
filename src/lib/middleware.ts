@@ -137,7 +137,7 @@ export async function wrapMiddleware (account: Account, middlewares: { [key: str
 
   // Generate outgoing middleware (ILP prepare from wrapper to account)
   const outgoingIlpPacketPipeline = constructMiddlewarePipeline(pipelines.outgoingData, account.sendIlpPacket.bind(account))
-  const outgoingMoneyPipeline = constructMiddlewarePipeline(pipelines.outgoingMoney, account.sendIlpPacket.bind(account))
+  const outgoingMoneyPipeline = constructMiddlewarePipeline(pipelines.outgoingMoney, account.sendMoney.bind(account))
 
   // Generate shutdown middleware
   const shutdownPipeline = constructMiddlewarePipeline(pipelines.shutdown, async () => { return account.shutdown() })
