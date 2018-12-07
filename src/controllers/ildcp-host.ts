@@ -19,7 +19,7 @@ export default class IldcpHostController {
 
     return deserializeIlpReply(await ILDCP.serve({
       requestPacket: serializeIlpPrepare(packet),
-      handler: async () => ({
+      handler: () => Promise.resolve({
         clientAddress,
         assetScale: info.assetScale,
         assetCode: info.assetCode

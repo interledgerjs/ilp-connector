@@ -24,5 +24,5 @@ export default interface AccountProvider {
 
 export function constructAccountProvider (config: AccountProviderConfig, deps: reduct.Injector): AccountProvider {
   const AccountServiceProviderConst = loadModuleOfType('account-provider', config.type) as AccountProviderConstructor
-  return new AccountServiceProviderConst(deps, config.options) as AccountProvider
+  return new AccountServiceProviderConst(deps, config.options)
 }

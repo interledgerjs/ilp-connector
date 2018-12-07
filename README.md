@@ -16,33 +16,35 @@
 
 ## Table of Contents
 
-* [Overview](#overview)
+* * [Overview](#overview)
 
-  * [What is this?](#what-is-this)
-  * [Who is this for?](#who-is-this-for)
+    * [What is this?](#what-is-this)
+    * [Who is this for?](#who-is-this-for)
 
-* [Timekeeping](#timekeeping)
+  * [Timekeeping](#timekeeping)
 
-* [Quickstart](#quickstart)
+  * [Quickstart](#quickstart)
 
-* [Guides](#guides)
+  * [Guides](#guides)
 
-  * [Connect your connector to the Interledger](#connect-your-connector-to-the-interledger)
-  * [Allow your apps to connect to your connector](#allow-your-apps-to-connect-to-your-connector)
-  * [Embed a connector in another JavaScript app](#embed-a-connector-in-another-javascript-app)
-  * [Create a tier-1 connector](#create-a-tier-1-connector)
-  * [Run the connector in Docker](#run-the-connector-in-docker)
+    * [Connect your connector to the Interledger](#connect-your-connector-to-the-interledger)
+    * [Allow your apps to connect to your connector](#allow-your-apps-to-connect-to-your-connector)
+    * [Embed a connector in another JavaScript app](#embed-a-connector-in-another-javascript-app)
+    * [Create a tier-1 connector](#create-a-tier-1-connector)
+    * [Run the connector in Docker](#run-the-connector-in-docker)
 
-* [Reference](#reference)
+  * [Reference](#reference)
 
-  * [Configuration Variables](#configuration-variables)
-  * [API Reference](#api-reference)
-  * [Extensibility: Plugins](#extensibility-plugins)
-  * [Extensibility: Stores](#extensibility-stores)
-  * [Extensibility: Middlewares](#extensibility-middlewares)
-  * [Extensibility: Backends](#extensibility-backends)
+    * [Configuration Variables](#configuration-variables)
 
-* [Development](#development)
+* [| \*.throughput.refillPeriod   | integer       | Optional Length of time (in milliseconds) during which the token balance increases by incomingAmount/outgoingAmount tokens. Defaults to one second.                                                                                                                                                                                                                               |](#-throughputrefillperiod----integer--------optional-length-of-time-in-milliseconds-during-which-the-token-balance-increases-by-incomingamountoutgoingamount-tokens-defaults-to-one-second-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------)
+
+  * * [API Reference](#api-reference)
+    * [Extensibility: Plugins](#extensibility-plugins)
+    * [Extensibility: Stores](#extensibility-stores)
+    * [Extensibility: Middlewares](#extensibility-middlewares)
+    * [Extensibility: Backends](#extensibility-backends)
+  * [Development](#development)
 
 ## Overview
 
@@ -230,54 +232,42 @@ If there are multiple parents, and `ilpAddress` is not set explicit, specify the
 
 * Environment: `CONNECTOR_ACCOUNT_PROVIDERS`
 * Type: `object`
-* Default: `{"connector":{"default":{"type":"plugin"}},"server":{"default":{"type":"plugin"}},"plugin":{"default":{"type":"plugin"}},"cluster":{"default":{"type":"plugin"}}}`
+* Default: `{"connector":{"default":{"type":"plugin"}},"plugin":{"default":{"type":"plugin"}},"cluster":{"default":{"type":"plugin"}}}`
 
-| Name                                                     | Type          | Description                                                                                                                                                                                                                                                                                                                                                                             |
-| -------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `*`                                                      | object        | The definition of an account provider                                                                                                                                                                                                                                                                                                                                                   |
-| `*.type`                                                 | string        | NPM module that should be `require`d to load the module constructor.                                                                                                                                                                                                                                                                                                                    |
-| `*.options`                                              | object        | _Optional_ Options that will be passed to the module constructor.                                                                                                                                                                                                                                                                                                                       |
-| `*.options.defaultAccountInfo`                           | object        | _Optional_ The definition of an account                                                                                                                                                                                                                                                                                                                                                 |
-| `*.options.defaultAccountInfo.relation`                  | string        | Relationship between the connector and the counterparty that the account is with.                                                                                                                                                                                                                                                                                                       |
-| `*.options.defaultAccountInfo.plugin`                    | string,object | Name or instance of the ILP plugin that should be used for this account. A plugin instance can only be passed when instantiating the connector from JavaScript.                                                                                                                                                                                                                         |
-| `*.options.defaultAccountInfo.assetCode`                 | string        | Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.                                                                                                                                                                                                                                                                 |
-| `*.options.defaultAccountInfo.assetScale`                | integer       | Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.                                                                                     |
-| `*.options.defaultAccountInfo.balance`                   | object        | _Optional_ Defines whether the connector should maintain and enforce a balance for this account. The balance is always from the connector's perspective. Therefore, a negative balance implies the connector owes money to the counterparty and a positive balance implies the counterparty owes money to the connector. This setting is enforced by the built-in `balance` middleware. |
-| `*.options.defaultAccountInfo.balance.maximum`           | string        | Maximum balance (in this account's indivisible base units) the connector will allow. The connector will reject incoming packets if they would put it above this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                                     |
-| `*.options.defaultAccountInfo.balance.minimum`           | string        | _Optional_ Minimum balance (in this account's indivisible base units) the connector must maintain. The connector will reject outgoing packets if they would put it below this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                       |
-| `*.options.defaultAccountInfo.balance.settleThreshold`   | string        | _Optional_ Balance (in this account's indivisible base units) numerically below which the connector will automatically initiate a settlement. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value) or `"-Infinity"`.                                                                                                              |
-| `*.options.defaultAccountInfo.balance.settleTo`          | string        | _Optional_ Balance (in this account's indivisible base units) the connector will attempt to reach when settling. The format is an integer (which may be prefixed with `-` to indicate a negative value) as a string.                                                                                                                                                                    |
-| `*.options.defaultAccountInfo.disableMiddleware`         | boolean       | _Optional_ Should the middleware pipeline be enabled for this account or not.                                                                                                                                                                                                                                                                                                           |
-| `*.options.defaultAccountInfo.ilpAddressSegment`         | string        | _Optional_ What segment will be appended to the connector's ILP address to form this account's ILP address. Only applicable to accounts with `relation=child`. Defaults to the id of the account, i.e. the key used in the `accounts` config object.                                                                                                                                    |
-| `*.options.defaultAccountInfo.maxPacketAmount`           | string        | _Optional_ Maximum amount per packet for incoming prepare packets. Connector will reject any incoming prepare packets from this account with a higher amount. Amount should be provided as an integer in a string (in atomic units). This setting is enforced by the built-in `maxPacketAmount` middleware.                                                                             |
-| `*.options.defaultAccountInfo.options.*`                 | object        | _Optional_                                                                                                                                                                                                                                                                                                                                                                              |
-| `*.options.defaultAccountInfo.rateLimit`                 | object        | _Optional_ Maximum rate of incoming packets. Limit is implemented as a token bucket with a constant refill rate. When the token bucket is empty, all requests are immediately rejected. This setting is enforced by the built-in `rateLimit` middleware.                                                                                                                                |
-| `*.options.defaultAccountInfo.rateLimit.capacity`        | integer       | _Optional_ Maximum number of tokens in the bucket.                                                                                                                                                                                                                                                                                                                                      |
-| `*.options.defaultAccountInfo.rateLimit.refillCount`     | integer       | _Optional_ How many tokens are refilled per period. The default refill period is one second, so this would be the average number of requests per second.                                                                                                                                                                                                                                |
-| `*.options.defaultAccountInfo.rateLimit.refillPeriod`    | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `refillCount` tokens. Defaults to one second.                                                                                                                                                                                                                                                   |
-| `*.options.defaultAccountInfo.receiveRoutes`             | boolean       | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                        |
-| `*.options.defaultAccountInfo.sendRoutes`                | boolean       | _Optional_ Whether we should broadcast routes to this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                                              |
-| `*.options.defaultAccountInfo.throughput`                | object        | _Optional_ Configuration to limit the total amount sent via Interledger per unit of time. This setting is enforced by the built-in `throughput` middleware.                                                                                                                                                                                                                             |
-| `*.options.defaultAccountInfo.throughput.incomingAmount` | string        | _Optional_ Maximum incoming throughput amount (in atomic units; per second) for incoming packets. If this setting is not set, the incoming throughput limit is disabled.                                                                                                                                                                                                                |
-| `*.options.defaultAccountInfo.throughput.outgoingAmount` | string        | _Optional_ Maximum throughput amount (in atomic units; per second) for outgoing packets. If this setting is not set, the outgoing throughput limit is disabled.                                                                                                                                                                                                                         |
-| `*.options.defaultAccountInfo.throughput.refillPeriod`   | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.                                                                                                                                                                                                                               |
-| `*.options.listener`                                     | number        | _Optional_                                                                                                                                                                                                                                                                                                                                                                              |
-
-#### `providerPort`
-
-* Environment: `CONNECTOR_PROVIDER_PORT`
-* Type: `number`
-* Default: `5555`
-
-The port that the provider should listen on when running the connector using the server profile
-
-#### `providerDefaultAccountInfo`
-
-* Environment: `CONNECTOR_PROVIDER_DEFAULT_ACCOUNT_INFO`
-* Type: `undefined`
-* Default: `undefined`
-
-undefined
+| Name                                                       | Type          | Description                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`                                                        | object        | The definition of an account provider                                                                                                                                                                                                                                                                                                                                                   |
+| `*.type`                                                   | string        | NPM module that should be `require`d to load the module constructor.                                                                                                                                                                                                                                                                                                                    |
+| `*.options`                                                | object        | _Optional_ Options that will be passed to the module constructor.                                                                                                                                                                                                                                                                                                                       |
+| `*.options.defaultAccountInfo`                             | object        | _Optional_ The definition of an account                                                                                                                                                                                                                                                                                                                                                 |
+| `*.options.defaultAccountInfo.relation`                    | string        | Relationship between the connector and the counterparty that the account is with.                                                                                                                                                                                                                                                                                                       |
+| `*.options.defaultAccountInfo.plugin`                      | string,object | Name or instance of the ILP plugin that should be used for this account. A plugin instance can only be passed when instantiating the connector from JavaScript.                                                                                                                                                                                                                         |
+| `*.options.defaultAccountInfo.assetCode`                   | string        | Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.                                                                                                                                                                                                                                                                 |
+| `*.options.defaultAccountInfo.assetScale`                  | integer       | Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.                                                                                     |
+| `*.options.defaultAccountInfo.balance`                     | object        | _Optional_ Defines whether the connector should maintain and enforce a balance for this account. The balance is always from the connector's perspective. Therefore, a negative balance implies the connector owes money to the counterparty and a positive balance implies the counterparty owes money to the connector. This setting is enforced by the built-in `balance` middleware. |
+| `*.options.defaultAccountInfo.balance.maximum`             | string        | Maximum balance (in this account's indivisible base units) the connector will allow. The connector will reject incoming packets if they would put it above this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                                     |
+| `*.options.defaultAccountInfo.balance.minimum`             | string        | _Optional_ Minimum balance (in this account's indivisible base units) the connector must maintain. The connector will reject outgoing packets if they would put it below this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                       |
+| `*.options.defaultAccountInfo.balance.settleThreshold`     | string        | _Optional_ Balance (in this account's indivisible base units) numerically below which the connector will automatically initiate a settlement. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value) or `"-Infinity"`.                                                                                                              |
+| `*.options.defaultAccountInfo.balance.settleTo`            | string        | _Optional_ Balance (in this account's indivisible base units) the connector will attempt to reach when settling. The format is an integer (which may be prefixed with `-` to indicate a negative value) as a string.                                                                                                                                                                    |
+| `*.options.defaultAccountInfo.deduplicate`                 | object        | _Optional_ Prevents sending duplicate packets.                                                                                                                                                                                                                                                                                                                                          |
+| `*.options.defaultAccountInfo.deduplicate.cleanupInterval` | integer       | _Optional_ Frequency at which the connector removes old deduplicate records. (in milliseconds, default: 30000)                                                                                                                                                                                                                                                                          |
+| `*.options.defaultAccountInfo.deduplicate.packetLifetime`  | integer       | _Optional_ Lifetime of a cache record. (in milliseconds, default: 30000)                                                                                                                                                                                                                                                                                                                |
+| `*.options.defaultAccountInfo.disableMiddleware`           | boolean       | _Optional_ Should the middleware pipeline be enabled for this account or not.                                                                                                                                                                                                                                                                                                           |
+| `*.options.defaultAccountInfo.ilpAddressSegment`           | string        | _Optional_ What segment will be appended to the connector's ILP address to form this account's ILP address. Only applicable to accounts with `relation=child`. Defaults to the id of the account, i.e. the key used in the `accounts` config object.                                                                                                                                    |
+| `*.options.defaultAccountInfo.maxPacketAmount`             | string        | _Optional_ Maximum amount per packet for incoming prepare packets. Connector will reject any incoming prepare packets from this account with a higher amount. Amount should be provided as an integer in a string (in atomic units). This setting is enforced by the built-in `maxPacketAmount` middleware.                                                                             |
+| `*.options.defaultAccountInfo.options.*`                   | object        | _Optional_                                                                                                                                                                                                                                                                                                                                                                              |
+| `*.options.defaultAccountInfo.rateLimit`                   | object        | _Optional_ Maximum rate of incoming packets. Limit is implemented as a token bucket with a constant refill rate. When the token bucket is empty, all requests are immediately rejected. This setting is enforced by the built-in `rateLimit` middleware.                                                                                                                                |
+| `*.options.defaultAccountInfo.rateLimit.capacity`          | integer       | _Optional_ Maximum number of tokens in the bucket.                                                                                                                                                                                                                                                                                                                                      |
+| `*.options.defaultAccountInfo.rateLimit.refillCount`       | integer       | _Optional_ How many tokens are refilled per period. The default refill period is one second, so this would be the average number of requests per second.                                                                                                                                                                                                                                |
+| `*.options.defaultAccountInfo.rateLimit.refillPeriod`      | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `refillCount` tokens. Defaults to one second.                                                                                                                                                                                                                                                   |
+| `*.options.defaultAccountInfo.receiveRoutes`               | boolean       | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                        |
+| `*.options.defaultAccountInfo.sendRoutes`                  | boolean       | _Optional_ Whether we should broadcast routes to this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                                              |
+| `*.options.defaultAccountInfo.throughput`                  | object        | _Optional_ Configuration to limit the total amount sent via Interledger per unit of time. This setting is enforced by the built-in `throughput` middleware.                                                                                                                                                                                                                             |
+| `*.options.defaultAccountInfo.throughput.incomingAmount`   | string        | _Optional_ Maximum incoming throughput amount (in atomic units; per second) for incoming packets. If this setting is not set, the incoming throughput limit is disabled.                                                                                                                                                                                                                |
+| `*.options.defaultAccountInfo.throughput.outgoingAmount`   | string        | _Optional_ Maximum throughput amount (in atomic units; per second) for outgoing packets. If this setting is not set, the outgoing throughput limit is disabled.                                                                                                                                                                                                                         |
+| `*.options.defaultAccountInfo.throughput.refillPeriod`     | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.                                                                                                                                                                                                                               |
+| `*.options.listener`                                       | object        | _Optional_                                                                                                                                                                                                                                                                                                                                                                              |
+| `*.options.listener.port`                                  | number        | _Optional_                                                                                                                                                                                                                                                                                                                                                                              |
 
 #### `accounts`
 
@@ -285,32 +275,261 @@ undefined
 * Type: `object`
 * Default: `{}`
 
-| Name                          | Type          | Description                                                                                                                                                                                                                                                                                                                                                                             |
-| ----------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `*`                           | object        | The definition of an account                                                                                                                                                                                                                                                                                                                                                            |
-| `*.relation`                  | string        | Relationship between the connector and the counterparty that the account is with.                                                                                                                                                                                                                                                                                                       |
-| `*.plugin`                    | string,object | Name or instance of the ILP plugin that should be used for this account. A plugin instance can only be passed when instantiating the connector from JavaScript.                                                                                                                                                                                                                         |
-| `*.assetCode`                 | string        | Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.                                                                                                                                                                                                                                                                 |
-| `*.assetScale`                | integer       | Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.                                                                                     |
-| `*.balance`                   | object        | _Optional_ Defines whether the connector should maintain and enforce a balance for this account. The balance is always from the connector's perspective. Therefore, a negative balance implies the connector owes money to the counterparty and a positive balance implies the counterparty owes money to the connector. This setting is enforced by the built-in `balance` middleware. |
-| `*.balance.maximum`           | string        | Maximum balance (in this account's indivisible base units) the connector will allow. The connector will reject incoming packets if they would put it above this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                                     |
-| `*.balance.minimum`           | string        | _Optional_ Minimum balance (in this account's indivisible base units) the connector must maintain. The connector will reject outgoing packets if they would put it below this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                       |
-| `*.balance.settleThreshold`   | string        | _Optional_ Balance (in this account's indivisible base units) numerically below which the connector will automatically initiate a settlement. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value) or `"-Infinity"`.                                                                                                              |
-| `*.balance.settleTo`          | string        | _Optional_ Balance (in this account's indivisible base units) the connector will attempt to reach when settling. The format is an integer (which may be prefixed with `-` to indicate a negative value) as a string.                                                                                                                                                                    |
-| `*.disableMiddleware`         | boolean       | _Optional_ Should the middleware pipeline be enabled for this account or not.                                                                                                                                                                                                                                                                                                           |
-| `*.ilpAddressSegment`         | string        | _Optional_ What segment will be appended to the connector's ILP address to form this account's ILP address. Only applicable to accounts with `relation=child`. Defaults to the id of the account, i.e. the key used in the `accounts` config object.                                                                                                                                    |
-| `*.maxPacketAmount`           | string        | _Optional_ Maximum amount per packet for incoming prepare packets. Connector will reject any incoming prepare packets from this account with a higher amount. Amount should be provided as an integer in a string (in atomic units). This setting is enforced by the built-in `maxPacketAmount` middleware.                                                                             |
-| `*.options.*`                 | object        | _Optional_                                                                                                                                                                                                                                                                                                                                                                              |
-| `*.rateLimit`                 | object        | _Optional_ Maximum rate of incoming packets. Limit is implemented as a token bucket with a constant refill rate. When the token bucket is empty, all requests are immediately rejected. This setting is enforced by the built-in `rateLimit` middleware.                                                                                                                                |
-| `*.rateLimit.capacity`        | integer       | _Optional_ Maximum number of tokens in the bucket.                                                                                                                                                                                                                                                                                                                                      |
-| `*.rateLimit.refillCount`     | integer       | _Optional_ How many tokens are refilled per period. The default refill period is one second, so this would be the average number of requests per second.                                                                                                                                                                                                                                |
-| `*.rateLimit.refillPeriod`    | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `refillCount` tokens. Defaults to one second.                                                                                                                                                                                                                                                   |
-| `*.receiveRoutes`             | boolean       | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                        |
-| `*.sendRoutes`                | boolean       | _Optional_ Whether we should broadcast routes to this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                                              |
-| `*.throughput`                | object        | _Optional_ Configuration to limit the total amount sent via Interledger per unit of time. This setting is enforced by the built-in `throughput` middleware.                                                                                                                                                                                                                             |
-| `*.throughput.incomingAmount` | string        | _Optional_ Maximum incoming throughput amount (in atomic units; per second) for incoming packets. If this setting is not set, the incoming throughput limit is disabled.                                                                                                                                                                                                                |
-| `*.throughput.outgoingAmount` | string        | _Optional_ Maximum throughput amount (in atomic units; per second) for outgoing packets. If this setting is not set, the outgoing throughput limit is disabled.                                                                                                                                                                                                                         |
-| `*.throughput.refillPeriod`   | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.                                                                                                                                                                                                                               |
+| Name                            | Type          | Description                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`                             | object        | The definition of an account                                                                                                                                                                                                                                                                                                                                                            |
+| `*.relation`                    | string        | Relationship between the connector and the counterparty that the account is with.                                                                                                                                                                                                                                                                                                       |
+| `*.plugin`                      | string,object | Name or instance of the ILP plugin that should be used for this account. A plugin instance can only be passed when instantiating the connector from JavaScript.                                                                                                                                                                                                                         |
+| `*.assetCode`                   | string        | Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.                                                                                                                                                                                                                                                                 |
+| `*.assetScale`                  | integer       | Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.                                                                                     |
+| `*.balance`                     | object        | _Optional_ Defines whether the connector should maintain and enforce a balance for this account. The balance is always from the connector's perspective. Therefore, a negative balance implies the connector owes money to the counterparty and a positive balance implies the counterparty owes money to the connector. This setting is enforced by the built-in `balance` middleware. |
+| `*.balance.maximum`             | string        | Maximum balance (in this account's indivisible base units) the connector will allow. The connector will reject incoming packets if they would put it above this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                                     |
+| `*.balance.minimum`             | string        | _Optional_ Minimum balance (in this account's indivisible base units) the connector must maintain. The connector will reject outgoing packets if they would put it below this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                       |
+| `*.balance.settleThreshold`     | string        | _Optional_ Balance (in this account's indivisible base units) numerically below which the connector will automatically initiate a settlement. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value) or `"-Infinity"`.                                                                                                              |
+| `*.balance.settleTo`            | string        | _Optional_ Balance (in this account's indivisible base units) the connector will attempt to reach when settling. The format is an integer (which may be prefixed with `-` to indicate a negative value) as a string.                                                                                                                                                                    |
+| `*.deduplicate`                 | object        | _Optional_ Prevents sending duplicate packets.                                                                                                                                                                                                                                                                                                                                          |
+| `*.deduplicate.cleanupInterval` | integer       | _Optional_ Frequency at which the connector removes old deduplicate records. (in milliseconds, default: 30000)                                                                                                                                                                                                                                                                          |
+| `*.deduplicate.packetLifetime`  | integer       | _Optional_ Lifetime of a cache record. (in milliseconds, default: 30000)                                                                                                                                                                                                                                                                                                                |
+| `*.disableMiddleware`           | boolean       | _Optional_ Should the middleware pipeline be enabled for this account or not.                                                                                                                                                                                                                                                                                                           |
+| `*.ilpAddressSegment`           | string        | _Optional_ What segment will be appended to the connector's ILP address to form this account's ILP address. Only applicable to accounts with `relation=child`. Defaults to the id of the account, i.e. the key used in the `accounts` config object.                                                                                                                                    |
+| `*.maxPacketAmount`             | string        | _Optional_ Maximum amount per packet for incoming prepare packets. Connector will reject any incoming prepare packets from this account with a higher amount. Amount should be provided as an integer in a string (in atomic units). This setting is enforced by the built-in `maxPacketAmount` middleware.                                                                             |
+| `*.options.*`                   | object        | _Optional_                                                                                                                                                                                                                                                                                                                                                                              |
+| `*.rateLimit`                   | object        | _Optional_ Maximum rate of incoming packets. Limit is implemented as a token bucket with a constant refill rate. When the token bucket is empty, all requests are immediately rejected. This setting is enforced by the built-in `rateLimit` middleware.                                                                                                                                |
+| `*.rateLimit.capacity`          | integer       | _Optional_ Maximum number of tokens in the bucket.                                                                                                                                                                                                                                                                                                                                      |
+| `*.rateLimit.refillCount`       | integer       | _Optional_ How many tokens are refilled per period. The default refill period is one second, so this would be the average number of requests per second.                                                                                                                                                                                                                                |
+| `*.rateLimit.refillPeriod`      | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `refillCount` tokens. Defaults to one second.                                                                                                                                                                                                                                                   |
+| `*.receiveRoutes`               | boolean       | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                        |
+| `*.sendRoutes`                  | boolean       | _Optional_ Whether we should broadcast routes to this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                                              |
+| `*.throughput`                  | object        | _Optional_ Configuration to limit the total amount sent via Interledger per unit of time. This setting is enforced by the built-in `throughput` middleware.                                                                                                                                                                                                                             |
+| `*.throughput.incomingAmount`   | string        | _Optional_ Maximum incoming throughput amount (in atomic units; per second) for incoming packets. If this setting is not set, the incoming throughput limit is disabled.                                                                                                                                                                                                                |
+| `*.throughput.outgoingAmount`   | string        | _Optional_ Maximum throughput amount (in atomic units; per second) for outgoing packets. If this setting is not set, the outgoing throughput limit is disabled.                                                                                                                                                                                                                         |
+| `*.throughput.refillPeriod`     | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.                                                                                                                                                                                                                               |
+
+#### `defaultRoute`
+
+* Environment: `CONNECTOR_DEFAULT_ROUTE`
+* Type: `string`
+* Default: `"auto"`
+
+Which account should be used as the default route for all other traffic. Can be set to empty string to disable the default route or 'auto' to automatically use the first parent in the `accounts` map. Default: 'auto'
+
+#### `routes`
+
+* Environment: `CONNECTOR_ROUTES`
+* Type: `array`
+* Default: `[]`
+
+| Name              | Type   | Description                                                                                                                                                                                                                                                |
+| ----------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[]`              | object | Description of a route entry.                                                                                                                                                                                                                              |
+| `[].targetPrefix` | string | ILP address prefix that this route applies to. Configured routes take precedence over the same or shorter prefixes that are local or published by peers. More specific prefixes will still take precedence. Prefixes should NOT include a trailing period. |
+| `[].peerId`       | string | ID of the account that destinations matching `targetPrefix` should be forwarded to. Must be one of the accounts in `accounts`.                                                                                                                             |
+
+#### `spread`
+
+* Environment: `CONNECTOR_SPREAD`
+* Type: `number`
+* Default: `0.002`
+
+How much of a spread to add on top of the reference exchange rate. Determines the connector's margin.
+
+#### `minMessageWindow`
+
+* Environment: `CONNECTOR_MIN_MESSAGE_WINDOW`
+* Type: `integer`
+* Default: `1000`
+
+Minimum time the connector wants to budget for getting a message to the accounts its trading on. In milliseconds.
+
+#### `maxHoldTime`
+
+* Environment: `CONNECTOR_MAX_HOLD_TIME`
+* Type: `integer`
+* Default: `30000`
+
+Maximum duration (in milliseconds) the connector is willing to place funds on hold while waiting for the outcome of a transaction.
+
+#### `routeBroadcastEnabled`
+
+* Environment: `CONNECTOR_ROUTE_BROADCAST_ENABLED`
+* Type: `boolean`
+* Default: `{"connector":true,"server":true,"plugin":false,"cluster":true}`
+
+Whether to broadcast known routes.
+
+#### `routeBroadcastInterval`
+
+* Environment: `CONNECTOR_ROUTE_BROADCAST_INTERVAL`
+* Type: `integer`
+* Default: `30000`
+
+Frequency at which the connector broadcasts its routes to adjacent connectors. (in milliseconds)
+
+#### `routeCleanupInterval`
+
+* Environment: `CONNECTOR_ROUTE_CLEANUP_INTERVAL`
+* Type: `integer`
+* Default: `1000`
+
+The frequency at which the connector checks for expired routes. (in milliseconds)
+
+#### `routeExpiry`
+
+* Environment: `CONNECTOR_ROUTE_EXPIRY`
+* Type: `integer`
+* Default: `45000`
+
+The maximum age of a route provided by this connector. (in milliseconds)
+
+#### `routingSecret`
+
+* Environment: `CONNECTOR_ROUTING_SECRET`
+* Type: `string`
+* Default: `""`
+
+Seed used for generating routing table auth values.
+
+#### `backend`
+
+* Environment: `CONNECTOR_BACKEND`
+* Type: `string`
+* Default: `"ecb"`
+
+Name of the backend (can be built-in or a require-able module name). Built-in modules are: ecb, ecb-plus-xrp, ecb-plus-coinmarketcap, one-to-one
+
+#### `backendConfig`
+
+* Environment: `CONNECTOR_BACKEND_CONFIG`
+* Type: `object`
+* Default: `{}`
+
+Additional configuration for the backend.
+
+#### `store`
+
+* Environment: `CONNECTOR_STORE`
+* Type: `string`
+* Default: `"leveldown"`
+
+Name of the store (can be built-in or a require-able module name). Built-in modules are: leveldown, memdown
+
+#### `storePath`
+
+* Environment: `CONNECTOR_STORE_PATH`
+* Type: `string`
+* Default: `""`
+
+Shorthand for `config.storeConfig.path`.
+
+#### `storeConfig`
+
+* Environment: `CONNECTOR_STORE_CONFIG`
+* Type: `object`
+* Default: `{}`
+
+Additional options to be passed to the `store`'s constructor.
+
+#### `middlewares`
+
+* Environment: `CONNECTOR_MIDDLEWARES`
+* Type: `object`
+* Default: `{}`
+
+| Name          | Type   | Description                                                          |
+| ------------- | ------ | -------------------------------------------------------------------- |
+| `*`           | object | The definition of a module that can be loaded at runtime             |
+| `*.type`      | string | NPM module that should be `require`d to load the module constructor. |
+| `*.options.*` | object | _Optional_                                                           |
+
+#### `disableMiddleware`
+
+* Environment: `CONNECTOR_DISABLE_MIDDLEWARE`
+* Type: `array`
+* Default: `{"connector":[],"plugin":["deduplicate","expire","validate-fulfillment","max-packet-amount"],"cluster":["balance","throughput","rate-limit"]}`
+
+| Name | Type   | Description                           |
+| ---- | ------ | ------------------------------------- |
+| `[]` | string | Name of the middleware to be removed. |
+
+#### `reflectPayments`
+
+* Environment: `CONNECTOR_REFLECT_PAYMENTS`
+* Type: `boolean`
+* Default: `true`
+
+Whether to allow routing payments back to the account that sent them.
+
+#### `initialConnectTimeout`
+
+* Environment: `CONNECTOR_INITIAL_CONNECT_TIMEOUT`
+* Type: `integer`
+* Default: `10000`
+
+How long the connector should wait for account plugins to connect before launching other subsystems. (in milliseconds)
+
+#### `adminApi`
+
+* Environment: `CONNECTOR_ADMIN_API`
+* Type: `boolean`
+* Default: `false`
+
+Whether the admin API is enabled or not. Default: false (disabled)
+
+#### `adminApiPort`
+
+* Environment: `CONNECTOR_ADMIN_API_PORT`
+* Type: `integer`
+* Default: `7780`
+
+Which port the admin API should listen on. Default: 7780
+
+#### `adminApiHost`
+
+* Environment: `CONNECTOR_ADMIN_API_HOST`
+* Type: `string`
+* Default: `"127.0.0.1"`
+
+Host to bind to. Warning: The admin API interface should never be made public! Default: '127.0.0.1'
+
+#### `collectDefaultMetrics`
+
+* Environment: `CONNECTOR_COLLECT_DEFAULT_METRICS`
+* Type: `boolean`
+* Default: `false`
+
+Whether the Prometheus exporter should include system metrics or not. Default: false (no)
+
+# \| `*.throughput.refillPeriod`   | integer       | _Optional_ Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.                                                                                                                                                                                                                               |
+
+| Name                            | Type    | Description                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*`                             | object  | Description of individual account.                                                                                                                                                                                                                                                                                                                                                      |
+| `*.relation`                    | string  | Relationship between the connector and the counterparty that the account is with.                                                                                                                                                                                                                                                                                                       |
+| `*.plugin`                      | string  | Name or instance of the ILP plugin that should be used for this account. A plugin instance can only be passed when instantiating the connector from JavaScript.                                                                                                                                                                                                                         |
+| `*.assetCode`                   | string  | Currency code or other asset identifier that will be passed to the backend to select the correct rate for this account.                                                                                                                                                                                                                                                                 |
+| `*.assetScale`                  | integer | Interledger amounts are integers, but most currencies are typically represented as fractional units, e.g. cents. This property defines how many Interledger units make up one regular units. For dollars, this would usually be set to 9, so that Interledger amounts are expressed in nanodollars.                                                                                     |
+| `*.balance`                     | object  | _Optional_ Defines whether the connector should maintain and enforce a balance for this account. The balance is always from the connector's perspective. Therefore, a negative balance implies the connector owes money to the counterparty and a positive balance implies the counterparty owes money to the connector. This setting is enforced by the built-in `balance` middleware. |
+| `*.balance.maximum`             | string  | Maximum balance (in this account's indivisible base units) the connector will allow. The connector will reject incoming packets if they would put it above this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                                     |
+| `*.balance.minimum`             | string  | _Optional_ Minimum balance (in this account's indivisible base units) the connector must maintain. The connector will reject outgoing packets if they would put it below this balance. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value), `"-Infinity"` or `"Infinity"`.                                                       |
+| `*.balance.settleThreshold`     | string  | _Optional_ Balance (in this account's indivisible base units) numerically below which the connector will automatically initiate a settlement. The format is a string containing an integer (which may be prefixed with `-` to indicate a negative value) or `"-Infinity"`.                                                                                                              |
+| `*.balance.settleTo`            | string  | _Optional_ Balance (in this account's indivisible base units) the connector will attempt to reach when settling. The format is an integer (which may be prefixed with `-` to indicate a negative value) as a string.                                                                                                                                                                    |
+| `*.deduplicate.cleanupInterval` | integer | _Optional_ Frequency at which the connector removes old deduplicate records. (in milliseconds; defaults to 30 seconds)                                                                                                                                                                                                                                                                  |
+| `*.deduplicate.packetLifetime`  | integer | _Optional_ Lifetime of a cache record. (in milliseconds; defaults to 30 seconds)                                                                                                                                                                                                                                                                                                        |
+| `*.ilpAddressSegment`           | string  | _Optional_ What segment will be appended to the connector's ILP address to form this account's ILP address. Only applicable to accounts with `relation=child`. Defaults to the id of the account, i.e. the key used in the `accounts` config object.                                                                                                                                    |
+| `*.maxPacketAmount`             | string  | _Optional_ Maximum amount per packet for incoming prepare packets. Connector will reject any incoming prepare packets from this account with a higher amount. Amount should be provided as an integer in a string (in atomic units). This setting is enforced by the built-in `maxPacketAmount` middleware.                                                                             |
+| `*.options.*`                   | object  | _Optional_                                                                                                                                                                                                                                                                                                                                                                              |
+| `*.rateLimit`                   | object  | _Optional_ Maximum rate of incoming packets. Limit is implemented as a token bucket with a constant refill rate. When the token bucket is empty, all requests are immediately rejected. This setting is enforced by the built-in `rateLimit` middleware.                                                                                                                                |
+| `*.rateLimit.capacity`          | integer | _Optional_ Maximum number of tokens in the bucket.                                                                                                                                                                                                                                                                                                                                      |
+| `*.rateLimit.refillCount`       | integer | _Optional_ How many tokens are refilled per period. The default refill period is one second, so this would be the average number of requests per second.                                                                                                                                                                                                                                |
+| `*.rateLimit.refillPeriod`      | integer | _Optional_ Length of time (in milliseconds) during which the token balance increases by `refillCount` tokens. Defaults to one second.                                                                                                                                                                                                                                                   |
+| `*.receiveRoutes`               | boolean | _Optional_ Whether we should receive and process route broadcasts from this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                        |
+| `*.sendRoutes`                  | boolean | _Optional_ Whether we should broadcast routes to this peer. Defaults to `false` for `relation=child` and `true` otherwise.                                                                                                                                                                                                                                                              |
+| `*.throughput`                  | object  | _Optional_ Configuration to limit the total amount sent via Interledger per unit of time. This setting is enforced by the built-in `throughput` middleware.                                                                                                                                                                                                                             |
+| `*.throughput.incomingAmount`   | string  | _Optional_ Maximum incoming throughput amount (in atomic units; per second) for incoming packets. If this setting is not set, the incoming throughput limit is disabled.                                                                                                                                                                                                                |
+| `*.throughput.outgoingAmount`   | string  | _Optional_ Maximum throughput amount (in atomic units; per second) for outgoing packets. If this setting is not set, the outgoing throughput limit is disabled.                                                                                                                                                                                                                         |
+| `*.throughput.refillPeriod`     | integer | _Optional_ Length of time (in milliseconds) during which the token balance increases by `incomingAmount`/`outgoingAmount` tokens. Defaults to one second.                                                                                                                                                                                                                               |
+
+> > > > > > > master
 
 #### `defaultRoute`
 

@@ -1,36 +1,11 @@
 import { EventEmitter } from 'events'
 import { IlpPacketHander } from 'ilp-packet'
 import { MoneyHandler } from './plugin'
+import { AccountConfig } from '../schemas/Config'
 
-export interface AccountInfo {
-  relation: 'parent' | 'peer' | 'child',
-  assetCode: string,
-  assetScale: number,
-  plugin?: string | { [k: string]: any },
-  balance?: {
-    minimum?: string,
-    maximum: string,
-    settleThreshold?: string,
-    settleTo?: string
-  },
-  maxPacketAmount?: string,
-  throughput?: {
-    refillPeriod?: number,
-    incomingAmount?: string,
-    outgoingAmount?: string
-  },
-  rateLimit?: {
-    refillPeriod?: number,
-    refillCount?: number,
-    capacity?: number
-  },
-  options?: object,
-  sendRoutes?: boolean,
-  receiveRoutes?: boolean,
-  ilpAddressSegment?: string,
-  disableMiddleware?: boolean
+export interface AccountInfo extends AccountConfig {
+  // This allows space to extend the runtime object interface beyond what is defined in the schema
 }
-
 export default interface Account extends EventEmitter {
   readonly id: string,
   readonly info: AccountInfo,

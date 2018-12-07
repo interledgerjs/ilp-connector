@@ -298,8 +298,8 @@ describe('IlpPrepareController', function () {
 
     const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
-    assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-    assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+    assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+    assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'R02',
       message: 'source transfer expires too soon to complete payment. actualSourceExpiry=2015-06-16T00:00:01.999Z requiredSourceExpiry=2015-06-16T00:00:02.000Z currentTime=2015-06-16T00:00:00.000Z',
       triggeredBy: 'test.connie',
@@ -329,8 +329,8 @@ describe('IlpPrepareController', function () {
       const result = await this.mockAccountService1.getPlugin()._dataHandler(preparePacket)
 
       sinon.assert.calledOnce(rejectStub)
-      assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-      assert.deepEqual(IlpPacket.deserializeIlpReject(result), rejection)
+      assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+      assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), rejection)
     })
 
     it('does not send funds', async function () {
@@ -397,7 +397,7 @@ describe('IlpPrepareController', function () {
         nock(this.caseId1).get('').reply(200, data.case)
         await this.mockPlugin1.emitAsync('incoming_prepare',
           Object.assign(this.transfer, { cases: [this.caseId1] }))
-        assert.equal(sendSpy.called, false)
+        assert.strictEqual(sendSpy.called, false)
       })
     })
 
@@ -409,7 +409,7 @@ describe('IlpPrepareController', function () {
       const sendSpy = sinon.spy(this.mockPlugin2, 'sendTransfer')
       await this.mockPlugin1.emitAsync('incoming_prepare',
         Object.assign(this.transfer, { cases: [this.caseId1, this.caseId2] }))
-      assert.equal(sendSpy.called, false)
+      assert.strictEqual(sendSpy.called, false)
     })
 
     it('authorizes the payment if the case expiries match', async function () {
@@ -571,8 +571,8 @@ describe('IlpPrepareController', function () {
 
       const result = await this.mockAccountService3.getPlugin()._dataHandler(preparePacket)
 
-      assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-      assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+      assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+      assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
         code: 'F08',
         message: 'packet size too large. maxAmount=100 actualAmount=101',
         triggeredBy: 'test.connie',

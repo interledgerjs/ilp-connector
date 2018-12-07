@@ -12,7 +12,7 @@ const AdminApi = require('../../build/services/admin-api').default
 const CcpController = require('../../build/controllers/ccp').default
 const Store = require('../../build/services/store').default
 const ratesResponse = require('../data/fxRates.json')
-const IlpPrepareController = require("../../build/controllers/ilp-prepare").default
+const IlpPrepareController = require('../../build/controllers/ilp-prepare').default
 
 const createApp = require('../../build').createApp
 

@@ -86,7 +86,7 @@ describe('AdminApi', function () {
 
   describe('getStatus', function () {
     it('returns the status summary', async function () {
-      assert.deepEqual(await this.adminApi.getStatus(), {
+      assert.deepStrictEqual(await this.adminApi.getStatus(), {
         balances: {
           'test.cad-ledger': '0',
           'test.usd-ledger': '100',
@@ -133,8 +133,8 @@ describe('AdminApi', function () {
   describe('getRoutingStatus', function () {
     it('returns the routing status', async function () {
       const status = await this.adminApi.getRoutingStatus()
-      assert.equal(typeof status.routingTableId, 'string')
-      assert.deepEqual(status, {
+      assert.strictEqual(typeof status.routingTableId, 'string')
+      assert.deepStrictEqual(status, {
         routingTableId: status.routingTableId, // this changes every time
         currentEpoch: 5,
         localRoutingTable: {
@@ -214,7 +214,7 @@ describe('AdminApi', function () {
 
   describe('getAccountStatus', function () {
     it('returns the account status', async function () {
-      assert.deepEqual(await this.adminApi.getAccountStatus(), {
+      assert.deepStrictEqual(await this.adminApi.getAccountStatus(), {
         address: 'test.connie',
         accounts: {
           'test.cad-ledger': {
@@ -244,7 +244,7 @@ describe('AdminApi', function () {
 
   describe('getBalanceStatus', function () {
     it('returns the balance status', async function () {
-      assert.deepEqual(await this.adminApi.getBalanceStatus(), {
+      assert.deepStrictEqual(await this.adminApi.getBalanceStatus(), {
         accounts: {
           'test.cad-ledger': { balance: '0', minimum: '-Infinity', maximum: '1000' },
           'test.usd-ledger': { balance: '100', minimum: '-Infinity', maximum: '1000' },
@@ -264,11 +264,11 @@ describe('AdminApi', function () {
         'test.eur-ledger',
         'test.cny-ledger'
       ]
-      assert.deepEqual(Object.keys(rates), accounts)
+      assert.deepStrictEqual(Object.keys(rates), accounts)
       accounts.forEach((srcAccount) => {
         accounts.forEach((dstAccount) => {
           if (srcAccount === dstAccount) return
-          assert.equal(typeof rates[srcAccount][dstAccount], 'number')
+          assert.strictEqual(typeof rates[srcAccount][dstAccount], 'number')
         })
       })
     })
@@ -348,16 +348,17 @@ describe('AdminApi', function () {
         help: 'Total number of outgoing ILP packets',
         name: 'ilp_connector_outgoing_ilp_packets',
         type: 'counter',
-        values: [{ //added because sending of ccp routes fails because mock plugin cant send data
-          "labels": {
-            "account": "test.cad-ledger",
-            "asset": "CAD",
-            "result": "failed",
-            "scale": 4
+        values: [{ // Added because sending of ccp routes fails because mock plugin cant send data
+          labels: {
+            account: 'test.cad-ledger',
+            asset: 'CAD',
+            result: 'failed',
+            scale: 4
           },
-          "timestamp": undefined,
-          "value": 1
-        },{
+          timestamp: undefined,
+          value: 1
+        },
+        {
           value: 1,
           labels:
           {
@@ -420,10 +421,15 @@ describe('AdminApi', function () {
         name: 'ilp_connector_balance',
         type: 'gauge',
         values: [{
-          labels: { account: "test.cad-ledger", asset: "CAD", "scale": 4},
+          labels: {
+            account: 'test.cad-ledger',
+            asset: 'CAD',
+            scale: 4
+          },
           timestamp: undefined,
           value: 0
-        },{
+        },
+        {
           value: 100,
           labels: { account: 'test.usd-ledger', asset: 'USD', scale: 4 },
           timestamp: undefined
@@ -432,11 +438,16 @@ describe('AdminApi', function () {
           value: -94,
           labels: { account: 'test.eur-ledger', asset: 'EUR', scale: 4 },
           timestamp: undefined
-        },{
-            labels: { account: "test.cny-ledger", asset: "CNY", scale: 4 },
-            timestamp: undefined,
-            value: 0
-          }],
+        },
+        {
+          labels: {
+            account: 'test.cny-ledger',
+            asset: 'CNY',
+            scale: 4
+          },
+          timestamp: undefined,
+          value: 0
+        }],
         aggregator: 'sum'
       }]
 
@@ -449,7 +460,7 @@ describe('AdminApi', function () {
       await this.adminApi.postBalance('', { accountId: 'test.cad-ledger', amountDiff: '12' })
       await this.adminApi.postBalance('', { accountId: 'test.cad-ledger', amountDiff: '-34' })
       const balanceMiddleware = this.accounts.getMiddleware('balance')
-      assert.equal(
+      assert.strictEqual(
         balanceMiddleware.getStatus().accounts['test.cad-ledger'].balance,
         (12 - 34).toString())
     })
@@ -466,7 +477,7 @@ describe('AdminApi', function () {
 
   describe('getAlerts', function () {
     it('returns no alerts by default', async function () {
-      assert.deepEqual(await this.adminApi.getAlerts(), {alerts: []})
+      assert.deepStrictEqual(await this.adminApi.getAlerts(), { alerts: [] })
     })
 
     it('returns an alert when a peer returns "maximum balance exceeded"', async function () {
@@ -489,7 +500,7 @@ describe('AdminApi', function () {
       }
       const res = await this.adminApi.getAlerts()
 
-      assert.deepEqual(res, {
+      assert.deepStrictEqual(res, {
         alerts: [{
           id: res.alerts[0].id,
           accountId: 'test.eur-ledger',
@@ -527,7 +538,7 @@ describe('AdminApi', function () {
     describe('getAccountAdminInfo', function () {
       it('returns result of getAdminInfo', async function () {
         const res = await this.adminApi.getAccountAdminInfo('/accounts/test.usd-ledger')
-        assert.deepEqual(res, {
+        assert.deepStrictEqual(res, {
           account: 'test.usd-ledger',
           plugin: 'ilp-plugin-mock',
           info: {
@@ -540,7 +551,7 @@ describe('AdminApi', function () {
     describe('sendAccountAdminInfo', function () {
       it('passes the object into sendAdminInfo', async function () {
         const res = await this.adminApi.sendAccountAdminInfo('/accounts/test.usd-ledger', { foo: 'bar' })
-        assert.deepEqual(res, {
+        assert.deepStrictEqual(res, {
           account: 'test.usd-ledger',
           plugin: 'ilp-plugin-mock',
           result: {

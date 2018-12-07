@@ -213,11 +213,10 @@ export default class Accounts extends EventEmitter {
     const accounts = {}
     this._accounts.forEach((account, accountId) => {
       let plugin = undefined
-      try{
+      try {
         plugin = (account as WrapperAccount).getPlugin()
-      }
-      catch {
-        //do nothing
+      } catch (e) {
+        // Do nothing
       }
       accounts[accountId] = {
         // Set info.options to undefined so that credentials aren't exposed.
@@ -232,7 +231,7 @@ export default class Accounts extends EventEmitter {
     }
   }
 
-  public getMiddleware(name: string): Middleware | undefined {
+  public getMiddleware (name: string): Middleware | undefined {
     return this._middlewares[name]
   }
 }

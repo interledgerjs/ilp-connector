@@ -1,14 +1,12 @@
 'use strict'
 
 const assert = require('assert')
-const sinon = require('sinon')
-const { cloneDeep } = require('lodash')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
 const logger = require('../build/common/log')
-const PluginAccountProvider = require("../build/account-providers/plugin")
-const BtpServerAccountProvider = require("../build/account-providers/btp-server")
-const LoopBackAccountProvider = require("../build/account-providers/loop-back")
+const PluginAccountProvider = require('../build/account-providers/plugin')
+const BtpServerAccountProvider = require('../build/account-providers/btp-server')
+const LoopBackAccountProvider = require('../build/account-providers/loop-back')
 
 const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
@@ -21,13 +19,13 @@ describe('accounts', function () {
       assetScale: 1,
       assetCode: 'USD',
       relation: 'peer',
-      plugin: 'ilp-plugin-btp',
+      plugin: 'ilp-plugin-btp'
     }
     process.env.CONNECTOR_ACCOUNT_PROVIDERS = JSON.stringify({
-      "plugin": {
+      plugin: {
         type: 'plugin',
         options: {
-        },
+        }
       },
       'server': {
         type: 'btp-server',
@@ -66,7 +64,7 @@ describe('accounts', function () {
   })
 
   afterEach(async function () {
-    //shutdown ws server
+    // Shutdown ws server
     const accountProviders = this.accounts._accountProviders.values()
     accountProviders.next()
     accountProviders.next().value.shutdown()

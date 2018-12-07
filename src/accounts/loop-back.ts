@@ -1,6 +1,6 @@
 import Account , { AccountInfo } from '../types/account'
 import { AccountBase } from './base'
-import { IlpReply} from 'ilp-packet'
+import { IlpReply } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 const log = createLogger('loop-back-account-service')
 

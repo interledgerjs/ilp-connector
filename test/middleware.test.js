@@ -113,7 +113,7 @@ describe('Middleware Manager', function () {
 
         const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
 
-        assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+        assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
       })
 
       it('rejects when the packet amount is too high', async function () {
@@ -127,8 +127,8 @@ describe('Middleware Manager', function () {
 
         const result = await this.mockPlugin3Wrapped._dataHandler(preparePacket)
 
-        assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-        assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+        assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+        assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
           code: 'F08',
           message: 'packet size too large. maxAmount=100 actualAmount=101',
           triggeredBy: 'test.connie',
@@ -291,7 +291,7 @@ describe('Middleware Manager', function () {
 
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
 
-        assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+        assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
       })
 
       it('reject for response not received within expiration window', async function () {
@@ -362,9 +362,9 @@ describe('Middleware Manager', function () {
 
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
         const stats = await this.adminApi.getStats()
-        assert.equal(stats[0].values.length, 1)
-        assert.equal(stats[0].values[0].labels.result, 'fulfilled')
-        assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+        assert.strictEqual(stats[0].values.length, 1)
+        assert.strictEqual(stats[0].values[0].labels.result, 'fulfilled')
+        assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
       })
 
       it('rejected response increments stats with rejected result', async function () {
@@ -386,9 +386,9 @@ describe('Middleware Manager', function () {
 
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
         const stats = await this.adminApi.getStats()
-        assert.equal(stats[0].values.length, 1)
-        assert.equal(stats[0].values[0].labels.result, 'rejected')
-        assert.equal(result.toString('hex'), rejectPacket.toString('hex'))
+        assert.strictEqual(stats[0].values.length, 1)
+        assert.strictEqual(stats[0].values[0].labels.result, 'rejected')
+        assert.strictEqual(result.toString('hex'), rejectPacket.toString('hex'))
       })
 
       it('failed response increments stats with failed result', async function () {
@@ -404,8 +404,8 @@ describe('Middleware Manager', function () {
 
         await this.mockPlugin1Wrapped._dataHandler(preparePacket)
         const stats = await this.adminApi.getStats()
-        assert.equal(stats[0].values.length, 1)
-        assert.equal(stats[0].values[0].labels.result, 'failed')
+        assert.strictEqual(stats[0].values.length, 1)
+        assert.strictEqual(stats[0].values[0].labels.result, 'failed')
       })
     })
 
@@ -437,7 +437,7 @@ describe('Middleware Manager', function () {
         sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
 
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-        assert.equal(result.toString('hex'), fulfillPacket.toString('hex'))
+        assert.strictEqual(result.toString('hex'), fulfillPacket.toString('hex'))
       })
 
       it('rejects response with incorrect fulfillment condition', async function () {
@@ -456,8 +456,8 @@ describe('Middleware Manager', function () {
         sinon.stub(mockPlugin.prototype, 'sendData').resolves(fulfillPacket)
 
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
-        assert.equal(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
-        assert.deepEqual(IlpPacket.deserializeIlpReject(result), {
+        assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
+        assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
           code: 'F05',
           message: 'fulfillment did not match expected value.',
           triggeredBy: 'test.connie',

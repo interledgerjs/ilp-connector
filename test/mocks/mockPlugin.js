@@ -1,5 +1,4 @@
 'use strict'
-const deserializeIlpPacket = require('ilp-packet').deserializeIlpPacket
 const { EventEmitter } = require('events')
 
 class MockPlugin extends EventEmitter {

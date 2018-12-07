@@ -188,10 +188,6 @@ describe('RouteBroadcaster', function () {
     ]
 
     it('sends the combined routes to all adjacent connectors', async function () {
-      const ilpFulfill = {
-        fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-        data: Buffer.from('{}', 'ascii')
-      }
       const pluginABroadcastSpy = sinon.stub(this.accounts.get(ledgerA).getPlugin(), 'sendData')
         .resolves(serializeCcpResponse())
       const pluginBBroadcastSpy = sinon.stub(this.accounts.get(ledgerB).getPlugin(), 'sendData')
