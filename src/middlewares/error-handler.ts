@@ -19,7 +19,7 @@ export default class ErrorHandlerMiddleware implements Middleware {
      * Important middleware. It ensures any errors thrown through the middleware pipe is converted to correct ILP
      * reject that is sent back to sender.
      */
-    pipelines.incomingData.insertLast({
+    pipelines.incomingData.insertFirst({
       name: 'errorHandler',
       method: async (packet: IlpPrepare, next: MiddlewareCallback<IlpPrepare, IlpReply>) => {
         try {

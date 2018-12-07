@@ -11,8 +11,9 @@ nock.enableNetConnect(['localhost'])
 const logger = require('../build/common/log')
 const logHelper = require('./helpers/log')
 const Peer = require('../build/routing/peer').default
-const { serializeCcpRouteUpdateRequest, serializeCcpResponse } = require('ilp-protocol-ccp')
+const { deserializeCcpResponse, serializeCcpRouteUpdateRequest, serializeCcpResponse } = require('ilp-protocol-ccp')
 const { UnreachableError } = require('ilp-packet').Errors
+const { deserializeIlpPacket } = require('ilp-packet')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 
@@ -28,6 +29,8 @@ describe('Modify Plugins', function () {
     await this.backend.connect()
     await this.accounts.startup()
 
+    this.setTimeout = setTimeout
+    this.setInterval = setInterval
     this.clock = sinon.useFakeTimers(START_DATE)
   })
 
@@ -69,6 +72,9 @@ describe('Modify Plugins', function () {
 
       this.accounts.get('test.jpy-ledger').getPlugin().sendData = () => serializeCcpResponse()
 
+      // Wait for routing table to rebuild
+      await new Promise(resolve => this.setTimeout(resolve, 1000))
+
       await this.accounts.get('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: 'test.jpy-ledger',
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
@@ -105,6 +111,9 @@ describe('Modify Plugins', function () {
         options: {}
       })
 
+      // Wait for routing table to rebuild
+      await new Promise(resolve => this.setTimeout(resolve, 1000))
+
       const packetPromise2 = this.routeBuilder.getNextHopPacket('test.usd-ledger', {
         amount: '100',
         destination: 'test.connie.test.jpy-ledger.bob',
@@ -127,6 +136,9 @@ describe('Modify Plugins', function () {
         }
       })
 
+      // Wait for routing table to rebuild
+      await new Promise(resolve => this.setTimeout(resolve, 1000))
+
       assert.instanceOf(this.routeBroadcaster.peers.get('test.eur-ledger-2'), Peer)
     })
   })
@@ -142,6 +154,9 @@ describe('Modify Plugins', function () {
           prefix: 'jpy-ledger'
         }
       })
+
+      // Wait for routing table to rebuild
+      await new Promise(resolve => this.setTimeout(resolve, 1000))
 
       await this.accounts.get('test.jpy-ledger').getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: 'test.jpy-ledger',

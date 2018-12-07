@@ -261,7 +261,7 @@ describe('IlpPrepareController', function () {
     assert.strictEqual(result[0], IlpPacket.Type.TYPE_ILP_REJECT, 'must be rejected')
     assert.deepStrictEqual(IlpPacket.deserializeIlpReject(result), {
       code: 'F02',
-      message: 'failed to send packet: fail!',
+      message: 'fail!',
       triggeredBy: 'test.connie',
       data: Buffer.alloc(0)
     })

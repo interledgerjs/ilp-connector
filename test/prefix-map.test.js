@@ -78,10 +78,10 @@ describe('PrefixMap', function () {
       assert.deepStrictEqual(this.map.get('foo'), { foo: 1 })
     })
 
-    it('returns null for prefix or non-matches', function () {
-      assert.deepStrictEqual(this.map.get('foo123'), null)
-      assert.deepStrictEqual(this.map.get('bar'), null)
-      assert.deepStrictEqual(this.map.get(''), null)
+    it('returns undefined for prefix or non-matches', function () {
+      assert.deepStrictEqual(this.map.get('foo123'), undefined)
+      assert.deepStrictEqual(this.map.get('bar'), undefined)
+      assert.deepStrictEqual(this.map.get(''), undefined)
     })
   })
 

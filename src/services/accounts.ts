@@ -6,7 +6,8 @@ import { EventEmitter } from 'events'
 import {
   IlpPrepare,
   IlpReply,
-  Errors
+  Errors,
+  errorToIlpReject
 } from 'ilp-packet'
 import { create as createLogger } from '../common/log'
 import Middleware from '../types/middleware'
@@ -79,8 +80,6 @@ export default class Accounts extends EventEmitter {
       if (!err.ilpErrorCode) {
         err.ilpErrorCode = Errors.codes.F02_UNREACHABLE
       }
-      // TODO - disabled for now
-      err.message = 'failed to send packet: ' + err.message
       throw err
     }
   }
@@ -129,7 +128,7 @@ export default class Accounts extends EventEmitter {
 
     // TODO - Is there a use case for providers to define a default handler for incoming packets and money?
     // We accept the provider as a parameter to allow for this in future
-    // The default behaviour now is to pass ther packet or amount to the _coreIlpPacketHandler or _coreMoneyHandler
+    // The default behaviour now is to pass the packet or amount to the _coreIlpPacketHandler or _coreMoneyHandler
     // The default _coreIlpPacketHandler is the Core service
     // The default _coreMoneyHandler is a no-op
   }
