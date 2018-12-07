@@ -1,0 +1,15 @@
+version: "3"
+services:
+  connector:
+    image: latest
+    build: ../../
+    env_file: ./.connector.env
+    network_mode: "host"
+  jmeter:
+    image: jmeter-samplers:latest
+    depends_on:
+      - "connector"
+    volumes:
+      - ./:/mnt/jmeter
+    entrypoint: /wait-for-it.sh 0.0.0.0:7001 -t 5 -- /entrypoint.sh -n -t /mnt/jmeter/ilp-load-test.jmx -j /mnt/jmeter/jmeter.log -Jmessages ${MESSAGES} -Jloops ${LOOPS}
+    network_mode: "host"

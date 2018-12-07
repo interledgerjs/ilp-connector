@@ -8,6 +8,7 @@ const logHelper = require('./helpers/log')
 const logger = require('../build/common/log')
 const PluginAccountProvider = require("../build/account-providers/plugin")
 const BtpServerAccountProvider = require("../build/account-providers/btp-server")
+const LoopBackAccountProvider = require("../build/account-providers/loop-back")
 
 const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
@@ -33,6 +34,13 @@ describe('accounts', function () {
         options: {
           defaultAccountInfo,
           listener: { port: 5555 }
+        }
+      },
+      'loop-back': {
+        type: 'loop-back',
+        options: {
+          defaultAccountInfo,
+          loopBackAccounts: ['test']
         }
       }
     })
@@ -65,12 +73,14 @@ describe('accounts', function () {
   })
 
   it('loads the specified account providers', async function () {
-    assert.deepStrictEqual(2, this.accounts._accountProviders.size)
+    assert.deepStrictEqual(3, this.accounts._accountProviders.size)
     const accountProviders = this.accounts._accountProviders.values()
     const pluginProvider = accountProviders.next().value
     const btpServerProvider = accountProviders.next().value
+    const loopBackServerProvider = accountProviders.next().value
     assert.ok(pluginProvider instanceof PluginAccountProvider.default)
     assert.ok(btpServerProvider instanceof BtpServerAccountProvider.default)
+    assert.ok(loopBackServerProvider instanceof LoopBackAccountProvider.default)
   })
 
   it('does not load middleware onto account if account info disableMiddleware is true', async function () {
