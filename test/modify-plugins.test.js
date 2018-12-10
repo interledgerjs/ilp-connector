@@ -11,9 +11,8 @@ nock.enableNetConnect(['localhost'])
 const logger = require('../build/common/log')
 const logHelper = require('./helpers/log')
 const Peer = require('../build/routing/peer').default
-const { deserializeCcpResponse, serializeCcpRouteUpdateRequest, serializeCcpResponse } = require('ilp-protocol-ccp')
+const { serializeCcpRouteUpdateRequest, serializeCcpResponse } = require('ilp-protocol-ccp')
 const { UnreachableError } = require('ilp-packet').Errors
-const { deserializeIlpPacket } = require('ilp-packet')
 
 const START_DATE = 1434412800000 // June 16, 2015 00:00:00 GMT
 

@@ -6,7 +6,7 @@ services:
     env_file: ./.connector.env
     network_mode: "host"
   jmeter:
-    image: jmeter-samplers:latest
+    image: interledger/jmeter-load-test
     depends_on:
       - "connector"
     volumes:

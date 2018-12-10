@@ -7,10 +7,13 @@ const logger = require('../build/common/log')
 const PluginAccountProvider = require('../build/account-providers/plugin')
 const BtpServerAccountProvider = require('../build/account-providers/btp-server')
 const LoopBackAccountProvider = require('../build/account-providers/loop-back')
+const _ = require('lodash')
 
 const mockPlugin = require('./mocks/mockPlugin')
 const mock = require('mock-require')
 mock('ilp-plugin-mock', mockPlugin)
+
+const env = _.cloneDeep(process.env)
 
 describe('accounts', function () {
   logHelper(logger)
@@ -68,6 +71,7 @@ describe('accounts', function () {
     const accountProviders = this.accounts._accountProviders.values()
     accountProviders.next()
     accountProviders.next().value.shutdown()
+    process.env = _.cloneDeep(env) // Required to remove the environment variables set in beforeEach
   })
 
   it('loads the specified account providers', async function () {
