@@ -40,10 +40,9 @@ jobs:
           name: Upload Test Coverage to codecov.io
           command: npm run report-coverage
 
-# TODO: Re-enable integration tests once they are updated for ILPv4
-#      - run:
-#          name: Run Integration Tests
-#          command: if git log -1 --pretty=%B | grep -qF "[skip tests]"; then true; else npm run integration; fi
+      - run:
+          name: Run Integration Tests
+          command: if git log -1 --pretty=%B | grep -qF "[skip tests]"; then true; else npm run integration -- --exit; fi
 
       - save_cache:
           paths:

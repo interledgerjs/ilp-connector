@@ -162,7 +162,7 @@ export default function createApp (opts?: object, container?: Injector) {
     if (accounts.getOwnAddress() === 'unknown') {
       if (account.info.relation === 'parent') {
         // If there is an explicit parent account configured to inherit from, and this is not it, skip it, otherwise return it
-        if (!(account.id !== config.ilpAddressInheritFrom)) {
+        if ((account.id === config.ilpAddressInheritFrom) || config.ilpAddressInheritFrom === '') {
           log.trace('connecting to parent to get address. accountId=%s', account.id)
           await account.startup()
 
