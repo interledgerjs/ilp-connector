@@ -38,7 +38,7 @@ jobs:
 
       - run:
           name: Upload Test Coverage to codecov.io
-          command: npm run codecov
+          command: npm run report-coverage
 
 # TODO: Re-enable integration tests once they are updated for ILPv4
 #      - run:
