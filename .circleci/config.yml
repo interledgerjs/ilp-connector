@@ -42,7 +42,7 @@ jobs:
 
       - run:
           name: Run Integration Tests
-          command: if git log -1 --pretty=%B | grep -qF "[skip tests]"; then true; else npm run integration -- --exit; fi
+          command: if git log -1 --pretty=%B | grep -qF "[skip tests]"; then true; else npm run integration; fi
 
       - save_cache:
           paths:

@@ -35,7 +35,7 @@
     "test": "nyc mocha --require source-map-support/register --exit test",
     "lint": "tslint --project . && eslint test/*.test.js test/mocks/ test/helpers/",
     "report-coverage": "nyc report --reporter=json && codecov -f coverage/*.json",
-    "integration": "integration-loader && integration all"
+    "integration": "integration-loader && integration all -- --exit"
   },
   "engines": {
     "node": ">=8.12.0"
