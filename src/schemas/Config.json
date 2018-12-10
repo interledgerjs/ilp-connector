@@ -126,6 +126,23 @@
             },
             "additionalProperties": false
           },
+          "deduplicate": {
+            "description": "Prevents sending duplicate packets.",
+            "type": "object",
+            "properties": {
+              "cleanupInterval": {
+                "description": "Frequency at which the connector removes old deduplicate records. (in milliseconds, default: 30000)",
+                "type": "integer",
+                "minimum": 1
+              },
+              "packetLifetime": {
+                "description": "Lifetime of a cache record. (in milliseconds, default: 30000)",
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false
+          },
           "sendRoutes": {
             "description": "Whether we should broadcast routes to this peer. Defaults to `false` for `relation=child` and `true` otherwise.",
             "type": "boolean"

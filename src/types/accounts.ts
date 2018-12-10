@@ -9,6 +9,10 @@ export interface AccountInfo {
     settleThreshold?: string,
     settleTo: string
   },
+  deduplicate?: {
+    cleanupInterval: number,
+    packetLifetime: number
+  },
   maxPacketAmount?: string,
   throughput?: {
     refillPeriod?: number,

@@ -14,6 +14,8 @@ import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
 import { PluginInstance } from './types/plugin'
 
+const version = require('../package.json').version
+
 function listen (
   config: Config,
   accounts: Accounts,
@@ -64,7 +66,7 @@ function listen (
       Prometheus.collectDefaultMetrics()
     }
 
-    log.info('connector ready (republic attitude). address=%s', accounts.getOwnAddress())
+    log.info('connector ready (republic attitude). address=%s version=%s', accounts.getOwnAddress(), version)
   })().catch((err) => log.error(err))
 }
 

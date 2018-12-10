@@ -39,7 +39,7 @@ export default class EchoController {
 
     reader.skip(ECHO_DATA_PREFIX.length)
 
-    const type = reader.readUInt8()
+    const type = reader.readUInt8Number()
 
     if (type === 0) {
       const sourceAddress = reader.readVarOctetString().toString('ascii')
