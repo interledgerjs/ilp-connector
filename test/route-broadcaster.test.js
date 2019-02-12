@@ -72,7 +72,7 @@ describe('RouteBroadcaster', function () {
 
     const testAccounts = ['test.cad-ledger', 'test.usd-ledger', 'test.eur-ledger']
     for (let accountId of testAccounts) {
-      this.accounts.get(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
+      await this.accounts.get(accountId).getPlugin()._dataHandler(serializeCcpRouteUpdateRequest({
         speaker: accountId,
         routingTableId: 'b38e6e41-71a0-4088-baed-d2f09caa18ee',
         currentEpochIndex: 1,
@@ -107,6 +107,7 @@ describe('RouteBroadcaster', function () {
       process.env.CONNECTOR_ACCOUNTS = JSON.stringify(accounts)
       appHelper.create(this)
       await this.accounts.startup()
+      await new Promise(resolve => setTimeout(() => resolve(), 500))
 
       // By default, everything should be enabled
       assert.ok(this.routeBroadcaster.peers.get('test.eur-ledger').ccpSender)

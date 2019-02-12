@@ -20,6 +20,8 @@ import PluginAccount from './accounts/plugin'
 import Core from './services/core'
 import AdminApi from './services/admin-api'
 import { create as createLogger } from './common/log'
+import AccountProvider from './types/account-provider';
+import Middleware from './types/middleware';
 const log = createLogger('app')
 
 const version = require('../package.json').version
@@ -121,6 +123,20 @@ function getPlugin (
   }
 }
 
+function addAccountProvider (
+  accounts: Accounts,
+  provider: AccountProvider,
+) {
+  accounts.addAccountProvider(provider)
+}
+
+function registerAccountMiddleware (
+  accounts: Accounts,
+  middleware: { [key: string]: Middleware }
+) {
+  accounts.registerAccountMiddleware(middleware)
+}
+
 export default function createApp (opts?: object, container?: Injector) {
   const deps = container || reduct()
 
@@ -152,8 +168,6 @@ export default function createApp (opts?: object, container?: Injector) {
   const adminApi = deps(AdminApi)
   const pendingAccounts: Set<Account> = new Set()
 
-  accounts.setup(deps)
-  // TODO - Different behaviour for plugin profile
   accounts.registerCoreIlpPacketHandler(core.processIlpPacket.bind(core))
   accounts.registerCoreMoneyHandler(async () => { return })
 
@@ -202,6 +216,8 @@ export default function createApp (opts?: object, container?: Injector) {
     addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster),
     removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster),
     getPlugin: partial(getPlugin, accounts),
+    addAccountProvider: partial(addAccountProvider, accounts),
+    registerAccountMiddleware: partial(registerAccountMiddleware, accounts),
     shutdown: partial(shutdown, accounts, routeBroadcaster)
   }
 }

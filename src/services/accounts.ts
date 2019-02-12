@@ -12,9 +12,9 @@ import {
 import { create as createLogger } from '../common/log'
 import Middleware from '../types/middleware'
 import Account from '../types/account'
-import AccountProvider, { constructAccountProvider } from '../types/account-provider'
+import AccountProvider from '../types/account-provider'
 import PluginAccountProvider from '../account-providers/plugin'
-import { constructMiddlewares, wrapMiddleware } from '../lib/middleware'
+import { wrapMiddleware } from '../lib/middleware'
 import WrapperAccount from '../accounts/wrapper'
 const { UnreachableError } = Errors
 const log = createLogger('accounts')
@@ -30,6 +30,7 @@ export default class Accounts extends EventEmitter {
 
   protected _coreIlpPacketHander: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>
   protected _coreMoneyHandler: (amount: string, accountId: string) => Promise<void>
+  private started: boolean = false
 
   constructor (deps: reduct.Injector) {
     super()
@@ -48,20 +49,23 @@ export default class Accounts extends EventEmitter {
     this._coreMoneyHandler = (amount: string, accountId: string) => {
       throw new UnreachableError('no core money handler configured.')
     }
+
+    // load plugin account provider by default
+    this._accountProviders.add(new PluginAccountProvider(deps))
   }
 
   private getAccountMiddleware (account: Account) {
     return account.info.disableMiddleware ? {} : this._middlewares
   }
 
-  public setup (deps: reduct.Injector) {
-    // Setup middleware
-    this._middlewares = constructMiddlewares(deps)
+  public addAccountProvider(provider: AccountProvider) {
+    if (this.started) throw new Error('Cannot add account providers after startup has been called.')
+    this._accountProviders.add(provider)
+  }
 
-    // Load up account providers
-    for (const config of Object.values(this._config.accountProviders)) {
-      this._accountProviders.add(constructAccountProvider(config, deps))
-    }
+  public registerAccountMiddleware(middlewares: { [key: string]: Middleware }){
+    if (this.started) throw new Error('Cannot register middleware after startup has been called.')
+    this._middlewares = middlewares
   }
 
   public async sendIlpPacket (packet: IlpPrepare, accountId: string): Promise<IlpReply> {
@@ -138,6 +142,7 @@ export default class Accounts extends EventEmitter {
    */
   public async startup (): Promise<void> {
     if (!this._coreIlpPacketHander) throw new Error('no processIlpPacketHandler registered')
+    this.started = true
     for (const provider of this._accountProviders) {
       await provider.startup(async account => {
         try {

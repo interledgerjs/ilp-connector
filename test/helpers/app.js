@@ -13,6 +13,7 @@ const CcpController = require('../../build/controllers/ccp').default
 const Store = require('../../build/services/store').default
 const ratesResponse = require('../data/fxRates.json')
 const IlpPrepareController = require('../../build/controllers/ilp-prepare').default
+const { constructMiddlewares } = require('../../build/lib/middleware')
 
 const createApp = require('../../build').createApp
 
@@ -51,4 +52,6 @@ exports.create = function (context, opts) {
   context.ccpController = deps(CcpController)
   context.store = deps(Store)
   context.ilpPrepareController = deps(IlpPrepareController)
+  context.middlewares = constructMiddlewares(deps)
+  context.accounts.registerAccountMiddleware(context.middlewares)
 }
