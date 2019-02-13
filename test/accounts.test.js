@@ -7,6 +7,8 @@ const logger = require('../build/common/log')
 const reduct = require('reduct')
 const PluginAccountProvider = require('../build/account-providers/plugin')
 const MockAccountProvider = require('./mocks/mockAccountProvider')
+const MockAccountService = require('./mocks/mockAccountService')
+const MockIlpEndpoint = require('./mocks/mockIlpEndpoint')
 const Accounts = require('../build/services/accounts').default
 const Config = require('../build/services/config').default
 const AlertMiddleware = require('../build/middlewares/alert').default
@@ -105,6 +107,50 @@ describe('accounts', function () {
         return
       }
       assert.fail('addAccountProvider did not throw exception.')
+    })
+  })
+
+  describe('handleNewAccount', function () {
+    beforeEach(function () {
+      const accountInfo = {
+        'relation': 'parent',
+        'assetCode': 'CAD',
+        'assetScale': 4,
+        'plugin': 'ilp-plugin-mock',
+        'disableMiddleware': false
+      }
+      const mockAccountProvider = new MockAccountProvider()
+      const mockIlpEndpoint = new MockIlpEndpoint()
+      this.mockAccount = new MockAccountService('test', accountInfo, mockIlpEndpoint)
+      this.accounts._handleNewAccount(this.mockAccount, mockAccountProvider)
+    })
+
+    afterEach(function() {
+      this.mockAccount = undefined
+    })
+
+    it('connects incoming middleware pipeline to core handler', async function () {
+      
+    })
+
+    it('connects outgoing middleware pipeline to the accounts ilp-endpoint', async function () {
+
+    })
+
+    it('registers the outgoing middleware pipeline on to the account', async function () {
+      assert.ok(this.mockAccount._outgoingPacketHandler)
+    })
+
+    it('sets the handler provider for the account endpoint', async function () {
+      assert.ok(this.mockAccount.endpoint.handlerProvider)
+    })
+
+    it('stores new account in account map', async function () {
+      assert.ok(this.accounts.get('test'))
+    })
+
+    it('emits add event', async function () {
+
     })
   })
 })

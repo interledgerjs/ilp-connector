@@ -1,9 +1,10 @@
-import Account, { AccountInfo } from '../types/account'
+import Account, { AccountInfo, AccountMiddlewarePipelines } from '../types/account'
 import { MoneyHandler } from '../types/plugin'
 import { IlpPrepare, IlpPacketHander, IlpReply, Errors } from 'ilp-packet'
 import { EventEmitter } from 'events'
 const { UnreachableError } = Errors
 import { create as createLogger } from '../common/log'
+import { IlpEndpoint, RequestHandler } from '../types/ilp-endpoint';
 const log = createLogger('plugin-account-service')
 
 export class AccountBase extends EventEmitter implements Account {
@@ -14,12 +15,17 @@ export class AccountBase extends EventEmitter implements Account {
   protected _outgoingMoneyHandler?: MoneyHandler
   protected _incomingIlpPacketHandler?: IlpPacketHander
   protected _incomingMoneyHandler?: MoneyHandler
+  protected _startupHandler?: (param: void) => Promise<void>
+  protected _shutdownHandler?: (param: void) => Promise<void>
+  protected _endpoint: IlpEndpoint
+  
   private _started: boolean = false
 
-  constructor (accountId: string, accountInfo: AccountInfo) {
+  constructor (accountId: string, accountInfo: AccountInfo, endpoint: IlpEndpoint) {
     super()
     this._id = accountId
     this._info = accountInfo
+    this._endpoint = endpoint
   }
 
   public get id () {
@@ -31,6 +37,9 @@ export class AccountBase extends EventEmitter implements Account {
   }
 
   public async startup (): Promise<void> {
+    if (!this._incomingIlpPacketHandler) throw new Error('an incoming Ilp packet handler needs to be registered to start up')
+    // point ilp-endpoint handler to incoming middleware pipeline
+    this._endpoint.handlerProvider = (packet: IlpPrepare) => this._incomingIlpPacketHandler!
     this._started = true
     await this._startup()
   }
@@ -51,44 +60,23 @@ export class AccountBase extends EventEmitter implements Account {
     throw new Error('isConnected must be implemented.')
   }
 
+  public registerMiddlewarePipelines ({incomingIlpPacketPipeline, outgoingIlpPacketPipeline, startupPipeline, shutdownPipeline}: AccountMiddlewarePipelines): void {
+    if(this._started) throw new Error('Middleware pipelines must be set before startup')
+    this._incomingIlpPacketHandler = incomingIlpPacketPipeline
+    this._outgoingIlpPacketHandler = outgoingIlpPacketPipeline
+    this._startupHandler = startupPipeline
+    this._shutdownHandler = shutdownPipeline
+  }
+
+  public registerIlpEndpoint (endpoint: IlpEndpoint): void {
+    if(this._started) throw new Error('ilp-endpoint must be set before startup')
+    this._endpoint = endpoint
+  }
+
   async sendIlpPacket (packet: IlpPrepare): Promise<IlpReply> {
     if (this._outgoingIlpPacketHandler) {
       return this._outgoingIlpPacketHandler(packet)
     }
     throw new Error('No handler defined for outgoing packets. _outgoingIlpPacketHandler must be set before startup.')
   }
-
-  public registerIlpPacketHandler (handler: IlpPacketHander) {
-    if (this._started) {
-      log.error('Can\'t register handler after sertvice has started.')
-      throw new Error('Can\'t register handler after sertvice has started.')
-    }
-    this._incomingIlpPacketHandler = handler
-  }
-
-  public deregisterIlpPacketHandler () {
-    this._incomingIlpPacketHandler = async () => {
-      throw new UnreachableError('Unable to forward packet. No upstream bound to account.')
-    }
-  }
-
-  async sendMoney (amount: string): Promise<void> {
-    if (this._outgoingMoneyHandler) {
-      return this._outgoingMoneyHandler(amount)
-    }
-    throw new Error('No handler defined for outgoing money. _outgoingMoneyHandler must be set before startup.')
-  }
-
-  public registerMoneyHandler (handler: MoneyHandler) {
-    if (this._started) {
-      log.error('Can\'t register handler after sertvice has started.')
-      throw new Error('Can\'t register handler after sertvice has started.')
-    }
-    this._incomingMoneyHandler = handler
-  }
-
-  public deregisterMoneyHandler () {
-    this._incomingMoneyHandler = async () => { return }
-  }
-
 }

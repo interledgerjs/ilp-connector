@@ -14,7 +14,7 @@ import Middleware from '../types/middleware'
 import Account from '../types/account'
 import AccountProvider from '../types/account-provider'
 import PluginAccountProvider from '../account-providers/plugin'
-import { wrapMiddleware } from '../lib/middleware'
+import { constructAccountPipelines, constructMiddlewarePipeline } from '../lib/middleware'
 import WrapperAccount from '../accounts/wrapper'
 const { UnreachableError } = Errors
 const log = createLogger('accounts')
@@ -88,12 +88,12 @@ export default class Accounts extends EventEmitter {
     }
   }
 
-  public sendMoney (amount: string, accountId: string): Promise<void> {
+  //TODO remove functionality
+  public async sendMoney (amount: string, accountId: string): Promise<void> {
     const account = this.get(accountId)
     if (!account) {
       throw new Error('unable to send money. unknown account: ' + accountId)
     }
-    return account.sendMoney(amount)
   }
 
   public registerCoreIlpPacketHandler (handler: (packet: IlpPrepare, accountId: string, outbound: (packet: IlpPrepare, accountId: string) => Promise<IlpReply>) => Promise<IlpReply>) {
@@ -118,17 +118,23 @@ export default class Accounts extends EventEmitter {
 
     log.debug(`Loading new account: ${account.id} (provider: ${provider})`)
     const middleware = this.getAccountMiddleware(account)
-    const wrapper = await wrapMiddleware(account, middleware)
-    this._accounts.set(account.id, wrapper)
-
-    wrapper.registerIlpPacketHandler((packet: IlpPrepare) => {
-      return this._coreIlpPacketHander(packet, account.id, this.sendIlpPacket.bind(this))
+    const pipelines = await constructAccountPipelines(account, middleware)
+    
+    // Generate and register account middleware pipelines
+    const startupPipeline = constructMiddlewarePipeline(pipelines.startup, async () => { return account.startup() })
+    const shutdownPipeline = constructMiddlewarePipeline(pipelines.shutdown, async () => { return account.shutdown() })
+    const outgoingIlpPacketPipeline = constructMiddlewarePipeline(pipelines.outgoingData, account.endpoint!.request.bind(account.endpoint))
+    const incomingIlpPacketPipeline = constructMiddlewarePipeline(pipelines.incomingData, (packet: IlpPrepare) => this._coreIlpPacketHander(packet, account.id,  this.sendIlpPacket.bind(this)))
+    account.registerMiddlewarePipelines({
+      incomingIlpPacketPipeline,
+      outgoingIlpPacketPipeline,
+      startupPipeline,
+      shutdownPipeline
     })
-    wrapper.registerMoneyHandler((amount: string) => {
-      return this._coreMoneyHandler(amount, account.id)
-    })
 
-    this.emit('add', wrapper)
+    this._accounts.set(account.id, account)
+
+    this.emit('add', account)
 
     // TODO - Is there a use case for providers to define a default handler for incoming packets and money?
     // We accept the provider as a parameter to allow for this in future

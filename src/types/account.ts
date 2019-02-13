@@ -1,49 +1,49 @@
 import { EventEmitter } from 'events'
 import { IlpPacketHander } from 'ilp-packet'
-import { MoneyHandler } from './plugin'
 import { AccountConfig } from '../schemas/Config'
+import { IlpEndpoint, RequestHandler } from './ilp-endpoint';
 
 export interface AccountInfo extends AccountConfig {
   // This allows space to extend the runtime object interface beyond what is defined in the schema
 }
+
+export interface AccountMiddlewarePipelines {
+  incomingIlpPacketPipeline: RequestHandler,
+  outgoingIlpPacketPipeline: RequestHandler,
+  startupPipeline: (param: void) => Promise<void>,
+  shutdownPipeline: (param: void) => Promise<void>
+}
+
 export default interface Account extends EventEmitter {
   readonly id: string,
   readonly info: AccountInfo,
+  endpoint?: IlpEndpoint,
   startup (): Promise<void>,
   shutdown (): Promise<void>,
   on (event: 'connect' | 'disconnect', listener: () => void): this
   once (event: 'connect' | 'disconnect', listener: () => void): this
-  removeListener (event: 'connect' | 'disconnect', listener: () => void): this
+  removeListener (event: 'connect' | 'disconnect', listener: () => void): this,
 
   /**
-   * Register a handler for ILP prepare packets coming from the account entity
-   * @param handler An ILP Prepare packet handler
+   * Register an ilp endpoint for the account
+   * @param endpoint An ILP Endpoint
    */
-  registerIlpPacketHandler (handler: IlpPacketHander): void,
+  registerIlpEndpoint (endpoint: IlpEndpoint): void,
   /**
-   * Remove the currently registered handler
+   * Register the middleware pipelines for the account
+   * @param middlewarePipelines Middleware pipelines
    */
-  deregisterIlpPacketHandler (): void,
+  registerMiddlewarePipelines (middlewarePipelines: AccountMiddlewarePipelines): void,
   /**
    * Send an ILP prepare to the account entity
    * @param packet An ILP prepare packet
    */
   sendIlpPacket: IlpPacketHander,
-
-  /**
-   * Register a handler for ILP prepare packets coming from the account entity
-   * @param handler An ILP Prepare packet handler
-   */
-  registerMoneyHandler (handler: MoneyHandler): void,
-  /**
-   * Remove the currently registered handler
-   */
-  deregisterIlpPacketHandler (): void,
   /**
    * Send an ILP prepare to the account entity
    * @param packet An ILP prepare packet
    */
-  sendMoney (amount: string): Promise<void>,
+
   /**
    * Is the account entity connected
    */

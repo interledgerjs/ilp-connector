@@ -13,6 +13,7 @@ import { IlpPrepare, IlpReply } from 'ilp-packet'
 import Account from '../types/account'
 import WrapperAccount from '../accounts/wrapper'
 import Config from '../services/config'
+import { stringify } from 'querystring';
 
 const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   errorHandler: {
@@ -106,12 +107,12 @@ function constructMiddleware (name: string, definition: MiddlewareDefinition, de
   return new Middleware(definition.options || {}, deps)
 }
 
-function constructMiddlewarePipeline<T,U> (pipeline: Pipeline<T,U>, endHandler: (param: T) => Promise<U>): (param: T) => Promise<U> {
+export function constructMiddlewarePipeline<T,U> (pipeline: Pipeline<T,U>, endHandler: (param: T) => Promise<U>): (param: T) => Promise<U> {
   const middleware: MiddlewareMethod<T,U> = composeMiddleware(pipeline.getMethods())
   return (param: T) => middleware(param, endHandler)
 }
 
-export async function wrapMiddleware (account: Account, middlewares: { [key: string]: Middleware }): Promise<Account> {
+export async function constructAccountPipelines (account: Account, middlewares: { [key: string]: Middleware }): Promise<Pipelines> {
   const pipelines: Pipelines = {
     startup: new MiddlewarePipeline<void, void>(),
     incomingData: new MiddlewarePipeline<IlpPrepare, IlpReply>(),
@@ -132,31 +133,6 @@ export async function wrapMiddleware (account: Account, middlewares: { [key: str
     }
   }
 
-  // Generate startup middleware
-  const startupPipeline = constructMiddlewarePipeline(pipelines.startup, async () => { return account.startup() })
-
-  // Generate outgoing middleware (ILP prepare from wrapper to account)
-  const outgoingIlpPacketPipeline = constructMiddlewarePipeline(pipelines.outgoingData, account.sendIlpPacket.bind(account))
-  const outgoingMoneyPipeline = constructMiddlewarePipeline(pipelines.outgoingMoney, account.sendMoney.bind(account))
-
-  // Generate shutdown middleware
-  const shutdownPipeline = constructMiddlewarePipeline(pipelines.shutdown, async () => { return account.shutdown() })
-
-  // Wrap the account with a dummy account service that invokes the middleware
-  const wrapper = new WrapperAccount(account,
-    outgoingIlpPacketPipeline,
-    outgoingMoneyPipeline,
-    startupPipeline,
-    shutdownPipeline
-  )
-  // Generate incoming middleware (ILP Prepare from account to wrapper)
-  const incomingIlpPacketPipeline = constructMiddlewarePipeline(pipelines.incomingData, wrapper.handleIncomingIlpPacket.bind(wrapper))
-  const incomingMoneyPipeline = constructMiddlewarePipeline(pipelines.incomingMoney, wrapper.handleIncomingMoney.bind(wrapper))
-
-  // Bind incoming pipeline to account
-  account.registerIlpPacketHandler(incomingIlpPacketPipeline)
-  account.registerMoneyHandler(incomingMoneyPipeline)
-
-  return wrapper
+  return pipelines
 
 }
