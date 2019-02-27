@@ -23,7 +23,8 @@ export default class RateBackend implements BackendInstance {
     this.backend = new Backend(Object.assign({
       spread: config.spread
     }, config.backendConfig), {
-      getInfo: (account: string) => this.accounts.getInfo(account)
+      getInfo: (account: string) => this.accounts.getInfo(account),
+      accounts: this.accounts
     })
   }
 
@@ -37,6 +38,13 @@ export default class RateBackend implements BackendInstance {
 
   submitPayment (params: SubmitPaymentParams) {
     return this.backend.submitPayment(params)
+  }
+
+  submitPacket (params: SubmitPaymentParams) {
+    if (this.backend.submitPacket) {
+      return this.backend.submitPacket(params)
+    }
+    return Promise.resolve()
   }
 
   async getStatus () {

@@ -47,6 +47,18 @@ export default class IlpPrepareController {
     log.trace('sending outbound ilp prepare. destination=%s amount=%s', destination, nextHopPacket.amount)
     const result = await outbound(IlpPacket.serializeIlpPrepare(nextHopPacket), nextHop)
 
+    this.backend.submitPacket({
+      sourceAccount: sourceAccount,
+      sourceAmount: amount,
+      destinationAccount: nextHop,
+      destinationAmount: nextHopPacket.amount,
+      parsedPacket,
+      result
+    }).catch(err => {
+      const errInfo = (err && typeof err === 'object' && err.stack) ? err.stack : String(err)
+      log.error('error while submitting packet to backend. error=%s', errInfo)
+    })
+
     if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
       log.trace('got fulfillment. cond=%s nextHop=%s amount=%s', executionCondition.slice(0, 6).toString('base64'), nextHop, nextHopPacket.amount)
 
