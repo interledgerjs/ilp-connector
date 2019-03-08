@@ -92,6 +92,11 @@ export function uuid () {
 
 export function hmac (secret: Buffer, message: string | Buffer) {
   const hmac = createHmac('sha256', secret)
-  hmac.update(message, 'utf8')
+  if (message instanceof Buffer) {
+    hmac.update(message)
+  } else {
+    hmac.update(message, 'utf8')
+  }
+
   return hmac.digest()
 }

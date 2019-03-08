@@ -40,7 +40,7 @@ export default class DeduplicateMiddleware implements Middleware {
       packetLifetime: DEFAULT_PACKET_LIFETIME
     }
 
-    let interval
+    let interval: NodeJS.Timer
     pipelines.startup.insertLast({
       name: 'deduplicate',
       method: async (dummy: void, next: MiddlewareCallback<void, void>) => {

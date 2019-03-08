@@ -67,10 +67,12 @@
     "@commitlint/config-conventional": "^6.1.0",
     "@justmoon/json-schema-to-markdown": "^1.0.0",
     "@types/debug": "0.0.30",
+    "@types/levelup": "^3.1.0",
     "@types/lodash": "^4.14.91",
     "@types/long": "^3.0.32",
-    "@types/node": "^9.4.0",
+    "@types/node": "^11.10.5",
     "@types/node-fetch": "^1.6.7",
+    "@types/sax": "^1.0.1",
     "@types/source-map-support": "^0.4.0",
     "@types/through2": "^2.0.33",
     "chai": "^4.1.2",
@@ -102,7 +104,7 @@
     "ts-node": "^4.1.0",
     "tslint": "^5.8.0",
     "tslint-config-standard": "^7.0.0",
-    "typescript": "^2.6.2",
+    "typescript": "^3.3.3333",
     "unified": "^6.1.6"
   },
   "config": {
