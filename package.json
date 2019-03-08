@@ -56,7 +56,7 @@
     "node-fetch": "^2.0.0",
     "oer-utils": "^4.0.0",
     "prom-client": "^11.1.1",
-    "reduct": "^3.2.0",
+    "reduct": "^3.3.1",
     "riverpig": "^1.1.4",
     "sax": "^1.2.4",
     "source-map-support": "^0.5.0",
