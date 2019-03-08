@@ -23,9 +23,14 @@ class LeveldownStore implements StoreInstance {
     this.db = levelup(leveldown(path))
   }
 
-  async get (key: string) {
+  async get (key: string): Promise<string | undefined> {
     try {
-      return (await this.db.get(key)).toString('utf8')
+      const value = await this.db.get(key) as Buffer | string
+      if (value instanceof Buffer) {
+        return value.toString('utf8')
+      } else {
+        return value
+      }
     } catch (e) {
       if (e.name !== 'NotFoundError') {
         throw e

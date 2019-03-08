@@ -23,7 +23,7 @@ const validateBalanceUpdate = ajv.compile(require('../schemas/BalanceUpdate.json
 interface Route {
   method: 'GET' | 'POST' | 'DELETE'
   match: string
-  fn: (url: string, body: object) => Promise<object | string | void>
+  fn: (url: string | undefined, body: object) => Promise<object | string | void>
   responseType?: string
 }
 
@@ -153,7 +153,7 @@ export default class AdminApi {
     return balanceMiddleware.getStatus()
   }
 
-  private async postBalance (url: string, _data: object) {
+  private async postBalance (url: string | undefined, _data: object) {
     try {
       validateBalanceUpdate(_data)
     } catch (err) {
@@ -187,10 +187,12 @@ export default class AdminApi {
     }
   }
 
-  private async deleteAlert (url: string) {
+  private async deleteAlert (url: string | undefined) {
     const middleware = this.middlewareManager.getMiddleware('alert')
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
+    if (!url) throw new Error('no path on request')
+    const urlPath = (url && url.split('?')[0]) || ''
     const match = /^\/alerts\/(\d+)$/.exec(url.split('?')[0])
     if (!match) throw new Error('invalid alert id')
     alertMiddleware.dismissAlert(+match[1])
@@ -200,7 +202,8 @@ export default class AdminApi {
     return Prometheus.register.metrics()
   }
 
-  private _getPlugin (url: string) {
+  private _getPlugin (url: string | undefined) {
+    if (!url) throw new Error('no path on request')
     const match = /^\/accounts\/([A-Za-z0-9_.\-~]+)$/.exec(url.split('?')[0])
     if (!match) throw new Error('invalid account.')
     const account = match[1]
@@ -214,7 +217,8 @@ export default class AdminApi {
     }
   }
 
-  private async getAccountAdminInfo (url: string) {
+  private async getAccountAdminInfo (url: string | undefined) {
+    if (!url) throw new Error('no path on request')
     const { account, info, plugin } = this._getPlugin(url)
     if (!plugin.getAdminInfo) throw new Error('plugin has no admin info. account=' + account)
     return {
@@ -224,7 +228,8 @@ export default class AdminApi {
     }
   }
 
-  private async sendAccountAdminInfo (url: string, body?: object) {
+  private async sendAccountAdminInfo (url: string | undefined, body?: object) {
+    if (!url) throw new Error('no path on request')
     if (!body) throw new Error('no json body provided to set admin info.')
     const { account, info, plugin } = this._getPlugin(url)
     if (!plugin.sendAdminInfo) throw new Error('plugin does not support sending admin info. account=' + account)

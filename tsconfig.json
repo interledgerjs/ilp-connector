@@ -4,12 +4,13 @@
     "module": "commonjs",
     "sourceMap": true,
     "declaration": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "removeComments": true,
     "moduleResolution": "node",
     "inlineSources": true,
     "strict": true,
-    "suppressImplicitAnyIndexErrors": true
+    "suppressImplicitAnyIndexErrors": true,
+    "skipLibCheck": true
   },
   "include": [
       "src/**/*.ts"

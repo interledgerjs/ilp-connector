@@ -16,7 +16,7 @@ export default class ExpireMiddleware implements Middleware {
 
           const promise = next(data)
 
-          let timeout
+          let timeout: NodeJS.Timer
           const timeoutPromise: Promise<Buffer> = new Promise((resolve, reject) => {
             timeout = setTimeout(() => {
               log.debug('packet expired. cond=%s expiresAt=%s', executionCondition.slice(0, 6).toString('base64'), expiresAt.toISOString())
