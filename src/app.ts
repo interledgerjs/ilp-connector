@@ -1,4 +1,4 @@
-import reduct = require('reduct')
+import reduct, { Injector } from 'reduct'
 import { partial } from 'lodash'
 import { create as createLogger } from './common/log'
 const log = createLogger('app')
@@ -121,7 +121,7 @@ function shutdown (
   return accounts.disconnect()
 }
 
-export default function createApp (opts?: object, container?: reduct.Injector) {
+export default function createApp (opts?: object, container?: Injector) {
   const deps = container || reduct()
 
   const config = deps(Config)
