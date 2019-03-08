@@ -192,7 +192,6 @@ export default class AdminApi {
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
     if (!url) throw new Error('no path on request')
-    const urlPath = (url && url.split('?')[0]) || ''
     const match = /^\/alerts\/(\d+)$/.exec(url.split('?')[0])
     if (!match) throw new Error('invalid alert id')
     alertMiddleware.dismissAlert(+match[1])
