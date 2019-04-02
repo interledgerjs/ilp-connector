@@ -613,4 +613,4 @@ CONNECTOR_STORE_PATH=~/.connector-data CONNECTOR_ACCOUNTS='{}' CONNECTOR_ILP_ADD
 
 #### Step 4: Read the contributor guidelines
 
-See [CONTRIBUTE.md](/CONTRIBUTE.md).
+See [CONTRIBUTING.md](/CONTRIBUTING.md).
