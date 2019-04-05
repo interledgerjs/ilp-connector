@@ -533,5 +533,24 @@ describe('AdminApi', function () {
         })
       })
     })
+
+    describe('addAccount', function () {
+      it('creates an account on the connector', async function () {
+        const res = await this.adminApi.addAccount('/accounts', {
+          id: 'mockPlugin',
+          options: {
+            relation: 'peer',
+            plugin: 'ilp-plugin-mock',
+            assetCode: 'XRP',
+            assetScale: 9,
+            options: {}
+          }
+        })
+        assert.deepEqual(res, {
+          plugin: 'mockPlugin',
+          connected: true
+        })
+      })
+    })
   })
 })
