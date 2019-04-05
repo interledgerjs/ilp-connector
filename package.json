@@ -32,7 +32,7 @@
     "prepare": "npm run build",
     "lint": "tslint --project . && eslint test/*.test.js test/mocks/ test/helpers/",
     "test": "nyc mocha",
-    "report-coverage": "nyc report --reporter=json && codecov -f coverage/*.json",
+    "report-coverage": "codecov",
     "integration": "integration-loader && integration all",
     "commitmsg": "commitlint -e $GIT_PARAMS"
   },
@@ -112,5 +112,11 @@
       "module": "five-bells-integration-test",
       "repo": "interledgerjs/five-bells-integration-test"
     }
+  },
+  "nyc": {
+    "reporter": [
+      "lcov",
+      "text-summary"
+    ]
   }
 }
