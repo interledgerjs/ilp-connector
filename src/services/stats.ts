@@ -109,4 +109,8 @@ export default class Stats {
   getStatus () {
     return this.registry.getMetricsAsJSON()
   }
+
+  getRegistry() {
+    return this.registry
+  }
 }
