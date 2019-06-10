@@ -110,7 +110,7 @@ export default class Stats {
     return this.registry.getMetricsAsJSON()
   }
 
-  getRegistry() {
+  getRegistry () {
     return this.registry
   }
 }
