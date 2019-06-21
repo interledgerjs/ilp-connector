@@ -40,7 +40,7 @@ export default class Stats {
   public rateLimitedPackets: AccountCounter
   public rateLimitedMoney: AccountCounter
   public balance: AccountGauge
-  private registry: Prometheus.Registry
+  public registry: Prometheus.Registry
 
   constructor () {
     this.registry = new (Prometheus.Registry)()

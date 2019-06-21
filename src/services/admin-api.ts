@@ -199,7 +199,7 @@ export default class AdminApi {
   }
 
   private async getMetrics () {
-    return Prometheus.register.metrics()
+    return this.stats.registry.metrics()
   }
 
   private _getPlugin (url: string | undefined) {
