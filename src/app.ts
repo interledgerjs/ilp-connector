@@ -158,9 +158,10 @@ export default function createApp (opts?: object, container?: Injector) {
 
   return {
     config,
-    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager, adminApi),
-    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
-    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
+    // @types/lodash added an arbitrary 5-arg limit to lodash.partial.
+    listen: partial(partial(listen, config, accounts, backend, store), routeBuilder, routeBroadcaster, middlewareManager, adminApi),
+    addPlugin: partial(partial(addPlugin, config, accounts, backend, routeBroadcaster), middlewareManager),
+    removePlugin: partial(partial(removePlugin, config, accounts, backend, routeBroadcaster), middlewareManager),
     getPlugin: partial(getPlugin, accounts),
     shutdown: partial(shutdown, accounts, routeBroadcaster)
   }
