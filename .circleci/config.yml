@@ -39,6 +39,7 @@ jobs:
       - run: git config --global user.name "CircleCI"
       - run: git config --global push.default simple
       - run: node scripts/publish_web.js
+      - setup_remote_docker
       - run: ./scripts/ci-deploy.sh
 
 
