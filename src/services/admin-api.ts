@@ -199,7 +199,10 @@ export default class AdminApi {
   }
 
   private async getMetrics () {
-    return Prometheus.register.metrics()
+    const promRegistry = Prometheus.register
+    const ilpRegistry = this.stats.getRegistry()
+    const mergedRegistry = Prometheus.Registry.merge([promRegistry, ilpRegistry])
+    return mergedRegistry.metrics()
   }
 
   private _getPlugin (url: string | undefined) {
