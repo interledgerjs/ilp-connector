@@ -29,11 +29,14 @@ export default class RateLimitMiddleware implements Middleware {
     if (!accountInfo) {
       throw new Error('could not load info for account. accountId=' + accountId)
     }
+
+    const rateLimit = accountInfo.rateLimit || {}
     const {
       refillPeriod = DEFAULT_REFILL_PERIOD,
-      refillCount = DEFAULT_REFILL_COUNT,
-      capacity = refillCount
-    } = accountInfo.rateLimit || {}
+      refillCount = DEFAULT_REFILL_COUNT
+    } = rateLimit
+
+    const capacity = rateLimit.capacity || refillCount
 
     log.trace('created token bucket for account. accountId=%s refillPeriod=%s refillCount=%s capacity=%s', accountId, refillPeriod, refillCount, capacity)
 

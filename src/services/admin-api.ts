@@ -23,7 +23,7 @@ const validateBalanceUpdate = ajv.compile(require('../schemas/BalanceUpdate.json
 interface Route {
   method: 'GET' | 'POST' | 'DELETE'
   match: string
-  fn: (url: string, body: object) => Promise<object | string | void>
+  fn: (url: string | undefined, body: object) => Promise<object | string | void>
   responseType?: string
 }
 
@@ -60,7 +60,8 @@ export default class AdminApi {
       { method: 'GET', match: '/stats$', fn: this.getStats },
       { method: 'GET', match: '/alerts$', fn: this.getAlerts },
       { method: 'DELETE', match: '/alerts/', fn: this.deleteAlert },
-      { method: 'GET', match: '/metrics$', fn: this.getMetrics, responseType: Prometheus.register.contentType }
+      { method: 'GET', match: '/metrics$', fn: this.getMetrics, responseType: Prometheus.register.contentType },
+      { method: 'POST', match: '/addAccount$', fn: this.addAccount }
     ]
   }
 
@@ -153,7 +154,7 @@ export default class AdminApi {
     return balanceMiddleware.getStatus()
   }
 
-  private async postBalance (url: string, _data: object) {
+  private async postBalance (url: string | undefined, _data: object) {
     try {
       validateBalanceUpdate(_data)
     } catch (err) {
@@ -187,20 +188,25 @@ export default class AdminApi {
     }
   }
 
-  private async deleteAlert (url: string) {
+  private async deleteAlert (url: string | undefined) {
     const middleware = this.middlewareManager.getMiddleware('alert')
     if (!middleware) return {}
     const alertMiddleware = middleware as AlertMiddleware
+    if (!url) throw new Error('no path on request')
     const match = /^\/alerts\/(\d+)$/.exec(url.split('?')[0])
     if (!match) throw new Error('invalid alert id')
     alertMiddleware.dismissAlert(+match[1])
   }
 
   private async getMetrics () {
-    return Prometheus.register.metrics()
+    const promRegistry = Prometheus.register
+    const ilpRegistry = this.stats.getRegistry()
+    const mergedRegistry = Prometheus.Registry.merge([promRegistry, ilpRegistry])
+    return mergedRegistry.metrics()
   }
 
-  private _getPlugin (url: string) {
+  private _getPlugin (url: string | undefined) {
+    if (!url) throw new Error('no path on request')
     const match = /^\/accounts\/([A-Za-z0-9_.\-~]+)$/.exec(url.split('?')[0])
     if (!match) throw new Error('invalid account.')
     const account = match[1]
@@ -214,7 +220,8 @@ export default class AdminApi {
     }
   }
 
-  private async getAccountAdminInfo (url: string) {
+  private async getAccountAdminInfo (url: string | undefined) {
+    if (!url) throw new Error('no path on request')
     const { account, info, plugin } = this._getPlugin(url)
     if (!plugin.getAdminInfo) throw new Error('plugin has no admin info. account=' + account)
     return {
@@ -224,7 +231,8 @@ export default class AdminApi {
     }
   }
 
-  private async sendAccountAdminInfo (url: string, body?: object) {
+  private async sendAccountAdminInfo (url: string | undefined, body?: object) {
+    if (!url) throw new Error('no path on request')
     if (!body) throw new Error('no json body provided to set admin info.')
     const { account, info, plugin } = this._getPlugin(url)
     if (!plugin.sendAdminInfo) throw new Error('plugin does not support sending admin info. account=' + account)
@@ -232,6 +240,24 @@ export default class AdminApi {
       account,
       plugin: info.plugin,
       result: (await plugin.sendAdminInfo(body))
+    }
+  }
+
+  private async addAccount (url: string | undefined, body?: any) {
+    if (!url) throw new Error('no path on request')
+    if (!body) throw new Error('no json body provided to make plugin.')
+
+    const { id, options } = body
+    this.accounts.add(id, options)
+    const plugin = this.accounts.getPlugin(id)
+    await this.middlewareManager.addPlugin(id, plugin)
+
+    await plugin.connect({ timeout: Infinity })
+    this.routeBroadcaster.track(id)
+    this.routeBroadcaster.reloadLocalRoutes()
+    return {
+      plugin: id,
+      connected: plugin.isConnected()
     }
   }
 }

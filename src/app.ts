@@ -1,4 +1,4 @@
-import reduct = require('reduct')
+import reduct, { Injector } from 'reduct'
 import { partial } from 'lodash'
 import { create as createLogger } from './common/log'
 const log = createLogger('app')
@@ -12,7 +12,6 @@ import Store from './services/store'
 import MiddlewareManager from './services/middleware-manager'
 import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
-import { PluginInstance } from './types/plugin'
 
 const version = require('../package.json').version
 
@@ -122,7 +121,7 @@ function shutdown (
   return accounts.disconnect()
 }
 
-export default function createApp (opts?: object, container?: reduct.Injector) {
+export default function createApp (opts?: object, container?: Injector) {
   const deps = container || reduct()
 
   const config = deps(Config)

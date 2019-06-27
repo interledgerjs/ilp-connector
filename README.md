@@ -81,7 +81,7 @@ https://www.techrepublic.com/blog/data-center/syncing-time-in-linux-and-windows-
 
 ```sh
 npm install -g ilp-connector ilp-plugin-btp
-CONNECTOR_STORE_PATH=~/.connector-data CONNECTOR_ACCOUNTS='{}' CONNECTOR_ILP_ADDRESS=test.quickstart ilp-connector
+CONNECTOR_STORE_PATH=~/.connector-data CONNECTOR_ACCOUNTS='{}' CONNECTOR_ADMIN_API=true CONNECTOR_ILP_ADDRESS=test.quickstart ilp-connector
 ```
 
 You are now running a connector!
@@ -613,4 +613,4 @@ CONNECTOR_STORE_PATH=~/.connector-data CONNECTOR_ACCOUNTS='{}' CONNECTOR_ILP_ADD
 
 #### Step 4: Read the contributor guidelines
 
-See [CONTRIBUTE.md](/CONTRIBUTE.md).
+See [CONTRIBUTING.md](/CONTRIBUTING.md).

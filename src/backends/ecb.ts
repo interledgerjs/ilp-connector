@@ -12,7 +12,24 @@ const RATES_API = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
 export interface ECBBackendOptions {
   spread: number,
   ratesApiUrl: string,
-  mockData: object
+  mockData: ECBAPIData
+}
+
+export interface ECBSaxNode {
+  name: string,
+  attributes: {
+    time?: number
+    currency?: string
+    rate?: number
+  }
+}
+
+export interface ECBAPIData {
+  base: string
+  date?: number
+  rates: {
+    [key: string]: number
+  }
 }
 
 /**
@@ -27,7 +44,7 @@ export default class ECBBackend implements BackendInstance {
     [key: string]: number
   }
   protected currencies: string[]
-  private mockData: object
+  private mockData: ECBAPIData
 
   /**
    * Constructor.
@@ -54,7 +71,7 @@ export default class ECBBackend implements BackendInstance {
    * Mock data can be provided for testing purposes
    */
   async connect () {
-    let apiData
+    let apiData: ECBAPIData
     if (this.mockData) {
       log.info('connect using mock data.')
       apiData = this.mockData
@@ -141,14 +158,14 @@ export default class ECBBackend implements BackendInstance {
   }
 }
 
-function parseXMLResponse (data: string) {
-  const parser = sax.parser(true)
-  const apiData = { base: 'EUR', date: null, rates: {} }
-  parser.onopentag = (node) => {
+function parseXMLResponse (data: string): Promise<ECBAPIData> {
+  const parser = sax.parser(true, {})
+  const apiData: ECBAPIData = { base: 'EUR', rates: {} }
+  parser.onopentag = (node: ECBSaxNode) => {
     if (node.name === 'Cube' && node.attributes.time) {
       apiData.date = node.attributes.time
     }
-    if (node.name === 'Cube' && node.attributes.currency) {
+    if (node.name === 'Cube' && node.attributes.currency && node.attributes.rate) {
       apiData.rates[node.attributes.currency] = node.attributes.rate
     }
   }
