@@ -60,7 +60,8 @@ export default class AdminApi {
       { method: 'GET', match: '/stats$', fn: this.getStats },
       { method: 'GET', match: '/alerts$', fn: this.getAlerts },
       { method: 'DELETE', match: '/alerts/', fn: this.deleteAlert },
-      { method: 'GET', match: '/metrics$', fn: this.getMetrics, responseType: Prometheus.register.contentType }
+      { method: 'GET', match: '/metrics$', fn: this.getMetrics, responseType: Prometheus.register.contentType },
+      { method: 'POST', match: '/addAccount$', fn: this.addAccount }
     ]
   }
 
@@ -198,7 +199,10 @@ export default class AdminApi {
   }
 
   private async getMetrics () {
-    return Prometheus.register.metrics()
+    const promRegistry = Prometheus.register
+    const ilpRegistry = this.stats.getRegistry()
+    const mergedRegistry = Prometheus.Registry.merge([promRegistry, ilpRegistry])
+    return mergedRegistry.metrics()
   }
 
   private _getPlugin (url: string | undefined) {
@@ -236,6 +240,24 @@ export default class AdminApi {
       account,
       plugin: info.plugin,
       result: (await plugin.sendAdminInfo(body))
+    }
+  }
+
+  private async addAccount (url: string | undefined, body?: any) {
+    if (!url) throw new Error('no path on request')
+    if (!body) throw new Error('no json body provided to make plugin.')
+
+    const { id, options } = body
+    this.accounts.add(id, options)
+    const plugin = this.accounts.getPlugin(id)
+    await this.middlewareManager.addPlugin(id, plugin)
+
+    await plugin.connect({ timeout: Infinity })
+    this.routeBroadcaster.track(id)
+    this.routeBroadcaster.reloadLocalRoutes()
+    return {
+      plugin: id,
+      connected: plugin.isConnected()
     }
   }
 }
