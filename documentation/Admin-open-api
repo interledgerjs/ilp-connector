@@ -1,0 +1,1409 @@
+---
+openapi: 3.0.2
+info:
+  title: JS Connector Admin API
+  version: "0.2"
+  description: A JSON over HTTP API for configuring the ILPv4 [Javascript Connector](https://github.com/interledgerjs/ilp-connector).
+  license:
+    name: GNU AGPLv3
+    url: https://www.gnu.org/licenses/agpl.txt
+paths:
+  /accounts:
+    summary: Path used to get the list of accounts.
+    description: The REST endpoint/path used to list `Account` entries with information
+      regarding state of the associated plugin. see `_Account` data Type for details.
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_Accounts'
+              examples:
+                account:
+                  value:
+                    address: test.connie
+                    accounts:
+                      test.eur-ledger:
+                        info:
+                          relation: peer
+                          plugin: ilp-plugin-btp
+                          assetCode: XRP
+                          assetScale: 9
+                        connected: false
+                        adminInfo: false
+                      test.brd-ledger:
+                        info:
+                          relation: peer
+                          plugin: ilp-plugin-btp
+                          assetCode: XRP
+                          assetScale: 9
+                        connected: false
+                        adminInfo: false
+          description: Successful response - returns all the Accounts on the connector
+      operationId: GetAccount
+      summary: List All Accounts
+      description: |-
+        The REST endpoint/path used to list `Account` entries with information regarding state of the associated plugin. In the defined example, `test.connie` is the ilp address of the connector itself
+
+
+        Highly reccomend this table: https://github.com/interledgerjs/ilp-connector#accounts
+  /accounts/{accountId}:
+    summary: Path used to manage a single Account.
+    description: "The REST endpoint used to interact with the plugin on an `Account`.\
+      \ JSON objects referred to as `AdminInfo` are passed into a POST request in\
+      \ order to be used by a plugin, and a GET request returns information regarding\
+      \ the state of a plugin. \n\nhttps://github.com/interledgerjs/ilp-connector/pull/460"
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pluginState'
+              examples:
+                GET-AdminInfo-response:
+                  value:
+                    account: test.usd-ledger
+                    plugin: ilp-plugin-mock
+                    info:
+                      foo: bar
+          description: Successful response - returns a single `Account`.
+        500:
+          description: Invalid Account
+      operationId: getAccount
+      summary: Get An Account's Plugin Info
+      description: "\nThe REST endpoint used to interact with the plugin on an `Account`.\
+        \ Plugins and Accoutns have a 1:1 relationship. JSON objects referred to as\
+        \ `AdminInfo` are passed into a POST request in order to be used by a plugin,\
+        \ and a GET request returns information regarding the state of a plugin. \n\
+        \nfor more info: https://github.com/interledgerjs/ilp-connector/pull/460"
+    post:
+      requestBody:
+        content:
+          application/json:
+            examples:
+              foobar:
+                value:
+                  foo: Bar
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              examples:
+                POST-admininfo-response:
+                  value:
+                    account: test.usd-ledger
+                    plugin: ilp-plugin-mock
+                    result:
+                      foo:
+                        foo: bar
+          description: Successful response - changes plugin state
+      summary: Pass Information To An Account's Plugin
+      description: Passes an object into the plugin of an account
+    parameters:
+    - name: accountId
+      description: An ilp address identifying an `Account`.
+      schema:
+        type: string
+      in: path
+      required: true
+  /status:
+    summary: Get connector status
+    description: Endpoint to GET the status of a connector. This includes the balances,
+      connected nodes, and `routingTable`. Returns a `_Status` object
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_Status'
+              examples:
+                Status:
+                  value:
+                    balances:
+                      test.cad-ledger: "0"
+                      test.usd-ledger: "100"
+                      test.eur-ledger: -94
+                      test.cny-ledger: "0"
+                    connected:
+                      test.cad-ledger: true
+                      test.usd-ledger: true
+                      test.eur-ledger: true
+                      test.cny-ledger: true
+                    localRoutingTable:
+                      test.cad-ledger:
+                        auth: undefined
+                        nextHop: test.cad-ledger
+                        path: test.cad-ledger
+                      test.cny-ledger:
+                        auth: undefined
+                        nextHop: test.cny-ledger
+                        path: test.cny-ledger
+                      test.connie:
+                        auth: undefined
+                        nextHop: ""
+                        path: ""
+                      test.eur-ledger:
+                        auth: undefined
+                        nextHop: test.eur-ledger
+                        path: test.eur-ledger
+                      test.usd-ledger:
+                        auth: undefined
+                        nextHop: test.usd-ledger
+                        path: test.usd-ledger
+          description: Successful response - returns Status of the connector
+      summary: Get Status of Connector's accounts
+      description: Endpoint to GET the status of a connector. This includes the balances,
+        connected nodes, and `routingTable`. In the defined example, `test.connie`
+        is the ilp address of the connector itself
+  /routing:
+    summary: Get routing information
+    description: Endpoint used to GET the routing information for the connector. Returns
+      a `_Routing` object
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_Routing'
+              examples:
+                Routing:
+                  value:
+                    routingTableId: 25a2b8de-0c71-44da-88bf-e98fc3117f83
+                    currentEpoch: 5
+                    localRoutingTable:
+                      test.connie:
+                        nextHop: ""
+                        path: ""
+                        auth: undefined
+                      test.cad-ledger:
+                        nextHop: test.cad-ledger
+                        path: test.cad-ledger
+                        auth: undefined
+                      test.usd-ledger:
+                        nextHop: test.usd-ledger
+                        path: test.usd-ledger
+                        auth: undefined
+                      test.eur-ledger:
+                        nextHop: test.eur-ledger
+                        path: test.eur-ledger
+                        auth: undefined
+                      test.cny-ledger:
+                        nextHop: test.cny-ledger
+                        path: test.cny-ledger
+                        auth: undefined
+                    forwardingRoutingTable:
+                      test.connie:
+                        nextHop: ""
+                        path: test.connie
+                        auth: undefined
+                      test.cad-ledger:
+                        nextHop: test.cad-ledger
+                        path: test.connie test.cad-ledger
+                        auth: undefined
+                      test.usd-ledger:
+                        nextHop: test.usd-ledger
+                        path: test.connie test.usd-ledger
+                        auth: undefined
+                      test.eur-ledger:
+                        nextHop: test.eur-ledger
+                        path: test.connie test.eur-ledger
+                        auth: undefined
+                      test.cny-ledger:
+                        nextHop: test.cny-ledger
+                        path: test.connie test.cny-ledger
+                        auth: undefined
+                    routingLog:
+                    - prefix: test.connie
+                      route:
+                        nextHop: ""
+                        path: test.connie
+                        auth: undefined
+                      epoch: 0
+                    - prefix: test.cad-ledger
+                      route:
+                        nextHop: test.cad-ledger
+                        path: test.connie test.cad-ledger
+                        auth: undefined
+                      epoch: 1
+                    - prefix: test.usd-ledger
+                      route:
+                        nextHop: test.usd-ledger
+                        path: test.connie test.usd-ledger
+                        auth: undefined
+                      epoch: 2
+                    - prefix: test.eur-ledger
+                      route:
+                        nextHop: test.eur-ledger
+                        path: test.connie test.eur-ledger
+                        auth: undefined
+                      epoch: 3
+                    - prefix: test.cny-ledger
+                      route:
+                        nextHop: test.cny-ledger
+                        path: test.connie test.cny-ledger
+                        auth: undefined
+                      epoch: 4
+                    peers:
+                      test.cad-ledger:
+                        send:
+                          epoch: 0
+                          mode: IDLE
+                        receive:
+                          routingTableId: b38e6e41-71a0-4088-baed-d2f09caa18ee
+                          epoch: 1
+                      test.usd-ledger:
+                        send:
+                          epoch: 0
+                          mode: IDLE
+                        receive:
+                          routingTableId: b38e6e41-71a0-4088-baed-d2f09caa18ee
+                          epoch: 1
+                      test.eur-ledger:
+                        send:
+                          epoch: 0
+                          mode: IDLE
+                        receive:
+                          routingTableId: b38e6e41-71a0-4088-baed-d2f09caa18ee
+                          epoch: 1
+                      test.cny-ledger:
+                        send:
+                          epoch: 0
+                          mode: IDLE
+                        receive:
+                          routingTableId: b38e6e41-71a0-4088-baed-d2f09caa18ee
+                          epoch: 1
+          description: 'Successful Response - returns routing information for connector '
+      summary: Get Routing Information
+      description: Endpoint used to GET the routing information for the connector.
+        This includes a `routingTable`, `routingLog`, and `forwardingRoutingTable`
+        (which is a routingTable with the connector's address pre-pended)
+  /balance:
+    summary: Get balances
+    description: REST endpoint used to get the balances of all the accounts on the
+      connector. Returns a `_Balance` object from a GET request
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_Balance'
+              examples:
+                GET Balance:
+                  value:
+                    accounts:
+                      test.cad-ledger:
+                        balance: "0"
+                        minimum: -Infinity
+                        maximum: "1000"
+                      test.usd-ledger:
+                        balance: "100"
+                        minimum: -Infinity
+                        maximum: "1000"
+                      test.eur-ledger:
+                        balance: -94
+                        minimum: -Infinity
+                        maximum: "1000"
+                      test.cny-ledger:
+                        balance: "0"
+                        minimum: -Infinity
+                        maximum: "1000"
+          description: Sucessful response - got all balances
+        500:
+          description: Unknown Account Id
+      summary: Get Balance of All Accounts
+      description: 'REST endpoint used to get the balances of all the accounts on
+        the connector. Returns an object containing all the `balances` of each `account`,
+        which includes the account''s asset balance, minimum balance, and maximum
+        balance. '
+    post:
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postBalance'
+            examples:
+              postbalance:
+                value:
+                  accountId: test.brd-ledger
+                  amountDiff: "12"
+      responses:
+        200:
+          description: Sucessful Repsonse - updates the balance of an account
+      summary: Change Balance of An Account
+      description: Adds/subtracts the balance of an account by the given amount
+  /rates:
+    summary: Get exchange rates
+    description: Endpoint used to GET the exchange rates for all accounts. Returns
+      a `_Rates` object containing rates for each account on the connector
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_Rates'
+              examples:
+                Rates:
+                  value:
+                    eur-ledger:
+                      usd-ledger: 1.12
+                      cad-ledger: 1.47
+                      cny-ledger: 7.72
+                    usd-ledger:
+                      eur-ledger: 0.89
+                      cad-ledger: 1.31
+                      cny-ledger: 6.88
+          description: successful response - generated list of rates
+      summary: Get Exchange Rates
+      description: Endpoint used to GET the exchange rates for all accounts. Returns
+        a `_Rates` object containing rates for each account on the connector
+  /stats:
+    summary: Get macro statistics
+    description: Endpoint used to GET information about the statistics of a connector,
+      with multiple possilbe fields. Returns an array of `_Stats` objects
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/_Stats'
+              examples:
+                stats:
+                  value:
+                  - help: Total number of incoming ILP packets
+                    name: ilp_connector_incoming_ilp_packets
+                    type: counter
+                    values:
+                    - value: 1
+                      labels:
+                        result: fulfilled
+                        account: test.cad-ledger
+                        asset: CAD
+                        scale: 4
+                      timestamp: undefined
+                    - value: 2
+                      labels:
+                        result: fulfilled
+                        account: test.usd-ledger
+                        asset: USD
+                        scale: 4
+                      timestamp: undefined
+                    - value: 1
+                      labels:
+                        result: fulfilled
+                        account: test.eur-ledger
+                        asset: EUR
+                        scale: 4
+                      timestamp: undefined
+                    - value: 1
+                      labels:
+                        result: fulfilled
+                        account: test.cny-ledger
+                        asset: CNY
+                        scale: 4
+                      timestamp: undefined
+                    aggregator: sum
+                  - help: Total value of incoming ILP packets
+                    name: ilp_connector_incoming_ilp_packet_value
+                    type: counter
+                    values:
+                    - value: 100
+                      labels:
+                        result: fulfilled
+                        account: test.usd-ledger
+                        asset: USD
+                        scale: 4
+                      timestamp: undefined
+                    aggregator: sum
+                  - help: Total number of outgoing ILP packets
+                    name: ilp_connector_outgoing_ilp_packets
+                    type: counter
+                    values:
+                    - value: 1
+                      labels:
+                        result: fulfilled
+                        account: test.eur-ledger
+                        asset: EUR
+                        scale: 4
+                      timestamp: undefined
+                    aggregator: sum
+                  - help: Total value of outgoing ILP packets
+                    name: ilp_connector_outgoing_ilp_packet_value
+                    type: counter
+                    values:
+                    - value: 94
+                      labels:
+                        result: fulfilled
+                        account: test.eur-ledger
+                        asset: EUR
+                        scale: 4
+                      timestamp: undefined
+                    aggregator: sum
+                  - help: Total of incoming money
+                    name: ilp_connector_incoming_money
+                    type: gauge
+                    values: []
+                    aggregator: sum
+                  - help: Total of outgoing money
+                    name: ilp_connector_outgoing_money
+                    type: gauge
+                    values: []
+                    aggregator: sum
+                  - help: Total of rate limited ILP packets
+                    name: ilp_connector_rate_limited_ilp_packets
+                    type: counter
+                    values: []
+                    aggregator: sum
+                  - help: Total of rate limited money requests
+                    name: ilp_connector_rate_limited_money
+                    type: counter
+                    values: []
+                    aggregator: sum
+                  - help: Balances on peer account
+                    name: ilp_connector_balance
+                    type: gauge
+                    values:
+                    - value: 100
+                      labels:
+                        account: test.usd-ledger
+                        asset: USD
+                        scale: 4
+                      timestamp: undefined
+                    - value: -94
+                      labels:
+                        account: test.eur-ledger
+                        asset: EUR
+                        scale: 4
+                      timestamp: undefined
+                    aggregator: sum
+          description: |
+            successful response - returned stats of all accounts
+      summary: Get Connector Stats
+      description: 'Endpoint used to GET information about the statistics of a connector,
+        with multiple possilbe fields. '
+  /alerts:
+    summary: Path used to get all alerts
+    description: The REST endpoint that will return an `_Alert` object listing all
+      alerts for the connector
+    get:
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_Alert'
+              examples:
+                Alert:
+                  value:
+                    alerts:
+                    - id: 1563226689175
+                      accountId: test.eur-ledger
+                      triggeredBy: test.foo
+                      message: exceeded maximum balance.
+                      count: 3
+                      createdAt: 2018-02-10T09:30Z
+                      updatedAt: 2018-02-10T09:30Z
+          description: Sucessful response - returned alerts
+      summary: Get all Alerts
+      description: Gets all the alerts for the connector. Empty by default
+  /alerts/{id}:
+    summary: Delete alert
+    description: REST endpoint used to delete an alert. Contians a DELETE operation
+      to delete a specific alert from the connector
+    delete:
+      responses:
+        200:
+          description: |
+            Successful Response - Deleted Alert
+        500:
+          description: Invalid Alert Id
+      summary: Delete An Alert
+      description: Delete's the alert with specified `id`, referring to the alert
+        id
+    parameters:
+    - name: id
+      schema:
+        type: number
+      in: path
+      required: true
+  /metrics:
+    summary: Get Prometheus metrics
+    description: |-
+      Invokes Prometheus Node.js client (https://github.com/siimon/prom-client) to retrieve data for performance metrics.
+
+      Used in external applications as such: https://dashboards.styra.network/
+    get:
+      responses:
+        200:
+          content:
+            text/plain:
+              examples:
+                Metrics:
+                  value: |-
+                    # HELP process_cpu_user_seconds_total Total user CPU time spent in seconds.
+                    # TYPE process_cpu_user_seconds_total counter
+                    process_cpu_user_seconds_total 143472.5876909995 1563271905284
+
+                    # HELP process_cpu_system_seconds_total Total system CPU time spent in seconds.
+                    # TYPE process_cpu_system_seconds_total counter
+                    process_cpu_system_seconds_total 11528.129493999955 1563271905284
+
+                    # HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+                    # TYPE process_cpu_seconds_total counter
+                    process_cpu_seconds_total 155000.71718499987 1563271905284
+
+                    # HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+                    # TYPE process_start_time_seconds gauge
+                    process_start_time_seconds 1560868702
+
+                    # HELP process_resident_memory_bytes Resident memory size in bytes.
+                    # TYPE process_resident_memory_bytes gauge
+                    process_resident_memory_bytes 272932864 1563271905422
+
+                    # HELP process_virtual_memory_bytes Virtual memory size in bytes.
+                    # TYPE process_virtual_memory_bytes gauge
+                    process_virtual_memory_bytes 10336206848 1563271905422
+
+                    # HELP process_heap_bytes Process heap size in bytes.
+                    # TYPE process_heap_bytes gauge
+                    process_heap_bytes 349483008 1563271905422
+
+                    # HELP process_open_fds Number of open file descriptors.
+                    # TYPE process_open_fds gauge
+                    process_open_fds 32 1563271905421
+
+                    # HELP process_max_fds Maximum number of open file descriptors.
+                    # TYPE process_max_fds gauge
+                    process_max_fds 811521
+
+                    # HELP nodejs_eventloop_lag_seconds Lag of event loop in seconds.
+                    # TYPE nodejs_eventloop_lag_seconds gauge
+                    nodejs_eventloop_lag_seconds 0.137359162 1563271905422
+
+                    # HELP nodejs_active_handles Number of active libuv handles grouped by handle type. Every handle type is C++ class name.
+                    # TYPE nodejs_active_handles gauge
+                    nodejs_active_handles{type="Pipe"} 1 1563271905308
+                    nodejs_active_handles{type="Socket"} 3 1563271905308
+                    nodejs_active_handles{type="Server"} 4 1563271905308
+                    nodejs_active_handles{type="Timer"} 2 1563271905308
+                    nodejs_active_handles{type="TLSSocket"} 2 1563271905308
+
+                    # HELP nodejs_active_handles_total Total number of active handles.
+                    # TYPE nodejs_active_handles_total gauge
+                    nodejs_active_handles_total 12 1563271905308
+
+                    # HELP nodejs_active_requests Number of active libuv requests grouped by request type. Every request type is C++ class name.
+                    # TYPE nodejs_active_requests gauge
+                    nodejs_active_requests{type="FSReqWrap"} 2
+
+                    # HELP nodejs_active_requests_total Total number of active requests.
+                    # TYPE nodejs_active_requests_total gauge
+                    nodejs_active_requests_total 2 1563271905308
+
+                    # HELP nodejs_heap_size_total_bytes Process heap size from node.js in bytes.
+                    # TYPE nodejs_heap_size_total_bytes gauge
+                    nodejs_heap_size_total_bytes 162316288 1563271905308
+
+                    # HELP nodejs_heap_size_used_bytes Process heap size used from node.js in bytes.
+                    # TYPE nodejs_heap_size_used_bytes gauge
+                    nodejs_heap_size_used_bytes 148027304 1563271905308
+
+                    # HELP nodejs_external_memory_bytes Nodejs external memory size in bytes.
+                    # TYPE nodejs_external_memory_bytes gauge
+                    nodejs_external_memory_bytes 36590282 1563271905308
+
+                    # HELP nodejs_heap_space_size_total_bytes Process heap space size total from node.js in bytes.
+                    # TYPE nodejs_heap_space_size_total_bytes gauge
+                    nodejs_heap_space_size_total_bytes{space="read_only"} 524288 1563271905308
+                    nodejs_heap_space_size_total_bytes{space="new"} 1048576 1563271905308
+                    nodejs_heap_space_size_total_bytes{space="old"} 149655552 1563271905308
+                    nodejs_heap_space_size_total_bytes{space="code"} 4194304 1563271905308
+                    nodejs_heap_space_size_total_bytes{space="map"} 3158016 1563271905308
+                    nodejs_heap_space_size_total_bytes{space="large_object"} 3735552 1563271905308
+
+                    # HELP nodejs_heap_space_size_used_bytes Process heap space size used from node.js in bytes.
+                    # TYPE nodejs_heap_space_size_used_bytes gauge
+                    nodejs_heap_space_size_used_bytes{space="read_only"} 35200 1563271905308
+                    nodejs_heap_space_size_used_bytes{space="new"} 883624 1563271905308
+                    nodejs_heap_space_size_used_bytes{space="old"} 139714256 1563271905308
+                    nodejs_heap_space_size_used_bytes{space="code"} 3167456 1563271905308
+                    nodejs_heap_space_size_used_bytes{space="map"} 1851256 1563271905308
+                    nodejs_heap_space_size_used_bytes{space="large_object"} 2377120 1563271905308
+
+                    # HELP nodejs_heap_space_size_available_bytes Process heap space size available from node.js in bytes.
+                    # TYPE nodejs_heap_space_size_available_bytes gauge
+                    nodejs_heap_space_size_available_bytes{space="read_only"} 480384 1563271905308
+                    nodejs_heap_space_size_available_bytes{space="new"} 147544 1563271905308
+                    nodejs_heap_space_size_available_bytes{space="old"} 6831960 1563271905308
+                    nodejs_heap_space_size_available_bytes{space="code"} 852608 1563271905308
+                    nodejs_heap_space_size_available_bytes{space="map"} 1205352 1563271905308
+                    nodejs_heap_space_size_available_bytes{space="large_object"} 1364401664 1563271905308
+
+                    # HELP nodejs_version_info Node.js version info.
+                    # TYPE nodejs_version_info gauge
+                    nodejs_version_info{version="v10.15.3",major="10",minor="15",patch="3"} 1
+
+                    # HELP ilp_connector_incoming_ilp_packets Total number of incoming ILP packets
+                    # TYPE ilp_connector_incoming_ilp_packets counter
+                    ilp_connector_incoming_ilp_packets{result="fulfilled",account="test.cad-ledger",asset="CAD",scale="4"} 1
+                    ilp_connector_incoming_ilp_packets{result="fulfilled",account="test.usd-ledger",asset="USD",scale="4"} 2
+                    ilp_connector_incoming_ilp_packets{result="fulfilled",account="test.eur-ledger",asset="EUR",scale="4"} 1
+                    ilp_connector_incoming_ilp_packets{result="fulfilled",account="test.cny-ledger",asset="CNY",scale="4"} 1
+                    ilp_connector_incoming_ilp_packets{result="rejected",account="test.cad-ledger",asset="CAD",scale="4"} 0
+                    ilp_connector_incoming_ilp_packets{result="rejected",account="test.usd-ledger",asset="USD",scale="4"} 0
+                    ilp_connector_incoming_ilp_packets{result="rejected",account="test.eur-ledger",asset="EUR",scale="4"} 0
+                    ilp_connector_incoming_ilp_packets{result="rejected",account="test.cny-ledger",asset="CNY",scale="4"} 0
+
+                    # HELP ilp_connector_incoming_ilp_packet_value Total value of incoming ILP packets
+                    # TYPE ilp_connector_incoming_ilp_packet_value counter
+                    ilp_connector_incoming_ilp_packet_value{result="fulfilled",account="test.usd-ledger",asset="USD",scale="4"} 100
+
+                    # HELP ilp_connector_outgoing_ilp_packets Total number of outgoing ILP packets
+                    # TYPE ilp_connector_outgoing_ilp_packets counter
+                    ilp_connector_outgoing_ilp_packets{result="fulfilled",account="test.eur-ledger",asset="EUR",scale="4"} 100
+
+                    # HELP ilp_connector_outgoing_ilp_packet_value Total value of outgoing ILP packets
+                    # TYPE ilp_connector_outgoing_ilp_packet_value counter
+                    ilp_connector_outgoing_ilp_packet_value{result="fulfilled",account="test.eur-ledger",asset="EUR",scale="4"} 94
+
+                    # HELP ilp_connector_incoming_money Total of incoming money
+                    # TYPE ilp_connector_incoming_money gauge
+                    ilp_connector_incoming_money{result="succeeded",account="test.usd-ledger",asset="USD",scale="4"} 100
+
+                    # HELP ilp_connector_outgoing_money Total of outgoing money
+                    # TYPE ilp_connector_outgoing_money gauge
+                    ilp_connector_outgoing_money{result="succeeded",account="test.eur-ledger",asset="EUR",scale="4"} 94
+
+                    # HELP ilp_connector_rate_limited_ilp_packets Total of rate limited ILP packets
+                    # TYPE ilp_connector_rate_limited_ilp_packets counter
+
+                    # HELP ilp_connector_rate_limited_money Total of rate limited money requests
+                    # TYPE ilp_connector_rate_limited_money counter
+
+                    # HELP ilp_connector_balance Balances on peer account
+                    # TYPE ilp_connector_balance gauge
+                    ilp_connector_balance{account="test.usd-ledger",asset="USD",scale="4"} 100
+                    ilp_connector_balance{account="test.eur-ledger",asset="EUR",scale="4"} -94
+          description: successful response - query Prometheus data for use in external
+            performance metrics applcation
+      summary: Get Prometheus Metrics
+      description: |-
+        Invokes Prometheus Node.js client (https://github.com/siimon/prom-client) to retrieve data for performance metrics.
+
+        Used in external applications as such: https://dashboards.styra.network/
+  /addAccount:
+    summary: post an account to the connector
+    description: 'The REST endpoint used to create `Account` entries on the connector.
+      Contains a POST request which takes an `_AddAccount` object '
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_AddAccount'
+            examples:
+              addaccount:
+                value:
+                  id: test.brd-ledger
+                  options:
+                    relation: peer
+                    plugin: ilp-plugin-btp
+                    assetCode: XRP
+                    assetScale: 9
+                    options: {}
+        required: true
+      responses:
+        200:
+          content:
+            application/json:
+              examples:
+                AddAccount-response:
+                  value:
+                    plugin: ilp-plugin-btp
+                    connected: true
+          description: Sucessful response - created an account
+      summary: Write an account to the connector
+      description: |-
+        The REST endpoint used to create `Account` entries on the connector. Contains a POST request which takes an `_AddAccount` object. This writes an account to the storage of the connector. [NOTE] In testing, was not able to get a response, but the account still writes to the storage
+
+        For more information on configuring plugins, view https://github.com/interledgerjs/ilp-connector#api-reference
+components:
+  schemas:
+    route:
+      title: Root Type for route
+      description: Object containing nextHop (ilp address), path (ilp addresses, separated
+        by spaces), and auth for an account
+      type: object
+      properties:
+        auth:
+          type: string
+        nextHop:
+          type: string
+        path:
+          type: string
+      example:
+        auth: undefined
+        nextHop: test.eur-ledger
+        path: test.eur-ledger
+    _Routing:
+      title: Root Type for _Routing
+      description: |+
+        Object containing all information regarding the routing status of a connector. Returns both a local and forwarding `routingTable` object, list of peers, and a `log`. Also returns `peer` and `routingLogEntry`.
+
+        Local Routing Table:
+        A Local Routing Table aggregates the routing information of the Incoming Routing Tables and maintains the routing table that is referred when the node decides which peer the node should pass an ILP packet to. The table is updated when Route Update Requests are received, and it MAY be filtered before added to the table.
+
+        Forwarding Routing Table:
+        From a Local Routing Table, a Forward Routing Table is generated. A Forward Routing Table is characteristic in the following points.
+
+
+        For more details about the routing table (WIP): https://github.com/dora-gt/rfcs/blob/feature/dora-gt/route-broadcasting-protocol/0000-route-broadcasting-protocol/0000-route-broadcasting-protocol.md
+
+      required:
+      - currentEpoch
+      - forwardingRoutingTable
+      - localRoutingTable
+      - peers
+      - routingLog
+      - routingTableId
+      type: object
+      properties:
+        routingTableId:
+          description: Unique ID of the routing table
+          type: string
+        currentEpoch:
+          format: int32
+          description: How many times the routing table is modified since routing
+            table ID is set
+          type: integer
+        localRoutingTable:
+          $ref: '#/components/schemas/routingTable'
+          description: Routing table for the connector
+          properties:
+            test.quickstart:
+              type: object
+              properties:
+                nextHop:
+                  type: string
+                path:
+                  type: string
+        forwardingRoutingTable:
+          $ref: '#/components/schemas/routingTable'
+          description: ""
+          properties:
+            test.quickstart:
+              type: object
+              properties:
+                nextHop:
+                  type: string
+                path:
+                  type: string
+        routingLog:
+          type: array
+          items:
+            $ref: '#/components/schemas/routingLogEntry'
+        peers:
+          $ref: '#/components/schemas/peer'
+      example:
+        routingTableId: e1db62c3-5858-476f-8543-c77930ef1660
+        currentEpoch: 1
+        localRoutingTable:
+          test.quickstart:
+            nextHop: ""
+            path: ""
+        forwardingRoutingTable:
+          test.quickstart:
+            nextHop: ""
+            path: test.quickstart
+        routingLog:
+        - prefix: test.quickstart
+          route:
+            nextHop: ""
+            path: test.quickstart
+          epoch: 0
+        peers: {}
+    routingTable:
+      title: Root Type for localRoutingTable
+      description: Object mapping an account (ilp address) to a route object
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/route'
+          description: ilp address of an account
+      example:
+        test.cad-ledger:
+          auth: undefined
+          nextHop: test.cad-ledger
+          path: test.cad-ledger
+        test.cny-ledger:
+          auth: undefined
+          nextHop: test.cny-ledger
+          path: test.cny-ledger
+    peer:
+      title: Root Type for peer
+      description: ""
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/routingState'
+          description: ilp address of an account
+      example:
+        test.cad-ledger:
+          send:
+            epoch: 0
+            mode: IDLE
+          receive:
+            routingTableId: b38e6e41-71a0-4088-baed-d2f09caa18ee
+            epoch: 1
+    routingState:
+      title: Root Type for routingState
+      description: Object describing data for sending / receiving payments, to identify
+        a peer of a connector
+      type: object
+      properties:
+        send:
+          type: object
+          properties:
+            epoch:
+              format: int32
+              type: integer
+            mode:
+              type: string
+        receive:
+          type: object
+          properties:
+            routingTableId:
+              type: string
+            epoch:
+              format: int32
+              type: integer
+      example:
+        send:
+          epoch: 0
+          mode: IDLE
+        receive:
+          routingTableId: b38e6e41-71a0-4088-baed-d2f09caa18ee
+          epoch: 1
+    routingLogEntry:
+      title: Root Type for routingLogEntry
+      description: Object containing route information which populates a routingLog
+        Object
+      type: object
+      properties:
+        prefix:
+          type: string
+        route:
+          $ref: '#/components/schemas/route'
+          properties:
+            nextHop:
+              type: string
+            path:
+              type: string
+        epoch:
+          format: int32
+          type: integer
+      example:
+        prefix: test.quickstart
+        route:
+          nextHop: ""
+          path: test.quickstart
+        epoch: 0
+    _Accounts:
+      description: |-
+        JSON Object containing the ilp address of the connector, as well as the `accountState` of each account on the connector. see `accountState` for details
+
+        TODO: Add non-required fields
+      required:
+      - accounts
+      - address
+      type: object
+      properties:
+        address:
+          description: ilp address of the connector
+          type: string
+        accounts:
+          $ref: '#/components/schemas/accountStateMapping'
+          description: Object that contains account credentials as `info`, and booleans
+            marking `adminInfo` and `connected`
+      example:
+        address: test.quickstart
+        accounts:
+          test.eur-ledger:
+            info:
+              relation: peer
+              plugin: ilp-plugin-btp
+              assetCode: XRP
+              assetScale: 9
+            connected: false
+            adminInfo: false
+          test.brd-ledger:
+            info:
+              relation: peer
+              plugin: ilp-plugin-btp
+              assetCode: XRP
+              assetScale: 9
+            connected: false
+            adminInfo: false
+    accountCredentials:
+      title: Root Type for accountCredentials
+      description: |
+        Object containing data that governs an account
+
+        https://interledger.org/rfcs/0027-interledger-protocol-4/#terminology
+      type: object
+      properties:
+        relation:
+          description: relation to the host connector
+          type: string
+        assetCode:
+          description: asset code for the account asset
+          type: string
+        assetScale:
+          format: int32
+          description: asset scale for the account. See ILP docs for details
+          type: integer
+        plugin:
+          description: The plugin associated with an account
+          type: string
+        options:
+          description: Object containing options that wll be passed to the plugin
+            constructor
+          type: object
+      example:
+        relation: peer
+        assetCode: CAD
+        assetScale: 4
+        plugin: ilp-plugin-mock
+        options: {}
+    accountState:
+      title: Root Type for Account
+      description: Object containing `accountCredentials`, and booleans descrbing
+        configuration details
+      type: object
+      properties:
+        info:
+          $ref: '#/components/schemas/accountCredentials'
+          description: ""
+        connected:
+          description: TODO
+          type: boolean
+        adminInfo:
+          description: Does the account contain `adminInfo`
+          type: boolean
+      example:
+        info:
+          relation: some text
+          assetCode: some text
+          assetScale: 54
+          plugin: some text
+          options: {}
+        connected: true
+        adminInfo: true
+    _Balance:
+      description: Object containing list of balances from all the acounts on the
+        connector. See `balanceState` object for details.
+      required:
+      - accounts
+      type: object
+      properties:
+        accounts:
+          $ref: '#/components/schemas/accountBalance'
+          description: Ilp address of an account
+      example:
+        accounts:
+          test.cad-ledger:
+            balance: some text
+            minimum: some text
+            maximum: some text
+    balanceState:
+      title: Root Type for balanceState
+      description: "Object containing the balance, and mininum/maximum limits for\
+        \ an account. returned from GET /balance \n"
+      type: object
+      properties:
+        balance:
+          description: Balance of the account
+          type: string
+        minimum:
+          description: Minimum sending limit
+          type: string
+        maximum:
+          description: Maximum sending limit
+          type: string
+      example:
+        balance: "0"
+        minimum: -Infinity
+        maximum: "1000"
+    accountBalance:
+      title: Root Type for accountBalance
+      description: Object mapping an account (ilp address) to a balanceState object
+      type: object
+      properties:
+        test.cad-ledger:
+          type: object
+          properties:
+            balance:
+              type: string
+            minimum:
+              type: string
+            maximum:
+              type: string
+      example:
+        test.cad-ledger:
+          balance: "0"
+          minimum: -Infinity
+          maximum: "1000"
+    _Rates:
+      description: Mapping from account to corresponding exchange rates. `rateState`
+        is a collection of exchange rates from account to every other account.
+      required:
+      - account
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/rateState'
+          description: ilp address of an account
+      example:
+        test.cad-ledger:
+          test.usd-ledger: 0.778238680703821
+          test.eur-ledger: 0.734741956857837
+          test.cny-ledger: 4.84797437973938
+    rateState:
+      title: Root Type for rateState
+      description: Object mapping an account to exchange rates from another account
+      type: object
+      properties:
+        account:
+          description: |
+            ilp address of an account
+          type: number
+      example:
+        test.usd-ledger: 0.778238680703821
+        test.eur-ledger: 0.734741956857837
+        test.cny-ledger: 4.84797437973938
+    statsValue:
+      title: Root Type for statsValue
+      description: Object containing values if the statistic requries it. `statsLabels`
+        object connects the statsValue to an account.
+      type: object
+      properties:
+        value:
+          format: int32
+          description: value of statistic
+          type: integer
+        labels:
+          $ref: '#/components/schemas/statsLabels'
+          properties:
+            result:
+              type: string
+            account:
+              type: string
+            asset:
+              type: string
+            scale:
+              format: int32
+              type: integer
+        timestamp:
+          description: ""
+          type: string
+      example:
+        value: 100
+        labels:
+          result: fulfilled
+          account: test.usd-ledger
+          asset: USD
+          scale: 4
+        timestamp: undefined
+    statsLabels:
+      title: Root Type for statsLabels
+      description: Labels for the /stats endpoint that tie the value back to an account
+        and asset
+      type: object
+      properties:
+        result:
+          description: result of ilp packet
+          type: string
+        account:
+          description: ilp address of an account
+          type: string
+        asset:
+          description: asset code that the statistic pertains to
+          type: string
+        scale:
+          format: int32
+          description: asset scale
+          type: integer
+      example:
+        result: fulfilled
+        account: test.usd-ledger
+        asset: USD
+        scale: 4
+    alert:
+      title: Root Type for _AlertObject
+      description: Object containing information about an alert for the connector
+      type: object
+      properties:
+        id:
+          format: int32
+          description: Alert id
+          type: integer
+        accountId:
+          description: ilp address of the account who triggered the alert
+          type: string
+        triggeredBy:
+          description: Ilp address of account who created the alert
+          type: string
+        message:
+          description: Alert message
+          type: string
+        count:
+          format: int32
+          description: Ordering in list of all alerts
+          type: integer
+        createdAt:
+          format: date-time
+          description: Date of alert creation
+          type: string
+        updatedAt:
+          format: date-time
+          description: Date of alert update
+          type: string
+      example:
+        id: 1562886592154
+        accountId: test.eur-ledger
+        triggeredBy: test.foo
+        message: exceeded maximum balance.
+        count: 3
+        createdAt: 2015-06-16T00:00:00.000Z
+        updatedAt: 2015-06-16T00:00:00.000Z
+    _Alert:
+      description: Array of `alert` objects
+      required:
+      - alerts
+      type: object
+      properties:
+        alerts:
+          description: ""
+          type: array
+          items:
+            $ref: '#/components/schemas/alert'
+      example:
+        alerts:
+        - id: 17
+          accountId: some text
+          triggeredBy: some text
+          message: some text
+          count: 41
+          createdAt: 2018-02-10T09:30Z
+          updatedAt: 2018-02-10T09:30Z
+        - id: 62
+          accountId: some text
+          triggeredBy: some text
+          message: some text
+          count: 5
+          createdAt: 2018-02-10T09:30Z
+          updatedAt: 2018-02-10T09:30Z
+    _AddAccount:
+      title: Root Type for _AddAccount
+      description: JSON object containing information required to create an `Account`
+        on the connector
+      required:
+      - adminInfo
+      - id
+      - options
+      type: object
+      properties:
+        id:
+          description: ilp address of the account
+          type: string
+        adminInfo:
+          description: Does the account contain `adminInfo`
+          type: boolean
+        options:
+          $ref: '#/components/schemas/accountCredentials'
+          properties:
+            relation:
+              type: string
+            plugin:
+              type: string
+            assetCode:
+              type: string
+            assetScale:
+              format: int32
+              type: integer
+            options:
+              type: object
+              properties:
+                info:
+                  type: object
+                  properties:
+                    foo:
+                      type: string
+      example:
+        id: test.eur-ledger
+        adminInfo: true
+        options:
+          relation: peer
+          plugin: ilp-plugin-btp
+          assetCode: XRP
+          assetScale: 9
+          options:
+            foo: bar
+    accountStateMapping:
+      description: 'Object mapping account address to an `accountState` object. Returned
+        from GET /accounts as part of the `_Accounts` object   '
+      type: object
+      properties:
+        account:
+          $ref: '#/components/schemas/accountState'
+          description: ilp address of an account
+      example:
+        account:
+          info:
+            relation: some text
+            assetCode: some text
+            assetScale: 33
+            plugin: some text
+            options: {}
+          connected: true
+          adminInfo: true
+    _Stats:
+      title: Root Type for _StatsObject
+      description: 'Object that defines a statstic for the connector. Values are inside
+        a `statsValue` object. Returned from GET /stats. '
+      required:
+      - aggregator
+      - help
+      - name
+      - type
+      - values
+      type: object
+      properties:
+        help:
+          description: |
+            String to help identify statistic
+          type: string
+        name:
+          description: Name of the statistic
+          type: string
+        type:
+          description: counter, gauge
+          type: string
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/statsValue'
+        aggregator:
+          description: additional type info
+          type: string
+      example:
+        help: Total number of incoming ILP packets
+        name: ilp_connector_incoming_ilp_packets
+        type: counter
+        values:
+        - value: 100
+          labels:
+            result: fulfilled
+            account: test.usd-ledger
+            asset: USD
+            scale: 4
+          timestamp: undefined
+        aggregator: sum
+    postBalance:
+      title: Root Type for postBalance
+      description: request for POST /balance
+      type: object
+      properties:
+        accountId:
+          description: ilp address of an account
+          type: string
+        amountDiff:
+          description: amount to change balance. Can be negative by prepending "-"
+          type: string
+      example:
+        accountId: test.eur-ledger
+        amountDiff: "12"
+    pluginState:
+      title: Root Type for Account
+      description: Object containing `accountCredentials`, and booleans descrbing
+        configuration details
+      type: object
+      properties:
+        connected:
+          description: TODO
+          type: boolean
+        adminInfo:
+          description: Does the account contain `adminInfo`
+          type: boolean
+        info:
+          description: Object passed into plugin of an account
+      example:
+        info:
+          foo: bar
+        connected: true
+        adminInfo: true
+    _Status:
+      description: Object containing the status of an account. This includes the balances,
+        connected nodes, and `routingTable`.
+      required:
+      - balances
+      - connected
+      - localRoutingTable
+      type: object
+      properties:
+        balances:
+          $ref: '#/components/schemas/balanceStatus'
+          description: Balances object
+        connected:
+          $ref: '#/components/schemas/accountConnectionState'
+          description: List of connected addresses
+        localRoutingTable:
+          $ref: '#/components/schemas/routingTable'
+          description: Object mapping an account to a route object
+      example:
+        balances: {}
+        connected: {}
+        localRoutingTable:
+          test.quickstart:
+            nextHop: ""
+            path: ""
+    accountConnectionState:
+      description: Object mapping of accounts (ilp address) to boolean, to determine
+        if the connector is connected to a given account. Returned from GET /status
+      type: object
+      properties:
+        account:
+          description: ilp address of an account
+          type: boolean
+      example:
+        test.cad-ledger: true
+        test.usd-ledger: true
+        test.eur-ledger: true
+        test.cny-ledger: true
+    balanceStatus:
+      title: Root Type for balance
+      description: Object mapping accounts (ilp address) to balances. Returned as
+        part of GET /status
+      type: object
+      properties:
+        account:
+          description: ilp address of an account
+          type: string
+      example:
+        test.cad-ledger: "0"
+        test.usd-ledger: "100"
+        test.eur-ledger: -94
+        test.cny-ledger: "0"
+tags:
+- name: Interledger
+  description: ""
