@@ -54,6 +54,10 @@ class Balance {
     return this.balance
   }
 
+  getMinimum () {
+    return this.minimum
+  }
+
   toJSON () {
     return {
       balance: this.balance.toString(),
@@ -178,6 +182,14 @@ export default class BalanceMiddleware implements Middleware {
             // This means we always take the most conservative view of our balance with the upstream peer
             let result
             try {
+
+              // Do a check before forwarding packet to see if it exceed minimum
+              const newBalance = balance.getValue().minus(parsedPacket.amount)
+              if (newBalance.lt(balance.getMinimum())) {
+                log.error('rejected balance update. oldBalance=%s newBalance=%s amount=%s', balance.getValue(), newBalance, parsedPacket.amount)
+                throw new Error(`insufficient funds. oldBalance=${balance.getValue()} proposedBalance=${newBalance}`)
+              }
+
               result = await next(data)
             } catch (err) {
               log.debug('outgoing packet not applied due to error. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())

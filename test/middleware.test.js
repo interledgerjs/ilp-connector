@@ -335,13 +335,8 @@ describe('Middleware Manager', function () {
           destination: 'mock.test3.bob',
           data: Buffer.alloc(0)
         })
-        const fulfillPacket = IlpPacket.serializeIlpFulfill({
-          fulfillment: Buffer.from('HS8e5Ew02XKAglyus2dh2Ohabuqmy3HDM8EXMLz22ok', 'base64'),
-          data: Buffer.alloc(0)
-        })
 
-        sinon.stub(this.mockPlugin3Wrapped, 'sendData')
-          .resolves(fulfillPacket)
+        sinon.stub(this.mockPlugin3Wrapped, 'sendData').throws()
 
         await this.middlewareManager.setup()
         const result = await this.mockPlugin1Wrapped._dataHandler(preparePacket)
