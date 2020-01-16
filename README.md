@@ -348,9 +348,9 @@ Additional configuration for the backend.
 
 * Environment: `CONNECTOR_STORE`
 * Type: `string`
-* Default: `"leveldown"`
+* Default: `"memory"`
 
-Name of the store (can be built-in or a require-able module name). Built-in modules are: leveldown, memdown
+Name of the store (can be built-in or a require-able module name). Built-in modules are: memory
 
 #### `storePath`
 
@@ -488,11 +488,7 @@ ILP peering using settlement over Lightning.
 
 Stores represent different means for persistence for the connector.
 
-#### Built-in: leveldown
-
-Connector store based on [levelup](https://github.com/level/levelup)/[leveldown](https://github.com/Level/leveldown)
-
-#### Built-in: memdown
+#### Built-in: memory
 
 Pure in-memory store. Resets every time the connector is run. Useful for development and testing.
 

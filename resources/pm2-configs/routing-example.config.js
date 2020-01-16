@@ -4,7 +4,7 @@ const basicConnector = {
   script: resolve(__dirname, '../../src/index.js'),
   env: {
     DEBUG: 'connector*,ilp*',
-    CONNECTOR_STORE: 'memdown',
+    CONNECTOR_STORE: 'memory',
     CONNECTOR_BACKEND: 'one-to-one'
   }
 }
