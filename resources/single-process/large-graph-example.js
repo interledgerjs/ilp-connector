@@ -8,7 +8,7 @@ const graph = randomgraph.BarabasiAlbert(200, 10, 2)
 const configs = []
 graph.nodes.forEach(({ label }, i) => {
   configs.push({
-    store: 'memdown',
+    store: 'memory',
     backend: 'one-to-one',
     accounts: {
       mini: {

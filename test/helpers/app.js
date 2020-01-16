@@ -17,7 +17,7 @@ const ratesResponse = require('../data/fxRates.json')
 const createApp = require('../../src').createApp
 
 exports.create = function (context, opts) {
-  process.env.CONNECTOR_STORE = 'memdown'
+  process.env.CONNECTOR_STORE = 'memory'
   process.env.CONNECTOR_ILP_ADDRESS = 'test.connie'
 
   // Set up test environment
