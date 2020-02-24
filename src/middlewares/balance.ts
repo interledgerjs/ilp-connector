@@ -54,6 +54,10 @@ class Balance {
     return this.balance
   }
 
+  getMinimum () {
+    return this.minimum
+  }
+
   toJSON () {
     return {
       balance: this.balance.toString(),
@@ -174,23 +178,25 @@ export default class BalanceMiddleware implements Middleware {
               return next(data)
             }
 
-            // We do nothing here (i.e. unlike for incoming packets) and wait until the packet is fulfilled
-            // This means we always take the most conservative view of our balance with the upstream peer
             let result
             try {
+
+              balance.subtract(parsedPacket.amount)
+
               result = await next(data)
             } catch (err) {
               log.debug('outgoing packet not applied due to error. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'failed' }, +parsedPacket.amount)
+              balance.add(parsedPacket.amount)
               throw err
             }
 
             if (result[0] === IlpPacket.Type.TYPE_ILP_REJECT) {
+              balance.add(parsedPacket.amount)
               log.debug('outgoing packet not applied due to ilp reject. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
               this.stats.outgoingDataPacketValue.increment(account, { result : 'rejected' }, +parsedPacket.amount)
             } else if (result[0] === IlpPacket.Type.TYPE_ILP_FULFILL) {
               // Decrease balance on prepare
-              balance.subtract(parsedPacket.amount)
               this.maybeSettle(accountId).catch(log.error)
               log.trace('balance decreased due to outgoing ilp fulfill. accountId=%s amount=%s newBalance=%s', accountId, parsedPacket.amount, balance.getValue())
               this.stats.balance.setValue(account, {}, balance.getValue().toNumber())
