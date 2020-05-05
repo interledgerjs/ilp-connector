@@ -9,10 +9,7 @@
 /.nyc_output/
 /coverage/
 
-# TypeScript compiler output
-/src/**/*.js
-/src/**/*.js.map
-/src/**/*.d.ts
+/dist/**/*
 
 # Generated typings for schemas should not be checked in
 /src/schemas/*.ts

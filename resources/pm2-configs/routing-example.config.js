@@ -1,7 +1,7 @@
 const { resolve } = require('path')
 
 const basicConnector = {
-  script: resolve(__dirname, '../../src/index.js'),
+  script: resolve(__dirname, '../../dist/index.js'),
   env: {
     DEBUG: 'connector*,ilp*',
     CONNECTOR_STORE: 'memory',
