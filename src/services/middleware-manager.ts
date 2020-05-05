@@ -239,6 +239,12 @@ export default class MiddlewareManager {
     return this.middlewares[name]
   }
 
+  async teardown () {
+    for (const handler of this.teardownHandlers.values()) {
+      await handler(undefined)
+    }
+  }
+
   private createHandler<T,U> (pipeline: Pipeline<T,U>, accountId: string, next: (param: T) => Promise<U>): (param: T) => Promise<U> {
     const middleware: MiddlewareMethod<T,U> = composeMiddleware(pipeline.getMethods())
 
