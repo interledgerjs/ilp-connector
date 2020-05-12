@@ -8,7 +8,7 @@ mock('ilp-plugin-mock', mockPlugin)
 const { cloneDeep } = require('lodash')
 const { assert } = require('chai')
 const appHelper = require('./helpers/app')
-const logger = require('../src/common/log')
+const logger = require('../dist/common/log')
 const logHelper = require('./helpers/log')
 const {
   serializeCcpRouteUpdateRequest,

@@ -2,19 +2,19 @@
 
 const reduct = require('reduct')
 const Prometheus = require('prom-client')
-const Config = require('../../src/services/config').default
-const RouteBuilder = require('../../src/services/route-builder').default
-const RouteBroadcaster = require('../../src/services/route-broadcaster').default
-const Accounts = require('../../src/services/accounts').default
-const RateBackend = require('../../src/services/rate-backend').default
-const RoutingTable = require('../../src/services/routing-table').default
-const MiddlewareManager = require('../../src/services/middleware-manager').default
-const AdminApi = require('../../src/services/admin-api').default
-const CcpController = require('../../src/controllers/ccp').default
-const Store = require('../../src/services/store').default
+const Config = require('../../dist/services/config').default
+const RouteBuilder = require('../../dist/services/route-builder').default
+const RouteBroadcaster = require('../../dist/services/route-broadcaster').default
+const Accounts = require('../../dist/services/accounts').default
+const RateBackend = require('../../dist/services/rate-backend').default
+const RoutingTable = require('../../dist/services/routing-table').default
+const MiddlewareManager = require('../../dist/services/middleware-manager').default
+const AdminApi = require('../../dist/services/admin-api').default
+const CcpController = require('../../dist/controllers/ccp').default
+const Store = require('../../dist/services/store').default
 const ratesResponse = require('../data/fxRates.json')
 
-const createApp = require('../../src').createApp
+const createApp = require('../../dist').createApp
 
 exports.create = function (context, opts) {
   process.env.CONNECTOR_STORE = 'memory'

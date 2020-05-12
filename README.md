@@ -72,7 +72,7 @@ This implementation of the connector contains a routing protocol implementation 
 
 ## Timekeeping
 
-Timekeeping is an important part of processing transactions. Your node must have the right time set to make sure it can handle packets from peers correctly. If you drift too far from the current time, your node will have a different time to your peers and might start to experience strange issues and/or accept/reject packets incorrectly. 
+Timekeeping is an important part of processing transactions. Your node must have the right time set to make sure it can handle packets from peers correctly. If you drift too far from the current time, your node will have a different time to your peers and might start to experience strange issues and/or accept/reject packets incorrectly.
 
 It is highly recommended you run some kind of time synchronisation service on your server. If you need help to install tools for keeping your clock in sync, this article describes how to do it:
 https://www.techrepublic.com/blog/data-center/syncing-time-in-linux-and-windows-with-ntp/
@@ -141,7 +141,7 @@ const connectorApp = {
       up: parentConnector
     })
   },
-  script: path.resolve(process.execPath, '../../lib/node_modules/ilp-connector/src/index.js')
+  script: path.resolve(process.execPath, '../../lib/node_modules/ilp-connector/dist/index.js')
 }
 
 module.exports = { apps: [ connectorApp ] }

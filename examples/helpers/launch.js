@@ -1,5 +1,5 @@
 'use strict'
-const log_1 = require('../../src/common/log')
+const log_1 = require('../../dist/common/log')
 const log = log_1.create('launch')
 
 function launch (pluginName) {

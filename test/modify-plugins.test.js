@@ -8,9 +8,9 @@ const mockRequire = require('mock-require')
 const nock = require('nock')
 const sinon = require('sinon')
 nock.enableNetConnect(['localhost'])
-const logger = require('../src/common/log')
+const logger = require('../dist/common/log')
 const logHelper = require('./helpers/log')
-const Peer = require('../src/routing/peer').default
+const Peer = require('../dist/routing/peer').default
 const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 const { UnreachableError } = require('ilp-packet').Errors
 

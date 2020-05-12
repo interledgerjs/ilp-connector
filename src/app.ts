@@ -1,30 +1,25 @@
 import reduct, { Injector } from 'reduct'
-import { partial } from 'lodash'
 import { create as createLogger } from './common/log'
 const log = createLogger('app')
 
 import Config from './services/config'
-import RouteBuilder from './services/route-builder'
 import RouteBroadcaster from './services/route-broadcaster'
 import Accounts from './services/accounts'
 import RateBackend from './services/rate-backend'
-import Store from './services/store'
 import MiddlewareManager from './services/middleware-manager'
 import AdminApi from './services/admin-api'
 import * as Prometheus from 'prom-client'
 
 const version = require('../package.json').version
 
-function listen (
+const listen = (
   config: Config,
   accounts: Accounts,
   backend: RateBackend,
-  store: Store,
-  routeBuilder: RouteBuilder,
   routeBroadcaster: RouteBroadcaster,
   middlewareManager: MiddlewareManager,
   adminApi: AdminApi
-) {
+) => () => {
   // Start a coroutine that connects to the backend and
   // subscribes to all the accounts in the background
   return (async function () {
@@ -69,16 +64,14 @@ function listen (
   })().catch((err) => log.error(err))
 }
 
-async function addPlugin (
-  config: Config,
+const addPlugin = (
   accounts: Accounts,
-  backend: RateBackend,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
-
+  middlewareManager: MiddlewareManager
+) => async (
   id: string,
   options: any
-) {
+) => {
   accounts.add(id, options)
   const plugin = accounts.getPlugin(id)
   await middlewareManager.addPlugin(id, plugin)
@@ -88,15 +81,13 @@ async function addPlugin (
   routeBroadcaster.reloadLocalRoutes()
 }
 
-async function removePlugin (
-  config: Config,
+const removePlugin = (
   accounts: Accounts,
-  backend: RateBackend,
   routeBroadcaster: RouteBroadcaster,
-  middlewareManager: MiddlewareManager,
-
+  middlewareManager: MiddlewareManager
+) => async (
   id: string
-) {
+) => {
   const plugin = accounts.getPlugin(id)
   await middlewareManager.removePlugin(id, plugin)
   await plugin.disconnect()
@@ -105,20 +96,20 @@ async function removePlugin (
   routeBroadcaster.reloadLocalRoutes()
 }
 
-function getPlugin (
-  accounts: Accounts,
-
+const getPlugin = (
+  accounts: Accounts
+) => (
   id: string
-) {
-  return accounts.getPlugin(id)
-}
+) => accounts.getPlugin(id)
 
-function shutdown (
+const shutdown = (
   accounts: Accounts,
-  routeBroadcaster: RouteBroadcaster
-) {
+  routeBroadcaster: RouteBroadcaster,
+  middlewareManager: MiddlewareManager
+) => async () => {
   routeBroadcaster.stop()
-  return accounts.disconnect()
+  await accounts.disconnect()
+  await middlewareManager.teardown()
 }
 
 export default function createApp (opts?: object, container?: Injector) {
@@ -144,10 +135,8 @@ export default function createApp (opts?: object, container?: Injector) {
   }
 
   const accounts = deps(Accounts)
-  const routeBuilder = deps(RouteBuilder)
   const routeBroadcaster = deps(RouteBroadcaster)
   const backend = deps(RateBackend)
-  const store = deps(Store)
   const middlewareManager = deps(MiddlewareManager)
   const adminApi = deps(AdminApi)
 
@@ -158,10 +147,10 @@ export default function createApp (opts?: object, container?: Injector) {
 
   return {
     config,
-    listen: partial(listen, config, accounts, backend, store, routeBuilder, routeBroadcaster, middlewareManager, adminApi),
-    addPlugin: partial(addPlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
-    removePlugin: partial(removePlugin, config, accounts, backend, routeBroadcaster, middlewareManager),
-    getPlugin: partial(getPlugin, accounts),
-    shutdown: partial(shutdown, accounts, routeBroadcaster)
+    listen: listen(config, accounts, backend, routeBroadcaster, middlewareManager, adminApi),
+    addPlugin: addPlugin(accounts, routeBroadcaster, middlewareManager),
+    removePlugin: removePlugin(accounts, routeBroadcaster, middlewareManager),
+    getPlugin: getPlugin(accounts),
+    shutdown: shutdown(accounts, routeBroadcaster, middlewareManager)
   }
 }

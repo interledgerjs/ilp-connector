@@ -6,7 +6,7 @@ const sinon = require('sinon')
 const { cloneDeep } = require('lodash')
 const appHelper = require('./helpers/app')
 const logHelper = require('./helpers/log')
-const logger = require('../src/common/log')
+const logger = require('../dist/common/log')
 chai.use(require('chai-as-promised'))
 const { serializeCcpRouteUpdateRequest } = require('ilp-protocol-ccp')
 const { InvalidPacketError } = require('ilp-packet').Errors

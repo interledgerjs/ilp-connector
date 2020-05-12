@@ -8,7 +8,7 @@
   },
   "keywords": [
     "interledger",
-    "five-bells",
+    "connector",
     "payments"
   ],
   "author": "Interledger Team <info@interledger.org>",
@@ -16,22 +16,22 @@
   "bugs": {
     "url": "https://github.com/interledgerjs/ilp-connector/issues"
   },
-  "main": "src/index.js",
-  "types": "src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
-    "ilp-connector": "./src/index.js"
+    "ilp-connector": "./dist/index.js"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} src/index.js",
-    "start:watch": "nodemon src/index.js",
-    "build": "npm run schema-to-tsd && npm run compile-ts",
+    "start": "node dist/index.js",
+    "start-prof": "node --prof --logfile=${CONNECTOR_V8_LOGFILE:-v8.log} dist/index.js",
+    "start:watch": "nodemon dist/index.js",
+    "build": "npm run schema-to-tsd && npm run compile-ts && npm run copy-schemas",
     "schema-to-tsd": "node scripts/build_schema_types",
     "compile-ts": "tsc --project .",
+    "copy-schemas": "cpy 'src/schemas/*.json' dist/schemas",
     "prepack": "npm run build",
-    "prepare": "npm run build",
     "lint": "tslint --project . && eslint test/*.test.js test/mocks/ test/helpers/",
-    "test": "nyc mocha",
+    "test": "npm build && nyc mocha",
     "report-coverage": "codecov",
     "integration": "integration-loader && integration all",
     "commitmsg": "commitlint -e $GIT_PARAMS"
@@ -49,7 +49,7 @@
     "ilp-packet": "^3.0.7",
     "ilp-protocol-ccp": "^1.1.1",
     "ilp-protocol-ildcp": "^2.0.0",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.15",
     "long": "^4.0.0",
     "node-fetch": "^2.0.0",
     "oer-utils": "^4.0.0",
@@ -61,7 +61,7 @@
     "through2": "^2.0.3"
   },
   "devDependencies": {
-    "@commitlint/cli": "^6.2.0",
+    "@commitlint/cli": "^8.3.5",
     "@commitlint/config-conventional": "^6.1.0",
     "@justmoon/json-schema-to-markdown": "^1.0.0",
     "@types/debug": "0.0.30",
@@ -75,6 +75,7 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "codecov": "^3.1.0",
+    "cpy-cli": "^3.1.1",
     "eslint": "^4.14.0",
     "eslint-config-standard": "^11.0.0-beta.0",
     "eslint-plugin-import": "^2.8.0",
@@ -86,12 +87,12 @@
     "ilp-plugin-mirror": "^1.0.0",
     "json-schema-to-typescript": "^5.2.2",
     "mdast-util-inject": "^1.1.0",
-    "mocha": "^5.0.0",
+    "mocha": "^7.1.2",
     "mock-require": "^3.0.1",
     "mock-socket": "^7.1.0",
     "nock": "^9.1.5",
     "nodemon": "^1.17.3",
-    "nyc": "^11.4.1",
+    "nyc": "^15.0.1",
     "remark-parse": "^5.0.0",
     "remark-stringify": "^5.0.0",
     "remark-toc": "^5.0.0",
