@@ -44,6 +44,9 @@ const BUILTIN_MIDDLEWARES: { [key: string]: MiddlewareDefinition } = {
   deduplicate: {
     type: 'deduplicate'
   },
+  echo: {
+    type: 'echo'
+  },
   expire: {
     type: 'expire'
   },

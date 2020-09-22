@@ -17,29 +17,22 @@
 ## Table of Contents
 
 * [Overview](#overview)
-
   * [What is this?](#what-is-this)
   * [Who is this for?](#who-is-this-for)
-
 * [Quickstart](#quickstart)
-
 * [Guides](#guides)
-
   * [Connect your connector to the Interledger](#connect-your-connector-to-the-interledger)
   * [Allow your apps to connect to your connector](#allow-your-apps-to-connect-to-your-connector)
   * [Embed a connector in another JavaScript app](#embed-a-connector-in-another-javascript-app)
   * [Create a tier-1 connector](#create-a-tier-1-connector)
   * [Run the connector in Docker](#run-the-connector-in-docker)
-
 * [Reference](#reference)
-
   * [Configuration Variables](#configuration-variables)
   * [API Reference](#api-reference)
   * [Extensibility: Plugins](#extensibility-plugins)
   * [Extensibility: Stores](#extensibility-stores)
   * [Extensibility: Middlewares](#extensibility-middlewares)
   * [Extensibility: Backends](#extensibility-backends)
-
 * [Development](#development)
 
 ## Overview
@@ -153,18 +146,6 @@ Now we can run our connector with:
 npm install -g pm2
 pm2 start launch.config.js
 ```
-
-### Allow your apps to connect to your connector
-
-**TODO**
-
-### Embed a connector in another JavaScript app
-
-**TODO**
-
-### Create a tier-1 connector
-
-**TODO**
 
 ### Run the connector in Docker
 
@@ -544,6 +525,12 @@ Tracks the balance of a given account from the perspective of the connector. Thi
 
 Validates fulfillments in incoming ILP fulfill responses. If the fulfillment is invalid, it converts the fulfillment into a rejection.
 
+#### Built-in: echo
+
+* Pipelines: `incomingData`
+
+The ECHO protocol enables a bidirectional test of connectivity between an initiator and a recipient. The middleware handles "ping" packets and forwards a corresponding "pong" packet to a new destination address.
+
 #### Built-in: expire
 
 * Pipelines: `outgoingData`
@@ -577,12 +564,6 @@ The `ecb` backend loads fiat exchange rates from [Euro foreign exchange referenc
 * Supported currencies: see [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html), XRP
 
 The `ecb-plus-xrp` backend loads fiat exchange rates from [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) and XRP exchange rates from the [Ripple Data API](https://ripple.com/build/data-api-v2/). **Suitable for development and experimental use only.**
-
-#### Built-in: ecb-plus-coinmarketcap
-
-* Supported currencies: see [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html), see [CoinMarketCap](https://coinmarketcap.com/)
-
-The `ecb-plus-coinmarketcap` backend loads fiat exchange rates from [Euro foreign exchange reference rates](http://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) and crypto-currency exchange rates from [CoinMarketCap](https://coinmarketcap.com/). **Suitable for development and experimental use only.**
 
 ## Development
 
