@@ -31,7 +31,7 @@
     "copy-schemas": "cpy 'src/schemas/*.json' dist/schemas",
     "prepack": "npm run build",
     "lint": "tslint --project . && eslint test/*.test.js test/mocks/ test/helpers/",
-    "test": "npm build && nyc mocha",
+    "test": "npm run build && nyc mocha",
     "report-coverage": "codecov",
     "integration": "integration-loader && integration all",
     "commitmsg": "commitlint -e $GIT_PARAMS"
