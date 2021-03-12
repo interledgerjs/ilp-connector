@@ -22,7 +22,7 @@ launch('ilp-plugin-mirror').then(connector => {
   connector.getPlugin('bob').mirror.registerMoneyHandler(amount => {
     console.log('money showed up at bob!', amount)
   })
-  connector.getPlugin('bob').mirror.sendData(Ildcp.serializeIldcpRequest()).then(fulfill => {
+  connector.getPlugin('bob').mirror.sendData(Ildcp.serializeIldcpRequest({})).then(fulfill => {
     const bobInfo = Ildcp.deserializeIldcpResponse(fulfill)
     const prepare = IlpPacket.serializeIlpPrepare({
       amount: '10',
