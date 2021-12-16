@@ -45,7 +45,7 @@ An Interledger connector forwards Interledger packets, just like an Internet rou
 
 ### Who is this for?
 
-Just like IP routers can be found anywhere from your home wifi router to a small business network to the large Internet backbones, an Interledger connector is a versatile component that appears in a lot of different context. Here are some example use cases:
+Just like IP routers can be found anywhere from your home wifi router to a small business network to the large Internet backbones, an Interledger connector is a versatile component that appears in a lot of different contexts. Here are some example use cases:
 
 #### Your personal connector
 
